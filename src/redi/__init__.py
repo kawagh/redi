@@ -50,7 +50,14 @@ def read_ticket(ticket_id: str) -> None:
         headers={"X-Redmine-API-Key": redmine_api_key},
     )
     ticket = response.json()["issue"]
-    print(ticket)
+
+    lines = []
+    lines.append(f"{ticket['id']} {ticket['subject']}")
+    if ticket.get("description"):
+        lines.append("")
+        lines.append(ticket["description"])
+
+    print("\n".join(lines))
 
 
 def list_wikis(project_id: str) -> None:
