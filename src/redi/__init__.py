@@ -7,7 +7,7 @@ redmine_api_key = os.environ.get("REDMINE_API_KEY")
 if not redmine_url:
     print("set REDMINE_URL")
     exit(1)
-if not redmine_url:
+if not redmine_api_key:
     print("set REDMINE_API_KEY")
     exit(1)
 
