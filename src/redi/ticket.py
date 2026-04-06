@@ -27,3 +27,16 @@ def read_ticket(ticket_id: str) -> None:
         lines.append(ticket["description"])
 
     print("\n".join(lines))
+
+
+def add_note(ticket_id: str, notes: str) -> None:
+    response = requests.put(
+        f"{redmine_url}/issues/{ticket_id}.json",
+        headers={
+            "X-Redmine-API-Key": redmine_api_key,
+            "Content-Type": "application/json",
+        },
+        json={"issue": {"notes": notes}},
+    )
+    response.raise_for_status()
+    print(f"コメントを追加しました: #{ticket_id}")
