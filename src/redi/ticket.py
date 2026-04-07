@@ -14,7 +14,7 @@ def list_tickets(fixed_version_id: str | None = None) -> None:
     )
     tickets = response.json()["issues"]
     for ticket in tickets:
-        print(ticket)
+        print(f"{ticket['id']} {ticket['subject']}")
 
 
 def read_ticket(ticket_id: str) -> None:
