@@ -1,7 +1,7 @@
 [project]
 name = "redi"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.0.1"
+description = "Redmine CLI tool"
 readme = "README.md"
 authors = [
     { name = "kawagh", email = "kawagh.dev@gmail.com" }
