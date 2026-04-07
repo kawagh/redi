@@ -3,6 +3,7 @@ import os
 import subprocess
 import tempfile
 
+from redi.config import default_project_id
 from redi.project import list_projects, read_project
 from redi.ticket import add_note, list_tickets, read_ticket
 from redi.version import list_versions
@@ -42,10 +43,9 @@ def main() -> None:
         help="対象バージョンIDでフィルタリング",
     )
     v_parser = subparsers.add_parser("v", help="バージョン一覧")
-    v_parser.add_argument("project_id", help="プロジェクトID")
+    v_parser.add_argument("project_id", nargs="?", help="プロジェクトID")
     w_parser = subparsers.add_parser("w", help="Wiki一覧/詳細")
-    # Wikiはproject_idの指定が必須
-    w_parser.add_argument("project_id", help="プロジェクトID")
+    w_parser.add_argument("project_id", nargs="?", help="プロジェクトID")
     w_parser.add_argument("page_title", nargs="?", help="Wikiページタイトル")
     args = parser.parse_args()
 
@@ -69,11 +69,19 @@ def main() -> None:
         else:
             list_tickets(fixed_version_id=args.version)
     elif args.command == "v":
-        list_versions(args.project_id)
+        project_id = args.project_id or default_project_id
+        if not project_id:
+            print("project_idを指定するか、default_project_idを設定してください")
+            exit(1)
+        list_versions(project_id)
     elif args.command == "w":
+        project_id = args.project_id or default_project_id
+        if not project_id:
+            print("project_idを指定するか、default_project_idを設定してください")
+            exit(1)
         if args.page_title:
-            read_wiki(args.project_id, args.page_title)
+            read_wiki(project_id, args.page_title)
         else:
-            list_wikis(args.project_id)
+            list_wikis(project_id)
     else:
         parser.print_help()

@@ -16,6 +16,7 @@ _config = load_config()
 
 redmine_url = os.environ.get("REDMINE_URL") or _config.get("redmine_url")
 redmine_api_key = os.environ.get("REDMINE_API_KEY") or _config.get("redmine_api_key")
+default_project_id: str | None = _config.get("default_project_id")
 
 if not redmine_url:
     print(f"set REDMINE_URL or add redmine_url to {CONFIG_PATH}")
