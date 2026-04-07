@@ -5,6 +5,7 @@ import tempfile
 
 from redi.project import list_projects, read_project
 from redi.ticket import add_note, list_tickets, read_ticket
+from redi.version import list_versions
 from redi.wiki import list_wikis, read_wiki
 
 
@@ -67,6 +68,8 @@ def main() -> None:
             read_ticket(args.ticket_id)
         else:
             list_tickets(fixed_version_id=args.version)
+    elif args.command == "v":
+        list_versions(args.project_id)
     elif args.command == "w":
         if args.page_title:
             read_wiki(args.project_id, args.page_title)
