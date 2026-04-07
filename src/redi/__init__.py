@@ -3,7 +3,7 @@ import os
 import subprocess
 import tempfile
 
-from redi.config import default_project_id
+from redi.config import default_project_id, update_config
 from redi.project import list_projects, read_project
 from redi.ticket import add_note, list_tickets, read_ticket
 from redi.version import list_versions
@@ -47,6 +47,8 @@ def main() -> None:
     w_parser = subparsers.add_parser("w", help="Wiki一覧/詳細")
     w_parser.add_argument("project_id", nargs="?", help="プロジェクトID")
     w_parser.add_argument("page_title", nargs="?", help="Wikiページタイトル")
+    c_parser = subparsers.add_parser("c", help="設定更新")
+    c_parser.add_argument("--project_id", help="デフォルトプロジェクトIDを設定")
     args = parser.parse_args()
 
     if args.command == "p":
@@ -83,5 +85,11 @@ def main() -> None:
             read_wiki(project_id, args.page_title)
         else:
             list_wikis(project_id)
+    elif args.command == "c":
+        if args.project_id:
+            update_config("default_project_id", args.project_id)
+            print(f"default_project_idを {args.project_id} に設定しました")
+        else:
+            print("更新する設定を指定してください (例: --project_id)")
     else:
         parser.print_help()

@@ -28,4 +28,7 @@ export REDMINE_API_KEY=yyy
 ```toml
 redmine_url = "xxx"
 redmine_api_key = "yyy"
+default_project_id = "1"
 ```
+
+- `redi c --project_id 1` でdefault_project_idを変更できる

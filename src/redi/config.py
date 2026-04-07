@@ -2,6 +2,8 @@ import os
 import tomllib
 from pathlib import Path
 
+import tomlkit
+
 CONFIG_PATH = Path.home() / ".config" / "redi" / "config.toml"
 
 
@@ -10,6 +12,18 @@ def load_config() -> dict:
         with open(CONFIG_PATH, "rb") as f:
             return tomllib.load(f)
     return {}
+
+
+def update_config(key: str, value: str) -> None:
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if CONFIG_PATH.exists():
+        with open(CONFIG_PATH) as f:
+            doc = tomlkit.load(f)
+    else:
+        doc = tomlkit.document()
+    doc[key] = value
+    with open(CONFIG_PATH, "w") as f:
+        tomlkit.dump(doc, f)
 
 
 _config = load_config()
