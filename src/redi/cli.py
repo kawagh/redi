@@ -44,9 +44,9 @@ def main() -> None:
         help="対象バージョンIDでフィルタリング",
     )
     v_parser = subparsers.add_parser("version", aliases=["v"], help="バージョン一覧")
-    v_parser.add_argument("project_id", nargs="?", help="プロジェクトID")
+    v_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     w_parser = subparsers.add_parser("wiki", aliases=["w"], help="Wiki一覧/詳細")
-    w_parser.add_argument("project_id", nargs="?", help="プロジェクトID")
+    w_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     w_parser.add_argument("page_title", nargs="?", help="Wikiページタイトル")
     c_parser = subparsers.add_parser("config", aliases=["c"], help="設定更新")
     c_parser.add_argument("--project_id", help="デフォルトプロジェクトIDを設定")
