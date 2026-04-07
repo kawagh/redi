@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-redi = "redi:main"
+redi = "redi.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.9.2,<0.10.0"]
