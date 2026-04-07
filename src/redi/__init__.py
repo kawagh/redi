@@ -26,9 +26,9 @@ def open_editor() -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Redmine CLI")
     subparsers = parser.add_subparsers(dest="command")
-    p_parser = subparsers.add_parser("p", help="プロジェクト一覧/詳細")
+    p_parser = subparsers.add_parser("project", aliases=["p"], help="プロジェクト一覧/詳細")
     p_parser.add_argument("project_id", nargs="?", help="プロジェクトID")
-    t_parser = subparsers.add_parser("t", help="チケット一覧/詳細/コメント")
+    t_parser = subparsers.add_parser("ticket", aliases=["t"], help="チケット一覧/詳細/コメント")
     t_parser.add_argument("ticket_id", nargs="?", help="チケットID")
     t_parser.add_argument(
         "--notes",
@@ -42,21 +42,21 @@ def main() -> None:
         "-v",
         help="対象バージョンIDでフィルタリング",
     )
-    v_parser = subparsers.add_parser("v", help="バージョン一覧")
+    v_parser = subparsers.add_parser("version", aliases=["v"], help="バージョン一覧")
     v_parser.add_argument("project_id", nargs="?", help="プロジェクトID")
-    w_parser = subparsers.add_parser("w", help="Wiki一覧/詳細")
+    w_parser = subparsers.add_parser("wiki", aliases=["w"], help="Wiki一覧/詳細")
     w_parser.add_argument("project_id", nargs="?", help="プロジェクトID")
     w_parser.add_argument("page_title", nargs="?", help="Wikiページタイトル")
-    c_parser = subparsers.add_parser("c", help="設定更新")
+    c_parser = subparsers.add_parser("config", aliases=["c"], help="設定更新")
     c_parser.add_argument("--project_id", help="デフォルトプロジェクトIDを設定")
     args = parser.parse_args()
 
-    if args.command == "p":
+    if args.command in ("project", "p"):
         if args.project_id:
             read_project(args.project_id)
         else:
             list_projects()
-    elif args.command == "t":
+    elif args.command in ("ticket", "t"):
         if args.ticket_id and args.notes is not None:
             if args.notes:
                 add_note(args.ticket_id, args.notes)
@@ -70,13 +70,13 @@ def main() -> None:
             read_ticket(args.ticket_id)
         else:
             list_tickets(fixed_version_id=args.version)
-    elif args.command == "v":
+    elif args.command in ("version", "v"):
         project_id = args.project_id or default_project_id
         if not project_id:
             print("project_idを指定するか、default_project_idを設定してください")
             exit(1)
         list_versions(project_id)
-    elif args.command == "w":
+    elif args.command in ("wiki", "w"):
         project_id = args.project_id or default_project_id
         if not project_id:
             print("project_idを指定するか、default_project_idを設定してください")
@@ -85,7 +85,7 @@ def main() -> None:
             read_wiki(project_id, args.page_title)
         else:
             list_wikis(project_id)
-    elif args.command == "c":
+    elif args.command in ("config", "c"):
         if args.project_id:
             update_config("default_project_id", args.project_id)
             print(f"default_project_idを {args.project_id} に設定しました")
