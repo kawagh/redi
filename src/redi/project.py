@@ -10,7 +10,7 @@ def list_projects() -> None:
     )
     projects = response.json()["projects"]
     for project in projects:
-        print(project)
+        print(f"{project['id']} {project['name']}")
 
 
 def read_project(project_id: str) -> None:
