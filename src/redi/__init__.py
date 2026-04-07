@@ -35,6 +35,13 @@ def main() -> None:
         default=None,
         help="チケットにコメントを追加（値省略でエディタ起動）",
     )
+    t_parser.add_argument(
+        "--version",
+        "-v",
+        help="対象バージョンIDでフィルタリング",
+    )
+    v_parser = subparsers.add_parser("v", help="バージョン一覧")
+    v_parser.add_argument("project_id", help="プロジェクトID")
     w_parser = subparsers.add_parser("w", help="Wiki一覧/詳細")
     # Wikiはproject_idの指定が必須
     w_parser.add_argument("project_id", help="プロジェクトID")
@@ -59,7 +66,7 @@ def main() -> None:
         elif args.ticket_id:
             read_ticket(args.ticket_id)
         else:
-            list_tickets()
+            list_tickets(fixed_version_id=args.version)
     elif args.command == "w":
         if args.page_title:
             read_wiki(args.project_id, args.page_title)

@@ -3,10 +3,14 @@ import requests
 from redi.config import redmine_api_key, redmine_url
 
 
-def list_tickets() -> None:
+def list_tickets(fixed_version_id: str | None = None) -> None:
+    params = {}
+    if fixed_version_id:
+        params["fixed_version_id"] = fixed_version_id
     response = requests.get(
         f"{redmine_url}/issues.json",
         headers={"X-Redmine-API-Key": redmine_api_key},
+        params=params,
     )
     tickets = response.json()["issues"]
     for ticket in tickets:
