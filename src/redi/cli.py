@@ -7,6 +7,7 @@ from importlib.metadata import version
 from redi.config import default_project_id, update_config
 from redi.project import list_projects, read_project
 from redi.ticket import add_note, list_tickets, read_ticket
+from redi.tracker import list_trackers
 from redi.user import list_users
 from redi.version import list_versions
 from redi.wiki import list_wikis, read_wiki
@@ -26,11 +27,17 @@ def open_editor() -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Redmine CLI")
-    parser.add_argument("-V", "--version", action="version", version=f"redi {version('redi')}")
+    parser.add_argument(
+        "-V", "--version", action="version", version=f"redi {version('redi')}"
+    )
     subparsers = parser.add_subparsers(dest="command")
-    p_parser = subparsers.add_parser("project", aliases=["p"], help="プロジェクト一覧/詳細")
+    p_parser = subparsers.add_parser(
+        "project", aliases=["p"], help="プロジェクト一覧/詳細"
+    )
     p_parser.add_argument("project_id", nargs="?", help="プロジェクトID")
-    t_parser = subparsers.add_parser("ticket", aliases=["t"], help="チケット一覧/詳細/コメント")
+    t_parser = subparsers.add_parser(
+        "ticket", aliases=["t"], help="チケット一覧/詳細/コメント"
+    )
     t_parser.add_argument("ticket_id", nargs="?", help="チケットID")
     t_parser.add_argument(
         "--notes",
@@ -58,6 +65,7 @@ def main() -> None:
     c_parser.add_argument("--project_id", help="デフォルトプロジェクトIDを設定")
     u_parser = subparsers.add_parser("user", aliases=["u"], help="ユーザー一覧")
     u_parser.add_argument("--project_id", "-p", help="プロジェクトID")
+    subparsers.add_parser("tracker", help="トラッカー一覧")
     args = parser.parse_args()
 
     if args.command in ("project", "p"):
@@ -103,5 +111,7 @@ def main() -> None:
     elif args.command in ("user", "u"):
         project_id = args.project_id or default_project_id
         list_users(project_id=project_id)
+    elif args.command == "tracker":
+        list_trackers()
     else:
         parser.print_help()
