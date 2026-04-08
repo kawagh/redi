@@ -45,6 +45,19 @@ def create_wiki(
     text: str,
     parent_title: str,
 ) -> None:
+    # wikiの書き込みに3度のAPIリクエストが実行される
+    # wiki作成(更新)時にステータスコード 422 を返すのでそれで代用する
+    parent_exists = (
+        requests.get(
+            f"{redmine_url}/projects/{project_id}/wiki/{parent_title}.json",
+            headers={"X-Redmine-API-Key": redmine_api_key},
+        ).status_code
+        == 200
+    )
+    if not parent_exists:
+        print(f"親ページが見つかりません: {parent_title}")
+        return
+
     exists = (
         requests.get(
             f"{redmine_url}/projects/{project_id}/wiki/{page_title}.json",
