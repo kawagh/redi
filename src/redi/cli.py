@@ -12,6 +12,7 @@ from redi.enumeration import (
 )
 from redi.issue_status import list_issue_statuses
 from redi.project import list_projects, read_project
+from redi.role import list_roles
 from redi.ticket import add_note, list_tickets, read_ticket
 from redi.tracker import list_trackers
 from redi.user import list_users
@@ -81,6 +82,8 @@ def main() -> None:
     tea_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     dc_parser = subparsers.add_parser("document_category", help="文書カテゴリ一覧")
     dc_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    role_parser = subparsers.add_parser("role", help="ロール一覧")
+    role_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     args = parser.parse_args()
 
     if args.command in ("project", "p"):
@@ -136,5 +139,7 @@ def main() -> None:
         list_time_entry_activities(full=args.full)
     elif args.command == "document_category":
         list_document_categories(full=args.full)
+    elif args.command == "role":
+        list_roles(full=args.full)
     else:
         parser.print_help()
