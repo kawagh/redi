@@ -46,15 +46,15 @@ def main() -> None:
     p_parser.add_argument("project_id", nargs="?", help="プロジェクトID")
     p_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     i_parser = subparsers.add_parser(
-        "issue", aliases=["i"], help="チケット一覧/詳細/コメント"
+        "issue", aliases=["i"], help="イシュー一覧/詳細/コメント"
     )
-    i_parser.add_argument("issue_id", nargs="?", help="チケットID")
+    i_parser.add_argument("issue_id", nargs="?", help="イシューID")
     i_parser.add_argument(
         "--notes",
         nargs="?",
         const="",
         default=None,
-        help="チケットにコメントを追加（値省略でエディタ起動）",
+        help="イシューにコメントを追加（値省略でエディタ起動）",
     )
     i_parser.add_argument(
         "--version",
@@ -78,22 +78,34 @@ def main() -> None:
     u_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     u_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     tracker_parser = subparsers.add_parser("tracker", help="トラッカー一覧")
-    tracker_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    tracker_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
     issue_status_parser = subparsers.add_parser("issue_status", help="ステータス一覧")
-    issue_status_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    issue_status_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
     ip_parser = subparsers.add_parser("issue_priority", help="優先度一覧")
     ip_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     tea_parser = subparsers.add_parser("time_entry_activity", help="作業分類一覧")
-    tea_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    tea_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
     dc_parser = subparsers.add_parser("document_category", help="文書カテゴリ一覧")
     dc_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     role_parser = subparsers.add_parser("role", help="ロール一覧")
-    role_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    role_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
     query_parser = subparsers.add_parser("query", help="カスタムクエリ一覧")
-    query_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    query_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
     time_entry_parser = subparsers.add_parser("time_entry", help="作業時間一覧")
     time_entry_parser.add_argument("--project_id", "-p", help="プロジェクトID")
-    time_entry_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    time_entry_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
     args = parser.parse_args()
 
     if args.command in ("project", "p"):
@@ -114,7 +126,11 @@ def main() -> None:
         elif args.issue_id:
             read_issue(args.issue_id, full=args.full)
         else:
-            list_issues(fixed_version_id=args.version, assigned_to=args.assigned_to, full=args.full)
+            list_issues(
+                fixed_version_id=args.version,
+                assigned_to=args.assigned_to,
+                full=args.full,
+            )
     elif args.command in ("version", "v"):
         project_id = args.project_id or default_project_id
         if not project_id:
