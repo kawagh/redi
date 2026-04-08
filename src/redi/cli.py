@@ -65,7 +65,8 @@ def main() -> None:
     c_parser.add_argument("--project_id", help="デフォルトプロジェクトIDを設定")
     u_parser = subparsers.add_parser("user", aliases=["u"], help="ユーザー一覧")
     u_parser.add_argument("--project_id", "-p", help="プロジェクトID")
-    subparsers.add_parser("tracker", help="トラッカー一覧")
+    tracker_parser = subparsers.add_parser("tracker", help="トラッカー一覧")
+    tracker_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     args = parser.parse_args()
 
     if args.command in ("project", "p"):
@@ -112,6 +113,6 @@ def main() -> None:
         project_id = args.project_id or default_project_id
         list_users(project_id=project_id)
     elif args.command == "tracker":
-        list_trackers()
+        list_trackers(full=args.full)
     else:
         parser.print_help()
