@@ -5,7 +5,7 @@ import requests
 from redi.config import redmine_api_key, redmine_url
 
 
-def list_tickets(
+def list_issues(
     fixed_version_id: str | None = None,
     assigned_to: str | None = None,
     full: bool = False,
@@ -28,9 +28,9 @@ def list_tickets(
             print(f"{ticket['id']} {ticket['subject']}")
 
 
-def read_ticket(ticket_id: str, full: bool = False) -> None:
+def read_issue(issue_id: str, full: bool = False) -> None:
     response = requests.get(
-        f"{redmine_url}/issues/{ticket_id}.json",
+        f"{redmine_url}/issues/{issue_id}.json",
         headers={"X-Redmine-API-Key": redmine_api_key},
     )
     ticket = response.json()["issue"]
@@ -47,9 +47,9 @@ def read_ticket(ticket_id: str, full: bool = False) -> None:
         print("\n".join(lines))
 
 
-def add_note(ticket_id: str, notes: str) -> None:
+def add_note(issue_id: str, notes: str) -> None:
     response = requests.put(
-        f"{redmine_url}/issues/{ticket_id}.json",
+        f"{redmine_url}/issues/{issue_id}.json",
         headers={
             "X-Redmine-API-Key": redmine_api_key,
             "Content-Type": "application/json",
@@ -57,4 +57,4 @@ def add_note(ticket_id: str, notes: str) -> None:
         json={"issue": {"notes": notes}},
     )
     response.raise_for_status()
-    print(f"コメントを追加しました: #{ticket_id}")
+    print(f"コメントを追加しました: #{issue_id}")

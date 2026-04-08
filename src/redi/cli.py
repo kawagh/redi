@@ -15,7 +15,7 @@ from redi.project import list_projects, read_project
 from redi.query import list_queries
 from redi.role import list_roles
 from redi.time_entry import list_time_entries
-from redi.ticket import add_note, list_tickets, read_ticket
+from redi.issue import add_note, list_issues, read_issue
 from redi.tracker import list_trackers
 from redi.user import list_users
 from redi.version import list_versions
@@ -45,28 +45,28 @@ def main() -> None:
     )
     p_parser.add_argument("project_id", nargs="?", help="プロジェクトID")
     p_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
-    t_parser = subparsers.add_parser(
-        "ticket", aliases=["t"], help="チケット一覧/詳細/コメント"
+    i_parser = subparsers.add_parser(
+        "issue", aliases=["i"], help="チケット一覧/詳細/コメント"
     )
-    t_parser.add_argument("ticket_id", nargs="?", help="チケットID")
-    t_parser.add_argument(
+    i_parser.add_argument("issue_id", nargs="?", help="チケットID")
+    i_parser.add_argument(
         "--notes",
         nargs="?",
         const="",
         default=None,
         help="チケットにコメントを追加（値省略でエディタ起動）",
     )
-    t_parser.add_argument(
+    i_parser.add_argument(
         "--version",
         "-v",
         help="対象バージョンIDでフィルタリング",
     )
-    t_parser.add_argument(
+    i_parser.add_argument(
         "--assigned_to",
         "-a",
         help="担当者でフィルタリング（ユーザーIDまたは'me'）",
     )
-    t_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    i_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     v_parser = subparsers.add_parser("version", aliases=["v"], help="バージョン一覧")
     v_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     w_parser = subparsers.add_parser("wiki", aliases=["w"], help="Wiki一覧/詳細")
@@ -101,20 +101,20 @@ def main() -> None:
             read_project(args.project_id)
         else:
             list_projects(full=args.full)
-    elif args.command in ("ticket", "t"):
-        if args.ticket_id and args.notes is not None:
+    elif args.command in ("issue", "i"):
+        if args.issue_id and args.notes is not None:
             if args.notes:
-                add_note(args.ticket_id, args.notes)
+                add_note(args.issue_id, args.notes)
             else:
                 notes = open_editor()
                 if notes:
-                    add_note(args.ticket_id, notes)
+                    add_note(args.issue_id, notes)
                 else:
                     print("コメントが空のためキャンセルしました")
-        elif args.ticket_id:
-            read_ticket(args.ticket_id, full=args.full)
+        elif args.issue_id:
+            read_issue(args.issue_id, full=args.full)
         else:
-            list_tickets(fixed_version_id=args.version, assigned_to=args.assigned_to, full=args.full)
+            list_issues(fixed_version_id=args.version, assigned_to=args.assigned_to, full=args.full)
     elif args.command in ("version", "v"):
         project_id = args.project_id or default_project_id
         if not project_id:
