@@ -5,6 +5,7 @@ import tempfile
 from importlib.metadata import version
 
 from redi.config import default_project_id, update_config
+from redi.issue_status import list_issue_statuses
 from redi.project import list_projects, read_project
 from redi.ticket import add_note, list_tickets, read_ticket
 from redi.tracker import list_trackers
@@ -67,6 +68,8 @@ def main() -> None:
     u_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     tracker_parser = subparsers.add_parser("tracker", help="トラッカー一覧")
     tracker_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    issue_status_parser = subparsers.add_parser("issue_status", help="ステータス一覧")
+    issue_status_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     args = parser.parse_args()
 
     if args.command in ("project", "p"):
@@ -114,5 +117,7 @@ def main() -> None:
         list_users(project_id=project_id)
     elif args.command == "tracker":
         list_trackers(full=args.full)
+    elif args.command == "issue_status":
+        list_issue_statuses(full=args.full)
     else:
         parser.print_help()
