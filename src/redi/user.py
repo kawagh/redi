@@ -1,9 +1,11 @@
+import json
+
 import requests
 
 from redi.config import redmine_api_key, redmine_url
 
 
-def list_users(project_id: str | None = None) -> None:
+def list_users(project_id: str | None = None, full: bool = False) -> None:
     if project_id:
         response = requests.get(
             f"{redmine_url}/projects/{project_id}/memberships.json",
@@ -11,10 +13,13 @@ def list_users(project_id: str | None = None) -> None:
         )
         response.raise_for_status()
         memberships = response.json()["memberships"]
-        for m in memberships:
-            if "user" in m:
-                user = m["user"]
-                print(f"{user['id']} {user['name']}")
+        if full:
+            print(json.dumps(memberships, ensure_ascii=False))
+        else:
+            for m in memberships:
+                if "user" in m:
+                    user = m["user"]
+                    print(f"{user['id']} {user['name']}")
     else:
         response = requests.get(
             f"{redmine_url}/users.json",
@@ -27,5 +32,8 @@ def list_users(project_id: str | None = None) -> None:
         # 未知のステータスコードに遭遇した際にエラーをraiseする(jsonのdecodeエラーよりは原因がわかりやすい)
         response.raise_for_status()
         users = response.json()["users"]
-        for user in users:
-            print(f"{user['id']} {user['login']} ({user['firstname']} {user['lastname']})")
+        if full:
+            print(json.dumps(users, ensure_ascii=False))
+        else:
+            for user in users:
+                print(f"{user['id']} {user['login']}")

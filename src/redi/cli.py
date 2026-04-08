@@ -74,6 +74,7 @@ def main() -> None:
     c_parser.add_argument("--project_id", help="デフォルトプロジェクトIDを設定")
     u_parser = subparsers.add_parser("user", aliases=["u"], help="ユーザー一覧")
     u_parser.add_argument("--project_id", "-p", help="プロジェクトID")
+    u_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     tracker_parser = subparsers.add_parser("tracker", help="トラッカー一覧")
     tracker_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     issue_status_parser = subparsers.add_parser("issue_status", help="ステータス一覧")
@@ -135,7 +136,7 @@ def main() -> None:
             print("更新する設定を指定してください (例: --project_id)")
     elif args.command in ("user", "u"):
         project_id = args.project_id or default_project_id
-        list_users(project_id=project_id)
+        list_users(project_id=project_id, full=args.full)
     elif args.command == "tracker":
         list_trackers(full=args.full)
     elif args.command == "issue_status":
