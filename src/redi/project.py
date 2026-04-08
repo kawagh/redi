@@ -1,16 +1,21 @@
+import json
+
 import requests
 
 from redi.config import redmine_api_key, redmine_url
 
 
-def list_projects() -> None:
+def list_projects(full: bool = False) -> None:
     response = requests.get(
         f"{redmine_url}/projects.json",
         headers={"X-Redmine-API-Key": redmine_api_key},
     )
     projects = response.json()["projects"]
-    for project in projects:
-        print(f"{project['id']} {project['name']}")
+    if full:
+        print(json.dumps(projects, ensure_ascii=False))
+    else:
+        for project in projects:
+            print(f"{project['id']} {project['name']}")
 
 
 def read_project(project_id: str) -> None:
@@ -19,4 +24,4 @@ def read_project(project_id: str) -> None:
         headers={"X-Redmine-API-Key": redmine_api_key},
     )
     project = response.json()["project"]
-    print(project)
+    print(json.dumps(project, ensure_ascii=False, indent=2))

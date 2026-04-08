@@ -44,6 +44,7 @@ def main() -> None:
         "project", aliases=["p"], help="プロジェクト一覧/詳細"
     )
     p_parser.add_argument("project_id", nargs="?", help="プロジェクトID")
+    p_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     t_parser = subparsers.add_parser(
         "ticket", aliases=["t"], help="チケット一覧/詳細/コメント"
     )
@@ -98,7 +99,7 @@ def main() -> None:
         if args.project_id:
             read_project(args.project_id)
         else:
-            list_projects()
+            list_projects(full=args.full)
     elif args.command in ("ticket", "t"):
         if args.ticket_id and args.notes is not None:
             if args.notes:
