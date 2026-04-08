@@ -46,16 +46,9 @@ def main() -> None:
     p_parser.add_argument("project_id", nargs="?", help="プロジェクトID")
     p_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     i_parser = subparsers.add_parser(
-        "issue", aliases=["i"], help="イシュー一覧/詳細/コメント"
+        "issue", aliases=["i"], help="イシュー一覧/詳細/作成/コメント"
     )
-    i_parser.add_argument("issue_id", nargs="?", help="イシューID")
-    i_parser.add_argument(
-        "--notes",
-        nargs="?",
-        const="",
-        default=None,
-        help="イシューにコメントを追加（値省略でエディタ起動）",
-    )
+    i_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     i_parser.add_argument(
         "--version",
         "-v",
@@ -66,7 +59,14 @@ def main() -> None:
         "-a",
         help="担当者でフィルタリング（ユーザーIDまたは'me'）",
     )
-    i_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    i_subparsers = i_parser.add_subparsers(dest="issue_command")
+    i_view_parser = i_subparsers.add_parser("view", help="イシュー詳細")
+    i_view_parser.add_argument("issue_id", help="イシューID")
+    i_comment_parser = i_subparsers.add_parser("comment", help="イシューにコメント追加")
+    i_comment_parser.add_argument("issue_id", help="イシューID")
+    i_comment_parser.add_argument(
+        "notes", nargs="?", default="", help="コメント（省略でエディタ起動）"
+    )
     v_parser = subparsers.add_parser("version", aliases=["v"], help="バージョン一覧")
     v_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     w_parser = subparsers.add_parser("wiki", aliases=["w"], help="Wiki一覧/詳細/作成")
@@ -121,7 +121,9 @@ def main() -> None:
         else:
             list_projects(full=args.full)
     elif args.command in ("issue", "i"):
-        if args.issue_id and args.notes is not None:
+        if args.issue_command == "view":
+            read_issue(args.issue_id, full=args.full)
+        elif args.issue_command == "comment":
             if args.notes:
                 add_note(args.issue_id, args.notes)
             else:
@@ -130,8 +132,6 @@ def main() -> None:
                     add_note(args.issue_id, notes)
                 else:
                     print("コメントが空のためキャンセルしました")
-        elif args.issue_id:
-            read_issue(args.issue_id, full=args.full)
         else:
             list_issues(
                 fixed_version_id=args.version,
