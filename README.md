@@ -69,7 +69,7 @@ default_project_id = "1"
     ```
 - list wiki
     ```sh
-    redi wiki --p <project_id> # you can get version from `redi p`
+    redi wiki -p <project_id> # you can get version from `redi p`
     ```
 
 - ...
