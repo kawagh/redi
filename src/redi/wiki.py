@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 
 import requests
@@ -36,3 +37,34 @@ def read_wiki(project_id: str, page_title: str) -> None:
     )
     wiki = response.json()["wiki_page"]
     print(wiki)
+
+
+def create_wiki(
+    project_id: str,
+    page_title: str,
+    text: str,
+    parent_title: str,
+) -> None:
+    exists = (
+        requests.get(
+            f"{redmine_url}/projects/{project_id}/wiki/{page_title}.json",
+            headers={"X-Redmine-API-Key": redmine_api_key},
+        ).status_code
+        == 200
+    )
+
+    body: dict = {"text": text, "parent_title": parent_title}
+    response = requests.put(
+        f"{redmine_url}/projects/{project_id}/wiki/{page_title}.json",
+        headers={
+            "X-Redmine-API-Key": redmine_api_key,
+            "Content-Type": "application/json",
+        },
+        json={"wiki_page": body},
+    )
+    response.raise_for_status()
+    url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
+    if exists:
+        print(f"Wikiページを更新しました: {url}")
+    else:
+        print(f"Wikiページを作成しました: {url}")

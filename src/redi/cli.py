@@ -19,7 +19,7 @@ from redi.issue import add_note, list_issues, read_issue
 from redi.tracker import list_trackers
 from redi.user import list_users
 from redi.version import list_versions
-from redi.wiki import list_wikis, read_wiki
+from redi.wiki import create_wiki, list_wikis, read_wiki
 
 
 def open_editor() -> str:
@@ -69,9 +69,16 @@ def main() -> None:
     i_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     v_parser = subparsers.add_parser("version", aliases=["v"], help="バージョン一覧")
     v_parser.add_argument("--project_id", "-p", help="プロジェクトID")
-    w_parser = subparsers.add_parser("wiki", aliases=["w"], help="Wiki一覧/詳細")
+    w_parser = subparsers.add_parser("wiki", aliases=["w"], help="Wiki一覧/詳細/作成")
     w_parser.add_argument("--project_id", "-p", help="プロジェクトID")
-    w_parser.add_argument("page_title", nargs="?", help="Wikiページタイトル")
+    w_subparsers = w_parser.add_subparsers(dest="wiki_command")
+    w_view_parser = w_subparsers.add_parser("view", help="Wikiページ詳細")
+    w_view_parser.add_argument("page_title", help="Wikiページタイトル")
+    w_create_parser = w_subparsers.add_parser("create", help="Wikiページ作成")
+    w_create_parser.add_argument("page_title", help="Wikiページタイトル")
+    w_create_parser.add_argument(
+        "--parent_title", required=True, help="親ページタイトル"
+    )
     c_parser = subparsers.add_parser("config", aliases=["c"], help="設定更新")
     c_parser.add_argument("--project_id", help="デフォルトプロジェクトIDを設定")
     u_parser = subparsers.add_parser("user", aliases=["u"], help="ユーザー一覧")
@@ -142,8 +149,16 @@ def main() -> None:
         if not project_id:
             print("project_idを指定するか、default_project_idを設定してください")
             exit(1)
-        if args.page_title:
+        if args.wiki_command == "view":
             read_wiki(project_id, args.page_title)
+        elif args.wiki_command == "create":
+            text = open_editor()
+            if text:
+                create_wiki(
+                    project_id, args.page_title, text, parent_title=args.parent_title
+                )
+            else:
+                print("テキストが空のためキャンセルしました")
         else:
             list_wikis(project_id)
     elif args.command in ("config", "c"):
