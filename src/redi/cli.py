@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 from importlib.metadata import version
 
-from redi.config import default_project_id, update_config
+from redi.config import default_project_id, editor, update_config
 from redi.enumeration import (
     list_document_categories,
     list_issue_priorities,
@@ -23,7 +23,6 @@ from redi.wiki import create_wiki, list_wikis, read_wiki
 
 
 def open_editor() -> str:
-    editor = os.environ.get("REDI_EDITOR", "nvim")
     with tempfile.NamedTemporaryFile(suffix=".md", mode="w+", delete=False) as f:
         tmp_path = f.name
     try:
@@ -81,6 +80,7 @@ def main() -> None:
     )
     c_parser = subparsers.add_parser("config", aliases=["c"], help="設定更新")
     c_parser.add_argument("--project_id", help="デフォルトプロジェクトIDを設定")
+    c_parser.add_argument("--editor", help="エディタを設定")
     u_parser = subparsers.add_parser("user", aliases=["u"], help="ユーザー一覧")
     u_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     u_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
@@ -162,11 +162,17 @@ def main() -> None:
         else:
             list_wikis(project_id)
     elif args.command in ("config", "c"):
+        updated = False
         if args.project_id:
             update_config("default_project_id", args.project_id)
             print(f"default_project_idを {args.project_id} に設定しました")
-        else:
-            print("更新する設定を指定してください (例: --project_id)")
+            updated = True
+        if args.editor:
+            update_config("editor", args.editor)
+            print(f"editorを {args.editor} に設定しました")
+            updated = True
+        if not updated:
+            print("更新する設定を指定してください (例: --project_id, --editor)")
     elif args.command in ("user", "u"):
         project_id = args.project_id or default_project_id
         list_users(project_id=project_id, full=args.full)
