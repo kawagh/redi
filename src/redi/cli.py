@@ -66,6 +66,7 @@ def main() -> None:
         "-a",
         help="担当者でフィルタリング（ユーザーIDまたは'me'）",
     )
+    t_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     v_parser = subparsers.add_parser("version", aliases=["v"], help="バージョン一覧")
     v_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     w_parser = subparsers.add_parser("wiki", aliases=["w"], help="Wiki一覧/詳細")
@@ -111,9 +112,9 @@ def main() -> None:
                 else:
                     print("コメントが空のためキャンセルしました")
         elif args.ticket_id:
-            read_ticket(args.ticket_id)
+            read_ticket(args.ticket_id, full=args.full)
         else:
-            list_tickets(fixed_version_id=args.version, assigned_to=args.assigned_to)
+            list_tickets(fixed_version_id=args.version, assigned_to=args.assigned_to, full=args.full)
     elif args.command in ("version", "v"):
         project_id = args.project_id or default_project_id
         if not project_id:
