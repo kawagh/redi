@@ -14,6 +14,7 @@ from redi.issue_status import list_issue_statuses
 from redi.project import list_projects, read_project
 from redi.query import list_queries
 from redi.role import list_roles
+from redi.time_entry import list_time_entries
 from redi.ticket import add_note, list_tickets, read_ticket
 from redi.tracker import list_trackers
 from redi.user import list_users
@@ -87,6 +88,9 @@ def main() -> None:
     role_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     query_parser = subparsers.add_parser("query", help="カスタムクエリ一覧")
     query_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    time_entry_parser = subparsers.add_parser("time_entry", help="作業時間一覧")
+    time_entry_parser.add_argument("--project_id", "-p", help="プロジェクトID")
+    time_entry_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     args = parser.parse_args()
 
     if args.command in ("project", "p"):
@@ -146,5 +150,8 @@ def main() -> None:
         list_roles(full=args.full)
     elif args.command == "query":
         list_queries(full=args.full)
+    elif args.command == "time_entry":
+        project_id = args.project_id or default_project_id
+        list_time_entries(project_id=project_id, full=args.full)
     else:
         parser.print_help()
