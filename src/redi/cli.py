@@ -5,6 +5,11 @@ import tempfile
 from importlib.metadata import version
 
 from redi.config import default_project_id, update_config
+from redi.enumeration import (
+    list_document_categories,
+    list_issue_priorities,
+    list_time_entry_activities,
+)
 from redi.issue_status import list_issue_statuses
 from redi.project import list_projects, read_project
 from redi.ticket import add_note, list_tickets, read_ticket
@@ -70,6 +75,12 @@ def main() -> None:
     tracker_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     issue_status_parser = subparsers.add_parser("issue_status", help="ステータス一覧")
     issue_status_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    ip_parser = subparsers.add_parser("issue_priority", help="優先度一覧")
+    ip_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    tea_parser = subparsers.add_parser("time_entry_activity", help="作業分類一覧")
+    tea_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    dc_parser = subparsers.add_parser("document_category", help="文書カテゴリ一覧")
+    dc_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     args = parser.parse_args()
 
     if args.command in ("project", "p"):
@@ -119,5 +130,11 @@ def main() -> None:
         list_trackers(full=args.full)
     elif args.command == "issue_status":
         list_issue_statuses(full=args.full)
+    elif args.command == "issue_priority":
+        list_issue_priorities(full=args.full)
+    elif args.command == "time_entry_activity":
+        list_time_entry_activities(full=args.full)
+    elif args.command == "document_category":
+        list_document_categories(full=args.full)
     else:
         parser.print_help()
