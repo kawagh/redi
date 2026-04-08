@@ -57,4 +57,16 @@ def add_note(issue_id: str, notes: str) -> None:
         json={"issue": {"notes": notes}},
     )
     response.raise_for_status()
-    print(f"コメントを追加しました: #{issue_id}")
+    # コメント後にイシューのジャーナル(プロパティ変更履歴やコメント)を取得して最新のjournal IDを得る
+    issue_response = requests.get(
+        f"{redmine_url}/issues/{issue_id}.json?include=journals",
+        headers={"X-Redmine-API-Key": redmine_api_key},
+    )
+    issue_response.raise_for_status()
+    journals = issue_response.json()["issue"].get("journals", [])
+    if journals:
+        note_number = len(journals)
+        url = f"{redmine_url}/issues/{issue_id}#note-{note_number}"
+    else:
+        url = f"{redmine_url}/issues/{issue_id}"
+    print(f"コメントを追加しました: {url}")
