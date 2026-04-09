@@ -76,7 +76,9 @@ def main() -> None:
     i_subparsers = i_parser.add_subparsers(dest="issue_command")
     i_view_parser = i_subparsers.add_parser("view", help="イシュー詳細")
     i_view_parser.add_argument("issue_id", help="イシューID")
-    i_view_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    i_view_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
     i_create_parser = i_subparsers.add_parser("create", help="イシュー作成")
     i_create_parser.add_argument("subject", help="イシューの題名")
     i_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
@@ -217,7 +219,9 @@ def main() -> None:
     elif args.command in ("wiki", "w"):
         project_id = args.project_id or wiki_project_id or default_project_id
         if not project_id:
-            print("project_idを指定するか、wiki_project_idまたはdefault_project_idを設定してください")
+            print(
+                "project_idを指定するか、wiki_project_idまたはdefault_project_idを設定してください"
+            )
             exit(1)
         if args.wiki_command == "view":
             read_wiki(project_id, args.page_title)

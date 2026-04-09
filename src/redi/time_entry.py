@@ -20,4 +20,6 @@ def list_time_entries(project_id: str | None = None, full: bool = False) -> None
         print(json.dumps(time_entries, ensure_ascii=False))
     else:
         for te in time_entries:
-            print(f"{te['id']} {te['hours']}h {te['activity']['name']} ({te['spent_on']})")
+            print(
+                f"{te['id']} {te['hours']}h {te['activity']['name']} ({te['spent_on']})"
+            )
