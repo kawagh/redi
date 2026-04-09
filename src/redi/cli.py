@@ -70,6 +70,10 @@ def main() -> None:
     i_update_parser = i_subparsers.add_parser("update", help="イシュー更新")
     i_update_parser.add_argument("issue_id", help="イシューID")
     i_update_parser.add_argument("--subject", "-s", help="題名")
+    i_update_parser.add_argument(
+        "--description", "-d", nargs="?", const="", default=None,
+        help="説明（値省略でエディタ起動）",
+    )
     i_update_parser.add_argument("--tracker_id", "-t", help="トラッカーID")
     i_update_parser.add_argument("--status_id", help="ステータスID")
     i_update_parser.add_argument("--priority_id", help="優先度ID")
@@ -153,9 +157,13 @@ def main() -> None:
                 assigned_to_id=args.assigned_to_id,
             )
         elif args.issue_command == "update":
+            description = args.description
+            if description is not None and description == "":
+                description = open_editor()
             update_issue(
                 issue_id=args.issue_id,
                 subject=args.subject,
+                description=description,
                 tracker_id=args.tracker_id,
                 status_id=args.status_id,
                 priority_id=args.priority_id,
