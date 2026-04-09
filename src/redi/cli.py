@@ -15,7 +15,7 @@ from redi.project import list_projects, read_project
 from redi.query import list_queries
 from redi.role import list_roles
 from redi.time_entry import list_time_entries
-from redi.issue import add_note, list_issues, read_issue
+from redi.issue import add_note, create_issue, list_issues, read_issue
 from redi.tracker import list_trackers
 from redi.user import list_users
 from redi.version import list_versions
@@ -61,6 +61,12 @@ def main() -> None:
     i_subparsers = i_parser.add_subparsers(dest="issue_command")
     i_view_parser = i_subparsers.add_parser("view", help="イシュー詳細")
     i_view_parser.add_argument("issue_id", help="イシューID")
+    i_create_parser = i_subparsers.add_parser("create", help="イシュー作成")
+    i_create_parser.add_argument("subject", help="イシューの題名")
+    i_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
+    i_create_parser.add_argument("--tracker_id", "-t", help="トラッカーID")
+    i_create_parser.add_argument("--priority_id", help="優先度ID")
+    i_create_parser.add_argument("--assigned_to_id", "-a", help="担当者ID")
     i_comment_parser = i_subparsers.add_parser("comment", help="イシューにコメント追加")
     i_comment_parser.add_argument("issue_id", help="イシューID")
     i_comment_parser.add_argument(
@@ -123,6 +129,20 @@ def main() -> None:
     elif args.command in ("issue", "i"):
         if args.issue_command == "view":
             read_issue(args.issue_id, full=args.full)
+        elif args.issue_command == "create":
+            project_id = args.project_id or default_project_id
+            if not project_id:
+                print("project_idを指定するか、default_project_idを設定してください")
+                exit(1)
+            description = open_editor()
+            create_issue(
+                project_id=project_id,
+                subject=args.subject,
+                description=description,
+                tracker_id=args.tracker_id,
+                priority_id=args.priority_id,
+                assigned_to_id=args.assigned_to_id,
+            )
         elif args.issue_command == "comment":
             if args.notes:
                 add_note(args.issue_id, args.notes)

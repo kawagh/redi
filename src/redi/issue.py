@@ -47,6 +47,46 @@ def read_issue(issue_id: str, full: bool = False) -> None:
         print("\n".join(lines))
 
 
+def create_issue(
+    project_id: str,
+    subject: str,
+    description: str = "",
+    tracker_id: str | None = None,
+    priority_id: str | None = None,
+    assigned_to_id: str | None = None,
+) -> None:
+    issue_data: dict = {
+        "project_id": project_id,
+        "subject": subject,
+    }
+    if description:
+        issue_data["description"] = description
+    if tracker_id:
+        issue_data["tracker_id"] = tracker_id
+    if priority_id:
+        issue_data["priority_id"] = priority_id
+    if assigned_to_id:
+        issue_data["assigned_to_id"] = assigned_to_id
+    response = requests.post(
+        f"{redmine_url}/issues.json",
+        headers={
+            "X-Redmine-API-Key": redmine_api_key,
+            "Content-Type": "application/json",
+        },
+        json={"issue": issue_data},
+    )
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("イシューの作成に失敗しました")
+        exit(1)
+    created = response.json()["issue"]
+    url = f"{redmine_url}/issues/{created['id']}"
+    print(f"イシューを作成しました: {url}")
+
+
 def add_note(issue_id: str, notes: str) -> None:
     response = requests.put(
         f"{redmine_url}/issues/{issue_id}.json",
