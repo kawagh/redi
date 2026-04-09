@@ -4,7 +4,13 @@ import subprocess
 import tempfile
 from importlib.metadata import version
 
-from redi.config import default_project_id, editor, show_config, update_config
+from redi.config import (
+    default_project_id,
+    editor,
+    show_config,
+    update_config,
+    wiki_project_id,
+)
 from redi.enumeration import (
     list_document_categories,
     list_issue_priorities,
@@ -113,6 +119,7 @@ def main() -> None:
     )
     c_parser = subparsers.add_parser("config", aliases=["c"], help="設定更新")
     c_parser.add_argument("--project_id", help="デフォルトプロジェクトIDを設定")
+    c_parser.add_argument("--wiki_project_id", help="Wiki用プロジェクトIDを設定")
     c_parser.add_argument("--editor", help="エディタを設定")
     u_parser = subparsers.add_parser("user", aliases=["u"], help="ユーザー一覧")
     u_parser.add_argument("--project_id", "-p", help="プロジェクトID")
@@ -208,9 +215,9 @@ def main() -> None:
             exit(1)
         list_versions(project_id)
     elif args.command in ("wiki", "w"):
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or wiki_project_id or default_project_id
         if not project_id:
-            print("project_idを指定するか、default_project_idを設定してください")
+            print("project_idを指定するか、wiki_project_idまたはdefault_project_idを設定してください")
             exit(1)
         if args.wiki_command == "view":
             read_wiki(project_id, args.page_title)
@@ -229,6 +236,10 @@ def main() -> None:
         if args.project_id:
             update_config("default_project_id", args.project_id)
             print(f"default_project_idを {args.project_id} に設定しました")
+            updated = True
+        if args.wiki_project_id:
+            update_config("wiki_project_id", args.wiki_project_id)
+            print(f"wiki_project_idを {args.wiki_project_id} に設定しました")
             updated = True
         if args.editor:
             update_config("editor", args.editor)

@@ -19,6 +19,7 @@ _config = load_toml_config()
 redmine_url = os.environ.get("REDMINE_URL") or _config.get("redmine_url")
 redmine_api_key = os.environ.get("REDMINE_API_KEY") or _config.get("redmine_api_key")
 default_project_id: str | None = _config.get("default_project_id")
+wiki_project_id: str | None = _config.get("wiki_project_id")
 editor: str = os.environ.get("REDI_EDITOR") or _config.get("editor", "vim")
 
 if not redmine_url:
@@ -46,6 +47,7 @@ def show_config() -> None:
         "redmine_url": redmine_url,
         "redmine_api_key": redmine_api_key,
         "default_project_id": default_project_id,
+        "wiki_project_id": wiki_project_id,
         "editor": editor,
     }
     for key, value in effective_config.items():
