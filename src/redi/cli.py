@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 from importlib.metadata import version
 
-from redi.config import default_project_id, editor, update_config
+from redi.config import default_project_id, editor, show_config, update_config
 from redi.enumeration import (
     list_document_categories,
     list_issue_priorities,
@@ -235,7 +235,7 @@ def main() -> None:
             print(f"editorを {args.editor} に設定しました")
             updated = True
         if not updated:
-            print("更新する設定を指定してください (例: --project_id, --editor)")
+            show_config()
     elif args.command in ("user", "u"):
         project_id = args.project_id or default_project_id
         list_users(project_id=project_id, full=args.full)
