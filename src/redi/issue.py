@@ -28,17 +28,21 @@ def list_issues(
             print(f"{ticket['id']} {ticket['subject']}")
 
 
-def fetch_issue(issue_id: str) -> dict:
+def fetch_issue(issue_id: str, include: str = "") -> dict:
+    params = {}
+    if include:
+        params["include"] = include
     response = requests.get(
         f"{redmine_url}/issues/{issue_id}.json",
         headers={"X-Redmine-API-Key": redmine_api_key},
+        params=params,
     )
     response.raise_for_status()
     return response.json()["issue"]
 
 
 def read_issue(issue_id: str, full: bool = False) -> None:
-    ticket = fetch_issue(issue_id)
+    ticket = fetch_issue(issue_id, include="journals" if full else "")
 
     if full:
         print(json.dumps(ticket, ensure_ascii=False))
