@@ -120,6 +120,9 @@ def update_issue(
         issue_data["fixed_version_id"] = fixed_version_id
     if notes:
         issue_data["notes"] = notes
+    if len(issue_data) == 0:
+        print("更新をキャンセルしました")
+        exit()
     response = requests.put(
         f"{redmine_url}/issues/{issue_id}.json",
         headers={
