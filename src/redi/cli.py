@@ -15,7 +15,7 @@ from redi.project import list_projects, read_project
 from redi.query import list_queries
 from redi.role import list_roles
 from redi.time_entry import list_time_entries
-from redi.issue import add_note, create_issue, list_issues, read_issue
+from redi.issue import add_note, create_issue, list_issues, read_issue, update_issue
 from redi.tracker import list_trackers
 from redi.user import list_users
 from redi.version import list_versions
@@ -67,6 +67,15 @@ def main() -> None:
     i_create_parser.add_argument("--tracker_id", "-t", help="トラッカーID")
     i_create_parser.add_argument("--priority_id", help="優先度ID")
     i_create_parser.add_argument("--assigned_to_id", "-a", help="担当者ID")
+    i_update_parser = i_subparsers.add_parser("update", help="イシュー更新")
+    i_update_parser.add_argument("issue_id", help="イシューID")
+    i_update_parser.add_argument("--subject", "-s", help="題名")
+    i_update_parser.add_argument("--tracker_id", "-t", help="トラッカーID")
+    i_update_parser.add_argument("--status_id", help="ステータスID")
+    i_update_parser.add_argument("--priority_id", help="優先度ID")
+    i_update_parser.add_argument("--assigned_to_id", "-a", help="担当者ID")
+    i_update_parser.add_argument("--fixed_version_id", help="対象バージョンID")
+    i_update_parser.add_argument("--notes", "-n", help="コメント")
     i_comment_parser = i_subparsers.add_parser("comment", help="イシューにコメント追加")
     i_comment_parser.add_argument("issue_id", help="イシューID")
     i_comment_parser.add_argument(
@@ -142,6 +151,17 @@ def main() -> None:
                 tracker_id=args.tracker_id,
                 priority_id=args.priority_id,
                 assigned_to_id=args.assigned_to_id,
+            )
+        elif args.issue_command == "update":
+            update_issue(
+                issue_id=args.issue_id,
+                subject=args.subject,
+                tracker_id=args.tracker_id,
+                status_id=args.status_id,
+                priority_id=args.priority_id,
+                assigned_to_id=args.assigned_to_id,
+                fixed_version_id=args.fixed_version_id,
+                notes=args.notes or "",
             )
         elif args.issue_command == "comment":
             if args.notes:

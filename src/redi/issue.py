@@ -87,6 +87,53 @@ def create_issue(
     print(f"イシューを作成しました: {url}")
 
 
+def update_issue(
+    issue_id: str,
+    subject: str | None = None,
+    description: str | None = None,
+    tracker_id: str | None = None,
+    status_id: str | None = None,
+    priority_id: str | None = None,
+    assigned_to_id: str | None = None,
+    fixed_version_id: str | None = None,
+    notes: str = "",
+) -> None:
+    issue_data: dict = {}
+    if subject:
+        issue_data["subject"] = subject
+    if description is not None:
+        issue_data["description"] = description
+    if tracker_id:
+        issue_data["tracker_id"] = tracker_id
+    if status_id:
+        issue_data["status_id"] = status_id
+    if priority_id:
+        issue_data["priority_id"] = priority_id
+    if assigned_to_id:
+        issue_data["assigned_to_id"] = assigned_to_id
+    if fixed_version_id:
+        issue_data["fixed_version_id"] = fixed_version_id
+    if notes:
+        issue_data["notes"] = notes
+    response = requests.put(
+        f"{redmine_url}/issues/{issue_id}.json",
+        headers={
+            "X-Redmine-API-Key": redmine_api_key,
+            "Content-Type": "application/json",
+        },
+        json={"issue": issue_data},
+    )
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("イシューの更新に失敗しました")
+        exit(1)
+    url = f"{redmine_url}/issues/{issue_id}"
+    print(f"イシューを更新しました: {url}")
+
+
 def add_note(issue_id: str, notes: str) -> None:
     response = requests.put(
         f"{redmine_url}/issues/{issue_id}.json",
