@@ -15,15 +15,24 @@ from redi.project import list_projects, read_project
 from redi.query import list_queries
 from redi.role import list_roles
 from redi.time_entry import list_time_entries
-from redi.issue import add_note, create_issue, list_issues, read_issue, update_issue
+from redi.issue import (
+    add_note,
+    create_issue,
+    fetch_issue,
+    list_issues,
+    read_issue,
+    update_issue,
+)
 from redi.tracker import list_trackers
 from redi.user import list_users
 from redi.version import list_versions
 from redi.wiki import create_wiki, list_wikis, read_wiki
 
 
-def open_editor() -> str:
+def open_editor(initial_text: str = "") -> str:
     with tempfile.NamedTemporaryFile(suffix=".md", mode="w+", delete=False) as f:
+        if initial_text:
+            f.write(initial_text)
         tmp_path = f.name
     try:
         subprocess.run([editor, tmp_path], check=True)
@@ -71,7 +80,11 @@ def main() -> None:
     i_update_parser.add_argument("issue_id", help="イシューID")
     i_update_parser.add_argument("--subject", "-s", help="題名")
     i_update_parser.add_argument(
-        "--description", "-d", nargs="?", const="", default=None,
+        "--description",
+        "-d",
+        nargs="?",
+        const="",
+        default=None,
         help="説明（値省略でエディタ起動）",
     )
     i_update_parser.add_argument("--tracker_id", "-t", help="トラッカーID")
@@ -159,7 +172,8 @@ def main() -> None:
         elif args.issue_command == "update":
             description = args.description
             if description is not None and description == "":
-                description = open_editor()
+                current = fetch_issue(args.issue_id)
+                description = open_editor(current.get("description") or "")
             update_issue(
                 issue_id=args.issue_id,
                 subject=args.subject,
