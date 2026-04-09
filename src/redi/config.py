@@ -43,14 +43,9 @@ def update_config(key: str, value: str) -> None:
 
 
 def show_config() -> None:
-    effective_config = {
-        "redmine_url": redmine_url,
-        "redmine_api_key": redmine_api_key,
-        "default_project_id": default_project_id,
-        "wiki_project_id": wiki_project_id,
-        "editor": editor,
-    }
-    for key, value in effective_config.items():
-        if key == "redmine_api_key":
-            continue
-        print(f"{key} = {value}")
+    doc = tomlkit.document()
+    doc["redmine_url"] = redmine_url
+    doc["default_project_id"] = default_project_id or ""
+    doc["wiki_project_id"] = wiki_project_id or ""
+    doc["editor"] = editor
+    print(tomlkit.dumps(doc).rstrip())
