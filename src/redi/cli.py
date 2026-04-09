@@ -70,6 +70,7 @@ def main() -> None:
     i_subparsers = i_parser.add_subparsers(dest="issue_command")
     i_view_parser = i_subparsers.add_parser("view", help="イシュー詳細")
     i_view_parser.add_argument("issue_id", help="イシューID")
+    i_view_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     i_create_parser = i_subparsers.add_parser("create", help="イシュー作成")
     i_create_parser.add_argument("subject", help="イシューの題名")
     i_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
