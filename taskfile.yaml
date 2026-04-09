@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  default:
+    desc: list tasks
+    cmds:
+      - task --list-all --sort none
+
+  format:
+    desc: format
+    cmds:
+      - uv run ruff format
