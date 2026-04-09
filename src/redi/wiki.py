@@ -30,13 +30,32 @@ def list_wikis(project_id: str) -> None:
     print_tree(None)
 
 
-def read_wiki(project_id: str, page_title: str) -> None:
+def fetch_wiki(project_id: str, page_title: str) -> dict:
     response = requests.get(
         f"{redmine_url}/projects/{project_id}/wiki/{page_title}.json",
         headers={"X-Redmine-API-Key": redmine_api_key},
     )
-    wiki = response.json()["wiki_page"]
+    response.raise_for_status()
+    return response.json()["wiki_page"]
+
+
+def read_wiki(project_id: str, page_title: str) -> None:
+    wiki = fetch_wiki(project_id, page_title)
     print(wiki)
+
+
+def update_wiki(project_id: str, page_title: str, text: str) -> None:
+    response = requests.put(
+        f"{redmine_url}/projects/{project_id}/wiki/{page_title}.json",
+        headers={
+            "X-Redmine-API-Key": redmine_api_key,
+            "Content-Type": "application/json",
+        },
+        json={"wiki_page": {"text": text}},
+    )
+    response.raise_for_status()
+    url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
+    print(f"Wikiページを更新しました: {url}")
 
 
 def create_wiki(

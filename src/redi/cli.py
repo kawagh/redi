@@ -32,7 +32,7 @@ from redi.issue import (
 from redi.tracker import list_trackers
 from redi.user import list_users
 from redi.version import list_versions
-from redi.wiki import create_wiki, list_wikis, read_wiki
+from redi.wiki import create_wiki, fetch_wiki, list_wikis, read_wiki, update_wiki
 
 
 def open_editor(initial_text: str = "") -> str:
@@ -119,6 +119,8 @@ def main() -> None:
     w_create_parser.add_argument(
         "--parent_title", required=True, help="親ページタイトル"
     )
+    w_update_parser = w_subparsers.add_parser("update", help="Wikiページ更新")
+    w_update_parser.add_argument("page_title", help="Wikiページタイトル")
     c_parser = subparsers.add_parser("config", aliases=["c"], help="設定更新")
     c_parser.add_argument("--project_id", help="デフォルトプロジェクトIDを設定")
     c_parser.add_argument("--wiki_project_id", help="Wiki用プロジェクトIDを設定")
@@ -231,6 +233,13 @@ def main() -> None:
                 create_wiki(
                     project_id, args.page_title, text, parent_title=args.parent_title
                 )
+            else:
+                print("テキストが空のためキャンセルしました")
+        elif args.wiki_command == "update":
+            current = fetch_wiki(project_id, args.page_title)
+            text = open_editor(current.get("text") or "")
+            if text:
+                update_wiki(project_id, args.page_title, text)
             else:
                 print("テキストが空のためキャンセルしました")
         else:
