@@ -22,7 +22,7 @@ ov tool install -e .
 
 ### config
 
-以下のいずれかを設定する。
+To use redi, you need to set remdine url and redmine_api_key in one of below ways.
 
 #### environment variable
 
@@ -37,9 +37,10 @@ export REDMINE_API_KEY=yyy
 redmine_url = "xxx"
 redmine_api_key = "yyy"
 default_project_id = "1"
+wiki_project_id = "2"
 ```
 
-- `redi config --project_id 1` でdefault_project_idを1に変更できる
+- you can set default_project_id to 1 by `redi config --project_id 1`
 
 ### setup completion
 
