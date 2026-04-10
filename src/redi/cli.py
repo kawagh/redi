@@ -192,7 +192,7 @@ def main() -> None:
             update_issue(
                 issue_id=args.issue_id,
                 subject=args.subject,
-                description=description,
+                description=description if description else None,
                 tracker_id=args.tracker_id,
                 status_id=args.status_id,
                 priority_id=args.priority_id,
