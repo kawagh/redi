@@ -6,11 +6,14 @@ from redi.config import redmine_api_key, redmine_url
 
 
 def list_issues(
+    project_id: str | None = None,
     fixed_version_id: str | None = None,
     assigned_to: str | None = None,
     full: bool = False,
 ) -> None:
     params = {}
+    if project_id:
+        params["project_id"] = project_id
     if fixed_version_id:
         params["fixed_version_id"] = fixed_version_id
     if assigned_to:

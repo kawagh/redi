@@ -71,6 +71,7 @@ def main() -> None:
         "issue", aliases=["i"], help="イシュー一覧/詳細/作成/コメント"
     )
     i_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    i_parser.add_argument("--project_id", "-p", help="プロジェクトIDでフィルタリング")
     i_parser.add_argument(
         "--version",
         "-v",
@@ -217,6 +218,7 @@ def main() -> None:
                     print("コメントが空のためキャンセルしました")
         else:
             list_issues(
+                project_id=args.project_id or default_project_id,
                 fixed_version_id=args.version,
                 assigned_to=args.assigned_to,
                 full=args.full,
