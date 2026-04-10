@@ -43,7 +43,13 @@ def open_editor(initial_text: str = "") -> str:
             f.write(initial_text)
         tmp_path = f.name
     try:
-        subprocess.run([editor, tmp_path], check=True)
+        if editor == "code":
+            # wait to close file
+            editor_command = ["code", "--wait"]
+        else:
+            editor_command = [editor]
+
+        subprocess.run([*editor_command, tmp_path], check=True)
         with open(tmp_path) as f:
             return f.read().strip()
     finally:
