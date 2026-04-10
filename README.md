@@ -43,7 +43,7 @@ default_project_id = "1"
 
 ### setup completion
 
-```
+```sh
 uv tool install argcomplete
 echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
 ```
@@ -72,8 +72,9 @@ echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
 
 - create(update) wiki
     ```sh
-    redi wiki create <page_title --parent_title <parent_title>
+    redi wiki create <page_title> --parent_title <parent_title>
     ```
+
 - list wiki
     ```sh
     redi wiki -p <project_id> # you can get version from `redi p`
