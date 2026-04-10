@@ -164,6 +164,9 @@ def main() -> None:
     time_entry_parser = subparsers.add_parser("time_entry", help="作業時間一覧")
     time_entry_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     time_entry_parser.add_argument(
+        "--user_id", "-u", help="ユーザーIDでフィルタリング（'me'も可）"
+    )
+    time_entry_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
     argcomplete.autocomplete(parser)
@@ -290,6 +293,6 @@ def main() -> None:
         list_queries(full=args.full)
     elif args.command == "time_entry":
         project_id = args.project_id or default_project_id
-        list_time_entries(project_id=project_id, full=args.full)
+        list_time_entries(project_id=project_id, user_id=args.user_id, full=args.full)
     else:
         parser.print_help()
