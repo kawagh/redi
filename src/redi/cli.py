@@ -1,3 +1,5 @@
+# PYTHON_ARGCOMPLETE_OK
+import argcomplete
 import argparse
 import os
 import subprocess
@@ -157,6 +159,7 @@ def main() -> None:
     time_entry_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
+    argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
     if args.command in ("project", "p"):

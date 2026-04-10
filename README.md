@@ -41,6 +41,13 @@ default_project_id = "1"
 
 - `redi config --project_id 1` でdefault_project_idを1に変更できる
 
+### setup completion
+
+```
+uv tool install argparsecomplete
+echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
+```
+
 ## usage(example)
 
 - list projects
