@@ -44,7 +44,7 @@ default_project_id = "1"
 ### setup completion
 
 ```
-uv tool install argparsecomplete
+uv tool install argcomplete
 echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
 ```
 
