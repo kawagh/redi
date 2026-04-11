@@ -56,6 +56,46 @@ def create_project(
         exit(1)
 
 
+def update_project(
+    project_id: str,
+    name: str | None = None,
+    description: str | None = None,
+    is_public: bool | None = None,
+    parent_id: str | None = None,
+    tracker_ids: list[int] | None = None,
+) -> None:
+    data: dict = {}
+    if name is not None:
+        data["name"] = name
+    if description is not None:
+        data["description"] = description
+    if is_public is not None:
+        data["is_public"] = is_public
+    if parent_id is not None:
+        data["parent_id"] = parent_id
+    if tracker_ids is not None:
+        data["tracker_ids"] = tracker_ids
+    if len(data) == 0:
+        print("更新をキャンセルしました")
+        exit()
+    response = requests.put(
+        f"{redmine_url}/projects/{project_id}.json",
+        headers={
+            "X-Redmine-API-Key": redmine_api_key,
+            "Content-Type": "application/json",
+        },
+        json={"project": data},
+    )
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("プロジェクトの更新に失敗しました")
+        exit(1)
+    print(f"プロジェクトを更新しました: {project_id}")
+
+
 def read_project(project_id: str, include: str = "") -> None:
     params: dict = {}
     if include:

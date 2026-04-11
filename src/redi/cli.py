@@ -19,7 +19,7 @@ from redi.enumeration import (
     list_time_entry_activities,
 )
 from redi.issue_status import list_issue_statuses
-from redi.project import create_project, list_projects, read_project
+from redi.project import create_project, list_projects, read_project, update_project
 from redi.query import list_queries
 from redi.role import list_roles
 from redi.time_entry import list_time_entries
@@ -76,7 +76,9 @@ def main() -> None:
     )
     p_create_parser = p_subparsers.add_parser("create", help="プロジェクト作成")
     p_create_parser.add_argument("name", help="プロジェクト名")
-    p_create_parser.add_argument("identifier", help="プロジェクト識別子（英数字とハイフン）")
+    p_create_parser.add_argument(
+        "identifier", help="プロジェクト識別子（英数字とハイフン）"
+    )
     p_create_parser.add_argument("--description", "-d", help="説明")
     p_create_parser.add_argument(
         "--is_public",
@@ -85,6 +87,19 @@ def main() -> None:
     )
     p_create_parser.add_argument("--parent_id", help="親プロジェクトID")
     p_create_parser.add_argument(
+        "--tracker_ids", help="トラッカーID（カンマ区切り。例: 1,2,3）"
+    )
+    p_update_parser = p_subparsers.add_parser("update", help="プロジェクト更新")
+    p_update_parser.add_argument("project_id", help="プロジェクトID")
+    p_update_parser.add_argument("--name", "-n", help="プロジェクト名")
+    p_update_parser.add_argument("--description", "-d", help="説明")
+    p_update_parser.add_argument(
+        "--is_public",
+        choices=["true", "false"],
+        help="公開設定",
+    )
+    p_update_parser.add_argument("--parent_id", help="親プロジェクトID")
+    p_update_parser.add_argument(
         "--tracker_ids", help="トラッカーID（カンマ区切り。例: 1,2,3）"
     )
     i_parser = subparsers.add_parser(
@@ -229,9 +244,7 @@ def main() -> None:
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
     cf_parser = subparsers.add_parser("custom_field", help="カスタムフィールド一覧")
-    cf_parser.add_argument(
-        "--full", action="store_true", help="JSON形式で全情報を出力"
-    )
+    cf_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     time_entry_parser = subparsers.add_parser("time_entry", help="作業時間一覧")
     time_entry_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     time_entry_parser.add_argument(
@@ -256,6 +269,21 @@ def main() -> None:
             create_project(
                 name=args.name,
                 identifier=args.identifier,
+                description=args.description,
+                is_public=is_public,
+                parent_id=args.parent_id,
+                tracker_ids=tracker_ids,
+            )
+        elif args.project_command == "update":
+            is_public = None
+            if args.is_public is not None:
+                is_public = args.is_public == "true"
+            tracker_ids = None
+            if args.tracker_ids:
+                tracker_ids = [int(x) for x in args.tracker_ids.split(",")]
+            update_project(
+                project_id=args.project_id,
+                name=args.name,
                 description=args.description,
                 is_public=is_public,
                 parent_id=args.parent_id,
