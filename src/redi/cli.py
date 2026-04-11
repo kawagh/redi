@@ -100,6 +100,14 @@ def main() -> None:
     i_create_parser.add_argument("--priority_id", help="優先度ID")
     i_create_parser.add_argument("--assigned_to_id", "-a", help="担当者ID")
     i_create_parser.add_argument(
+        "--description",
+        "-d",
+        nargs="?",
+        const="",
+        default=None,
+        help="説明（値省略でエディタ起動）",
+    )
+    i_create_parser.add_argument(
         "--custom_fields",
         help="カスタムフィールド（id=value形式、カンマ区切り。例: 1=foo,2=bar）",
     )
@@ -233,7 +241,10 @@ def main() -> None:
             if not project_id:
                 print("project_idを指定するか、default_project_idを設定してください")
                 exit(1)
-            description = open_editor()
+            if args.description and args.description != "":
+                description = args.description
+            else:
+                description = open_editor()
             create_issue(
                 project_id=project_id,
                 subject=args.subject,
