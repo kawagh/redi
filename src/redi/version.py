@@ -41,6 +41,46 @@ def create_version(
     print(f"バージョンを作成しました: {created['id']} {created['name']}")
 
 
+def update_version(
+    version_id: str,
+    name: str | None = None,
+    status: str | None = None,
+    due_date: str | None = None,
+    description: str | None = None,
+    sharing: str | None = None,
+) -> None:
+    version_data: dict = {}
+    if name:
+        version_data["name"] = name
+    if status:
+        version_data["status"] = status
+    if due_date:
+        version_data["due_date"] = due_date
+    if description:
+        version_data["description"] = description
+    if sharing:
+        version_data["sharing"] = sharing
+    if len(version_data) == 0:
+        print("更新をキャンセルしました")
+        exit()
+    response = requests.put(
+        f"{redmine_url}/versions/{version_id}.json",
+        headers={
+            "X-Redmine-API-Key": redmine_api_key,
+            "Content-Type": "application/json",
+        },
+        json={"version": version_data},
+    )
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("バージョンの更新に失敗しました")
+        exit(1)
+    print(f"バージョンを更新しました: {version_id}")
+
+
 def list_versions(project_id: str, full: bool = False) -> None:
     response = requests.get(
         f"{redmine_url}/projects/{project_id}/versions.json",

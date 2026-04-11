@@ -34,7 +34,7 @@ from redi.issue import (
 from redi.custom_field import list_custom_fields
 from redi.tracker import list_trackers
 from redi.user import list_users
-from redi.version import create_version, list_versions
+from redi.version import create_version, list_versions, update_version
 from redi.wiki import create_wiki, fetch_wiki, list_wikis, read_wiki, update_wiki
 
 
@@ -142,6 +142,19 @@ def main() -> None:
     v_create_parser.add_argument("--due_date", help="期日（YYYY-MM-DD）")
     v_create_parser.add_argument("--description", "-d", help="説明")
     v_create_parser.add_argument(
+        "--sharing",
+        choices=["none", "descendants", "hierarchy", "tree", "system"],
+        help="共有設定",
+    )
+    v_update_parser = v_subparsers.add_parser("update", help="バージョン更新")
+    v_update_parser.add_argument("version_id", help="バージョンID")
+    v_update_parser.add_argument("--name", "-n", help="バージョン名")
+    v_update_parser.add_argument(
+        "--status", choices=["open", "locked", "closed"], help="ステータス"
+    )
+    v_update_parser.add_argument("--due_date", help="期日（YYYY-MM-DD）")
+    v_update_parser.add_argument("--description", "-d", help="説明")
+    v_update_parser.add_argument(
         "--sharing",
         choices=["none", "descendants", "hierarchy", "tree", "system"],
         help="共有設定",
@@ -268,6 +281,15 @@ def main() -> None:
                 exit(1)
             create_version(
                 project_id=project_id,
+                name=args.name,
+                status=args.status,
+                due_date=args.due_date,
+                description=args.description,
+                sharing=args.sharing,
+            )
+        elif args.version_command == "update":
+            update_version(
+                version_id=args.version_id,
                 name=args.name,
                 status=args.status,
                 due_date=args.due_date,
