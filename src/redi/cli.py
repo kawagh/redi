@@ -234,6 +234,7 @@ def main() -> None:
     c_parser.add_argument("--wiki_project_id", help="Wiki用プロジェクトIDを設定")
     c_parser.add_argument("--editor", help="エディタを設定")
     c_parser.add_argument("--api_key", help="Redmine APIキーを設定")
+    c_parser.add_argument("--url", help="Redmine URLを設定")
     u_parser = subparsers.add_parser("user", aliases=["u"], help="ユーザー一覧")
     u_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     u_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
@@ -450,6 +451,10 @@ def main() -> None:
         if args.api_key:
             update_config("redmine_api_key", args.api_key)
             print("redmine_api_keyを設定しました")
+            updated = True
+        if args.url:
+            update_config("redmine_url", args.url)
+            print(f"redmine_urlを {args.url} に設定しました")
             updated = True
         if not updated:
             show_config()
