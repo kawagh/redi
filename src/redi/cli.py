@@ -208,7 +208,7 @@ def main() -> None:
     w_create_parser = w_subparsers.add_parser("create", help="Wikiページ作成")
     w_create_parser.add_argument("page_title", help="Wikiページタイトル")
     w_create_parser.add_argument(
-        "--parent_title", required=True, help="親ページタイトル"
+        "--parent_title", help="親ページタイトル"
     )
     w_update_parser = w_subparsers.add_parser("update", help="Wikiページ更新")
     w_update_parser.add_argument("page_title", help="Wikiページタイトル")
