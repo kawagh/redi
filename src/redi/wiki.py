@@ -39,9 +39,12 @@ def fetch_wiki(project_id: str, page_title: str) -> dict:
     return response.json()["wiki_page"]
 
 
-def read_wiki(project_id: str, page_title: str) -> None:
+def read_wiki(project_id: str, page_title: str, full: bool = False) -> None:
     wiki = fetch_wiki(project_id, page_title)
-    print(wiki)
+    if full:
+        print(json.dumps(wiki, ensure_ascii=False, indent=2))
+    else:
+        print(wiki.get("text", ""))
 
 
 def update_wiki(project_id: str, page_title: str, text: str) -> None:

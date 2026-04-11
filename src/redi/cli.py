@@ -205,6 +205,7 @@ def main() -> None:
     w_subparsers = w_parser.add_subparsers(dest="wiki_command")
     w_view_parser = w_subparsers.add_parser("view", help="Wikiページ詳細")
     w_view_parser.add_argument("page_title", help="Wikiページタイトル")
+    w_view_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     w_create_parser = w_subparsers.add_parser("create", help="Wikiページ作成")
     w_create_parser.add_argument("page_title", help="Wikiページタイトル")
     w_create_parser.add_argument(
@@ -399,7 +400,7 @@ def main() -> None:
             )
             exit(1)
         if args.wiki_command == "view":
-            read_wiki(project_id, args.page_title)
+            read_wiki(project_id, args.page_title, full=args.full)
         elif args.wiki_command == "create":
             if args.description and args.description != "":
                 text = args.description
