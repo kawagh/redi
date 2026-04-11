@@ -120,6 +120,7 @@ def update_issue(
     priority_id: str | None = None,
     assigned_to_id: str | None = None,
     fixed_version_id: str | None = None,
+    parent_issue_id: str | None = None,
     notes: str = "",
     custom_fields: str | None = None,
 ) -> None:
@@ -138,6 +139,8 @@ def update_issue(
         issue_data["assigned_to_id"] = assigned_to_id
     if fixed_version_id:
         issue_data["fixed_version_id"] = fixed_version_id
+    if parent_issue_id is not None:
+        issue_data["parent_issue_id"] = parent_issue_id
     if notes:
         issue_data["notes"] = notes
     if custom_fields:

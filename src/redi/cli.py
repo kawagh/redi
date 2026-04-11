@@ -119,6 +119,9 @@ def main() -> None:
     i_update_parser.add_argument("--priority_id", help="優先度ID")
     i_update_parser.add_argument("--assigned_to_id", "-a", help="担当者ID")
     i_update_parser.add_argument("--fixed_version_id", help="対象バージョンID")
+    i_update_parser.add_argument(
+        "--parent_issue_id", help="親チケットID（空文字で解除）"
+    )
     i_update_parser.add_argument("--notes", "-n", help="コメント")
     i_update_parser.add_argument(
         "--custom_fields",
@@ -254,6 +257,7 @@ def main() -> None:
                 priority_id=args.priority_id,
                 assigned_to_id=args.assigned_to_id,
                 fixed_version_id=args.fixed_version_id,
+                parent_issue_id=args.parent_issue_id,
                 notes=args.notes or "",
                 custom_fields=args.custom_fields,
             )
