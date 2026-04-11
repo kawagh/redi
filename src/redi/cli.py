@@ -31,6 +31,7 @@ from redi.issue import (
     read_issue,
     update_issue,
 )
+from redi.custom_field import list_custom_fields
 from redi.tracker import list_trackers
 from redi.user import list_users
 from redi.version import list_versions
@@ -159,6 +160,10 @@ def main() -> None:
     )
     query_parser = subparsers.add_parser("query", help="カスタムクエリ一覧")
     query_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
+    cf_parser = subparsers.add_parser("custom_field", help="カスタムフィールド一覧")
+    cf_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
     time_entry_parser = subparsers.add_parser("time_entry", help="作業時間一覧")
@@ -291,6 +296,8 @@ def main() -> None:
         list_roles(full=args.full)
     elif args.command == "query":
         list_queries(full=args.full)
+    elif args.command == "custom_field":
+        list_custom_fields(full=args.full)
     elif args.command == "time_entry":
         project_id = args.project_id or default_project_id
         list_time_entries(project_id=project_id, user_id=args.user_id, full=args.full)
