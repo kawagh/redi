@@ -121,6 +121,7 @@ def update_issue(
     assigned_to_id: str | None = None,
     fixed_version_id: str | None = None,
     notes: str = "",
+    custom_fields: str | None = None,
 ) -> None:
     issue_data: dict = {}
     if subject:
@@ -139,6 +140,8 @@ def update_issue(
         issue_data["fixed_version_id"] = fixed_version_id
     if notes:
         issue_data["notes"] = notes
+    if custom_fields:
+        issue_data["custom_fields"] = parse_custom_fields(custom_fields)
     if len(issue_data) == 0:
         print("更新をキャンセルしました")
         exit()

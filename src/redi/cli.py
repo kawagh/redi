@@ -120,6 +120,10 @@ def main() -> None:
     i_update_parser.add_argument("--assigned_to_id", "-a", help="担当者ID")
     i_update_parser.add_argument("--fixed_version_id", help="対象バージョンID")
     i_update_parser.add_argument("--notes", "-n", help="コメント")
+    i_update_parser.add_argument(
+        "--custom_fields",
+        help="カスタムフィールド（id=value形式、カンマ区切り。例: 1=foo,2=bar）",
+    )
     i_comment_parser = i_subparsers.add_parser("comment", help="イシューにコメント追加")
     i_comment_parser.add_argument("issue_id", help="イシューID")
     i_comment_parser.add_argument(
@@ -223,6 +227,7 @@ def main() -> None:
                 assigned_to_id=args.assigned_to_id,
                 fixed_version_id=args.fixed_version_id,
                 notes=args.notes or "",
+                custom_fields=args.custom_fields,
             )
         elif args.issue_command == "comment":
             if args.notes:
