@@ -131,6 +131,7 @@ def main() -> None:
     )
     v_parser = subparsers.add_parser("version", aliases=["v"], help="バージョン一覧")
     v_parser.add_argument("--project_id", "-p", help="プロジェクトID")
+    v_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     w_parser = subparsers.add_parser("wiki", aliases=["w"], help="Wiki一覧/詳細/作成")
     w_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     w_subparsers = w_parser.add_subparsers(dest="wiki_command")
@@ -250,7 +251,7 @@ def main() -> None:
         if not project_id:
             print("project_idを指定するか、default_project_idを設定してください")
             exit(1)
-        list_versions(project_id)
+        list_versions(project_id, full=args.full)
     elif args.command in ("wiki", "w"):
         project_id = args.project_id or wiki_project_id or default_project_id
         if not project_id:
