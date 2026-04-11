@@ -99,6 +99,10 @@ def main() -> None:
     i_create_parser.add_argument("--tracker_id", "-t", help="トラッカーID")
     i_create_parser.add_argument("--priority_id", help="優先度ID")
     i_create_parser.add_argument("--assigned_to_id", "-a", help="担当者ID")
+    i_create_parser.add_argument(
+        "--custom_fields",
+        help="カスタムフィールド（id=value形式、カンマ区切り。例: 1=foo,2=bar）",
+    )
     i_update_parser = i_subparsers.add_parser("update", help="イシュー更新")
     i_update_parser.add_argument("issue_id", help="イシューID")
     i_update_parser.add_argument("--subject", "-s", help="題名")
@@ -202,6 +206,7 @@ def main() -> None:
                 tracker_id=args.tracker_id,
                 priority_id=args.priority_id,
                 assigned_to_id=args.assigned_to_id,
+                custom_fields=args.custom_fields,
             )
         elif args.issue_command == "update":
             description = args.description

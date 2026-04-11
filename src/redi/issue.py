@@ -59,6 +59,15 @@ def read_issue(issue_id: str, full: bool = False) -> None:
         print("\n".join(lines))
 
 
+def parse_custom_fields(custom_fields_str: str) -> list[dict]:
+    result = []
+    for pair in custom_fields_str.split(","):
+        key, _, value = pair.partition("=")
+        if key:
+            result.append({"id": int(key.strip()), "value": value.strip()})
+    return result
+
+
 def create_issue(
     project_id: str,
     subject: str,
@@ -66,6 +75,7 @@ def create_issue(
     tracker_id: str | None = None,
     priority_id: str | None = None,
     assigned_to_id: str | None = None,
+    custom_fields: str | None = None,
 ) -> None:
     issue_data: dict = {
         "project_id": project_id,
@@ -79,6 +89,8 @@ def create_issue(
         issue_data["priority_id"] = priority_id
     if assigned_to_id:
         issue_data["assigned_to_id"] = assigned_to_id
+    if custom_fields:
+        issue_data["custom_fields"] = parse_custom_fields(custom_fields)
     response = requests.post(
         f"{redmine_url}/issues.json",
         headers={
