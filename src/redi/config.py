@@ -22,12 +22,14 @@ default_project_id: str | None = _config.get("default_project_id")
 wiki_project_id: str | None = _config.get("wiki_project_id")
 editor: str = os.environ.get("REDI_EDITOR") or _config.get("editor", "vim")
 
-if not redmine_url:
-    print(f"set REDMINE_URL or add redmine_url to {CONFIG_PATH}")
-    exit(1)
-if not redmine_api_key:
-    print(f"set REDMINE_API_KEY or add redmine_api_key to {CONFIG_PATH}")
-    exit(1)
+
+def check_config() -> None:
+    if not redmine_url:
+        print(f"set REDMINE_URL or add redmine_url to {CONFIG_PATH}")
+        exit(1)
+    if not redmine_api_key:
+        print(f"set REDMINE_API_KEY or add redmine_api_key to {CONFIG_PATH}")
+        exit(1)
 
 
 def update_config(key: str, value: str) -> None:

@@ -12,6 +12,7 @@ from redi.config import (
     show_config,
     update_config,
     wiki_project_id,
+    check_config,
 )
 from redi.enumeration import (
     list_document_categories,
@@ -205,12 +206,12 @@ def main() -> None:
     w_subparsers = w_parser.add_subparsers(dest="wiki_command")
     w_view_parser = w_subparsers.add_parser("view", help="Wikiページ詳細")
     w_view_parser.add_argument("page_title", help="Wikiページタイトル")
-    w_view_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    w_view_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
     w_create_parser = w_subparsers.add_parser("create", help="Wikiページ作成")
     w_create_parser.add_argument("page_title", help="Wikiページタイトル")
-    w_create_parser.add_argument(
-        "--parent_title", help="親ページタイトル"
-    )
+    w_create_parser.add_argument("--parent_title", help="親ページタイトル")
     w_create_parser.add_argument(
         "--description",
         "-d",
@@ -282,6 +283,34 @@ def main() -> None:
     te_create_parser.add_argument("--comments", "-c", help="コメント")
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
+
+    if args.command in ("config", "c"):
+        updated = False
+        if args.project_id:
+            update_config("default_project_id", args.project_id)
+            print(f"default_project_idを {args.project_id} に設定しました")
+            updated = True
+        if args.wiki_project_id:
+            update_config("wiki_project_id", args.wiki_project_id)
+            print(f"wiki_project_idを {args.wiki_project_id} に設定しました")
+            updated = True
+        if args.editor:
+            update_config("editor", args.editor)
+            print(f"editorを {args.editor} に設定しました")
+            updated = True
+        if args.api_key:
+            update_config("redmine_api_key", args.api_key)
+            print("redmine_api_keyを設定しました")
+            updated = True
+        if args.url:
+            update_config("redmine_url", args.url)
+            print(f"redmine_urlを {args.url} に設定しました")
+            updated = True
+        if not updated:
+            show_config()
+        return
+
+    check_config()
 
     if args.command in ("project", "p"):
         if args.project_command == "view":
@@ -434,30 +463,6 @@ def main() -> None:
                 print("テキストが空のためキャンセルしました")
         else:
             list_wikis(project_id)
-    elif args.command in ("config", "c"):
-        updated = False
-        if args.project_id:
-            update_config("default_project_id", args.project_id)
-            print(f"default_project_idを {args.project_id} に設定しました")
-            updated = True
-        if args.wiki_project_id:
-            update_config("wiki_project_id", args.wiki_project_id)
-            print(f"wiki_project_idを {args.wiki_project_id} に設定しました")
-            updated = True
-        if args.editor:
-            update_config("editor", args.editor)
-            print(f"editorを {args.editor} に設定しました")
-            updated = True
-        if args.api_key:
-            update_config("redmine_api_key", args.api_key)
-            print("redmine_api_keyを設定しました")
-            updated = True
-        if args.url:
-            update_config("redmine_url", args.url)
-            print(f"redmine_urlを {args.url} に設定しました")
-            updated = True
-        if not updated:
-            show_config()
     elif args.command in ("user", "u"):
         project_id = args.project_id or default_project_id
         list_users(project_id=project_id, full=args.full)
@@ -490,6 +495,8 @@ def main() -> None:
             )
         else:
             project_id = args.project_id or default_project_id
-            list_time_entries(project_id=project_id, user_id=args.user_id, full=args.full)
+            list_time_entries(
+                project_id=project_id, user_id=args.user_id, full=args.full
+            )
     else:
         parser.print_help()
