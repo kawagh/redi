@@ -18,10 +18,14 @@ def list_projects(full: bool = False) -> None:
             print(f"{project['id']} {project['name']}")
 
 
-def read_project(project_id: str) -> None:
+def read_project(project_id: str, include: str = "") -> None:
+    params: dict = {}
+    if include:
+        params["include"] = include
     response = requests.get(
         f"{redmine_url}/projects/{project_id}.json",
         headers={"X-Redmine-API-Key": redmine_api_key},
+        params=params,
     )
     project = response.json()["project"]
     print(json.dumps(project, ensure_ascii=False, indent=2))

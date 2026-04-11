@@ -68,6 +68,10 @@ def main() -> None:
     )
     p_parser.add_argument("project_id", nargs="?", help="プロジェクトID")
     p_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    p_parser.add_argument(
+        "--include",
+        help="追加情報（trackers,issue_categories,enabled_modules,time_entry_activities,issue_custom_fields）",
+    )
     i_parser = subparsers.add_parser(
         "issue", aliases=["i"], help="イシュー一覧/詳細/作成/コメント"
     )
@@ -179,7 +183,7 @@ def main() -> None:
 
     if args.command in ("project", "p"):
         if args.project_id:
-            read_project(args.project_id)
+            read_project(args.project_id, include=args.include or "")
         else:
             list_projects(full=args.full)
     elif args.command in ("issue", "i"):
