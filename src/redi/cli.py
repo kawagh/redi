@@ -34,7 +34,7 @@ from redi.issue import (
 from redi.custom_field import list_custom_fields
 from redi.tracker import list_trackers
 from redi.user import list_users
-from redi.version import list_versions
+from redi.version import create_version, list_versions
 from redi.wiki import create_wiki, fetch_wiki, list_wikis, read_wiki, update_wiki
 
 
@@ -132,6 +132,20 @@ def main() -> None:
     v_parser = subparsers.add_parser("version", aliases=["v"], help="バージョン一覧")
     v_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     v_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    v_subparsers = v_parser.add_subparsers(dest="version_command")
+    v_create_parser = v_subparsers.add_parser("create", help="バージョン作成")
+    v_create_parser.add_argument("name", help="バージョン名")
+    v_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
+    v_create_parser.add_argument(
+        "--status", choices=["open", "locked", "closed"], help="ステータス"
+    )
+    v_create_parser.add_argument("--due_date", help="期日（YYYY-MM-DD）")
+    v_create_parser.add_argument("--description", "-d", help="説明")
+    v_create_parser.add_argument(
+        "--sharing",
+        choices=["none", "descendants", "hierarchy", "tree", "system"],
+        help="共有設定",
+    )
     w_parser = subparsers.add_parser("wiki", aliases=["w"], help="Wiki一覧/詳細/作成")
     w_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     w_subparsers = w_parser.add_subparsers(dest="wiki_command")
@@ -247,11 +261,25 @@ def main() -> None:
                 full=args.full,
             )
     elif args.command in ("version", "v"):
-        project_id = args.project_id or default_project_id
-        if not project_id:
-            print("project_idを指定するか、default_project_idを設定してください")
-            exit(1)
-        list_versions(project_id, full=args.full)
+        if args.version_command == "create":
+            project_id = args.project_id or default_project_id
+            if not project_id:
+                print("project_idを指定するか、default_project_idを設定してください")
+                exit(1)
+            create_version(
+                project_id=project_id,
+                name=args.name,
+                status=args.status,
+                due_date=args.due_date,
+                description=args.description,
+                sharing=args.sharing,
+            )
+        else:
+            project_id = args.project_id or default_project_id
+            if not project_id:
+                print("project_idを指定するか、default_project_idを設定してください")
+                exit(1)
+            list_versions(project_id, full=args.full)
     elif args.command in ("wiki", "w"):
         project_id = args.project_id or wiki_project_id or default_project_id
         if not project_id:
