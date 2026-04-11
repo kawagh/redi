@@ -210,8 +210,24 @@ def main() -> None:
     w_create_parser.add_argument(
         "--parent_title", help="親ページタイトル"
     )
+    w_create_parser.add_argument(
+        "--description",
+        "-d",
+        nargs="?",
+        const="",
+        default=None,
+        help="説明（値省略でエディタ起動）",
+    )
     w_update_parser = w_subparsers.add_parser("update", help="Wikiページ更新")
     w_update_parser.add_argument("page_title", help="Wikiページタイトル")
+    w_update_parser.add_argument(
+        "--description",
+        "-d",
+        nargs="?",
+        const="",
+        default=None,
+        help="説明（値省略でエディタ起動）",
+    )
     c_parser = subparsers.add_parser("config", aliases=["c"], help="設定更新")
     c_parser.add_argument("--project_id", help="デフォルトプロジェクトIDを設定")
     c_parser.add_argument("--wiki_project_id", help="Wiki用プロジェクトIDを設定")
@@ -385,7 +401,10 @@ def main() -> None:
         if args.wiki_command == "view":
             read_wiki(project_id, args.page_title)
         elif args.wiki_command == "create":
-            text = open_editor()
+            if args.description and args.description != "":
+                text = args.description
+            else:
+                text = open_editor()
             if text:
                 create_wiki(
                     project_id, args.page_title, text, parent_title=args.parent_title
@@ -393,8 +412,11 @@ def main() -> None:
             else:
                 print("テキストが空のためキャンセルしました")
         elif args.wiki_command == "update":
-            current = fetch_wiki(project_id, args.page_title)
-            text = open_editor(current.get("text") or "")
+            if args.description and args.description != "":
+                text = args.description
+            else:
+                current = fetch_wiki(project_id, args.page_title)
+                text = open_editor(current.get("text") or "")
             if text:
                 update_wiki(project_id, args.page_title, text)
             else:
