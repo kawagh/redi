@@ -40,6 +40,9 @@ def fetch_issue(issue_id: str, include: str = "") -> dict:
         headers={"X-Redmine-API-Key": redmine_api_key},
         params=params,
     )
+    if response.status_code == 404:
+        print(f"イシューが見つかりません: #{issue_id}")
+        exit(1)
     response.raise_for_status()
     return response.json()["issue"]
 

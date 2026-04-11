@@ -105,5 +105,9 @@ def read_project(project_id: str, include: str = "") -> None:
         headers={"X-Redmine-API-Key": redmine_api_key},
         params=params,
     )
+    if response.status_code == 404:
+        print(f"プロジェクトが見つかりません: {project_id}")
+        exit(1)
+    response.raise_for_status()
     project = response.json()["project"]
     print(json.dumps(project, ensure_ascii=False, indent=2))

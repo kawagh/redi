@@ -35,6 +35,9 @@ def fetch_wiki(project_id: str, page_title: str) -> dict:
         f"{redmine_url}/projects/{project_id}/wiki/{page_title}.json",
         headers={"X-Redmine-API-Key": redmine_api_key},
     )
+    if response.status_code == 404:
+        print(f"Wikiページが見つかりません: {page_title}")
+        exit(1)
     response.raise_for_status()
     return response.json()["wiki_page"]
 
