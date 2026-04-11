@@ -5,6 +5,47 @@ import requests
 from redi.config import redmine_api_key, redmine_url
 
 
+def create_time_entry(
+    issue_id: str | None = None,
+    project_id: str | None = None,
+    hours: float = 0,
+    activity_id: str | None = None,
+    spent_on: str | None = None,
+    comments: str | None = None,
+) -> None:
+    if not issue_id and not project_id:
+        print("issue_idまたはproject_idを指定してください")
+        exit(1)
+    data: dict = {"hours": hours}
+    if issue_id:
+        data["issue_id"] = issue_id
+    if project_id:
+        data["project_id"] = project_id
+    if activity_id:
+        data["activity_id"] = activity_id
+    if spent_on:
+        data["spent_on"] = spent_on
+    if comments:
+        data["comments"] = comments
+    response = requests.post(
+        f"{redmine_url}/time_entries.json",
+        headers={
+            "X-Redmine-API-Key": redmine_api_key,
+            "Content-Type": "application/json",
+        },
+        json={"time_entry": data},
+    )
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("作業時間の登録に失敗しました")
+        exit(1)
+    created = response.json()["time_entry"]
+    print(f"作業時間を登録しました: {created['id']} {created['hours']}h ({created['spent_on']})")
+
+
 def list_time_entries(
     project_id: str | None = None,
     user_id: str | None = None,
