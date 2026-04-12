@@ -43,7 +43,9 @@ def create_time_entry(
         print("作業時間の登録に失敗しました")
         exit(1)
     created = response.json()["time_entry"]
-    print(f"作業時間を登録しました: {created['id']} {created['hours']}h ({created['spent_on']})")
+    print(
+        f"作業時間を登録しました: {created['id']} {created['hours']}h ({created['spent_on']})"
+    )
 
 
 def list_time_entries(
