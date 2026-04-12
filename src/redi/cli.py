@@ -384,19 +384,35 @@ def main() -> None:
             if description is not None and description == "":
                 current = fetch_issue(args.issue_id)
                 description = open_editor(current.get("description") or "")
-            update_issue(
-                issue_id=args.issue_id,
-                subject=args.subject,
-                description=description if description else None,
-                tracker_id=args.tracker_id,
-                status_id=args.status_id,
-                priority_id=args.priority_id,
-                assigned_to_id=args.assigned_to_id,
-                fixed_version_id=args.fixed_version_id,
-                parent_issue_id=args.parent_issue_id,
-                notes=args.notes or "",
-                custom_fields=args.custom_fields,
+            should_update_issue = (
+                args.subject
+                or description is not None
+                or args.tracker_id
+                or args.status_id
+                or args.priority_id
+                or args.assigned_to_id
+                or args.fixed_version_id
+                or args.parent_issue_id is not None
+                or args.notes
+                or args.custom_fields
             )
+            should_update_issue_relation = args.delete_relation or (
+                args.relate and args.relate_to
+            )
+            if should_update_issue:
+                update_issue(
+                    issue_id=args.issue_id,
+                    subject=args.subject,
+                    description=description if description else None,
+                    tracker_id=args.tracker_id,
+                    status_id=args.status_id,
+                    priority_id=args.priority_id,
+                    assigned_to_id=args.assigned_to_id,
+                    fixed_version_id=args.fixed_version_id,
+                    parent_issue_id=args.parent_issue_id,
+                    notes=args.notes or "",
+                    custom_fields=args.custom_fields,
+                )
             if args.delete_relation:
                 if not args.relate_to:
                     print("--delete-relation には --to が必要です")
@@ -413,6 +429,9 @@ def main() -> None:
                 )
             elif args.relate or args.relate_to:
                 print("--relate と --to は両方指定してください")
+                exit(1)
+            if not should_update_issue and not should_update_issue_relation:
+                print("更新内容がないので更新をキャンセルしました")
                 exit(1)
         elif args.issue_command == "comment":
             if args.notes:
