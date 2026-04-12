@@ -137,7 +137,7 @@ def main() -> None:
         nargs="?",
         const="",
         default=None,
-        help="説明（値省略でエディタ起動）",
+        help="説明（フラグ未指定でエディタ起動）",
     )
     i_create_parser.add_argument(
         "--custom_fields",
@@ -366,10 +366,10 @@ def main() -> None:
             if not project_id:
                 print("project_idを指定するか、default_project_idを設定してください")
                 exit(1)
-            if args.description and args.description != "":
-                description = args.description
-            else:
+            if args.description is None:
                 description = open_editor()
+            else:
+                description = args.description
             create_issue(
                 project_id=project_id,
                 subject=args.subject,
