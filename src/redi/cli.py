@@ -39,7 +39,7 @@ from redi.issue import (
     read_issue,
     update_issue,
 )
-from redi.attachment import read_attachment
+from redi.attachment import read_attachment, update_attachment
 from redi.issue_relation import create_relation, delete_relation
 from redi.custom_field import list_custom_fields
 from redi.tracker import fetch_trackers, list_trackers
@@ -325,6 +325,10 @@ def main() -> None:
     a_view_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
+    a_update_parser = a_subparsers.add_parser("update", help="添付ファイル更新")
+    a_update_parser.add_argument("attachment_id", help="添付ファイルID")
+    a_update_parser.add_argument("--filename", "-f", help="ファイル名")
+    a_update_parser.add_argument("--description", "-d", help="説明")
     time_entry_parser = subparsers.add_parser("time_entry", help="作業時間一覧/登録")
     time_entry_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     time_entry_parser.add_argument(
@@ -734,6 +738,12 @@ def main() -> None:
     elif args.command == "attachment":
         if args.attachment_command == "view":
             read_attachment(args.attachment_id, full=args.full)
+        elif args.attachment_command == "update":
+            update_attachment(
+                attachment_id=args.attachment_id,
+                filename=args.filename,
+                description=args.description,
+            )
         else:
             a_parser.print_help()
     elif args.command == "time_entry":

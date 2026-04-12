@@ -37,3 +37,37 @@ def read_attachment(attachment_id: str, full: bool = False) -> None:
     if attachment.get("content_url"):
         lines.append(f"URL: {attachment['content_url']}")
     print("\n".join(lines))
+
+
+def update_attachment(
+    attachment_id: str,
+    filename: str | None = None,
+    description: str | None = None,
+) -> None:
+    data: dict = {}
+    if filename is not None:
+        data["filename"] = filename
+    if description is not None:
+        data["description"] = description
+    if not data:
+        print("更新をキャンセルしました")
+        exit()
+    response = requests.patch(
+        f"{redmine_url}/attachments/{attachment_id}.json",
+        headers={
+            "X-Redmine-API-Key": redmine_api_key,
+            "Content-Type": "application/json",
+        },
+        json={"attachment": data},
+    )
+    if response.status_code == 404:
+        print(f"添付ファイルが見つかりません: #{attachment_id}")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("添付ファイルの更新に失敗しました")
+        exit(1)
+    print(f"添付ファイルを更新しました: {redmine_url}/attachments/{attachment_id}")
