@@ -48,7 +48,10 @@ def fetch_issue(issue_id: str, include: str = "") -> dict:
 
 
 def read_issue(issue_id: str, full: bool = False) -> None:
-    ticket = fetch_issue(issue_id, include="journals" if full else "")
+    includes = ["relations"]
+    if full:
+        includes.append("journals")
+    ticket = fetch_issue(issue_id, include=",".join(includes))
 
     if full:
         print(json.dumps(ticket, ensure_ascii=False))
@@ -58,6 +61,18 @@ def read_issue(issue_id: str, full: bool = False) -> None:
         if ticket.get("description"):
             lines.append("")
             lines.append(ticket["description"])
+        relations = ticket.get("relations") or []
+        if relations:
+            lines.append("")
+            lines.append("関係性:")
+            target_id = int(issue_id)
+            for r in relations:
+                other = (
+                    r["issue_to_id"]
+                    if r["issue_id"] == target_id
+                    else r["issue_id"]
+                )
+                lines.append(f"  [{r['relation_type']}] #{other}")
 
         print("\n".join(lines))
 
