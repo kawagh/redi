@@ -82,7 +82,7 @@ def fetch_issue(issue_id: str, include: str = "") -> dict:
 
 
 def read_issue(issue_id: str, full: bool = False) -> None:
-    includes = ["relations"]
+    includes = ["relations", "attachments"]
     if full:
         includes.append("journals")
     issue = fetch_issue(issue_id, include=",".join(includes))
@@ -137,6 +137,12 @@ def read_issue(issue_id: str, full: bool = False) -> None:
                     # unknown rel_type
                     label = rel_type
                 lines.append(f"  [{label}] {redmine_url}/issues/{other}")
+        attachments = issue.get("attachments") or []
+        if attachments:
+            lines.append("")
+            lines.append("添付ファイル:")
+            for a in attachments:
+                lines.append(f"  {a['filename']} {a.get('content_url', '')}")
 
         print("\n".join(lines))
 
