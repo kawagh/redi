@@ -5,18 +5,26 @@ import requests
 from redi.config import redmine_api_key, redmine_url
 
 
-def _list_enumeration(resource: str, full: bool = False) -> None:
+def _fetch_enumeration(resource: str) -> list[dict]:
     response = requests.get(
         f"{redmine_url}/enumerations/{resource}.json",
         headers={"X-Redmine-API-Key": redmine_api_key},
     )
     response.raise_for_status()
-    items = response.json()[resource]
+    return response.json()[resource]
+
+
+def _list_enumeration(resource: str, full: bool = False) -> None:
+    items = _fetch_enumeration(resource)
     if full:
         print(json.dumps(items, ensure_ascii=False))
     else:
         for item in items:
             print(f"{item['id']} {item['name']}")
+
+
+def fetch_issue_priorities() -> list[dict]:
+    return _fetch_enumeration("issue_priorities")
 
 
 def list_issue_priorities(full: bool = False) -> None:
