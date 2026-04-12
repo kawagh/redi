@@ -81,12 +81,17 @@ def update_version(
     print(f"バージョンを更新しました: {version_id}")
 
 
-def list_versions(project_id: str, full: bool = False) -> None:
+def fetch_versions(project_id: str) -> list[dict]:
     response = requests.get(
         f"{redmine_url}/projects/{project_id}/versions.json",
         headers={"X-Redmine-API-Key": redmine_api_key},
     )
-    versions = response.json()["versions"]
+    response.raise_for_status()
+    return response.json()["versions"]
+
+
+def list_versions(project_id: str, full: bool = False) -> None:
+    versions = fetch_versions(project_id)
     if full:
         print(json.dumps(versions, ensure_ascii=False))
     else:

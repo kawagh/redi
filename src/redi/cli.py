@@ -7,6 +7,10 @@ import tempfile
 from importlib.metadata import version
 
 import questionary
+import questionary.prompts.common
+
+questionary.prompts.common.INDICATOR_SELECTED = "[x]"  # pyright: ignore[reportPrivateImportUsage]
+questionary.prompts.common.INDICATOR_UNSELECTED = "[ ]"  # pyright: ignore[reportPrivateImportUsage]
 
 from redi.config import (
     default_project_id,
@@ -17,11 +21,12 @@ from redi.config import (
     check_config,
 )
 from redi.enumeration import (
+    fetch_issue_priorities,
     list_document_categories,
     list_issue_priorities,
     list_time_entry_activities,
 )
-from redi.issue_status import list_issue_statuses
+from redi.issue_status import fetch_issue_statuses, list_issue_statuses
 from redi.project import create_project, list_projects, read_project, update_project
 from redi.query import list_queries
 from redi.role import list_roles
@@ -38,7 +43,7 @@ from redi.issue_relation import create_relation, delete_relation
 from redi.custom_field import list_custom_fields
 from redi.tracker import fetch_trackers, list_trackers
 from redi.user import list_users
-from redi.version import create_version, list_versions, update_version
+from redi.version import create_version, fetch_versions, list_versions, update_version
 from redi.wiki import create_wiki, fetch_wiki, list_wikis, read_wiki, update_wiki
 
 
@@ -404,6 +409,96 @@ def main() -> None:
                 custom_fields=args.custom_fields,
             )
         elif args.issue_command == "update":
+            no_args_provided = not (
+                args.subject
+                or args.description is not None
+                or args.tracker_id
+                or args.status_id
+                or args.priority_id
+                or args.assigned_to_id
+                or args.fixed_version_id
+                or args.parent_issue_id is not None
+                or args.notes
+                or args.custom_fields
+                or args.relate
+                or args.relate_to
+                or args.delete_relation
+            )
+            if no_args_provided:
+                current = fetch_issue(args.issue_id)
+                field_choices = [
+                    questionary.Choice("トラッカー (tracker)", value="tracker"),
+                    questionary.Choice("題名 (subject)", value="subject"),
+                    questionary.Choice("説明 (description)", value="description"),
+                    questionary.Choice("ステータス (status)", value="status"),
+                    questionary.Choice("優先度 (priority)", value="priority"),
+                    questionary.Choice(
+                        "対象バージョン (fixed_version)", value="fixed_version"
+                    ),
+                    questionary.Choice("コメント (notes)", value="notes"),
+                ]
+                description_choice = next(
+                    c for c in field_choices if c.value == "description"
+                )
+                selected = questionary.checkbox(
+                    "更新する項目を選択",
+                    choices=field_choices,
+                    style=questionary.Style([("selected", "noreverse")]),
+                    initial_choice=description_choice,
+                ).ask(kbi_msg="")
+                if not selected:
+                    print("更新する項目が選択されていないためキャンセルしました")
+                    exit(1)
+                if "tracker" in selected:
+                    trackers = fetch_trackers()
+                    args.tracker_id = questionary.select(
+                        "トラッカー",
+                        choices=[
+                            questionary.Choice(t["name"], value=str(t["id"]))
+                            for t in trackers
+                        ],
+                    ).ask(kbi_msg="")
+                if "subject" in selected:
+                    args.subject = questionary.text(
+                        "題名", default=current.get("subject") or ""
+                    ).ask(kbi_msg="")
+                if "description" in selected:
+                    args.description = ""
+                if "status" in selected:
+                    statuses = fetch_issue_statuses()
+                    args.status_id = questionary.select(
+                        "ステータス",
+                        choices=[
+                            questionary.Choice(s["name"], value=str(s["id"]))
+                            for s in statuses
+                        ],
+                    ).ask(kbi_msg="")
+                if "priority" in selected:
+                    priorities = fetch_issue_priorities()
+                    args.priority_id = questionary.select(
+                        "優先度",
+                        choices=[
+                            questionary.Choice(p["name"], value=str(p["id"]))
+                            for p in priorities
+                        ],
+                    ).ask(kbi_msg="")
+                if "fixed_version" in selected:
+                    project_id = (current.get("project") or {}).get("id")
+                    if not project_id:
+                        print("プロジェクトが特定できないためキャンセルしました")
+                        exit(1)
+                    versions = fetch_versions(str(project_id))
+                    args.fixed_version_id = questionary.select(
+                        "対象バージョン",
+                        choices=[
+                            questionary.Choice(
+                                f"{v['name']} ({v['status']})", value=str(v["id"])
+                            )
+                            for v in versions
+                        ],
+                    ).ask(kbi_msg="")
+                if "notes" in selected:
+                    args.notes = questionary.text("コメント").ask(kbi_msg="")
             description = args.description
             if description is not None and description == "":
                 current = fetch_issue(args.issue_id)
