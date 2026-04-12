@@ -24,16 +24,21 @@ def fetch_wikis(project_id: str) -> list[dict]:
     return response.json()["wiki_pages"]
 
 
-def list_wikis(project_id: str) -> None:
-    pages = fetch_wikis(project_id)
-
-    children_map = defaultdict(list)
+def build_children_map(pages: list[dict]) -> dict[str | None, list[str]]:
+    children_map: dict[str | None, list[str]] = defaultdict(list)
     for page in pages:
         parent = page.get("parent", {}).get("title") if "parent" in page else None
         children_map[parent].append(page["title"])
+    for titles in children_map.values():
+        titles.sort()
+    return children_map
+
+
+def list_wikis(project_id: str) -> None:
+    children_map = build_children_map(fetch_wikis(project_id))
 
     def print_tree(parent: str | None, prefix: str = "") -> None:
-        children = sorted(children_map.get(parent, []))
+        children = children_map.get(parent, [])
         for i, title in enumerate(children):
             is_last = i == len(children) - 1
             connector = "└── " if is_last else "├── "

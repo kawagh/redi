@@ -1,7 +1,6 @@
 # PYTHON_ARGCOMPLETE_OK
 import argcomplete
 import argparse
-from collections import defaultdict
 import os
 import subprocess
 import tempfile
@@ -46,6 +45,7 @@ from redi.tracker import fetch_trackers, list_trackers
 from redi.user import list_users
 from redi.version import create_version, fetch_versions, list_versions, update_version
 from redi.wiki import (
+    build_children_map,
     create_wiki,
     fetch_wiki,
     fetch_wikis,
@@ -54,6 +54,19 @@ from redi.wiki import (
     read_wiki,
     update_wiki,
 )
+
+
+def build_wiki_tree_choices(pages: list[dict]) -> list[questionary.Choice]:
+    children_map = build_children_map(pages)
+    choices: list[questionary.Choice] = []
+
+    def walk(parent: str | None, depth: int) -> None:
+        for title in children_map.get(parent, []):
+            choices.append(questionary.Choice("  " * depth + title, value=title))
+            walk(title, depth + 1)
+
+    walk(None, 0)
+    return choices
 
 
 def open_editor(initial_text: str = "") -> str:
@@ -625,43 +638,26 @@ def main() -> None:
             if page_title is None:
                 pages = fetch_wikis(project_id)
                 existing_titles = {normalize_title(p["title"]) for p in pages}
+
+                def validate_page_title(value: str) -> bool | str:
+                    stripped = value.strip()
+                    if not stripped:
+                        return "ページタイトルを入力してください"
+                    if normalize_title(stripped) in existing_titles:
+                        return "既存のページタイトルと重複しています"
+                    return True
+
                 page_title = questionary.text(
                     "ページタイトル",
-                    validate=lambda page_title_input: (
-                        True
-                        if page_title_input.strip()
-                        and normalize_title(page_title_input) not in existing_titles
-                        else "既存のページタイトルと重複しています"
-                        if len(page_title_input.strip())
-                        else "ページタイトルを入力してください"
-                    ),
+                    validate=validate_page_title,
                 ).ask(kbi_msg="")
                 if not page_title:
                     print("ページタイトルが空のためキャンセルしました")
                     exit(1)
-                page_title = page_title.strip()
                 if parent_title is None:
-                    children_map: dict[str | None, list[str]] = defaultdict(list)
-                    for page in pages:
-                        parent = (
-                            page.get("parent", {}).get("title")
-                            if "parent" in page
-                            else None
-                        )
-                        children_map[parent].append(page["title"])
-                    parent_choices = []
-
-                    def add_choices(parent: str | None, depth: int) -> None:
-                        for title in sorted(children_map.get(parent, [])):
-                            parent_choices.append(
-                                questionary.Choice("  " * depth + title, value=title)
-                            )
-                            add_choices(title, depth + 1)
-
-                    add_choices(None, 0)
                     parent_title = questionary.select(
                         "親ページ",
-                        choices=parent_choices,
+                        choices=build_wiki_tree_choices(pages),
                     ).ask(kbi_msg="")
             if args.description and args.description != "":
                 text = args.description
@@ -669,6 +665,8 @@ def main() -> None:
                 text = open_editor()
             if text:
                 page_title = normalize_title(page_title)
+                if parent_title:
+                    parent_title = normalize_title(parent_title)
                 create_wiki(project_id, page_title, text, parent_title=parent_title)
             else:
                 print("テキストが空のためキャンセルしました")
@@ -679,27 +677,9 @@ def main() -> None:
                 if not pages:
                     print("Wikiページが存在しません")
                     exit(1)
-                children_map: dict[str | None, list[str]] = defaultdict(list)
-                for page in pages:
-                    parent = (
-                        page.get("parent", {}).get("title")
-                        if "parent" in page
-                        else None
-                    )
-                    children_map[parent].append(page["title"])
-                page_choices: list = []
-
-                def add_page_choices(parent: str | None, depth: int) -> None:
-                    for title in sorted(children_map.get(parent, [])):
-                        page_choices.append(
-                            questionary.Choice("  " * depth + title, value=title)
-                        )
-                        add_page_choices(title, depth + 1)
-
-                add_page_choices(None, 0)
                 page_title = questionary.select(
                     "編集するページ",
-                    choices=page_choices,
+                    choices=build_wiki_tree_choices(pages),
                 ).ask(kbi_msg="")
                 if not page_title:
                     print("キャンセルしました")
