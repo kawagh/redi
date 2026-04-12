@@ -32,7 +32,7 @@ from redi.issue import (
     read_issue,
     update_issue,
 )
-from redi.issue_relation import create_relation
+from redi.issue_relation import create_relation, delete_relation
 from redi.custom_field import list_custom_fields
 from redi.tracker import list_trackers
 from redi.user import list_users
@@ -172,6 +172,11 @@ def main() -> None:
         help="関係性のタイプ（relates, duplicates, blocks, precedes, follows など）",
     )
     i_update_parser.add_argument("--to", dest="relate_to", help="関係先のイシューID")
+    i_update_parser.add_argument(
+        "--delete-relation",
+        action="store_true",
+        help="関係性を削除（--to と併用）",
+    )
     i_comment_parser = i_subparsers.add_parser("comment", help="イシューにコメント追加")
     i_comment_parser.add_argument("issue_id", help="イシューID")
     i_comment_parser.add_argument(
@@ -392,7 +397,15 @@ def main() -> None:
                 notes=args.notes or "",
                 custom_fields=args.custom_fields,
             )
-            if args.relate and args.relate_to:
+            if args.delete_relation:
+                if not args.relate_to:
+                    print("--delete-relation には --to が必要です")
+                    exit(1)
+                delete_relation(
+                    issue_id=args.issue_id,
+                    issue_to_id=args.relate_to,
+                )
+            elif args.relate and args.relate_to:
                 create_relation(
                     issue_id=args.issue_id,
                     issue_to_id=args.relate_to,
