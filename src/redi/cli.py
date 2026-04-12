@@ -385,10 +385,11 @@ def main() -> None:
                     if tracker_id is None:
                         print("キャンセルしました")
                         exit(1)
-                subject = input("題名: ").strip()
+                subject = questionary.text("題名").ask(kbi_msg="")
                 if not subject:
                     print("題名が空のためキャンセルしました")
                     exit(1)
+                subject = subject.strip()
             if args.description is None:
                 description = open_editor()
             else:
