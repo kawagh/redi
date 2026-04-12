@@ -1,8 +1,40 @@
 import json
+import mimetypes
+import os
 
 import requests
 
 from redi.config import redmine_api_key, redmine_url
+
+
+def upload_file(file_path: str) -> dict:
+    if not os.path.isfile(file_path):
+        print(f"ファイルが見つかりません: {file_path}")
+        exit(1)
+    filename = os.path.basename(file_path)
+    content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    with open(file_path, "rb") as f:
+        response = requests.post(
+            f"{redmine_url}/uploads.json",
+            headers={
+                "X-Redmine-API-Key": redmine_api_key,
+                "Content-Type": "application/octet-stream",
+            },
+            data=f,
+        )
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print(f"ファイルのアップロードに失敗しました: {file_path}")
+        exit(1)
+    token = response.json()["upload"]["token"]
+    return {
+        "token": token,
+        "filename": filename,
+        "content_type": content_type,
+    }
 
 
 def fetch_attachment(attachment_id: str) -> dict:
