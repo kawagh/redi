@@ -434,10 +434,14 @@ def main() -> None:
                     questionary.Choice("優先度 (priority)", value="priority"),
                     questionary.Choice("コメント (notes)", value="notes"),
                 ]
+                description_choice = next(
+                    c for c in field_choices if c.value == "description"
+                )
                 selected = questionary.checkbox(
                     "更新する項目を選択",
                     choices=field_choices,
                     style=questionary.Style([("selected", "noreverse")]),
+                    initial_choice=description_choice,
                 ).ask(kbi_msg="")
                 if not selected:
                     print("更新する項目が選択されていないためキャンセルしました")
