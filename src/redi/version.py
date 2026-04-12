@@ -91,11 +91,7 @@ def fetch_versions(project_id: str) -> list[dict]:
 
 
 def list_versions(project_id: str, full: bool = False) -> None:
-    response = requests.get(
-        f"{redmine_url}/projects/{project_id}/versions.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-    )
-    versions = response.json()["versions"]
+    versions = fetch_versions(project_id)
     if full:
         print(json.dumps(versions, ensure_ascii=False))
     else:
