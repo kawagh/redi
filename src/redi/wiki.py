@@ -6,12 +6,17 @@ import requests
 from redi.config import redmine_api_key, redmine_url
 
 
-def list_wikis(project_id: str) -> None:
+def fetch_wikis(project_id: str) -> list[dict]:
     response = requests.get(
         f"{redmine_url}/projects/{project_id}/wiki/index.json",
         headers={"X-Redmine-API-Key": redmine_api_key},
     )
-    pages = response.json()["wiki_pages"]
+    response.raise_for_status()
+    return response.json()["wiki_pages"]
+
+
+def list_wikis(project_id: str) -> None:
+    pages = fetch_wikis(project_id)
 
     children_map = defaultdict(list)
     for page in pages:

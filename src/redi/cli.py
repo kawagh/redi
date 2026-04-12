@@ -44,7 +44,14 @@ from redi.custom_field import list_custom_fields
 from redi.tracker import fetch_trackers, list_trackers
 from redi.user import list_users
 from redi.version import create_version, fetch_versions, list_versions, update_version
-from redi.wiki import create_wiki, fetch_wiki, list_wikis, read_wiki, update_wiki
+from redi.wiki import (
+    create_wiki,
+    fetch_wiki,
+    fetch_wikis,
+    list_wikis,
+    read_wiki,
+    update_wiki,
+)
 
 
 def open_editor(initial_text: str = "") -> str:
@@ -230,7 +237,9 @@ def main() -> None:
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
     w_create_parser = w_subparsers.add_parser("create", help="Wikiページ作成")
-    w_create_parser.add_argument("page_title", help="Wikiページタイトル")
+    w_create_parser.add_argument(
+        "page_title", nargs="?", help="Wikiページタイトル（省略で対話的に入力）"
+    )
     w_create_parser.add_argument("--parent_title", help="親ページタイトル")
     w_create_parser.add_argument(
         "--description",
@@ -607,13 +616,33 @@ def main() -> None:
         if args.wiki_command == "view":
             read_wiki(project_id, args.page_title, full=args.full)
         elif args.wiki_command == "create":
+            page_title = args.page_title
+            parent_title = args.parent_title
+            if page_title is None:
+                page_title = questionary.text("ページタイトル").ask(kbi_msg="")
+                if not page_title:
+                    print("ページタイトルが空のためキャンセルしました")
+                    exit(1)
+                page_title = page_title.strip()
+                if parent_title is None:
+                    pages = fetch_wikis(project_id)
+                    parent_choices = [
+                        questionary.Choice("(なし)", value=None)
+                    ] + [
+                        questionary.Choice(p["title"], value=p["title"])
+                        for p in sorted(pages, key=lambda p: p["title"])
+                    ]
+                    parent_title = questionary.select(
+                        "親ページ",
+                        choices=parent_choices,
+                    ).ask(kbi_msg="")
             if args.description and args.description != "":
                 text = args.description
             else:
                 text = open_editor()
             if text:
                 create_wiki(
-                    project_id, args.page_title, text, parent_title=args.parent_title
+                    project_id, page_title, text, parent_title=parent_title
                 )
             else:
                 print("テキストが空のためキャンセルしました")
