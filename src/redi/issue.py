@@ -28,7 +28,9 @@ def list_issues(
         print(json.dumps(tickets, ensure_ascii=False))
     else:
         for ticket in tickets:
-            print(f"{ticket['id']} {ticket['subject']}")
+            print(
+                f"{ticket['id']} {ticket['subject']} {redmine_url}/issues/{ticket['id']}"
+            )
 
 
 def fetch_issue(issue_id: str, include: str = "") -> dict:
