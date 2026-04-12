@@ -50,6 +50,7 @@ from redi.wiki import (
     fetch_wiki,
     fetch_wikis,
     list_wikis,
+    normalize_title,
     read_wiki,
     update_wiki,
 )
@@ -621,12 +622,6 @@ def main() -> None:
             parent_title = args.parent_title
             if page_title is None:
                 pages = fetch_wikis(project_id)
-
-                # redmineで空白文字を含んでwikiのpageを作成するとURLの都合か`_`に置き換えられている
-                # 既存のwikiのタイトルの先頭文字が大文字になっている
-                def normalize_title(t: str) -> str:
-                    return t.strip().replace(" ", "_").lower()
-
                 existing_titles = {normalize_title(p["title"]) for p in pages}
                 page_title = questionary.text(
                     "ページタイトル",
@@ -635,7 +630,7 @@ def main() -> None:
                         if page_title_input.strip()
                         and normalize_title(page_title_input) not in existing_titles
                         else "既存のページタイトルと重複しています"
-                        if normalize_title(page_title_input) in existing_titles
+                        if len(page_title_input.strip())
                         else "ページタイトルを入力してください"
                     ),
                 ).ask(kbi_msg="")
@@ -671,6 +666,7 @@ def main() -> None:
             else:
                 text = open_editor()
             if text:
+                page_title = normalize_title(page_title)
                 create_wiki(project_id, page_title, text, parent_title=parent_title)
             else:
                 print("テキストが空のためキャンセルしました")

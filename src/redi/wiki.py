@@ -6,6 +6,15 @@ import requests
 from redi.config import redmine_api_key, redmine_url
 
 
+# redmineで空白文字を含んでwikiのpageを作成するとURLの都合か`_`に置き換えられている
+# 既存のwikiのタイトルの先頭文字が大文字になっている
+def normalize_title(t: str) -> str:
+    normalized = t.strip().replace(" ", "_")
+    if normalized and "a" <= normalized[0] <= "z":
+        normalized = normalized[0].upper() + normalized[1:]
+    return normalized
+
+
 def fetch_wikis(project_id: str) -> list[dict]:
     response = requests.get(
         f"{redmine_url}/projects/{project_id}/wiki/index.json",
