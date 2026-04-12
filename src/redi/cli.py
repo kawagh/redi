@@ -39,6 +39,7 @@ from redi.issue import (
     read_issue,
     update_issue,
 )
+from redi.attachment import read_attachment
 from redi.issue_relation import create_relation, delete_relation
 from redi.custom_field import list_custom_fields
 from redi.tracker import fetch_trackers, list_trackers
@@ -317,6 +318,13 @@ def main() -> None:
     )
     cf_parser = subparsers.add_parser("custom_field", help="カスタムフィールド一覧")
     cf_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    a_parser = subparsers.add_parser("attachment", help="添付ファイル詳細")
+    a_subparsers = a_parser.add_subparsers(dest="attachment_command")
+    a_view_parser = a_subparsers.add_parser("view", help="添付ファイル詳細")
+    a_view_parser.add_argument("attachment_id", help="添付ファイルID")
+    a_view_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
     time_entry_parser = subparsers.add_parser("time_entry", help="作業時間一覧/登録")
     time_entry_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     time_entry_parser.add_argument(
@@ -723,6 +731,11 @@ def main() -> None:
         list_queries(full=args.full)
     elif args.command == "custom_field":
         list_custom_fields(full=args.full)
+    elif args.command == "attachment":
+        if args.attachment_command == "view":
+            read_attachment(args.attachment_id, full=args.full)
+        else:
+            a_parser.print_help()
     elif args.command == "time_entry":
         if args.time_entry_command == "create":
             project_id = args.project_id or default_project_id
