@@ -126,7 +126,9 @@ def main() -> None:
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
     i_create_parser = i_subparsers.add_parser("create", help="イシュー作成")
-    i_create_parser.add_argument("subject", help="イシューの題名")
+    i_create_parser.add_argument(
+        "subject", nargs="?", help="イシューの題名（省略で対話的に入力）"
+    )
     i_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     i_create_parser.add_argument("--tracker_id", "-t", help="トラッカーID")
     i_create_parser.add_argument("--priority_id", help="優先度ID")
@@ -366,13 +368,19 @@ def main() -> None:
             if not project_id:
                 print("project_idを指定するか、default_project_idを設定してください")
                 exit(1)
+            subject = args.subject
+            if subject is None:
+                subject = input("題名: ").strip()
+                if not subject:
+                    print("題名が空のためキャンセルしました")
+                    exit(1)
             if args.description is None:
                 description = open_editor()
             else:
                 description = args.description
             create_issue(
                 project_id=project_id,
-                subject=args.subject,
+                subject=subject,
                 description=description,
                 tracker_id=args.tracker_id,
                 priority_id=args.priority_id,
