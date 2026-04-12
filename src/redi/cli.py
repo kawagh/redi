@@ -32,6 +32,7 @@ from redi.issue import (
     read_issue,
     update_issue,
 )
+from redi.issue_relation import create_relation
 from redi.custom_field import list_custom_fields
 from redi.tracker import list_trackers
 from redi.user import list_users
@@ -166,6 +167,11 @@ def main() -> None:
         "--custom_fields",
         help="カスタムフィールド（id=value形式、カンマ区切り。例: 1=foo,2=bar）",
     )
+    i_update_parser.add_argument(
+        "--relate",
+        help="関係性のタイプ（relates, duplicates, blocks, precedes, follows など）",
+    )
+    i_update_parser.add_argument("--to", dest="relate_to", help="関係先のイシューID")
     i_comment_parser = i_subparsers.add_parser("comment", help="イシューにコメント追加")
     i_comment_parser.add_argument("issue_id", help="イシューID")
     i_comment_parser.add_argument(
@@ -386,6 +392,15 @@ def main() -> None:
                 notes=args.notes or "",
                 custom_fields=args.custom_fields,
             )
+            if args.relate and args.relate_to:
+                create_relation(
+                    issue_id=args.issue_id,
+                    issue_to_id=args.relate_to,
+                    relation_type=args.relate,
+                )
+            elif args.relate or args.relate_to:
+                print("--relate と --to は両方指定してください")
+                exit(1)
         elif args.issue_command == "comment":
             if args.notes:
                 add_note(args.issue_id, args.notes)
