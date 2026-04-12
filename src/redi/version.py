@@ -96,4 +96,6 @@ def list_versions(project_id: str, full: bool = False) -> None:
         print(json.dumps(versions, ensure_ascii=False))
     else:
         for version in versions:
-            print(f"{version['id']} {version['name']} ({version['status']})")
+            print(
+                f"{version['id']} {version['name']} ({version['status']}) {redmine_url}/versions/{version['id']}"
+            )
