@@ -208,6 +208,11 @@ def main() -> None:
         action="store_true",
         help="関係性を削除（--to と併用）",
     )
+    i_update_parser.add_argument(
+        "--attach",
+        action="append",
+        help="添付ファイルのパス（複数指定可）",
+    )
     i_comment_parser = i_subparsers.add_parser("comment", help="イシューにコメント追加")
     i_comment_parser.add_argument("issue_id", help="イシューID")
     i_comment_parser.add_argument(
@@ -450,6 +455,7 @@ def main() -> None:
                 or args.relate
                 or args.relate_to
                 or args.delete_relation
+                or args.attach
             )
             if no_args_provided:
                 current = fetch_issue(args.issue_id)
@@ -541,6 +547,7 @@ def main() -> None:
                 or args.parent_issue_id is not None
                 or args.notes
                 or args.custom_fields
+                or args.attach
             )
             should_update_issue_relation = args.delete_relation or (
                 args.relate and args.relate_to
@@ -558,6 +565,7 @@ def main() -> None:
                     parent_issue_id=args.parent_issue_id,
                     notes=args.notes or "",
                     custom_fields=args.custom_fields,
+                    attachments=args.attach,
                 )
             if args.delete_relation:
                 if not args.relate_to:
