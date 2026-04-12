@@ -252,7 +252,9 @@ def main() -> None:
         help="説明（値省略でエディタ起動）",
     )
     w_update_parser = w_subparsers.add_parser("update", help="Wikiページ更新")
-    w_update_parser.add_argument("page_title", help="Wikiページタイトル")
+    w_update_parser.add_argument(
+        "page_title", nargs="?", help="Wikiページタイトル（省略で対話的に選択）"
+    )
     w_update_parser.add_argument(
         "--description",
         "-d",
@@ -671,13 +673,44 @@ def main() -> None:
             else:
                 print("テキストが空のためキャンセルしました")
         elif args.wiki_command == "update":
+            page_title = args.page_title
+            if page_title is None:
+                pages = fetch_wikis(project_id)
+                if not pages:
+                    print("Wikiページが存在しません")
+                    exit(1)
+                children_map: dict[str | None, list[str]] = defaultdict(list)
+                for page in pages:
+                    parent = (
+                        page.get("parent", {}).get("title")
+                        if "parent" in page
+                        else None
+                    )
+                    children_map[parent].append(page["title"])
+                page_choices: list = []
+
+                def add_page_choices(parent: str | None, depth: int) -> None:
+                    for title in sorted(children_map.get(parent, [])):
+                        page_choices.append(
+                            questionary.Choice("  " * depth + title, value=title)
+                        )
+                        add_page_choices(title, depth + 1)
+
+                add_page_choices(None, 0)
+                page_title = questionary.select(
+                    "編集するページ",
+                    choices=page_choices,
+                ).ask(kbi_msg="")
+                if not page_title:
+                    print("キャンセルしました")
+                    exit(1)
             if args.description and args.description != "":
                 text = args.description
             else:
-                current = fetch_wiki(project_id, args.page_title)
+                current = fetch_wiki(project_id, page_title)
                 text = open_editor(current.get("text") or "")
             if text:
-                update_wiki(project_id, args.page_title, text)
+                update_wiki(project_id, page_title, text)
             else:
                 print("テキストが空のためキャンセルしました")
         else:
