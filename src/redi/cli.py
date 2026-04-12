@@ -44,7 +44,29 @@ from redi.custom_field import list_custom_fields
 from redi.tracker import fetch_trackers, list_trackers
 from redi.user import list_users
 from redi.version import create_version, fetch_versions, list_versions, update_version
-from redi.wiki import create_wiki, fetch_wiki, list_wikis, read_wiki, update_wiki
+from redi.wiki import (
+    build_children_map,
+    create_wiki,
+    fetch_wiki,
+    fetch_wikis,
+    list_wikis,
+    normalize_title,
+    read_wiki,
+    update_wiki,
+)
+
+
+def build_wiki_tree_choices(pages: list[dict]) -> list[questionary.Choice]:
+    children_map = build_children_map(pages)
+    choices: list[questionary.Choice] = []
+
+    def walk(parent: str | None, depth: int) -> None:
+        for title in children_map.get(parent, []):
+            choices.append(questionary.Choice("  " * depth + title, value=title))
+            walk(title, depth + 1)
+
+    walk(None, 0)
+    return choices
 
 
 def open_editor(initial_text: str = "") -> str:
@@ -230,7 +252,9 @@ def main() -> None:
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
     w_create_parser = w_subparsers.add_parser("create", help="Wikiページ作成")
-    w_create_parser.add_argument("page_title", help="Wikiページタイトル")
+    w_create_parser.add_argument(
+        "page_title", nargs="?", help="Wikiページタイトル（省略で対話的に入力）"
+    )
     w_create_parser.add_argument("--parent_title", help="親ページタイトル")
     w_create_parser.add_argument(
         "--description",
@@ -241,7 +265,9 @@ def main() -> None:
         help="説明（値省略でエディタ起動）",
     )
     w_update_parser = w_subparsers.add_parser("update", help="Wikiページ更新")
-    w_update_parser.add_argument("page_title", help="Wikiページタイトル")
+    w_update_parser.add_argument(
+        "page_title", nargs="?", help="Wikiページタイトル（省略で対話的に選択）"
+    )
     w_update_parser.add_argument(
         "--description",
         "-d",
@@ -607,24 +633,64 @@ def main() -> None:
         if args.wiki_command == "view":
             read_wiki(project_id, args.page_title, full=args.full)
         elif args.wiki_command == "create":
+            page_title = args.page_title
+            parent_title = args.parent_title
+            if page_title is None:
+                pages = fetch_wikis(project_id)
+                existing_titles = {normalize_title(p["title"]) for p in pages}
+
+                def validate_page_title(value: str) -> bool | str:
+                    stripped = value.strip()
+                    if not stripped:
+                        return "ページタイトルを入力してください"
+                    if normalize_title(stripped) in existing_titles:
+                        return "既存のページタイトルと重複しています"
+                    return True
+
+                page_title = questionary.text(
+                    "ページタイトル",
+                    validate=validate_page_title,
+                ).ask(kbi_msg="")
+                if not page_title:
+                    print("ページタイトルが空のためキャンセルしました")
+                    exit(1)
+                if parent_title is None:
+                    parent_title = questionary.select(
+                        "親ページ",
+                        choices=build_wiki_tree_choices(pages),
+                    ).ask(kbi_msg="")
             if args.description and args.description != "":
                 text = args.description
             else:
                 text = open_editor()
             if text:
-                create_wiki(
-                    project_id, args.page_title, text, parent_title=args.parent_title
-                )
+                page_title = normalize_title(page_title)
+                if parent_title:
+                    parent_title = normalize_title(parent_title)
+                create_wiki(project_id, page_title, text, parent_title=parent_title)
             else:
                 print("テキストが空のためキャンセルしました")
         elif args.wiki_command == "update":
+            page_title = args.page_title
+            if page_title is None:
+                pages = fetch_wikis(project_id)
+                if not pages:
+                    print("Wikiページが存在しません")
+                    exit(1)
+                page_title = questionary.select(
+                    "編集するページ",
+                    choices=build_wiki_tree_choices(pages),
+                ).ask(kbi_msg="")
+                if not page_title:
+                    print("キャンセルしました")
+                    exit(1)
             if args.description and args.description != "":
                 text = args.description
             else:
-                current = fetch_wiki(project_id, args.page_title)
+                current = fetch_wiki(project_id, page_title)
                 text = open_editor(current.get("text") or "")
             if text:
-                update_wiki(project_id, args.page_title, text)
+                update_wiki(project_id, page_title, text)
             else:
                 print("テキストが空のためキャンセルしました")
         else:
