@@ -7,6 +7,10 @@ import tempfile
 from importlib.metadata import version
 
 import questionary
+import questionary.prompts.common
+
+questionary.prompts.common.INDICATOR_SELECTED = "[x]"  # pyright: ignore[reportPrivateImportUsage]
+questionary.prompts.common.INDICATOR_UNSELECTED = "[ ]"  # pyright: ignore[reportPrivateImportUsage]
 
 from redi.config import (
     default_project_id,
@@ -431,7 +435,9 @@ def main() -> None:
                     questionary.Choice("コメント (notes)", value="notes"),
                 ]
                 selected = questionary.checkbox(
-                    "更新する項目を選択", choices=field_choices
+                    "更新する項目を選択",
+                    choices=field_choices,
+                    style=questionary.Style([("selected", "noreverse")]),
                 ).ask(kbi_msg="")
                 if not selected:
                     print("更新する項目が選択されていないためキャンセルしました")
