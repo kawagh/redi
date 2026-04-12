@@ -43,7 +43,7 @@ from redi.issue_relation import create_relation, delete_relation
 from redi.custom_field import list_custom_fields
 from redi.tracker import fetch_trackers, list_trackers
 from redi.user import list_users
-from redi.version import create_version, list_versions, update_version
+from redi.version import create_version, fetch_versions, list_versions, update_version
 from redi.wiki import create_wiki, fetch_wiki, list_wikis, read_wiki, update_wiki
 
 
@@ -432,6 +432,9 @@ def main() -> None:
                     questionary.Choice("説明 (description)", value="description"),
                     questionary.Choice("ステータス (status)", value="status"),
                     questionary.Choice("優先度 (priority)", value="priority"),
+                    questionary.Choice(
+                        "対象バージョン (fixed_version)", value="fixed_version"
+                    ),
                     questionary.Choice("コメント (notes)", value="notes"),
                 ]
                 description_choice = next(
@@ -477,6 +480,21 @@ def main() -> None:
                         choices=[
                             questionary.Choice(p["name"], value=str(p["id"]))
                             for p in priorities
+                        ],
+                    ).ask(kbi_msg="")
+                if "fixed_version" in selected:
+                    project_id = (current.get("project") or {}).get("id")
+                    if not project_id:
+                        print("プロジェクトが特定できないためキャンセルしました")
+                        exit(1)
+                    versions = fetch_versions(str(project_id))
+                    args.fixed_version_id = questionary.select(
+                        "対象バージョン",
+                        choices=[
+                            questionary.Choice(
+                                f"{v['name']} ({v['status']})", value=str(v["id"])
+                            )
+                            for v in versions
                         ],
                     ).ask(kbi_msg="")
                 if "notes" in selected:
