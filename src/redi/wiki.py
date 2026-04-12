@@ -42,7 +42,8 @@ def list_wikis(project_id: str) -> None:
         for i, title in enumerate(children):
             is_last = i == len(children) - 1
             connector = "└── " if is_last else "├── "
-            print(f"{prefix}{connector}{title}")
+            url = f"{redmine_url}/projects/{project_id}/wiki/{title}"
+            print(f"{prefix}{connector}[{title}]({url})")
             next_prefix = prefix + ("    " if is_last else "│   ")
             print_tree(title, next_prefix)
 
