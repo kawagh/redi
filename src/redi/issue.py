@@ -66,15 +66,43 @@ def read_issue(issue_id: str, full: bool = False) -> None:
             lines.append("")
             lines.append("関係性:")
             target_id = int(issue_id)
+            inverse_relation = {
+                "precedes": "follows",
+                "follows": "precedes",
+                "blocks": "blocked",
+                "blocked": "blocks",
+                "duplicates": "duplicated",
+                "duplicated": "duplicates",
+                "copied_to": "copied_from",
+                "copied_from": "copied_to",
+                "relates": "relates",
+            }
+            relation_labels = {
+                "relates": "関連している",
+                "duplicates": "重複している",
+                "duplicated": "重複されている",
+                "blocks": "ブロック先",
+                "blocked": "ブロック元",
+                "precedes": "先行する",
+                "follows": "後続する",
+                "copied_to": "コピー先",
+                "copied_from": "コピー元",
+            }
             for r in relations:
-                other = (
-                    r["issue_to_id"]
-                    if r["issue_id"] == target_id
-                    else r["issue_id"]
-                )
-                lines.append(
-                    f"  [{r['relation_type']}] {redmine_url}/issues/{other}"
-                )
+                if r["issue_id"] == target_id:
+                    other = r["issue_to_id"]
+                    rel_type = r["relation_type"]
+                else:
+                    other = r["issue_id"]
+                    rel_type = inverse_relation.get(
+                        r["relation_type"], r["relation_type"]
+                    )
+                if isinstance(rel_type, str):
+                    label = relation_labels.get(rel_type)
+                else:
+                    # unknown rel_type
+                    label = rel_type
+                lines.append(f"  [{label}] {redmine_url}/issues/{other}")
 
         print("\n".join(lines))
 
