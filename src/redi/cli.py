@@ -245,6 +245,7 @@ def main() -> None:
     )
     w_parser = subparsers.add_parser("wiki", aliases=["w"], help="Wiki一覧/詳細/作成")
     w_parser.add_argument("--project_id", "-p", help="プロジェクトID")
+    w_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     w_subparsers = w_parser.add_subparsers(dest="wiki_command")
     w_view_parser = w_subparsers.add_parser("view", help="Wikiページ詳細")
     w_view_parser.add_argument("page_title", help="Wikiページタイトル")
@@ -694,7 +695,7 @@ def main() -> None:
             else:
                 print("テキストが空のためキャンセルしました")
         else:
-            list_wikis(project_id)
+            list_wikis(project_id, full=args.full)
     elif args.command in ("user", "u"):
         project_id = args.project_id or default_project_id
         list_users(project_id=project_id, full=args.full)

@@ -34,8 +34,12 @@ def build_children_map(pages: list[dict]) -> dict[str | None, list[str]]:
     return children_map
 
 
-def list_wikis(project_id: str) -> None:
-    children_map = build_children_map(fetch_wikis(project_id))
+def list_wikis(project_id: str, full: bool = False) -> None:
+    pages = fetch_wikis(project_id)
+    if full:
+        print(json.dumps(pages, ensure_ascii=False))
+        return
+    children_map = build_children_map(pages)
 
     def print_tree(parent: str | None, prefix: str = "") -> None:
         children = children_map.get(parent, [])
