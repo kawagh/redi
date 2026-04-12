@@ -23,13 +23,13 @@ def list_issues(
         headers={"X-Redmine-API-Key": redmine_api_key},
         params=params,
     )
-    tickets = response.json()["issues"]
+    issues = response.json()["issues"]
     if full:
-        print(json.dumps(tickets, ensure_ascii=False))
+        print(json.dumps(issues, ensure_ascii=False))
     else:
-        for ticket in tickets:
+        for issue in issues:
             print(
-                f"{ticket['id']} {ticket['subject']} {redmine_url}/issues/{ticket['id']}"
+                f"{issue['id']} {issue['subject']} {redmine_url}/issues/{issue['id']}"
             )
 
 
@@ -53,17 +53,17 @@ def read_issue(issue_id: str, full: bool = False) -> None:
     includes = ["relations"]
     if full:
         includes.append("journals")
-    ticket = fetch_issue(issue_id, include=",".join(includes))
+    issue = fetch_issue(issue_id, include=",".join(includes))
 
     if full:
-        print(json.dumps(ticket, ensure_ascii=False))
+        print(json.dumps(issue, ensure_ascii=False))
     else:
         lines = []
-        lines.append(f"{ticket['id']} {ticket['subject']}")
-        if ticket.get("description"):
+        lines.append(f"{issue['id']} {issue['subject']}")
+        if issue.get("description"):
             lines.append("")
-            lines.append(ticket["description"])
-        relations = ticket.get("relations") or []
+            lines.append(issue["description"])
+        relations = issue.get("relations") or []
         if relations:
             lines.append("")
             lines.append("関係性:")
