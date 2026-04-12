@@ -1,6 +1,7 @@
 # PYTHON_ARGCOMPLETE_OK
 import argcomplete
 import argparse
+from collections import defaultdict
 import os
 import subprocess
 import tempfile
@@ -626,12 +627,25 @@ def main() -> None:
                 page_title = page_title.strip()
                 if parent_title is None:
                     pages = fetch_wikis(project_id)
-                    parent_choices = [
-                        questionary.Choice("(なし)", value=None)
-                    ] + [
-                        questionary.Choice(p["title"], value=p["title"])
-                        for p in sorted(pages, key=lambda p: p["title"])
-                    ]
+
+                    children_map: dict[str | None, list[str]] = defaultdict(list)
+                    for page in pages:
+                        parent = (
+                            page.get("parent", {}).get("title")
+                            if "parent" in page
+                            else None
+                        )
+                        children_map[parent].append(page["title"])
+                    parent_choices = []
+
+                    def add_choices(parent: str | None, depth: int) -> None:
+                        for title in sorted(children_map.get(parent, [])):
+                            parent_choices.append(
+                                questionary.Choice("  " * depth + title, value=title)
+                            )
+                            add_choices(title, depth + 1)
+
+                    add_choices(None, 0)
                     parent_title = questionary.select(
                         "親ページ",
                         choices=parent_choices,
@@ -641,9 +655,7 @@ def main() -> None:
             else:
                 text = open_editor()
             if text:
-                create_wiki(
-                    project_id, page_title, text, parent_title=parent_title
-                )
+                create_wiki(project_id, page_title, text, parent_title=parent_title)
             else:
                 print("テキストが空のためキャンセルしました")
         elif args.wiki_command == "update":
