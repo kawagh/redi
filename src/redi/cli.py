@@ -30,6 +30,7 @@ from redi.issue_status import fetch_issue_statuses, list_issue_statuses
 from redi.project import create_project, list_projects, read_project, update_project
 from redi.query import list_queries
 from redi.role import list_roles, read_role
+from redi.search import search
 from redi.time_entry import create_time_entry, list_time_entries
 from redi.issue import (
     add_note,
@@ -324,6 +325,13 @@ def main() -> None:
     )
     cf_parser = subparsers.add_parser("custom_field", help="カスタムフィールド一覧")
     cf_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    search_parser = subparsers.add_parser("search", help="検索")
+    search_parser.add_argument("query", help="検索クエリ")
+    search_parser.add_argument("--limit", "-l", type=int, help="取得件数")
+    search_parser.add_argument("--offset", "-o", type=int, help="オフセット")
+    search_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
     a_parser = subparsers.add_parser("attachment", help="添付ファイル詳細")
     a_subparsers = a_parser.add_subparsers(dest="attachment_command")
     a_view_parser = a_subparsers.add_parser("view", help="添付ファイル詳細")
@@ -744,6 +752,13 @@ def main() -> None:
         list_queries(full=args.full)
     elif args.command == "custom_field":
         list_custom_fields(full=args.full)
+    elif args.command == "search":
+        search(
+            query=args.query,
+            limit=args.limit,
+            offset=args.offset,
+            full=args.full,
+        )
     elif args.command == "attachment":
         if args.attachment_command == "view":
             read_attachment(args.attachment_id, full=args.full)
