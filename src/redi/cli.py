@@ -620,14 +620,30 @@ def main() -> None:
             page_title = args.page_title
             parent_title = args.parent_title
             if page_title is None:
-                page_title = questionary.text("ページタイトル").ask(kbi_msg="")
+                pages = fetch_wikis(project_id)
+
+                # redmineで空白文字を含んでwikiのpageを作成するとURLの都合か`_`に置き換えられている
+                # 既存のwikiのタイトルの先頭文字が大文字になっている
+                def normalize_title(t: str) -> str:
+                    return t.strip().replace(" ", "_").lower()
+
+                existing_titles = {normalize_title(p["title"]) for p in pages}
+                page_title = questionary.text(
+                    "ページタイトル",
+                    validate=lambda page_title_input: (
+                        True
+                        if page_title_input.strip()
+                        and normalize_title(page_title_input) not in existing_titles
+                        else "既存のページタイトルと重複しています"
+                        if normalize_title(page_title_input) in existing_titles
+                        else "ページタイトルを入力してください"
+                    ),
+                ).ask(kbi_msg="")
                 if not page_title:
                     print("ページタイトルが空のためキャンセルしました")
                     exit(1)
                 page_title = page_title.strip()
                 if parent_title is None:
-                    pages = fetch_wikis(project_id)
-
                     children_map: dict[str | None, list[str]] = defaultdict(list)
                     for page in pages:
                         parent = (
