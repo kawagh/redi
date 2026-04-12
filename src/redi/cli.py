@@ -6,6 +6,8 @@ import subprocess
 import tempfile
 from importlib.metadata import version
 
+import questionary
+
 from redi.config import (
     default_project_id,
     editor,
@@ -34,7 +36,7 @@ from redi.issue import (
 )
 from redi.issue_relation import create_relation, delete_relation
 from redi.custom_field import list_custom_fields
-from redi.tracker import list_trackers
+from redi.tracker import fetch_trackers, list_trackers
 from redi.user import list_users
 from redi.version import create_version, list_versions, update_version
 from redi.wiki import create_wiki, fetch_wiki, list_wikis, read_wiki, update_wiki
@@ -126,7 +128,9 @@ def main() -> None:
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
     i_create_parser = i_subparsers.add_parser("create", help="イシュー作成")
-    i_create_parser.add_argument("subject", help="イシューの題名")
+    i_create_parser.add_argument(
+        "subject", nargs="?", help="イシューの題名（省略で対話的に入力）"
+    )
     i_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     i_create_parser.add_argument("--tracker_id", "-t", help="トラッカーID")
     i_create_parser.add_argument("--priority_id", help="優先度ID")
@@ -366,15 +370,35 @@ def main() -> None:
             if not project_id:
                 print("project_idを指定するか、default_project_idを設定してください")
                 exit(1)
+            subject = args.subject
+            tracker_id = args.tracker_id
+            if subject is None:
+                if tracker_id is None:
+                    trackers = fetch_trackers()
+                    choices = [
+                        questionary.Choice(title=t["name"], value=str(t["id"]))
+                        for t in trackers
+                    ]
+                    tracker_id = questionary.select(
+                        "トラッカーを選択", choices=choices
+                    ).ask(kbi_msg="")
+                    if tracker_id is None:
+                        print("キャンセルしました")
+                        exit(1)
+                subject = questionary.text("題名").ask(kbi_msg="")
+                if not subject:
+                    print("題名が空のためキャンセルしました")
+                    exit(1)
+                subject = subject.strip()
             if args.description is None:
                 description = open_editor()
             else:
                 description = args.description
             create_issue(
                 project_id=project_id,
-                subject=args.subject,
+                subject=subject,
                 description=description,
-                tracker_id=args.tracker_id,
+                tracker_id=tracker_id,
                 priority_id=args.priority_id,
                 assigned_to_id=args.assigned_to_id,
                 custom_fields=args.custom_fields,
