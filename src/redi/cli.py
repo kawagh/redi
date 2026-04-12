@@ -29,7 +29,7 @@ from redi.enumeration import (
 from redi.issue_status import fetch_issue_statuses, list_issue_statuses
 from redi.project import create_project, list_projects, read_project, update_project
 from redi.query import list_queries
-from redi.role import list_roles
+from redi.role import list_roles, read_role
 from redi.time_entry import create_time_entry, list_time_entries
 from redi.issue import (
     add_note,
@@ -310,6 +310,12 @@ def main() -> None:
     dc_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     role_parser = subparsers.add_parser("role", help="ロール一覧")
     role_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
+    role_subparsers = role_parser.add_subparsers(dest="role_command")
+    role_view_parser = role_subparsers.add_parser("view", help="ロール詳細")
+    role_view_parser.add_argument("role_id", help="ロールID")
+    role_view_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
     query_parser = subparsers.add_parser("query", help="カスタムクエリ一覧")
@@ -730,7 +736,10 @@ def main() -> None:
     elif args.command == "document_category":
         list_document_categories(full=args.full)
     elif args.command == "role":
-        list_roles(full=args.full)
+        if args.role_command == "view":
+            read_role(args.role_id, full=args.full)
+        else:
+            list_roles(full=args.full)
     elif args.command == "query":
         list_queries(full=args.full)
     elif args.command == "custom_field":
