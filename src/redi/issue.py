@@ -72,7 +72,9 @@ def read_issue(issue_id: str, full: bool = False) -> None:
                     if r["issue_id"] == target_id
                     else r["issue_id"]
                 )
-                lines.append(f"  [{r['relation_type']}] #{other}")
+                lines.append(
+                    f"  [{r['relation_type']}] {redmine_url}/issues/{other}"
+                )
 
         print("\n".join(lines))
 
