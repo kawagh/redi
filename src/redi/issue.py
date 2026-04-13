@@ -11,6 +11,9 @@ def list_issues(
     project_id: str | None = None,
     fixed_version_id: str | None = None,
     assigned_to: str | None = None,
+    status_id: str | None = None,
+    tracker_id: str | None = None,
+    priority_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
     full: bool = False,
@@ -22,6 +25,12 @@ def list_issues(
         params["fixed_version_id"] = fixed_version_id
     if assigned_to:
         params["assigned_to_id"] = assigned_to
+    if status_id:
+        params["status_id"] = status_id
+    if tracker_id:
+        params["tracker_id"] = tracker_id
+    if priority_id:
+        params["priority_id"] = priority_id
     if limit is not None:
         params["limit"] = limit
     if offset is not None:

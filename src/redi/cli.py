@@ -150,6 +150,13 @@ def main() -> None:
         "-a",
         help="担当者でフィルタリング（ユーザーIDまたは'me'）",
     )
+    i_parser.add_argument(
+        "--status_id",
+        "-s",
+        help="ステータスIDでフィルタリング（'open'/'closed'/'*' も可）",
+    )
+    i_parser.add_argument("--tracker_id", "-t", help="トラッカーIDでフィルタリング")
+    i_parser.add_argument("--priority_id", help="優先度IDでフィルタリング")
     i_parser.add_argument("--limit", "-l", type=int, help="取得件数")
     i_parser.add_argument("--offset", "-o", type=int, help="オフセット")
     i_subparsers = i_parser.add_subparsers(dest="issue_command")
@@ -629,6 +636,9 @@ def main() -> None:
                 project_id=args.project_id or default_project_id,
                 fixed_version_id=args.version,
                 assigned_to=args.assigned_to,
+                status_id=args.status_id,
+                tracker_id=args.tracker_id,
+                priority_id=args.priority_id,
                 limit=args.limit,
                 offset=args.offset,
                 full=args.full,
