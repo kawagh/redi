@@ -1,15 +1,10 @@
 import json
 
-import requests
-
-from redi.config import redmine_api_key, redmine_url
+from redi.client import client
 
 
 def list_roles(full: bool = False) -> None:
-    response = requests.get(
-        f"{redmine_url}/roles.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-    )
+    response = client.get("/roles.json")
     response.raise_for_status()
     roles = response.json()["roles"]
     if full:
@@ -20,10 +15,7 @@ def list_roles(full: bool = False) -> None:
 
 
 def fetch_role(role_id: str) -> dict:
-    response = requests.get(
-        f"{redmine_url}/roles/{role_id}.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-    )
+    response = client.get(f"/roles/{role_id}.json")
     if response.status_code == 404:
         print(f"ロールが見つかりません: #{role_id}")
         exit(1)

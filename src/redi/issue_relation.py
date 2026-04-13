@@ -1,17 +1,13 @@
 import requests
 
-from redi.config import redmine_api_key, redmine_url
+from redi.client import client
 
 
 def create_relation(
     issue_id: str, issue_to_id: str, relation_type: str = "relates"
 ) -> None:
-    response = requests.post(
-        f"{redmine_url}/issues/{issue_id}/relations.json",
-        headers={
-            "X-Redmine-API-Key": redmine_api_key,
-            "Content-Type": "application/json",
-        },
+    response = client.post(
+        f"/issues/{issue_id}/relations.json",
         json={
             "relation": {
                 "issue_to_id": issue_to_id,
@@ -30,10 +26,7 @@ def create_relation(
 
 
 def delete_relation(issue_id: str, issue_to_id: str) -> None:
-    response = requests.get(
-        f"{redmine_url}/issues/{issue_id}/relations.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-    )
+    response = client.get(f"/issues/{issue_id}/relations.json")
     response.raise_for_status()
     relations = response.json()["relations"]
     target_id = int(issue_to_id)
@@ -48,10 +41,7 @@ def delete_relation(issue_id: str, issue_to_id: str) -> None:
     if not target_relation:
         print(f"#{issue_id} と #{issue_to_id} の間に関係性が見つかりません")
         exit(1)
-    response = requests.delete(
-        f"{redmine_url}/relations/{target_relation['id']}.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-    )
+    response = client.delete(f"/relations/{target_relation['id']}.json")
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:

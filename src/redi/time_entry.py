@@ -2,7 +2,7 @@ import json
 
 import requests
 
-from redi.config import redmine_api_key, redmine_url
+from redi.client import client
 
 
 def create_time_entry(
@@ -27,14 +27,7 @@ def create_time_entry(
         data["spent_on"] = spent_on
     if comments:
         data["comments"] = comments
-    response = requests.post(
-        f"{redmine_url}/time_entries.json",
-        headers={
-            "X-Redmine-API-Key": redmine_api_key,
-            "Content-Type": "application/json",
-        },
-        json={"time_entry": data},
-    )
+    response = client.post("/time_entries.json", json={"time_entry": data})
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -54,17 +47,13 @@ def list_time_entries(
     full: bool = False,
 ) -> None:
     if project_id:
-        url = f"{redmine_url}/projects/{project_id}/time_entries.json"
+        path = f"/projects/{project_id}/time_entries.json"
     else:
-        url = f"{redmine_url}/time_entries.json"
+        path = "/time_entries.json"
     params = {}
     if user_id:
         params["user_id"] = user_id
-    response = requests.get(
-        url,
-        headers={"X-Redmine-API-Key": redmine_api_key},
-        params=params,
-    )
+    response = client.get(path, params=params)
     response.raise_for_status()
     time_entries = response.json()["time_entries"]
     if full:

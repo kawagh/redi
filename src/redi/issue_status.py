@@ -1,15 +1,10 @@
 import json
 
-import requests
-
-from redi.config import redmine_api_key, redmine_url
+from redi.client import client
 
 
 def fetch_issue_statuses() -> list[dict]:
-    response = requests.get(
-        f"{redmine_url}/issue_statuses.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-    )
+    response = client.get("/issue_statuses.json")
     response.raise_for_status()
     return response.json()["issue_statuses"]
 

@@ -2,14 +2,11 @@ import json
 
 import requests
 
-from redi.config import redmine_api_key, redmine_url
+from redi.client import client
 
 
 def list_projects(full: bool = False) -> None:
-    response = requests.get(
-        f"{redmine_url}/projects.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-    )
+    response = client.get("/projects.json")
     projects = response.json()["projects"]
     if full:
         print(json.dumps(projects, ensure_ascii=False))
@@ -39,14 +36,7 @@ def create_project(
     if tracker_ids is not None:
         data["tracker_ids"] = tracker_ids
     try:
-        response = requests.post(
-            f"{redmine_url}/projects.json",
-            headers={
-                "X-Redmine-API-Key": redmine_api_key,
-                "Content-Type": "application/json",
-            },
-            json={"project": data},
-        )
+        response = client.post("/projects.json", json={"project": data})
         response.raise_for_status()
         project = response.json()["project"]
         print(f"{project['id']} {project['name']} ({project['identifier']})")
@@ -78,14 +68,7 @@ def update_project(
     if len(data) == 0:
         print("更新をキャンセルしました")
         exit()
-    response = requests.put(
-        f"{redmine_url}/projects/{project_id}.json",
-        headers={
-            "X-Redmine-API-Key": redmine_api_key,
-            "Content-Type": "application/json",
-        },
-        json={"project": data},
-    )
+    response = client.put(f"/projects/{project_id}.json", json={"project": data})
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -100,11 +83,7 @@ def read_project(project_id: str, include: str = "") -> None:
     params: dict = {}
     if include:
         params["include"] = include
-    response = requests.get(
-        f"{redmine_url}/projects/{project_id}.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-        params=params,
-    )
+    response = client.get(f"/projects/{project_id}.json", params=params)
     if response.status_code == 404:
         print(f"プロジェクトが見つかりません: {project_id}")
         exit(1)

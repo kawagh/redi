@@ -3,7 +3,8 @@ import json
 import requests
 
 from redi.attachment import upload_file
-from redi.config import redmine_api_key, redmine_url
+from redi.client import client
+from redi.config import redmine_url
 
 
 def list_issues(
@@ -19,11 +20,7 @@ def list_issues(
         params["fixed_version_id"] = fixed_version_id
     if assigned_to:
         params["assigned_to_id"] = assigned_to
-    response = requests.get(
-        f"{redmine_url}/issues.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-        params=params,
-    )
+    response = client.get("/issues.json", params=params)
     issues = response.json()["issues"]
     if full:
         print(json.dumps(issues, ensure_ascii=False))
@@ -38,11 +35,7 @@ def fetch_issue(issue_id: str, include: str = "") -> dict:
     params = {}
     if include:
         params["include"] = include
-    response = requests.get(
-        f"{redmine_url}/issues/{issue_id}.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-        params=params,
-    )
+    response = client.get(f"/issues/{issue_id}.json", params=params)
     if response.status_code == 404:
         print(f"イシューが見つかりません: #{issue_id}")
         exit(1)
@@ -148,14 +141,7 @@ def create_issue(
         issue_data["assigned_to_id"] = assigned_to_id
     if custom_fields:
         issue_data["custom_fields"] = parse_custom_fields(custom_fields)
-    response = requests.post(
-        f"{redmine_url}/issues.json",
-        headers={
-            "X-Redmine-API-Key": redmine_api_key,
-            "Content-Type": "application/json",
-        },
-        json={"issue": issue_data},
-    )
+    response = client.post("/issues.json", json={"issue": issue_data})
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -208,14 +194,7 @@ def update_issue(
     if len(issue_data) == 0:
         print("更新をキャンセルしました")
         exit()
-    response = requests.put(
-        f"{redmine_url}/issues/{issue_id}.json",
-        headers={
-            "X-Redmine-API-Key": redmine_api_key,
-            "Content-Type": "application/json",
-        },
-        json={"issue": issue_data},
-    )
+    response = client.put(f"/issues/{issue_id}.json", json={"issue": issue_data})
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -228,20 +207,10 @@ def update_issue(
 
 
 def add_note(issue_id: str, notes: str) -> None:
-    response = requests.put(
-        f"{redmine_url}/issues/{issue_id}.json",
-        headers={
-            "X-Redmine-API-Key": redmine_api_key,
-            "Content-Type": "application/json",
-        },
-        json={"issue": {"notes": notes}},
-    )
+    response = client.put(f"/issues/{issue_id}.json", json={"issue": {"notes": notes}})
     response.raise_for_status()
     # コメント後にイシューのジャーナル(プロパティ変更履歴やコメント)を取得して最新のjournal IDを得る
-    issue_response = requests.get(
-        f"{redmine_url}/issues/{issue_id}.json?include=journals",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-    )
+    issue_response = client.get(f"/issues/{issue_id}.json?include=journals")
     issue_response.raise_for_status()
     journals = issue_response.json()["issue"].get("journals", [])
     if journals:

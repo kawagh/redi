@@ -1,15 +1,10 @@
 import json
 
-import requests
-
-from redi.config import redmine_api_key, redmine_url
+from redi.client import client
 
 
 def fetch_trackers() -> list[dict]:
-    response = requests.get(
-        f"{redmine_url}/trackers.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-    )
+    response = client.get("/trackers.json")
     response.raise_for_status()
     return response.json()["trackers"]
 

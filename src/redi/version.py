@@ -2,7 +2,8 @@ import json
 
 import requests
 
-from redi.config import redmine_api_key, redmine_url
+from redi.client import client
+from redi.config import redmine_url
 
 
 def create_version(
@@ -22,13 +23,8 @@ def create_version(
         version_data["description"] = description
     if sharing:
         version_data["sharing"] = sharing
-    response = requests.post(
-        f"{redmine_url}/projects/{project_id}/versions.json",
-        headers={
-            "X-Redmine-API-Key": redmine_api_key,
-            "Content-Type": "application/json",
-        },
-        json={"version": version_data},
+    response = client.post(
+        f"/projects/{project_id}/versions.json", json={"version": version_data}
     )
     try:
         response.raise_for_status()
@@ -63,13 +59,8 @@ def update_version(
     if len(version_data) == 0:
         print("更新をキャンセルしました")
         exit()
-    response = requests.put(
-        f"{redmine_url}/versions/{version_id}.json",
-        headers={
-            "X-Redmine-API-Key": redmine_api_key,
-            "Content-Type": "application/json",
-        },
-        json={"version": version_data},
+    response = client.put(
+        f"/versions/{version_id}.json", json={"version": version_data}
     )
     try:
         response.raise_for_status()
@@ -82,10 +73,7 @@ def update_version(
 
 
 def fetch_versions(project_id: str) -> list[dict]:
-    response = requests.get(
-        f"{redmine_url}/projects/{project_id}/versions.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-    )
+    response = client.get(f"/projects/{project_id}/versions.json")
     response.raise_for_status()
     return response.json()["versions"]
 

@@ -1,16 +1,11 @@
 import json
 
-import requests
-
-from redi.config import redmine_api_key, redmine_url
+from redi.client import client
 
 
 def list_users(project_id: str | None = None, full: bool = False) -> None:
     if project_id:
-        response = requests.get(
-            f"{redmine_url}/projects/{project_id}/memberships.json",
-            headers={"X-Redmine-API-Key": redmine_api_key},
-        )
+        response = client.get(f"/projects/{project_id}/memberships.json")
         response.raise_for_status()
         memberships = response.json()["memberships"]
         if full:
@@ -21,10 +16,7 @@ def list_users(project_id: str | None = None, full: bool = False) -> None:
                     user = m["user"]
                     print(f"{user['id']} {user['name']}")
     else:
-        response = requests.get(
-            f"{redmine_url}/users.json",
-            headers={"X-Redmine-API-Key": redmine_api_key},
-        )
+        response = client.get("/users.json")
         if response.status_code == 403:
             print("ユーザー一覧の取得には管理者権限が必要です")
             print("プロジェクトを指定してください: redi u -p <project_id>")

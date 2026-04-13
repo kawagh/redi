@@ -1,9 +1,8 @@
 import json
 from collections import defaultdict
 
-import requests
-
-from redi.config import redmine_api_key, redmine_url
+from redi.client import client
+from redi.config import redmine_url
 
 
 # redmineで空白文字を含んでwikiのpageを作成するとURLの都合か`_`に置き換えられている
@@ -16,10 +15,7 @@ def normalize_title(t: str) -> str:
 
 
 def fetch_wikis(project_id: str) -> list[dict]:
-    response = requests.get(
-        f"{redmine_url}/projects/{project_id}/wiki/index.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-    )
+    response = client.get(f"/projects/{project_id}/wiki/index.json")
     response.raise_for_status()
     return response.json()["wiki_pages"]
 
@@ -55,10 +51,7 @@ def list_wikis(project_id: str, full: bool = False) -> None:
 
 
 def fetch_wiki(project_id: str, page_title: str) -> dict:
-    response = requests.get(
-        f"{redmine_url}/projects/{project_id}/wiki/{page_title}.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-    )
+    response = client.get(f"/projects/{project_id}/wiki/{page_title}.json")
     if response.status_code == 404:
         print(f"Wikiページが見つかりません: {page_title}")
         exit(1)
@@ -75,12 +68,8 @@ def read_wiki(project_id: str, page_title: str, full: bool = False) -> None:
 
 
 def update_wiki(project_id: str, page_title: str, text: str) -> None:
-    response = requests.put(
-        f"{redmine_url}/projects/{project_id}/wiki/{page_title}.json",
-        headers={
-            "X-Redmine-API-Key": redmine_api_key,
-            "Content-Type": "application/json",
-        },
+    response = client.put(
+        f"/projects/{project_id}/wiki/{page_title}.json",
         json={"wiki_page": {"text": text}},
     )
     response.raise_for_status()
@@ -96,10 +85,7 @@ def create_wiki(
 ) -> None:
     if parent_title:
         parent_exists = (
-            requests.get(
-                f"{redmine_url}/projects/{project_id}/wiki/{parent_title}.json",
-                headers={"X-Redmine-API-Key": redmine_api_key},
-            ).status_code
+            client.get(f"/projects/{project_id}/wiki/{parent_title}.json").status_code
             == 200
         )
         if not parent_exists:
@@ -107,22 +93,14 @@ def create_wiki(
             return
 
     exists = (
-        requests.get(
-            f"{redmine_url}/projects/{project_id}/wiki/{page_title}.json",
-            headers={"X-Redmine-API-Key": redmine_api_key},
-        ).status_code
-        == 200
+        client.get(f"/projects/{project_id}/wiki/{page_title}.json").status_code == 200
     )
 
     body: dict = {"text": text}
     if parent_title:
         body["parent_title"] = parent_title
-    response = requests.put(
-        f"{redmine_url}/projects/{project_id}/wiki/{page_title}.json",
-        headers={
-            "X-Redmine-API-Key": redmine_api_key,
-            "Content-Type": "application/json",
-        },
+    response = client.put(
+        f"/projects/{project_id}/wiki/{page_title}.json",
         json={"wiki_page": body},
     )
     response.raise_for_status()

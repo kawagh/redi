@@ -1,8 +1,6 @@
 import json
 
-import requests
-
-from redi.config import redmine_api_key, redmine_url
+from redi.client import client
 
 
 # https://www.redmine.org/projects/redmine/wiki/Rest_Search
@@ -18,11 +16,7 @@ def search(
         params["limit"] = limit
     if offset is not None:
         params["offset"] = offset
-    response = requests.get(
-        f"{redmine_url}/search.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-        params=params,
-    )
+    response = client.get("/search.json", params=params)
     response.raise_for_status()
     data = response.json()
     results = data.get("results", [])

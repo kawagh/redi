@@ -4,7 +4,8 @@ import os
 
 import requests
 
-from redi.config import redmine_api_key, redmine_url
+from redi.client import client
+from redi.config import redmine_url
 
 
 def upload_file(file_path: str) -> dict:
@@ -14,12 +15,9 @@ def upload_file(file_path: str) -> dict:
     filename = os.path.basename(file_path)
     content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
     with open(file_path, "rb") as f:
-        response = requests.post(
-            f"{redmine_url}/uploads.json",
-            headers={
-                "X-Redmine-API-Key": redmine_api_key,
-                "Content-Type": "application/octet-stream",
-            },
+        response = client.post(
+            "/uploads.json",
+            headers={"Content-Type": "application/octet-stream"},
             data=f,
         )
     try:
@@ -38,10 +36,7 @@ def upload_file(file_path: str) -> dict:
 
 
 def fetch_attachment(attachment_id: str) -> dict:
-    response = requests.get(
-        f"{redmine_url}/attachments/{attachment_id}.json",
-        headers={"X-Redmine-API-Key": redmine_api_key},
-    )
+    response = client.get(f"/attachments/{attachment_id}.json")
     if response.status_code == 404:
         print(f"添付ファイルが見つかりません: #{attachment_id}")
         exit(1)
@@ -84,13 +79,8 @@ def update_attachment(
     if not data:
         print("更新をキャンセルしました")
         exit()
-    response = requests.patch(
-        f"{redmine_url}/attachments/{attachment_id}.json",
-        headers={
-            "X-Redmine-API-Key": redmine_api_key,
-            "Content-Type": "application/json",
-        },
-        json={"attachment": data},
+    response = client.patch(
+        f"/attachments/{attachment_id}.json", json={"attachment": data}
     )
     if response.status_code == 404:
         print(f"添付ファイルが見つかりません: #{attachment_id}")
