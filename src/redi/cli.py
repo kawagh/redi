@@ -150,6 +150,8 @@ def main() -> None:
         "-a",
         help="担当者でフィルタリング（ユーザーIDまたは'me'）",
     )
+    i_parser.add_argument("--limit", "-l", type=int, help="取得件数")
+    i_parser.add_argument("--offset", "-o", type=int, help="オフセット")
     i_subparsers = i_parser.add_subparsers(dest="issue_command")
     i_view_parser = i_subparsers.add_parser("view", help="イシュー詳細")
     i_view_parser.add_argument("issue_id", help="イシューID")
@@ -627,6 +629,8 @@ def main() -> None:
                 project_id=args.project_id or default_project_id,
                 fixed_version_id=args.version,
                 assigned_to=args.assigned_to,
+                limit=args.limit,
+                offset=args.offset,
                 full=args.full,
             )
     elif args.command in ("version", "v"):

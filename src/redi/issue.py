@@ -11,15 +11,21 @@ def list_issues(
     project_id: str | None = None,
     fixed_version_id: str | None = None,
     assigned_to: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
     full: bool = False,
 ) -> None:
-    params = {}
+    params: dict = {}
     if project_id:
         params["project_id"] = project_id
     if fixed_version_id:
         params["fixed_version_id"] = fixed_version_id
     if assigned_to:
         params["assigned_to_id"] = assigned_to
+    if limit is not None:
+        params["limit"] = limit
+    if offset is not None:
+        params["offset"] = offset
     response = client.get("/issues.json", params=params)
     issues = response.json()["issues"]
     if full:
