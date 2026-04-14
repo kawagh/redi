@@ -301,6 +301,7 @@ def main() -> None:
     c_parser.add_argument("--api_key", help="Redmine APIキーを設定")
     c_parser.add_argument("--url", help="Redmine URLを設定")
     c_parser.add_argument("--set-default", dest="set_default", help="デフォルトプロファイルを設定")
+    c_parser.add_argument("--profile", help="更新対象のプロファイル名（省略時はdefault_profile）")
     u_parser = subparsers.add_parser("user", aliases=["u"], help="ユーザー一覧")
     u_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     u_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
@@ -375,25 +376,27 @@ def main() -> None:
 
     if args.command in ("config", "c"):
         updated = False
+        profile = args.profile
+        profile_suffix = f"（profile: {profile}）" if profile else ""
         if args.project_id:
-            update_config("default_project_id", args.project_id)
-            print(f"default_project_idを {args.project_id} に設定しました")
+            update_config("default_project_id", args.project_id, profile)
+            print(f"default_project_idを {args.project_id} に設定しました{profile_suffix}")
             updated = True
         if args.wiki_project_id:
-            update_config("wiki_project_id", args.wiki_project_id)
-            print(f"wiki_project_idを {args.wiki_project_id} に設定しました")
+            update_config("wiki_project_id", args.wiki_project_id, profile)
+            print(f"wiki_project_idを {args.wiki_project_id} に設定しました{profile_suffix}")
             updated = True
         if args.editor:
-            update_config("editor", args.editor)
-            print(f"editorを {args.editor} に設定しました")
+            update_config("editor", args.editor, profile)
+            print(f"editorを {args.editor} に設定しました{profile_suffix}")
             updated = True
         if args.api_key:
-            update_config("redmine_api_key", args.api_key)
-            print("redmine_api_keyを設定しました")
+            update_config("redmine_api_key", args.api_key, profile)
+            print(f"redmine_api_keyを設定しました{profile_suffix}")
             updated = True
         if args.url:
-            update_config("redmine_url", args.url)
-            print(f"redmine_urlを {args.url} に設定しました")
+            update_config("redmine_url", args.url, profile)
+            print(f"redmine_urlを {args.url} に設定しました{profile_suffix}")
             updated = True
         if args.set_default:
             if set_default_profile(args.set_default):

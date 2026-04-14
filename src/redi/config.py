@@ -60,7 +60,7 @@ def check_config() -> None:
         exit(1)
 
 
-def update_config(key: str, value: str) -> None:
+def update_config(key: str, value: str, profile: str | None = None) -> None:
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
     if CONFIG_PATH.exists():
         with open(CONFIG_PATH) as f:
@@ -68,12 +68,15 @@ def update_config(key: str, value: str) -> None:
     else:
         doc = tomlkit.document()
 
-    current_profile = doc.get("default_profile")
-    if not current_profile:
+    target_profile = profile or doc.get("default_profile")
+    if not target_profile:
         print("default_profile not found")
-        return
+        exit(1)
+    if target_profile not in doc or not isinstance(doc.get(target_profile), dict):
+        print(f"profile '{target_profile}' not found in {CONFIG_PATH}")
+        exit(1)
 
-    doc[current_profile][key] = value
+    doc[target_profile][key] = value
     with open(CONFIG_PATH, "w") as f:
         tomlkit.dump(doc, f)
 
