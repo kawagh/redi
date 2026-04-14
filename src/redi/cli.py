@@ -23,6 +23,7 @@ from redi.config import (
 )
 from redi.enumeration import (
     fetch_issue_priorities,
+    fetch_time_entry_activities,
     list_document_categories,
     list_issue_priorities,
     list_time_entry_activities,
@@ -237,6 +238,10 @@ def main() -> None:
         action="append",
         help="添付ファイルのパス（複数指定可）",
     )
+    i_update_parser.add_argument("--hours", type=float, help="作業時間（例: 1.5）")
+    i_update_parser.add_argument("--activity_id", help="作業分類ID")
+    i_update_parser.add_argument("--spent_on", help="作業日（YYYY-MM-DD、省略で今日）")
+    i_update_parser.add_argument("--time_comments", help="作業時間のコメント")
     i_comment_parser = i_subparsers.add_parser("comment", help="イシューにコメント追加")
     i_comment_parser.add_argument("issue_id", help="イシューID")
     i_comment_parser.add_argument(
@@ -549,6 +554,7 @@ def main() -> None:
                 or args.relate_to
                 or args.delete_relation
                 or args.attach
+                or args.hours is not None
             )
             if no_args_provided:
                 current = fetch_issue(args.issue_id)
@@ -562,6 +568,7 @@ def main() -> None:
                         "対象バージョン (fixed_version)", value="fixed_version"
                     ),
                     questionary.Choice("コメント (notes)", value="notes"),
+                    questionary.Choice("作業時間 (time_entry)", value="time_entry"),
                 ]
                 description_choice = next(
                     c for c in field_choices if c.value == "description"
@@ -625,6 +632,34 @@ def main() -> None:
                     ).ask(kbi_msg="")
                 if "notes" in selected:
                     args.notes = questionary.text("コメント").ask(kbi_msg="")
+                if "time_entry" in selected:
+                    hours_str = questionary.text(
+                        "作業時間（例: 1.5 (h)）",
+                        validate=lambda v: v.replace(".", "", 1).isdigit()
+                        or "数値を入力してください",
+                    ).ask(kbi_msg="")
+                    if hours_str:
+                        args.hours = float(hours_str)
+                    activities = fetch_time_entry_activities()
+                    args.activity_id = questionary.select(
+                        "作業分類",
+                        choices=[
+                            questionary.Choice(a["name"], value=str(a["id"]))
+                            for a in activities
+                        ],
+                    ).ask(kbi_msg="")
+                    args.spent_on = (
+                        questionary.text(
+                            "作業日（YYYY-MM-DD、省略で今日）", default=""
+                        ).ask(kbi_msg="")
+                        or None
+                    )
+                    args.time_comments = (
+                        questionary.text("作業時間のコメント", default="").ask(
+                            kbi_msg=""
+                        )
+                        or None
+                    )
             description = args.description
             if description is not None and description == "":
                 current = fetch_issue(args.issue_id)
@@ -645,6 +680,7 @@ def main() -> None:
             should_update_issue_relation = args.delete_relation or (
                 args.relate and args.relate_to
             )
+            should_create_time_entry = args.hours is not None
             if should_update_issue:
                 update_issue(
                     issue_id=args.issue_id,
@@ -677,7 +713,19 @@ def main() -> None:
             elif args.relate or args.relate_to:
                 print("--relate と --to は両方指定してください")
                 exit(1)
-            if not should_update_issue and not should_update_issue_relation:
+            if should_create_time_entry:
+                create_time_entry(
+                    issue_id=args.issue_id,
+                    hours=args.hours,
+                    activity_id=args.activity_id,
+                    spent_on=args.spent_on,
+                    comments=args.time_comments,
+                )
+            if (
+                not should_update_issue
+                and not should_update_issue_relation
+                and not should_create_time_entry
+            ):
                 print("更新内容がないので更新をキャンセルしました")
                 exit(1)
         elif args.issue_command == "comment":

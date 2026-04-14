@@ -26,6 +26,10 @@ def list_issue_priorities(full: bool = False) -> None:
     _list_enumeration("issue_priorities", full)
 
 
+def fetch_time_entry_activities() -> list[dict]:
+    return _fetch_enumeration("time_entry_activities")
+
+
 def list_time_entry_activities(full: bool = False) -> None:
     _list_enumeration("time_entry_activities", full)
 
