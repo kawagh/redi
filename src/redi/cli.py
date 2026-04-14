@@ -37,6 +37,7 @@ from redi.issue import (
     add_note,
     create_issue,
     fetch_issue,
+    fetch_issues,
     list_issues,
     read_issue,
     update_issue,
@@ -187,7 +188,9 @@ def main() -> None:
         help="カスタムフィールド（id=value形式、カンマ区切り。例: 1=foo,2=bar）",
     )
     i_update_parser = i_subparsers.add_parser("update", help="イシュー更新")
-    i_update_parser.add_argument("issue_id", help="イシューID")
+    i_update_parser.add_argument(
+        "issue_id", nargs="?", help="イシューID（省略で対話的に選択）"
+    )
     i_update_parser.add_argument("--subject", "-s", help="題名")
     i_update_parser.add_argument(
         "--description",
@@ -498,6 +501,23 @@ def main() -> None:
                 custom_fields=args.custom_fields,
             )
         elif args.issue_command == "update":
+            if not args.issue_id:
+                issues = fetch_issues(project_id=default_project_id)
+                if not issues:
+                    print("選択可能なイシューがありません")
+                    exit(1)
+                args.issue_id = questionary.select(
+                    "更新するイシューを選択",
+                    choices=[
+                        questionary.Choice(
+                            f"#{i['id']} {i['subject']}", value=str(i["id"])
+                        )
+                        for i in issues
+                    ],
+                ).ask(kbi_msg="")
+                if not args.issue_id:
+                    print("イシューが選択されていないためキャンセルしました")
+                    exit(1)
             no_args_provided = not (
                 args.subject
                 or args.description is not None
