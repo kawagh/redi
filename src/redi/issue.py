@@ -81,10 +81,15 @@ def fetch_issue(issue_id: str, include: str = "") -> dict:
     return response.json()["issue"]
 
 
-def read_issue(issue_id: str, full: bool = False) -> None:
+def read_issue(issue_id: str, include: str = "", full: bool = False) -> None:
     includes = ["relations", "attachments"]
     if full:
         includes.append("journals")
+    if include:
+        for name in include.split(","):
+            name = name.strip()
+            if name and name not in includes:
+                includes.append(name)
     issue = fetch_issue(issue_id, include=",".join(includes))
 
     if full:
@@ -143,6 +148,48 @@ def read_issue(issue_id: str, full: bool = False) -> None:
             lines.append("添付ファイル:")
             for a in attachments:
                 lines.append(f"  {a['filename']} {a.get('content_url', '')}")
+        children = issue.get("children") or []
+        if children:
+            lines.append("")
+            lines.append("子チケット:")
+            for c in children:
+                lines.append(f"  #{c['id']} {c.get('subject', '')}")
+        watchers = issue.get("watchers") or []
+        if watchers:
+            lines.append("")
+            lines.append("ウォッチャー:")
+            for w in watchers:
+                lines.append(f"  {w.get('name', w.get('id', ''))}")
+        allowed_statuses = issue.get("allowed_statuses") or []
+        if allowed_statuses:
+            lines.append("")
+            lines.append("遷移可能なステータス:")
+            for s in allowed_statuses:
+                lines.append(f"  {s.get('id')} {s.get('name')}")
+        changesets = issue.get("changesets") or []
+        if changesets:
+            lines.append("")
+            lines.append("リビジョン:")
+            for c in changesets:
+                lines.append(
+                    f"  {c.get('revision', '')} {c.get('comments', '')}".rstrip()
+                )
+        journals = issue.get("journals") or []
+        if journals:
+            lines.append("")
+            lines.append("コメント/変更履歴:")
+            for j in journals:
+                author = (j.get("user") or {}).get("name", "")
+                created = j.get("created_on", "")
+                lines.append(f"  [{created}] {author}")
+                for d in j.get("details") or []:
+                    name = d.get("name", "")
+                    old = d.get("old_value", "")
+                    new = d.get("new_value", "")
+                    lines.append(f"    {name}: {old} → {new}")
+                notes = j.get("notes") or ""
+                for nl in notes.splitlines():
+                    lines.append(f"    {nl}")
 
         print("\n".join(lines))
 

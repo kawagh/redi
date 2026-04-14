@@ -173,6 +173,10 @@ def _add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_view_parser = i_subparsers.add_parser("view", help="イシュー詳細")
     i_view_parser.add_argument("issue_id", help="イシューID")
     i_view_parser.add_argument(
+        "--include",
+        help="追加情報（children,attachments,relations,changesets,journals,watchers,allowed_statuses）",
+    )
+    i_view_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
     i_create_parser = i_subparsers.add_parser("create", help="イシュー作成")
@@ -795,7 +799,7 @@ def _handle_issue_update(args: argparse.Namespace) -> None:
 
 def _handle_issue(args: argparse.Namespace) -> None:
     if args.issue_command == "view":
-        read_issue(args.issue_id, full=args.full)
+        read_issue(args.issue_id, include=args.include or "", full=args.full)
     elif args.issue_command == "create":
         _handle_issue_create(args)
     elif args.issue_command == "update":
