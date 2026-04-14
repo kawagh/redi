@@ -47,7 +47,13 @@ from redi.issue_relation import create_relation, delete_relation
 from redi.custom_field import list_custom_fields
 from redi.tracker import fetch_trackers, list_trackers
 from redi.user import list_users
-from redi.version import create_version, fetch_versions, list_versions, update_version
+from redi.version import (
+    create_version,
+    fetch_versions,
+    list_versions,
+    read_version,
+    update_version,
+)
 from redi.wiki import (
     build_children_map,
     create_wiki,
@@ -240,6 +246,11 @@ def main() -> None:
     v_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     v_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     v_subparsers = v_parser.add_subparsers(dest="version_command")
+    v_view_parser = v_subparsers.add_parser("view", help="バージョン詳細")
+    v_view_parser.add_argument("version_id", help="バージョンID")
+    v_view_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
     v_create_parser = v_subparsers.add_parser("create", help="バージョン作成")
     v_create_parser.add_argument("name", help="バージョン名")
     v_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
@@ -691,7 +702,9 @@ def main() -> None:
                 full=args.full,
             )
     elif args.command in ("version", "v"):
-        if args.version_command == "create":
+        if args.version_command == "view":
+            read_version(args.version_id, full=args.full)
+        elif args.version_command == "create":
             project_id = args.project_id or default_project_id
             if not project_id:
                 print("project_idを指定するか、default_project_idを設定してください")

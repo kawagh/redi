@@ -72,6 +72,34 @@ def update_version(
     print(f"バージョンを更新しました: {version_id}")
 
 
+def read_version(version_id: str, full: bool = False) -> None:
+    response = client.get(f"/versions/{version_id}.json")
+    if response.status_code == 404:
+        print(f"バージョンが見つかりません: {version_id}")
+        exit(1)
+    response.raise_for_status()
+    version = response.json()["version"]
+    if full:
+        print(json.dumps(version, ensure_ascii=False))
+        return
+
+    lines = []
+    lines.append(
+        f"{version['id']} {version['name']} ({version['status']}) {redmine_url}/versions/{version['id']}"
+    )
+    project = version.get("project")
+    if project:
+        lines.append(f"プロジェクト: {project.get('id')} {project.get('name', '')}")
+    if version.get("due_date"):
+        lines.append(f"期日: {version['due_date']}")
+    if version.get("sharing"):
+        lines.append(f"共有: {version['sharing']}")
+    if version.get("description"):
+        lines.append("")
+        lines.append(version["description"])
+    print("\n".join(lines))
+
+
 def fetch_versions(project_id: str) -> list[dict]:
     response = client.get(f"/projects/{project_id}/versions.json")
     response.raise_for_status()
