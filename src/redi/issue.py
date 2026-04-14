@@ -7,7 +7,7 @@ from redi.client import client
 from redi.config import redmine_url
 
 
-def list_issues(
+def fetch_issues(
     project_id: str | None = None,
     fixed_version_id: str | None = None,
     assigned_to: str | None = None,
@@ -16,8 +16,7 @@ def list_issues(
     priority_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
-    full: bool = False,
-) -> None:
+) -> list[dict]:
     params: dict = {}
     if project_id:
         params["project_id"] = project_id
@@ -36,7 +35,31 @@ def list_issues(
     if offset is not None:
         params["offset"] = offset
     response = client.get("/issues.json", params=params)
-    issues = response.json()["issues"]
+    response.raise_for_status()
+    return response.json()["issues"]
+
+
+def list_issues(
+    project_id: str | None = None,
+    fixed_version_id: str | None = None,
+    assigned_to: str | None = None,
+    status_id: str | None = None,
+    tracker_id: str | None = None,
+    priority_id: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    full: bool = False,
+) -> None:
+    issues = fetch_issues(
+        project_id=project_id,
+        fixed_version_id=fixed_version_id,
+        assigned_to=assigned_to,
+        status_id=status_id,
+        tracker_id=tracker_id,
+        priority_id=priority_id,
+        limit=limit,
+        offset=offset,
+    )
     if full:
         print(json.dumps(issues, ensure_ascii=False))
     else:
