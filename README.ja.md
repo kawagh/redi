@@ -35,14 +35,22 @@ export REDMINE_API_KEY=yyy
 #### ~/.config/redi/config.toml
 
 ```toml
+default_profile = "main"
+
+["main"]
 redmine_url = "xxx"
 redmine_api_key = "yyy"
 default_project_id = "1"
 wiki_project_id = "2"
 editor = "nvim"
-```
 
-- `redi config --project_id 1` としてプロジェクトIDを1に指定できる
+["sub"]
+redmine_url = "vvv"
+redmine_api_key = "www"
+default_project_id = "2"
+wiki_project_id = "3"
+editor = "code"
+```
 
 ### 補完の設定
 
