@@ -99,12 +99,7 @@ def open_editor(initial_text: str = "") -> str:
         os.unlink(tmp_path)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Redmine CLI")
-    parser.add_argument(
-        "-V", "--version", action="version", version=f"redi {version('redi')}"
-    )
-    subparsers = parser.add_subparsers(dest="command")
+def _add_project_parser(subparsers: argparse._SubParsersAction) -> None:
     p_parser = subparsers.add_parser(
         "project", aliases=["p"], help="プロジェクト一覧/詳細/作成"
     )
@@ -147,6 +142,9 @@ def main() -> None:
     p_update_parser.add_argument(
         "--tracker_ids", help="トラッカーID（カンマ区切り。例: 1,2,3）"
     )
+
+
+def _add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_parser = subparsers.add_parser(
         "issue", aliases=["i"], help="イシュー一覧/詳細/作成/コメント"
     )
@@ -247,6 +245,9 @@ def main() -> None:
     i_comment_parser.add_argument(
         "notes", nargs="?", default="", help="コメント（省略でエディタ起動）"
     )
+
+
+def _add_version_parser(subparsers: argparse._SubParsersAction) -> None:
     v_parser = subparsers.add_parser("version", aliases=["v"], help="バージョン一覧")
     v_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     v_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
@@ -282,6 +283,9 @@ def main() -> None:
         choices=["none", "descendants", "hierarchy", "tree", "system"],
         help="共有設定",
     )
+
+
+def _add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
     w_parser = subparsers.add_parser("wiki", aliases=["w"], help="Wiki一覧/詳細/作成")
     w_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     w_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
@@ -316,6 +320,9 @@ def main() -> None:
         default=None,
         help="説明（値省略でエディタ起動）",
     )
+
+
+def _add_config_parser(subparsers: argparse._SubParsersAction) -> None:
     c_parser = subparsers.add_parser("config", aliases=["c"], help="設定表示/更新")
     c_subparsers = c_parser.add_subparsers(dest="config_command")
     c_update_parser = c_subparsers.add_parser("update", help="設定更新")
@@ -332,25 +339,46 @@ def main() -> None:
     c_update_parser.add_argument(
         "--default_profile", help="デフォルトプロファイルを設定"
     )
+
+
+def _add_user_parser(subparsers: argparse._SubParsersAction) -> None:
     u_parser = subparsers.add_parser("user", aliases=["u"], help="ユーザー一覧")
     u_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     u_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+
+
+def _add_tracker_parser(subparsers: argparse._SubParsersAction) -> None:
     tracker_parser = subparsers.add_parser("tracker", help="トラッカー一覧")
     tracker_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
+
+
+def _add_issue_status_parser(subparsers: argparse._SubParsersAction) -> None:
     issue_status_parser = subparsers.add_parser("issue_status", help="ステータス一覧")
     issue_status_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
+
+
+def _add_issue_priority_parser(subparsers: argparse._SubParsersAction) -> None:
     ip_parser = subparsers.add_parser("issue_priority", help="優先度一覧")
     ip_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+
+
+def _add_time_entry_activity_parser(subparsers: argparse._SubParsersAction) -> None:
     tea_parser = subparsers.add_parser("time_entry_activity", help="作業分類一覧")
     tea_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
+
+
+def _add_document_category_parser(subparsers: argparse._SubParsersAction) -> None:
     dc_parser = subparsers.add_parser("document_category", help="文書カテゴリ一覧")
     dc_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+
+
+def _add_role_parser(subparsers: argparse._SubParsersAction) -> None:
     role_parser = subparsers.add_parser("role", help="ロール一覧")
     role_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
@@ -361,12 +389,21 @@ def main() -> None:
     role_view_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
+
+
+def _add_query_parser(subparsers: argparse._SubParsersAction) -> None:
     query_parser = subparsers.add_parser("query", help="カスタムクエリ一覧")
     query_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
+
+
+def _add_custom_field_parser(subparsers: argparse._SubParsersAction) -> None:
     cf_parser = subparsers.add_parser("custom_field", help="カスタムフィールド一覧")
     cf_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+
+
+def _add_search_parser(subparsers: argparse._SubParsersAction) -> None:
     search_parser = subparsers.add_parser("search", help="検索")
     search_parser.add_argument("query", help="検索クエリ")
     search_parser.add_argument("--limit", "-l", type=int, help="取得件数")
@@ -374,6 +411,11 @@ def main() -> None:
     search_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
+
+
+def _add_attachment_parser(
+    subparsers: argparse._SubParsersAction,
+) -> argparse.ArgumentParser:
     a_parser = subparsers.add_parser("attachment", help="添付ファイル詳細")
     a_subparsers = a_parser.add_subparsers(dest="attachment_command")
     a_view_parser = a_subparsers.add_parser("view", help="添付ファイル詳細")
@@ -385,6 +427,10 @@ def main() -> None:
     a_update_parser.add_argument("attachment_id", help="添付ファイルID")
     a_update_parser.add_argument("--filename", "-f", help="ファイル名")
     a_update_parser.add_argument("--description", "-d", help="説明")
+    return a_parser
+
+
+def _add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
     time_entry_parser = subparsers.add_parser("time_entry", help="作業時間一覧/登録")
     time_entry_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     time_entry_parser.add_argument(
@@ -401,6 +447,36 @@ def main() -> None:
     te_create_parser.add_argument("--activity_id", "-a", help="作業分類ID")
     te_create_parser.add_argument("--spent_on", help="日付（YYYY-MM-DD、省略で今日）")
     te_create_parser.add_argument("--comments", "-c", help="コメント")
+
+
+def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
+    parser = argparse.ArgumentParser(description="Redmine CLI")
+    parser.add_argument(
+        "-V", "--version", action="version", version=f"redi {version('redi')}"
+    )
+    subparsers = parser.add_subparsers(dest="command")
+    _add_project_parser(subparsers)
+    _add_issue_parser(subparsers)
+    _add_version_parser(subparsers)
+    _add_wiki_parser(subparsers)
+    _add_config_parser(subparsers)
+    _add_user_parser(subparsers)
+    _add_tracker_parser(subparsers)
+    _add_issue_status_parser(subparsers)
+    _add_issue_priority_parser(subparsers)
+    _add_time_entry_activity_parser(subparsers)
+    _add_document_category_parser(subparsers)
+    _add_role_parser(subparsers)
+    _add_query_parser(subparsers)
+    _add_custom_field_parser(subparsers)
+    _add_search_parser(subparsers)
+    a_parser = _add_attachment_parser(subparsers)
+    _add_time_entry_parser(subparsers)
+    return parser, a_parser
+
+
+def main() -> None:
+    parser, a_parser = _build_parser()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
