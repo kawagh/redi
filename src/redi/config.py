@@ -6,21 +6,49 @@ import tomlkit
 
 CONFIG_PATH = Path.home() / ".config" / "redi" / "config.toml"
 
+_default_config = {
+    "redmine_url": "",
+    "redmine_api_key": "",
+    "editor": "vim",
+}
 
-def load_toml_config() -> dict:
+
+def load_toml() -> dict:
     if CONFIG_PATH.exists():
         with open(CONFIG_PATH, "rb") as f:
             return tomllib.load(f)
-    return {}
+    else:
+        return {}
 
 
-_config = load_toml_config()
+def load_env_config() -> dict:
+    return {
+        "redmine_url": os.environ.get("REDMINE_URL"),
+        "redmine_api_key": os.environ.get("REDMINE_API_KEY"),
+        "editor": os.environ.get("REDI_EDITOR"),
+    }
 
-redmine_url = os.environ.get("REDMINE_URL") or _config.get("redmine_url")
-redmine_api_key = os.environ.get("REDMINE_API_KEY") or _config.get("redmine_api_key")
-default_project_id: str | None = _config.get("default_project_id")
-wiki_project_id: str | None = _config.get("wiki_project_id")
-editor: str = os.environ.get("REDI_EDITOR") or _config.get("editor", "vim")
+
+# 設定値の上書き
+merged_config = _default_config
+toml = load_toml()
+default_profile_name = toml.get("default_profile")
+if default_profile_name:
+    toml_config = load_toml()[default_profile_name]
+    for k, v in toml_config.items():
+        if v:
+            merged_config[k] = v
+
+env_config = load_env_config()
+for k, v in env_config.items():
+    if v:
+        merged_config[k] = v
+
+redmine_url = merged_config["redmine_url"]
+redmine_api_key = merged_config["redmine_api_key"]
+default_project_id: str | None = merged_config.get("default_project_id")
+wiki_project_id: str | None = merged_config.get("wiki_project_id")
+editor: str = merged_config["editor"]
 
 
 def check_config() -> None:
@@ -39,7 +67,13 @@ def update_config(key: str, value: str) -> None:
             doc = tomlkit.load(f)
     else:
         doc = tomlkit.document()
-    doc[key] = value
+
+    current_profile = doc.get("default_profile")
+    if not current_profile:
+        print("default_profile not found")
+        return
+
+    doc[current_profile][key] = value
     with open(CONFIG_PATH, "w") as f:
         tomlkit.dump(doc, f)
 
