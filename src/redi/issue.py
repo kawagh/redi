@@ -81,10 +81,15 @@ def fetch_issue(issue_id: str, include: str = "") -> dict:
     return response.json()["issue"]
 
 
-def read_issue(issue_id: str, full: bool = False) -> None:
+def read_issue(issue_id: str, include: str = "", full: bool = False) -> None:
     includes = ["relations", "attachments"]
     if full:
         includes.append("journals")
+    if include:
+        for name in include.split(","):
+            name = name.strip()
+            if name and name not in includes:
+                includes.append(name)
     issue = fetch_issue(issue_id, include=",".join(includes))
 
     if full:
