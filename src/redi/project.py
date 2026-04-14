@@ -79,7 +79,7 @@ def update_project(
     print(f"プロジェクトを更新しました: {project_id}")
 
 
-def read_project(project_id: str, include: str = "") -> None:
+def read_project(project_id: str, include: str = "", full: bool = False) -> None:
     params: dict = {}
     if include:
         params["include"] = include
@@ -89,4 +89,35 @@ def read_project(project_id: str, include: str = "") -> None:
         exit(1)
     response.raise_for_status()
     project = response.json()["project"]
-    print(json.dumps(project, ensure_ascii=False, indent=2))
+    if full:
+        print(json.dumps(project, ensure_ascii=False))
+        return
+
+    lines = []
+    lines.append(f"{project['id']} {project['name']} ({project['identifier']})")
+    if project.get("description"):
+        lines.append("")
+        lines.append(project["description"])
+    parent = project.get("parent")
+    if parent:
+        lines.append("")
+        lines.append(f"親プロジェクト: {parent.get('id')} {parent.get('name', '')}")
+    trackers = project.get("trackers") or []
+    if trackers:
+        lines.append("")
+        lines.append("トラッカー:")
+        for t in trackers:
+            lines.append(f"  {t['id']} {t['name']}")
+    issue_categories = project.get("issue_categories") or []
+    if issue_categories:
+        lines.append("")
+        lines.append("イシューカテゴリ:")
+        for c in issue_categories:
+            lines.append(f"  {c['id']} {c['name']}")
+    enabled_modules = project.get("enabled_modules") or []
+    if enabled_modules:
+        lines.append("")
+        lines.append("有効モジュール:")
+        for m in enabled_modules:
+            lines.append(f"  {m.get('name')}")
+    print("\n".join(lines))

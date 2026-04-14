@@ -109,6 +109,9 @@ def main() -> None:
         "--include",
         help="追加情報（trackers,issue_categories,enabled_modules,time_entry_activities,issue_custom_fields）",
     )
+    p_view_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
     p_create_parser = p_subparsers.add_parser("create", help="プロジェクト作成")
     p_create_parser.add_argument("name", help="プロジェクト名")
     p_create_parser.add_argument(
@@ -310,7 +313,9 @@ def main() -> None:
     c_update_parser.add_argument("--editor", help="エディタを設定")
     c_update_parser.add_argument("--api_key", help="Redmine APIキーを設定")
     c_update_parser.add_argument("--url", help="Redmine URLを設定")
-    c_update_parser.add_argument("--default_profile", help="デフォルトプロファイルを設定")
+    c_update_parser.add_argument(
+        "--default_profile", help="デフォルトプロファイルを設定"
+    )
     u_parser = subparsers.add_parser("user", aliases=["u"], help="ユーザー一覧")
     u_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     u_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
@@ -426,7 +431,7 @@ def main() -> None:
 
     if args.command in ("project", "p"):
         if args.project_command == "view":
-            read_project(args.project_id, include=args.include or "")
+            read_project(args.project_id, include=args.include or "", full=args.full)
         elif args.project_command == "create":
             is_public = None
             if args.is_public is not None:
