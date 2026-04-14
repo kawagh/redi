@@ -15,7 +15,7 @@ uv tool install https://github.com/kawagh/redi.git
 In repository root
 
 ```sh
-ov tool install -e .
+uv tool install -e .
 ```
 
 ## 設定
