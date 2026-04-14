@@ -15,6 +15,7 @@ questionary.prompts.common.INDICATOR_UNSELECTED = "[ ]"  # pyright: ignore[repor
 from redi.config import (
     default_project_id,
     editor,
+    set_default_profile,
     show_config,
     update_config,
     wiki_project_id,
@@ -299,6 +300,7 @@ def main() -> None:
     c_parser.add_argument("--editor", help="エディタを設定")
     c_parser.add_argument("--api_key", help="Redmine APIキーを設定")
     c_parser.add_argument("--url", help="Redmine URLを設定")
+    c_parser.add_argument("--set-default", dest="set_default", help="デフォルトプロファイルを設定")
     u_parser = subparsers.add_parser("user", aliases=["u"], help="ユーザー一覧")
     u_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     u_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
@@ -392,6 +394,10 @@ def main() -> None:
         if args.url:
             update_config("redmine_url", args.url)
             print(f"redmine_urlを {args.url} に設定しました")
+            updated = True
+        if args.set_default:
+            if set_default_profile(args.set_default):
+                print(f"default_profileを {args.set_default} に設定しました")
             updated = True
         if not updated:
             show_config()

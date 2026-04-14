@@ -78,6 +78,24 @@ def update_config(key: str, value: str) -> None:
         tomlkit.dump(doc, f)
 
 
+def set_default_profile(profile_name: str) -> bool:
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if CONFIG_PATH.exists():
+        with open(CONFIG_PATH) as f:
+            doc = tomlkit.load(f)
+    else:
+        doc = tomlkit.document()
+
+    if profile_name not in doc or not isinstance(doc.get(profile_name), dict):
+        print(f"profile '{profile_name}' not found in {CONFIG_PATH}")
+        return False
+
+    doc["default_profile"] = profile_name
+    with open(CONFIG_PATH, "w") as f:
+        tomlkit.dump(doc, f)
+    return True
+
+
 def show_config() -> None:
     doc = tomlkit.document()
     doc["redmine_url"] = redmine_url
