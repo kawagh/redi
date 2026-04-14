@@ -34,14 +34,22 @@ export REDMINE_API_KEY=yyy
 #### ~/.config/redi/config.toml
 
 ```toml
+default_profile = "main"
+
+["main"]
 redmine_url = "xxx"
 redmine_api_key = "yyy"
 default_project_id = "1"
 wiki_project_id = "2"
 editor = "nvim"
-```
 
-- you can set default_project_id to 1 by `redi config --project_id 1`
+["sub"]
+redmine_url = "vvv"
+redmine_api_key = "www"
+default_project_id = "2"
+wiki_project_id = "3"
+editor = "code"
+```
 
 ### setup completion
 
