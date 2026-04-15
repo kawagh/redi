@@ -65,6 +65,7 @@ from redi.wiki import (
     read_wiki,
     update_wiki,
 )
+from redi.tui import run_issue_tui
 
 
 def build_wiki_tree_choices(pages: list[dict]) -> list[questionary.Choice]:
@@ -475,6 +476,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     parser.add_argument(
         "-V", "--version", action="version", version=f"redi {version('redi')}"
     )
+    parser.add_argument("--tui", action="store_true", help="TUI")
     subparsers = parser.add_subparsers(dest="command")
     _add_project_parser(subparsers)
     _add_issue_parser(subparsers)
@@ -1024,6 +1026,10 @@ def main() -> None:
         return
 
     check_config()
+
+    if args.tui and args.command is None:
+        run_issue_tui()
+        return
 
     if args.command in ("project", "p"):
         _handle_project(args)
