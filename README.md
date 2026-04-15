@@ -111,4 +111,5 @@ redi issue_priority # list priorities
 redi query # list custom queries
 redi search "keyword"
 redi --version
+redi --tui
 ```
