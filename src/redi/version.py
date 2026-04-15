@@ -1,4 +1,5 @@
 import json
+import webbrowser
 
 import requests
 
@@ -72,7 +73,12 @@ def update_version(
     print(f"バージョンを更新しました: {version_id}")
 
 
-def read_version(version_id: str, full: bool = False) -> None:
+def read_version(version_id: str, full: bool = False, web: bool = False) -> None:
+    if web:
+        url = f"{redmine_url}/versions/{version_id}"
+        print(url)
+        webbrowser.open(url)
+        return
     response = client.get(f"/versions/{version_id}.json")
     if response.status_code == 404:
         print(f"バージョンが見つかりません: {version_id}")

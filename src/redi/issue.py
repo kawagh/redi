@@ -1,4 +1,5 @@
 import json
+import webbrowser
 
 import requests
 
@@ -86,7 +87,14 @@ def fetch_issue(issue_id: str, include: str = "") -> dict:
     return response.json()["issue"]
 
 
-def read_issue(issue_id: str, include: str = "", full: bool = False) -> None:
+def read_issue(
+    issue_id: str, include: str = "", full: bool = False, web: bool = False
+) -> None:
+    if web:
+        url = f"{redmine_url}/issues/{issue_id}"
+        print(url)
+        webbrowser.open(url)
+        return
     includes = ["relations", "attachments"]
     if full:
         includes.append("journals")

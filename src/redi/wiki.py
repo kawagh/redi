@@ -1,4 +1,5 @@
 import json
+import webbrowser
 from collections import defaultdict
 
 from redi.client import client
@@ -59,7 +60,14 @@ def fetch_wiki(project_id: str, page_title: str) -> dict:
     return response.json()["wiki_page"]
 
 
-def read_wiki(project_id: str, page_title: str, full: bool = False) -> None:
+def read_wiki(
+    project_id: str, page_title: str, full: bool = False, web: bool = False
+) -> None:
+    if web:
+        url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
+        print(url)
+        webbrowser.open(url)
+        return
     wiki = fetch_wiki(project_id, page_title)
     if full:
         print(json.dumps(wiki, ensure_ascii=False, indent=2))
