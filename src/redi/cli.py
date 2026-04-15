@@ -167,6 +167,11 @@ def _add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     )
     i_parser.add_argument("--tracker_id", "-t", help="トラッカーIDでフィルタリング")
     i_parser.add_argument("--priority_id", help="優先度IDでフィルタリング")
+    i_parser.add_argument(
+        "--query_id",
+        "-q",
+        help="カスタムクエリIDでフィルタリング（`redi query`で取得可）",
+    )
     i_parser.add_argument("--limit", "-l", type=int, help="取得件数")
     i_parser.add_argument("--offset", "-o", type=int, help="オフセット")
     i_subparsers = i_parser.add_subparsers(dest="issue_command")
@@ -821,6 +826,7 @@ def _handle_issue(args: argparse.Namespace) -> None:
             status_id=args.status_id,
             tracker_id=args.tracker_id,
             priority_id=args.priority_id,
+            query_id=args.query_id,
             limit=args.limit,
             offset=args.offset,
             full=args.full,

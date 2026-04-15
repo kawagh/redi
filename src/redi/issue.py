@@ -14,6 +14,7 @@ def fetch_issues(
     status_id: str | None = None,
     tracker_id: str | None = None,
     priority_id: str | None = None,
+    query_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
 ) -> list[dict]:
@@ -30,6 +31,8 @@ def fetch_issues(
         params["tracker_id"] = tracker_id
     if priority_id:
         params["priority_id"] = priority_id
+    if query_id:
+        params["query_id"] = query_id
     if limit is not None:
         params["limit"] = limit
     if offset is not None:
@@ -46,6 +49,7 @@ def list_issues(
     status_id: str | None = None,
     tracker_id: str | None = None,
     priority_id: str | None = None,
+    query_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
     full: bool = False,
@@ -57,6 +61,7 @@ def list_issues(
         status_id=status_id,
         tracker_id=tracker_id,
         priority_id=priority_id,
+        query_id=query_id,
         limit=limit,
         offset=offset,
     )
