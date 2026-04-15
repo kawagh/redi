@@ -60,34 +60,54 @@ echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
 
 ## usage(example)
 
-- list projects
-    ```sh
-    redi project # or `redi p`
-    ```
+```sh
+# config (alias: c)
+redi config
+redi config update --default_profile <profile_name> # switch profile
+redi config update <profile_name> --editor nvim # update profile
 
-- list issues
-    ```sh
-    redi issue # or `redi i`
-    ```
+# project (alias: p)
+redi project # list projects
+redi project view <project_id> # view project
+redi project view <project_id> --include trackers,issue_categories
+redi project create <name> <identifier>
+redi project create <name> <identifier> -d "description" --is_public true
+redi project update <project_id> --name renamed_project
 
-- view issue
-    ```sh
-    redi issue view <issue_id>
-    ```
-- comment to issue
-    ```sh
-    redi issue comment <issue_id> # then editor open
-    # or `redi issue comment <issue_id> hello~`
-    ```
+# issue (alias: i)
+redi issue # list issues
+redi issue -p <project_id> -a me -s open
+redi issue -q <query_id>
+redi issue view <issue_id>
+redi issue view <issue_id> --include journals,attachments,relations
+redi issue create # (interactive)
+redi issue create "subject" -p <project_id> -t <tracker_id> -a <user_id> -d "description"
+redi issue update <issue_id> # (interactive)
+redi issue update <issue_id> --status_id <status_id> -n "notes"
+redi issue update <issue_id> --relate relates --to <other_issue_id>
+redi issue update <issue_id> --attach ./foo.png --attach ./bar.log
+redi issue comment <issue_id> "hello~"
 
-- create(update) wiki
-    ```sh
-    redi wiki create <page_title> --parent_title <parent_title>
-    ```
+# version (alias: v)
+redi version # list versions(fixed_versions)
+redi version -p <project_id>
+redi version view <version_id>
+redi version create <name> -p <project_id> --due_date 2026-12-31 --status open
+redi version update <version_id> --status closed
 
-- list wiki
-    ```sh
-    redi wiki -p <project_id> # you can get version from `redi p`
-    ```
+# wiki (alias: w)
+redi wiki
+redi wiki -p <project_id>
+redi wiki view <page_title>
+redi wiki create # (interactive)
+redi wiki update # (interactive)
 
-- ...
+# others
+redi user # list users (alias: u)
+redi tracker # list trackers
+redi issue_status # list issue statuses
+redi issue_priority # list priorities
+redi query # list custom queries
+redi search "keyword"
+redi --version
+```
