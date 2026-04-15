@@ -1,8 +1,10 @@
 import json
+import webbrowser
 
 import requests
 
 from redi.client import client
+from redi.config import redmine_url
 
 
 def list_projects(full: bool = False) -> None:
@@ -79,7 +81,14 @@ def update_project(
     print(f"プロジェクトを更新しました: {project_id}")
 
 
-def read_project(project_id: str, include: str = "", full: bool = False) -> None:
+def read_project(
+    project_id: str, include: str = "", full: bool = False, web: bool = False
+) -> None:
+    if web:
+        url = f"{redmine_url}/projects/{project_id}"
+        print(url)
+        webbrowser.open(url)
+        return
     params: dict = {}
     if include:
         params["include"] = include

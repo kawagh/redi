@@ -114,6 +114,9 @@ def _add_project_parser(subparsers: argparse._SubParsersAction) -> None:
     p_view_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
+    p_view_parser.add_argument(
+        "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
+    )
     p_create_parser = p_subparsers.add_parser("create", help="プロジェクト作成")
     p_create_parser.add_argument("name", help="プロジェクト名")
     p_create_parser.add_argument(
@@ -183,6 +186,9 @@ def _add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     )
     i_view_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
+    i_view_parser.add_argument(
+        "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
     )
     i_create_parser = i_subparsers.add_parser("create", help="イシュー作成")
     i_create_parser.add_argument(
@@ -266,6 +272,9 @@ def _add_version_parser(subparsers: argparse._SubParsersAction) -> None:
     v_view_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
+    v_view_parser.add_argument(
+        "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
+    )
     v_create_parser = v_subparsers.add_parser("create", help="バージョン作成")
     v_create_parser.add_argument("name", help="バージョン名")
     v_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
@@ -303,6 +312,9 @@ def _add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
     w_view_parser.add_argument("page_title", help="Wikiページタイトル")
     w_view_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
+    w_view_parser.add_argument(
+        "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
     )
     w_create_parser = w_subparsers.add_parser("create", help="Wikiページ作成")
     w_create_parser.add_argument(
@@ -523,7 +535,12 @@ def _handle_config(args: argparse.Namespace) -> None:
 
 def _handle_project(args: argparse.Namespace) -> None:
     if args.project_command == "view":
-        read_project(args.project_id, include=args.include or "", full=args.full)
+        read_project(
+            args.project_id,
+            include=args.include or "",
+            full=args.full,
+            web=args.web,
+        )
     elif args.project_command == "create":
         is_public = None
         if args.is_public is not None:
@@ -804,7 +821,12 @@ def _handle_issue_update(args: argparse.Namespace) -> None:
 
 def _handle_issue(args: argparse.Namespace) -> None:
     if args.issue_command == "view":
-        read_issue(args.issue_id, include=args.include or "", full=args.full)
+        read_issue(
+            args.issue_id,
+            include=args.include or "",
+            full=args.full,
+            web=args.web,
+        )
     elif args.issue_command == "create":
         _handle_issue_create(args)
     elif args.issue_command == "update":
@@ -835,7 +857,7 @@ def _handle_issue(args: argparse.Namespace) -> None:
 
 def _handle_version(args: argparse.Namespace) -> None:
     if args.version_command == "view":
-        read_version(args.version_id, full=args.full)
+        read_version(args.version_id, full=args.full, web=args.web)
     elif args.version_command == "create":
         project_id = args.project_id or default_project_id
         if not project_id:
@@ -874,7 +896,7 @@ def _handle_wiki(args: argparse.Namespace) -> None:
         )
         exit(1)
     if args.wiki_command == "view":
-        read_wiki(project_id, args.page_title, full=args.full)
+        read_wiki(project_id, args.page_title, full=args.full, web=args.web)
     elif args.wiki_command == "create":
         page_title = args.page_title
         parent_title = args.parent_title
