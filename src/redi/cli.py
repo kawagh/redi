@@ -475,6 +475,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     parser.add_argument(
         "-V", "--version", action="version", version=f"redi {version('redi')}"
     )
+    parser.add_argument("--tui", action="store_true", help="TUI")
     subparsers = parser.add_subparsers(dest="command")
     _add_project_parser(subparsers)
     _add_issue_parser(subparsers)
@@ -1014,6 +1015,23 @@ def _handle_time_entry(args: argparse.Namespace) -> None:
         list_time_entries(project_id=project_id, user_id=args.user_id, full=args.full)
 
 
+def _handle_tui() -> None:
+    issues = fetch_issues(project_id=default_project_id)
+    if not issues:
+        print("イシューが見つかりません")
+        return
+    issue_id = questionary.select(
+        "イシューを選択:",
+        choices=[
+            questionary.Choice(f"#{i['id']} {i['subject']}", value=str(i["id"]))
+            for i in issues
+        ],
+    ).ask(kbi_msg="")
+    if not issue_id:
+        return
+    read_issue(issue_id)
+
+
 def main() -> None:
     parser, a_parser = _build_parser()
     argcomplete.autocomplete(parser)
@@ -1024,6 +1042,10 @@ def main() -> None:
         return
 
     check_config()
+
+    if args.tui and args.command is None:
+        _handle_tui()
+        return
 
     if args.command in ("project", "p"):
         _handle_project(args)
