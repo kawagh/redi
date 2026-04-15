@@ -45,7 +45,12 @@ from redi.issue import (
 )
 from redi.attachment import read_attachment, update_attachment
 from redi.issue_relation import create_relation, delete_relation
-from redi.custom_field import list_custom_fields
+from redi.custom_field import (
+    fetch_custom_fields,
+    fetch_project_issue_custom_field_ids,
+    filter_required_issue_custom_fields,
+    list_custom_fields,
+)
 from redi.tracker import fetch_trackers, list_trackers
 from redi.user import list_users
 from redi.version import (
@@ -687,6 +692,68 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         )
 
 
+def _prompt_custom_field_value(cf: dict) -> str | None:
+    name = cf.get("name", "")
+    fmt = cf.get("field_format", "string")
+    label = f"{name}（必須）"
+    if fmt == "bool":
+        choices = [
+            questionary.Choice(title="はい", value="1"),
+            questionary.Choice(title="いいえ", value="0"),
+        ]
+        return questionary.select(label, choices=choices).ask(kbi_msg="")
+    if fmt in ("list", "enumeration"):
+        possible = cf.get("possible_values") or []
+        choices = [
+            questionary.Choice(
+                title=str(pv.get("value", "")), value=str(pv.get("value", ""))
+            )
+            for pv in possible
+            if pv.get("value", "") != ""
+        ]
+        if choices:
+            return questionary.select(label, choices=choices).ask(kbi_msg="")
+    return questionary.text(label).ask(kbi_msg="")
+
+
+def _interactive_fill_required_custom_fields(
+    project_id: str, tracker_id: str | None, existing: str | None
+) -> str | None:
+    custom_fields = fetch_custom_fields()
+    if custom_fields is None:
+        print(
+            "カスタムフィールドの取得には管理者権限が必要なため、必須カスタムフィールドの対話入力をスキップしました"
+        )
+        return existing
+    project_cf_ids = fetch_project_issue_custom_field_ids(project_id)
+    required = filter_required_issue_custom_fields(
+        custom_fields, project_cf_ids, tracker_id
+    )
+    if not required:
+        return existing
+
+    existing_ids: set[int] = set()
+    if existing:
+        for pair in existing.split(","):
+            key = pair.split("=")[0]
+            existing_ids.add(int(key))
+
+    added: list[str] = []
+    for cf in required:
+        if cf["id"] in existing_ids:
+            continue
+        value = _prompt_custom_field_value(cf)
+        if value is None:
+            print("キャンセルしました")
+            exit(1)
+        added.append(f"{cf['id']}={value}")
+    if not added:
+        return existing
+    if existing:
+        return existing + "," + ",".join(added)
+    return ",".join(added)
+
+
 def _handle_issue_create(args: argparse.Namespace) -> None:
     project_id = args.project_id or default_project_id
     if not project_id:
@@ -694,7 +761,9 @@ def _handle_issue_create(args: argparse.Namespace) -> None:
         exit(1)
     subject = args.subject
     tracker_id = args.tracker_id
-    if subject is None:
+    custom_fields = args.custom_fields
+    interactive = subject is None
+    if interactive:
         if tracker_id is None:
             trackers = fetch_trackers()
             choices = [
@@ -712,6 +781,12 @@ def _handle_issue_create(args: argparse.Namespace) -> None:
             print("題名が空のためキャンセルしました")
             exit(1)
         subject = subject.strip()
+        # 必要なカスタムフィールドを対話的に入力
+        custom_fields = _interactive_fill_required_custom_fields(
+            project_id=project_id,
+            tracker_id=tracker_id,
+            existing=custom_fields,
+        )
     if args.description is None:
         description = open_editor()
     else:
@@ -723,7 +798,7 @@ def _handle_issue_create(args: argparse.Namespace) -> None:
         tracker_id=tracker_id,
         priority_id=args.priority_id,
         assigned_to_id=args.assigned_to_id,
-        custom_fields=args.custom_fields,
+        custom_fields=custom_fields,
     )
 
 
