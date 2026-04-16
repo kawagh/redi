@@ -6,6 +6,11 @@ tasks:
     cmds:
       - task --list-all --sort none
 
+  test:
+    desc: run tests
+    cmds:
+      - uv run pytest -v
+
   format:
     desc: format
     cmds:
