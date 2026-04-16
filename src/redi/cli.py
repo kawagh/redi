@@ -106,7 +106,7 @@ def _add_project_parser(subparsers: argparse._SubParsersAction) -> None:
     )
     p_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     p_subparsers = p_parser.add_subparsers(dest="project_command")
-    p_view_parser = p_subparsers.add_parser("view", help="プロジェクト詳細")
+    p_view_parser = p_subparsers.add_parser("view", aliases=["v"], help="プロジェクト詳細")
     p_view_parser.add_argument("project_id", help="プロジェクトID")
     p_view_parser.add_argument(
         "--include",
@@ -118,7 +118,7 @@ def _add_project_parser(subparsers: argparse._SubParsersAction) -> None:
     p_view_parser.add_argument(
         "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
     )
-    p_create_parser = p_subparsers.add_parser("create", help="プロジェクト作成")
+    p_create_parser = p_subparsers.add_parser("create", aliases=["c"], help="プロジェクト作成")
     p_create_parser.add_argument("name", help="プロジェクト名")
     p_create_parser.add_argument(
         "identifier", help="プロジェクト識別子（英数字とハイフン）"
@@ -133,7 +133,7 @@ def _add_project_parser(subparsers: argparse._SubParsersAction) -> None:
     p_create_parser.add_argument(
         "--tracker_ids", help="トラッカーID（カンマ区切り。例: 1,2,3）"
     )
-    p_update_parser = p_subparsers.add_parser("update", help="プロジェクト更新")
+    p_update_parser = p_subparsers.add_parser("update", aliases=["u"], help="プロジェクト更新")
     p_update_parser.add_argument("project_id", help="プロジェクトID")
     p_update_parser.add_argument("--name", "-n", help="プロジェクト名")
     p_update_parser.add_argument("--description", "-d", help="説明")
@@ -179,7 +179,7 @@ def _add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_parser.add_argument("--limit", "-l", type=int, help="取得件数")
     i_parser.add_argument("--offset", "-o", type=int, help="オフセット")
     i_subparsers = i_parser.add_subparsers(dest="issue_command")
-    i_view_parser = i_subparsers.add_parser("view", help="イシュー詳細")
+    i_view_parser = i_subparsers.add_parser("view", aliases=["v"], help="イシュー詳細")
     i_view_parser.add_argument("issue_id", help="イシューID")
     i_view_parser.add_argument(
         "--include",
@@ -191,7 +191,7 @@ def _add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_view_parser.add_argument(
         "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
     )
-    i_create_parser = i_subparsers.add_parser("create", help="イシュー作成")
+    i_create_parser = i_subparsers.add_parser("create", aliases=["c"], help="イシュー作成")
     i_create_parser.add_argument(
         "subject", nargs="?", help="イシューの題名（省略で対話的に入力）"
     )
@@ -211,7 +211,7 @@ def _add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
         "--custom_fields",
         help="カスタムフィールド（id=value形式、カンマ区切り。例: 1=foo,2=bar）",
     )
-    i_update_parser = i_subparsers.add_parser("update", help="イシュー更新")
+    i_update_parser = i_subparsers.add_parser("update", aliases=["u"], help="イシュー更新")
     i_update_parser.add_argument(
         "issue_id", nargs="?", help="イシューID（省略で対話的に選択）"
     )
@@ -256,7 +256,7 @@ def _add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_update_parser.add_argument("--activity_id", help="作業分類ID")
     i_update_parser.add_argument("--spent_on", help="作業日（YYYY-MM-DD、省略で今日）")
     i_update_parser.add_argument("--time_comments", help="作業時間のコメント")
-    i_comment_parser = i_subparsers.add_parser("comment", help="イシューにコメント追加")
+    i_comment_parser = i_subparsers.add_parser("comment", aliases=["co"], help="イシューにコメント追加")
     i_comment_parser.add_argument("issue_id", help="イシューID")
     i_comment_parser.add_argument(
         "notes", nargs="?", default="", help="コメント（省略でエディタ起動）"
@@ -268,7 +268,7 @@ def _add_version_parser(subparsers: argparse._SubParsersAction) -> None:
     v_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     v_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     v_subparsers = v_parser.add_subparsers(dest="version_command")
-    v_view_parser = v_subparsers.add_parser("view", help="バージョン詳細")
+    v_view_parser = v_subparsers.add_parser("view", aliases=["v"], help="バージョン詳細")
     v_view_parser.add_argument("version_id", help="バージョンID")
     v_view_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
@@ -276,7 +276,7 @@ def _add_version_parser(subparsers: argparse._SubParsersAction) -> None:
     v_view_parser.add_argument(
         "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
     )
-    v_create_parser = v_subparsers.add_parser("create", help="バージョン作成")
+    v_create_parser = v_subparsers.add_parser("create", aliases=["c"], help="バージョン作成")
     v_create_parser.add_argument("name", help="バージョン名")
     v_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     v_create_parser.add_argument(
@@ -289,7 +289,7 @@ def _add_version_parser(subparsers: argparse._SubParsersAction) -> None:
         choices=["none", "descendants", "hierarchy", "tree", "system"],
         help="共有設定",
     )
-    v_update_parser = v_subparsers.add_parser("update", help="バージョン更新")
+    v_update_parser = v_subparsers.add_parser("update", aliases=["u"], help="バージョン更新")
     v_update_parser.add_argument("version_id", help="バージョンID")
     v_update_parser.add_argument("--name", "-n", help="バージョン名")
     v_update_parser.add_argument(
@@ -309,7 +309,7 @@ def _add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
     w_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     w_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     w_subparsers = w_parser.add_subparsers(dest="wiki_command")
-    w_view_parser = w_subparsers.add_parser("view", help="Wikiページ詳細")
+    w_view_parser = w_subparsers.add_parser("view", aliases=["v"], help="Wikiページ詳細")
     w_view_parser.add_argument("page_title", help="Wikiページタイトル")
     w_view_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
@@ -317,7 +317,7 @@ def _add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
     w_view_parser.add_argument(
         "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
     )
-    w_create_parser = w_subparsers.add_parser("create", help="Wikiページ作成")
+    w_create_parser = w_subparsers.add_parser("create", aliases=["c"], help="Wikiページ作成")
     w_create_parser.add_argument(
         "page_title", nargs="?", help="Wikiページタイトル（省略で対話的に入力）"
     )
@@ -330,7 +330,7 @@ def _add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
         default=None,
         help="説明（値省略でエディタ起動）",
     )
-    w_update_parser = w_subparsers.add_parser("update", help="Wikiページ更新")
+    w_update_parser = w_subparsers.add_parser("update", aliases=["u"], help="Wikiページ更新")
     w_update_parser.add_argument(
         "page_title", nargs="?", help="Wikiページタイトル（省略で対話的に選択）"
     )
@@ -347,7 +347,7 @@ def _add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
 def _add_config_parser(subparsers: argparse._SubParsersAction) -> None:
     c_parser = subparsers.add_parser("config", aliases=["c"], help="設定表示/更新")
     c_subparsers = c_parser.add_subparsers(dest="config_command")
-    c_update_parser = c_subparsers.add_parser("update", help="設定更新")
+    c_update_parser = c_subparsers.add_parser("update", aliases=["u"], help="設定更新")
     c_update_parser.add_argument(
         "profile_name",
         nargs="?",
@@ -406,7 +406,7 @@ def _add_role_parser(subparsers: argparse._SubParsersAction) -> None:
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
     role_subparsers = role_parser.add_subparsers(dest="role_command")
-    role_view_parser = role_subparsers.add_parser("view", help="ロール詳細")
+    role_view_parser = role_subparsers.add_parser("view", aliases=["v"], help="ロール詳細")
     role_view_parser.add_argument("role_id", help="ロールID")
     role_view_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
@@ -440,12 +440,12 @@ def _add_attachment_parser(
 ) -> argparse.ArgumentParser:
     a_parser = subparsers.add_parser("attachment", help="添付ファイル詳細")
     a_subparsers = a_parser.add_subparsers(dest="attachment_command")
-    a_view_parser = a_subparsers.add_parser("view", help="添付ファイル詳細")
+    a_view_parser = a_subparsers.add_parser("view", aliases=["v"], help="添付ファイル詳細")
     a_view_parser.add_argument("attachment_id", help="添付ファイルID")
     a_view_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
-    a_update_parser = a_subparsers.add_parser("update", help="添付ファイル更新")
+    a_update_parser = a_subparsers.add_parser("update", aliases=["u"], help="添付ファイル更新")
     a_update_parser.add_argument("attachment_id", help="添付ファイルID")
     a_update_parser.add_argument("--filename", "-f", help="ファイル名")
     a_update_parser.add_argument("--description", "-d", help="説明")
@@ -462,7 +462,7 @@ def _add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
     te_subparsers = time_entry_parser.add_subparsers(dest="time_entry_command")
-    te_create_parser = te_subparsers.add_parser("create", help="作業時間登録")
+    te_create_parser = te_subparsers.add_parser("create", aliases=["c"], help="作業時間登録")
     te_create_parser.add_argument("hours", type=float, help="時間（例: 1.5）")
     te_create_parser.add_argument("--issue_id", "-i", help="イシューID")
     te_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
@@ -499,7 +499,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
 
 
 def _handle_config(args: argparse.Namespace) -> None:
-    if args.config_command != "update":
+    if args.config_command not in ("update", "u"):
         show_config()
         return
     updated = False
@@ -536,14 +536,14 @@ def _handle_config(args: argparse.Namespace) -> None:
 
 
 def _handle_project(args: argparse.Namespace) -> None:
-    if args.project_command == "view":
+    if args.project_command in ("view", "v"):
         read_project(
             args.project_id,
             include=args.include or "",
             full=args.full,
             web=args.web,
         )
-    elif args.project_command == "create":
+    elif args.project_command in ("create", "c"):
         is_public = None
         if args.is_public is not None:
             is_public = args.is_public == "true"
@@ -558,7 +558,7 @@ def _handle_project(args: argparse.Namespace) -> None:
             parent_id=args.parent_id,
             tracker_ids=tracker_ids,
         )
-    elif args.project_command == "update":
+    elif args.project_command in ("update", "u"):
         is_public = None
         if args.is_public is not None:
             is_public = args.is_public == "true"
@@ -822,18 +822,18 @@ def _handle_issue_update(args: argparse.Namespace) -> None:
 
 
 def _handle_issue(args: argparse.Namespace) -> None:
-    if args.issue_command == "view":
+    if args.issue_command in ("view", "v"):
         read_issue(
             args.issue_id,
             include=args.include or "",
             full=args.full,
             web=args.web,
         )
-    elif args.issue_command == "create":
+    elif args.issue_command in ("create", "c"):
         _handle_issue_create(args)
-    elif args.issue_command == "update":
+    elif args.issue_command in ("update", "u"):
         _handle_issue_update(args)
-    elif args.issue_command == "comment":
+    elif args.issue_command in ("comment", "co"):
         if args.notes:
             add_note(args.issue_id, args.notes)
         else:
@@ -858,9 +858,9 @@ def _handle_issue(args: argparse.Namespace) -> None:
 
 
 def _handle_version(args: argparse.Namespace) -> None:
-    if args.version_command == "view":
+    if args.version_command in ("view", "v"):
         read_version(args.version_id, full=args.full, web=args.web)
-    elif args.version_command == "create":
+    elif args.version_command in ("create", "c"):
         project_id = args.project_id or default_project_id
         if not project_id:
             print("project_idを指定するか、default_project_idを設定してください")
@@ -873,7 +873,7 @@ def _handle_version(args: argparse.Namespace) -> None:
             description=args.description,
             sharing=args.sharing,
         )
-    elif args.version_command == "update":
+    elif args.version_command in ("update", "u"):
         update_version(
             version_id=args.version_id,
             name=args.name,
@@ -897,9 +897,9 @@ def _handle_wiki(args: argparse.Namespace) -> None:
             "project_idを指定するか、wiki_project_idまたはdefault_project_idを設定してください"
         )
         exit(1)
-    if args.wiki_command == "view":
+    if args.wiki_command in ("view", "v"):
         read_wiki(project_id, args.page_title, full=args.full, web=args.web)
-    elif args.wiki_command == "create":
+    elif args.wiki_command in ("create", "c"):
         page_title = args.page_title
         parent_title = args.parent_title
         if page_title is None:
@@ -937,7 +937,7 @@ def _handle_wiki(args: argparse.Namespace) -> None:
             create_wiki(project_id, page_title, text, parent_title=parent_title)
         else:
             print("テキストが空のためキャンセルしました")
-    elif args.wiki_command == "update":
+    elif args.wiki_command in ("update", "u"):
         page_title = args.page_title
         if page_title is None:
             pages = fetch_wikis(project_id)
@@ -970,7 +970,7 @@ def _handle_user(args: argparse.Namespace) -> None:
 
 
 def _handle_role(args: argparse.Namespace) -> None:
-    if args.role_command == "view":
+    if args.role_command in ("view", "v"):
         read_role(args.role_id, full=args.full)
     else:
         list_roles(full=args.full)
@@ -988,9 +988,9 @@ def _handle_search(args: argparse.Namespace) -> None:
 def _handle_attachment(
     args: argparse.Namespace, a_parser: argparse.ArgumentParser
 ) -> None:
-    if args.attachment_command == "view":
+    if args.attachment_command in ("view", "v"):
         read_attachment(args.attachment_id, full=args.full)
-    elif args.attachment_command == "update":
+    elif args.attachment_command in ("update", "u"):
         update_attachment(
             attachment_id=args.attachment_id,
             filename=args.filename,
@@ -1001,7 +1001,7 @@ def _handle_attachment(
 
 
 def _handle_time_entry(args: argparse.Namespace) -> None:
-    if args.time_entry_command == "create":
+    if args.time_entry_command in ("create", "c"):
         project_id = args.project_id or default_project_id
         create_time_entry(
             issue_id=args.issue_id,
