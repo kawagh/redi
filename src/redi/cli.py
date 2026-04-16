@@ -925,16 +925,6 @@ def _interactive_create_version(
         print("キャンセルしました")
         exit(1)
 
-    status_choices = ["open", "locked", "closed"]
-    try:
-        status_input = prompt(
-            f"ステータス ({'/'.join(status_choices)}) [open]: "
-        ).strip()
-    except (KeyboardInterrupt, EOFError):
-        print("キャンセルしました")
-        exit(1)
-    status = status_input if status_input in status_choices else "open"
-
     try:
         due_date = prompt("期日（YYYY-MM-DD、省略可）: ").strip() or None
     except (KeyboardInterrupt, EOFError):
@@ -960,7 +950,6 @@ def _interactive_create_version(
     create_version(
         project_id=project_id,
         name=name,
-        status=status,
         due_date=due_date,
         description=description,
         sharing=sharing,
