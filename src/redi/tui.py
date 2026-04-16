@@ -6,9 +6,15 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import HSplit, VSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
+from wcwidth import wcswidth
 
 from redi.config import default_project_id
 from redi.issue import fetch_issues, read_issue
+
+
+def _pad_display(text: str, width: int) -> str:
+    padding = max(0, width - wcswidth(text))
+    return text + " " * padding
 
 
 @dataclass
@@ -64,10 +70,10 @@ def run_issue_tui() -> None:
             ("作成", issue.get("created_on") or ""),
             ("更新", issue.get("updated_on") or ""),
         ]
-        label_width = max(len(label) for label, _ in meta)
+        label_width = max(wcswidth(label) for label, _ in meta)
         for label, value in meta:
             if value:
-                lines.append(f"[{label.ljust(label_width)}] {value}")
+                lines.append(f"[{_pad_display(label, label_width)}] {value}")
 
         description = issue.get("description") or ""
         if description:
