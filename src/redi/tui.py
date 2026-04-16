@@ -72,8 +72,8 @@ def run_issue_tui() -> None:
         ]
         label_width = max(wcswidth(label) for label, _ in meta)
         for label, value in meta:
-            if value:
-                lines.append(f"[{_pad_display(label, label_width)}] {value}")
+            display_value = value if value else "-"
+            lines.append(f"[{_pad_display(label, label_width)}] {display_value}")
 
         description = issue.get("description") or ""
         if description:
