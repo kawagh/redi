@@ -498,8 +498,22 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     return parser, a_parser
 
 
+_SUBCOMMAND_ALIASES: dict[str, str] = {
+    "v": "view",
+    "c": "create",
+    "u": "update",
+    "co": "comment",
+}
+
+
+def _resolve_alias(command: str | None) -> str | None:
+    if command is None:
+        return None
+    return _SUBCOMMAND_ALIASES.get(command, command)
+
+
 def _handle_config(args: argparse.Namespace) -> None:
-    if args.config_command not in ("update", "u"):
+    if _resolve_alias(args.config_command) != "update":
         show_config()
         return
     updated = False
@@ -536,14 +550,15 @@ def _handle_config(args: argparse.Namespace) -> None:
 
 
 def _handle_project(args: argparse.Namespace) -> None:
-    if args.project_command in ("view", "v"):
+    cmd = _resolve_alias(args.project_command)
+    if cmd == "view":
         read_project(
             args.project_id,
             include=args.include or "",
             full=args.full,
             web=args.web,
         )
-    elif args.project_command in ("create", "c"):
+    elif cmd == "create":
         is_public = None
         if args.is_public is not None:
             is_public = args.is_public == "true"
@@ -558,7 +573,7 @@ def _handle_project(args: argparse.Namespace) -> None:
             parent_id=args.parent_id,
             tracker_ids=tracker_ids,
         )
-    elif args.project_command in ("update", "u"):
+    elif cmd == "update":
         is_public = None
         if args.is_public is not None:
             is_public = args.is_public == "true"
@@ -822,18 +837,19 @@ def _handle_issue_update(args: argparse.Namespace) -> None:
 
 
 def _handle_issue(args: argparse.Namespace) -> None:
-    if args.issue_command in ("view", "v"):
+    cmd = _resolve_alias(args.issue_command)
+    if cmd == "view":
         read_issue(
             args.issue_id,
             include=args.include or "",
             full=args.full,
             web=args.web,
         )
-    elif args.issue_command in ("create", "c"):
+    elif cmd == "create":
         _handle_issue_create(args)
-    elif args.issue_command in ("update", "u"):
+    elif cmd == "update":
         _handle_issue_update(args)
-    elif args.issue_command in ("comment", "co"):
+    elif cmd == "comment":
         if args.notes:
             add_note(args.issue_id, args.notes)
         else:
@@ -858,9 +874,10 @@ def _handle_issue(args: argparse.Namespace) -> None:
 
 
 def _handle_version(args: argparse.Namespace) -> None:
-    if args.version_command in ("view", "v"):
+    cmd = _resolve_alias(args.version_command)
+    if cmd == "view":
         read_version(args.version_id, full=args.full, web=args.web)
-    elif args.version_command in ("create", "c"):
+    elif cmd == "create":
         project_id = args.project_id or default_project_id
         if not project_id:
             print("project_idを指定するか、default_project_idを設定してください")
@@ -873,7 +890,7 @@ def _handle_version(args: argparse.Namespace) -> None:
             description=args.description,
             sharing=args.sharing,
         )
-    elif args.version_command in ("update", "u"):
+    elif cmd == "update":
         update_version(
             version_id=args.version_id,
             name=args.name,
@@ -897,9 +914,10 @@ def _handle_wiki(args: argparse.Namespace) -> None:
             "project_idを指定するか、wiki_project_idまたはdefault_project_idを設定してください"
         )
         exit(1)
-    if args.wiki_command in ("view", "v"):
+    cmd = _resolve_alias(args.wiki_command)
+    if cmd == "view":
         read_wiki(project_id, args.page_title, full=args.full, web=args.web)
-    elif args.wiki_command in ("create", "c"):
+    elif cmd == "create":
         page_title = args.page_title
         parent_title = args.parent_title
         if page_title is None:
@@ -937,7 +955,7 @@ def _handle_wiki(args: argparse.Namespace) -> None:
             create_wiki(project_id, page_title, text, parent_title=parent_title)
         else:
             print("テキストが空のためキャンセルしました")
-    elif args.wiki_command in ("update", "u"):
+    elif cmd == "update":
         page_title = args.page_title
         if page_title is None:
             pages = fetch_wikis(project_id)
@@ -970,7 +988,7 @@ def _handle_user(args: argparse.Namespace) -> None:
 
 
 def _handle_role(args: argparse.Namespace) -> None:
-    if args.role_command in ("view", "v"):
+    if _resolve_alias(args.role_command) == "view":
         read_role(args.role_id, full=args.full)
     else:
         list_roles(full=args.full)
@@ -988,9 +1006,10 @@ def _handle_search(args: argparse.Namespace) -> None:
 def _handle_attachment(
     args: argparse.Namespace, a_parser: argparse.ArgumentParser
 ) -> None:
-    if args.attachment_command in ("view", "v"):
+    cmd = _resolve_alias(args.attachment_command)
+    if cmd == "view":
         read_attachment(args.attachment_id, full=args.full)
-    elif args.attachment_command in ("update", "u"):
+    elif cmd == "update":
         update_attachment(
             attachment_id=args.attachment_id,
             filename=args.filename,
@@ -1001,7 +1020,7 @@ def _handle_attachment(
 
 
 def _handle_time_entry(args: argparse.Namespace) -> None:
-    if args.time_entry_command in ("create", "c"):
+    if _resolve_alias(args.time_entry_command) == "create":
         project_id = args.project_id or default_project_id
         create_time_entry(
             issue_id=args.issue_id,
