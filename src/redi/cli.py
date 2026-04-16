@@ -1045,6 +1045,7 @@ def main() -> None:
 
     if args.debug:
         log_path = CONFIG_PATH.parent / "redi-debug.log"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
         handler = logging.FileHandler(log_path)
         handler.setFormatter(logging.Formatter("%(asctime)s %(name)s %(levelname)s: %(message)s"))
         redi_logger = logging.getLogger("redi")
