@@ -1,4 +1,5 @@
 import shutil
+import webbrowser
 from dataclasses import dataclass, field
 
 from prompt_toolkit import Application
@@ -8,7 +9,7 @@ from prompt_toolkit.layout.containers import HSplit, VSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from wcwidth import wcswidth
 
-from redi.config import default_project_id
+from redi.config import default_project_id, redmine_url
 from redi.issue import fetch_issues, read_issue
 
 
@@ -89,7 +90,7 @@ def run_issue_tui() -> None:
             (
                 "reverse",
                 f" Page {page} (offset={state.offset})  "
-                "↑↓/jk:移動 ←→/hl:ページ Enter:表示 q:終了 ",
+                "↑↓/jk:移動 ←→/hl:ページ Enter:表示 v:web q:終了 ",
             )
         ]
 
@@ -133,6 +134,11 @@ def run_issue_tui() -> None:
     @kb.add("enter")
     def _(event):
         event.app.exit(result=str(state.issues[state.cursor]["id"]))
+
+    @kb.add("v")
+    def _(event):
+        issue_id = state.issues[state.cursor]["id"]
+        webbrowser.open(f"{redmine_url}/issues/{issue_id}")
 
     @kb.add("q")
     @kb.add("escape")
