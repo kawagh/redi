@@ -1,6 +1,6 @@
 [project]
 name = "redi"
-version = "0.0.11"
+version = "0.0.12"
 description = "Redmine CLI tool"
 readme = "README.md"
 authors = [
