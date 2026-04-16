@@ -6,10 +6,12 @@ tasks:
     cmds:
       - task --list-all --sort none
 
-  test:
-    desc: run tests
+  check:
+    desc: format, lint, test
     cmds:
-      - uv run pytest -v
+      - task: format
+      - task: lint
+      - task: test
 
   format:
     desc: format
@@ -20,3 +22,8 @@ tasks:
     desc: lint
     cmds:
       - uv run ruff check
+
+  test:
+    desc: run tests
+    cmds:
+      - uv run pytest -v
