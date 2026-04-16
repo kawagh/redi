@@ -4,7 +4,7 @@ from pathlib import Path
 
 CACHE_DIR = Path.home() / ".cache" / "redi"
 # キャッシュの生存時間[s]
-DEFAULT_TTL = 30 * 24 * 60 * 60  # 1month
+DEFAULT_TTL = 100 * 12 * 30 * 24 * 60 * 60  # 100 years
 
 
 def _cache_path(key: str) -> Path:
