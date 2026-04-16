@@ -181,6 +181,7 @@ dependencies = [
     { name = "questionary" },
     { name = "requests" },
     { name = "tomlkit" },
+    { name = "wcwidth" },
 ]
 
 [package.dev-dependencies]
@@ -196,6 +197,7 @@ requires-dist = [
     { name = "questionary", specifier = ">=2.1.1" },
     { name = "requests", specifier = ">=2.33.1" },
     { name = "tomlkit", specifier = ">=0.14.0" },
+    { name = "wcwidth", specifier = ">=0.2.13" },
 ]
 
 [package.metadata.requires-dev]
