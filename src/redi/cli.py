@@ -14,6 +14,7 @@ questionary.prompts.common.INDICATOR_SELECTED = "[x]"  # pyright: ignore[reportP
 questionary.prompts.common.INDICATOR_UNSELECTED = "[ ]"  # pyright: ignore[reportPrivateImportUsage]
 
 from redi.config import (
+    CONFIG_PATH,
     default_project_id,
     editor,
     set_default_profile,
@@ -1043,7 +1044,8 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.debug:
-        handler = logging.FileHandler("redi-debug.log")
+        log_path = CONFIG_PATH.parent / "redi-debug.log"
+        handler = logging.FileHandler(log_path)
         handler.setFormatter(logging.Formatter("%(asctime)s %(name)s %(levelname)s: %(message)s"))
         redi_logger = logging.getLogger("redi")
         redi_logger.setLevel(logging.DEBUG)
