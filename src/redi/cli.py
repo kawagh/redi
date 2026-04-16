@@ -1,6 +1,7 @@
 # PYTHON_ARGCOMPLETE_OK
 import argcomplete
 import argparse
+import logging
 import os
 import subprocess
 import tempfile
@@ -477,6 +478,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
         "-V", "--version", action="version", version=f"redi {version('redi')}"
     )
     parser.add_argument("--tui", action="store_true", help="TUI")
+    parser.add_argument("--debug", action="store_true", help="デバッグログを有効にする")
     subparsers = parser.add_subparsers(dest="command")
     _add_project_parser(subparsers)
     _add_issue_parser(subparsers)
@@ -1039,6 +1041,13 @@ def main() -> None:
     parser, a_parser = _build_parser()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
+
+    if args.debug:
+        handler = logging.FileHandler("redi-debug.log")
+        handler.setFormatter(logging.Formatter("%(asctime)s %(name)s %(levelname)s: %(message)s"))
+        redi_logger = logging.getLogger("redi")
+        redi_logger.setLevel(logging.DEBUG)
+        redi_logger.addHandler(handler)
 
     if args.command in ("config", "c"):
         _handle_config(args)
