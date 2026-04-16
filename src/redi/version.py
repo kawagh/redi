@@ -35,7 +35,7 @@ def create_version(
         print("バージョンの作成に失敗しました")
         exit(1)
     created = response.json()["version"]
-    print(f"バージョンを作成しました: {created['id']} {created['name']}")
+    print(f"バージョンを作成しました: {created['id']} {created['name']} {redmine_url}/versions/{created['id']}")
 
 
 def update_version(

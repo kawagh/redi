@@ -296,7 +296,7 @@ def _add_version_parser(subparsers: argparse._SubParsersAction) -> None:
     v_create_parser = v_subparsers.add_parser(
         "create", aliases=["c"], help="バージョン作成"
     )
-    v_create_parser.add_argument("name", help="バージョン名")
+    v_create_parser.add_argument("name", nargs="?", default=None, help="バージョン名")
     v_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     v_create_parser.add_argument(
         "--status", choices=["open", "locked", "closed"], help="ステータス"
@@ -909,6 +909,64 @@ def _handle_issue(args: argparse.Namespace) -> None:
         )
 
 
+def _interactive_create_version(
+    project_id: str, args: argparse.Namespace
+) -> None:
+    from prompt_toolkit import prompt
+    from prompt_toolkit.validation import Validator
+
+    non_empty_validator = Validator.from_callable(
+        lambda text: len(text.strip()) > 0,
+        error_message="入力してください",
+    )
+    try:
+        name = prompt("バージョン名: ", validator=non_empty_validator).strip()
+    except (KeyboardInterrupt, EOFError):
+        print("キャンセルしました")
+        exit(1)
+
+    status_choices = ["open", "locked", "closed"]
+    try:
+        status_input = prompt(
+            f"ステータス ({'/'.join(status_choices)}) [open]: "
+        ).strip()
+    except (KeyboardInterrupt, EOFError):
+        print("キャンセルしました")
+        exit(1)
+    status = status_input if status_input in status_choices else "open"
+
+    try:
+        due_date = prompt("期日（YYYY-MM-DD、省略可）: ").strip() or None
+    except (KeyboardInterrupt, EOFError):
+        print("キャンセルしました")
+        exit(1)
+
+    try:
+        description = prompt("説明（省略可）: ").strip() or None
+    except (KeyboardInterrupt, EOFError):
+        print("キャンセルしました")
+        exit(1)
+
+    sharing_choices = ["none", "descendants", "hierarchy", "tree", "system"]
+    try:
+        sharing_input = prompt(
+            f"共有設定 ({'/'.join(sharing_choices)}) [none]: "
+        ).strip()
+    except (KeyboardInterrupt, EOFError):
+        print("キャンセルしました")
+        exit(1)
+    sharing = sharing_input if sharing_input in sharing_choices else None
+
+    create_version(
+        project_id=project_id,
+        name=name,
+        status=status,
+        due_date=due_date,
+        description=description,
+        sharing=sharing,
+    )
+
+
 def _handle_version(args: argparse.Namespace) -> None:
     cmd = _resolve_alias(args.version_command)
     if cmd == "view":
@@ -918,14 +976,17 @@ def _handle_version(args: argparse.Namespace) -> None:
         if not project_id:
             print("project_idを指定するか、default_project_idを設定してください")
             exit(1)
-        create_version(
-            project_id=project_id,
-            name=args.name,
-            status=args.status,
-            due_date=args.due_date,
-            description=args.description,
-            sharing=args.sharing,
-        )
+        if args.name is None:
+            _interactive_create_version(project_id, args)
+        else:
+            create_version(
+                project_id=project_id,
+                name=args.name,
+                status=args.status,
+                due_date=args.due_date,
+                description=args.description,
+                sharing=args.sharing,
+            )
     elif cmd == "update":
         update_version(
             version_id=args.version_id,
