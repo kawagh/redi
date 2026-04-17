@@ -1,6 +1,7 @@
 import shutil
 import webbrowser
 from dataclasses import dataclass, field
+from typing import Literal
 
 from prompt_toolkit import Application
 from prompt_toolkit.key_binding import KeyBindings
@@ -26,7 +27,18 @@ class TuiState:
     issues: list[dict] = field(default_factory=list)
 
 
-def run_issue_tui(offset: int = 0, cursor: int = 0) -> tuple[str, str, int, int] | None:
+TuiAction = Literal["view", "update"]
+
+
+@dataclass
+class TuiResult:
+    action: TuiAction
+    issue_id: str
+    offset: int
+    cursor: int
+
+
+def run_issue_tui(offset: int = 0, cursor: int = 0) -> TuiResult | None:
     state = TuiState(page_size=max(1, shutil.get_terminal_size().lines - 1))
     state.offset = offset
     state.issues = fetch_issues(
@@ -133,27 +145,21 @@ def run_issue_tui(offset: int = 0, cursor: int = 0) -> tuple[str, str, int, int]
             )
             state.cursor = 0
 
+    def _exit_with(action: TuiAction):
+        return TuiResult(
+            action=action,
+            issue_id=str(state.issues[state.cursor]["id"]),
+            offset=state.offset,
+            cursor=state.cursor,
+        )
+
     @kb.add("enter")
     def _(event):
-        event.app.exit(
-            result=(
-                "view",
-                str(state.issues[state.cursor]["id"]),
-                state.offset,
-                state.cursor,
-            )
-        )
+        event.app.exit(result=_exit_with("view"))
 
     @kb.add("u")
     def _(event):
-        event.app.exit(
-            result=(
-                "update",
-                str(state.issues[state.cursor]["id"]),
-                state.offset,
-                state.cursor,
-            )
-        )
+        event.app.exit(result=_exit_with("update"))
 
     @kb.add("v")
     def _(event):

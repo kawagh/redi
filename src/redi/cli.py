@@ -1170,13 +1170,14 @@ def main() -> None:
             tui_result = run_issue_tui(offset=tui_offset, cursor=tui_cursor)
             if tui_result is None:
                 return
-            action, issue_id, tui_offset, tui_cursor = tui_result
-            if action == "view":
-                read_issue(issue_id)
+            tui_offset = tui_result.offset
+            tui_cursor = tui_result.cursor
+            if tui_result.action == "view":
+                read_issue(tui_result.issue_id)
                 input("Enter で TUI に戻る...")
-            elif action == "update":
+            elif tui_result.action == "update":
                 update_args = argparse.Namespace(
-                    issue_id=issue_id,
+                    issue_id=tui_result.issue_id,
                     subject=None,
                     description=None,
                     tracker_id=None,
