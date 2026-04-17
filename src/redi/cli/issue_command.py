@@ -1,0 +1,423 @@
+import argparse
+
+import questionary
+
+from redi.cli._common import open_editor, resolve_alias
+from redi.config import default_project_id
+from redi.enumeration import fetch_issue_priorities, fetch_time_entry_activities
+from redi.issue import (
+    add_note,
+    create_issue,
+    fetch_issue,
+    fetch_issues,
+    list_issues,
+    read_issue,
+    update_issue,
+)
+from redi.issue_relation import create_relation, delete_relation
+from redi.issue_status import fetch_issue_statuses
+from redi.time_entry import create_time_entry
+from redi.tracker import fetch_trackers
+from redi.version import fetch_versions
+
+
+def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
+    i_parser = subparsers.add_parser(
+        "issue", aliases=["i"], help="イシュー一覧/詳細/作成/コメント"
+    )
+    i_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    i_parser.add_argument("--project_id", "-p", help="プロジェクトIDでフィルタリング")
+    i_parser.add_argument(
+        "--version",
+        "-v",
+        help="対象バージョンIDでフィルタリング",
+    )
+    i_parser.add_argument(
+        "--assigned_to",
+        "-a",
+        help="担当者でフィルタリング（ユーザーIDまたは'me'）",
+    )
+    i_parser.add_argument(
+        "--status_id",
+        "-s",
+        help="ステータスIDでフィルタリング（'open'/'closed'/'*' も可）",
+    )
+    i_parser.add_argument("--tracker_id", "-t", help="トラッカーIDでフィルタリング")
+    i_parser.add_argument("--priority_id", help="優先度IDでフィルタリング")
+    i_parser.add_argument(
+        "--query_id",
+        "-q",
+        help="カスタムクエリIDでフィルタリング（`redi query`で取得可）",
+    )
+    i_parser.add_argument("--limit", "-l", type=int, help="取得件数")
+    i_parser.add_argument("--offset", "-o", type=int, help="オフセット")
+    i_subparsers = i_parser.add_subparsers(dest="issue_command")
+    i_view_parser = i_subparsers.add_parser("view", aliases=["v"], help="イシュー詳細")
+    i_view_parser.add_argument("issue_id", help="イシューID")
+    i_view_parser.add_argument(
+        "--include",
+        help="追加情報（children,attachments,relations,changesets,journals,watchers,allowed_statuses）",
+    )
+    i_view_parser.add_argument(
+        "--full", action="store_true", help="JSON形式で全情報を出力"
+    )
+    i_view_parser.add_argument(
+        "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
+    )
+    i_create_parser = i_subparsers.add_parser(
+        "create", aliases=["c"], help="イシュー作成"
+    )
+    i_create_parser.add_argument(
+        "subject", nargs="?", help="イシューの題名（省略で対話的に入力）"
+    )
+    i_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
+    i_create_parser.add_argument("--tracker_id", "-t", help="トラッカーID")
+    i_create_parser.add_argument("--priority_id", help="優先度ID")
+    i_create_parser.add_argument("--assigned_to_id", "-a", help="担当者ID")
+    i_create_parser.add_argument(
+        "--description",
+        "-d",
+        nargs="?",
+        const="",
+        default=None,
+        help="説明（フラグ未指定でエディタ起動）",
+    )
+    i_create_parser.add_argument(
+        "--custom_fields",
+        help="カスタムフィールド（id=value形式、カンマ区切り。例: 1=foo,2=bar）",
+    )
+    i_update_parser = i_subparsers.add_parser(
+        "update", aliases=["u"], help="イシュー更新"
+    )
+    i_update_parser.add_argument(
+        "issue_id", nargs="?", help="イシューID（省略で対話的に選択）"
+    )
+    i_update_parser.add_argument("--subject", "-s", help="題名")
+    i_update_parser.add_argument(
+        "--description",
+        "-d",
+        nargs="?",
+        const="",
+        default=None,
+        help="説明（値省略でエディタ起動）",
+    )
+    i_update_parser.add_argument("--tracker_id", "-t", help="トラッカーID")
+    i_update_parser.add_argument("--status_id", help="ステータスID")
+    i_update_parser.add_argument("--priority_id", help="優先度ID")
+    i_update_parser.add_argument("--assigned_to_id", "-a", help="担当者ID")
+    i_update_parser.add_argument("--fixed_version_id", help="対象バージョンID")
+    i_update_parser.add_argument(
+        "--parent_issue_id", help="親チケットID（空文字で解除）"
+    )
+    i_update_parser.add_argument("--notes", "-n", help="コメント")
+    i_update_parser.add_argument(
+        "--custom_fields",
+        help="カスタムフィールド（id=value形式、カンマ区切り。例: 1=foo,2=bar）",
+    )
+    i_update_parser.add_argument(
+        "--relate",
+        help="関係性のタイプ（relates, duplicates, blocks, precedes, follows など）",
+    )
+    i_update_parser.add_argument("--to", dest="relate_to", help="関係先のイシューID")
+    i_update_parser.add_argument(
+        "--delete-relation",
+        action="store_true",
+        help="関係性を削除（--to と併用）",
+    )
+    i_update_parser.add_argument(
+        "--attach",
+        action="append",
+        help="添付ファイルのパス（複数指定可）",
+    )
+    i_update_parser.add_argument("--hours", type=float, help="作業時間（例: 1.5）")
+    i_update_parser.add_argument("--activity_id", help="作業分類ID")
+    i_update_parser.add_argument("--spent_on", help="作業日（YYYY-MM-DD、省略で今日）")
+    i_update_parser.add_argument("--time_comments", help="作業時間のコメント")
+    i_comment_parser = i_subparsers.add_parser(
+        "comment", aliases=["co"], help="イシューにコメント追加"
+    )
+    i_comment_parser.add_argument("issue_id", help="イシューID")
+    i_comment_parser.add_argument(
+        "notes", nargs="?", default="", help="コメント（省略でエディタ起動）"
+    )
+
+
+def _interactive_select_issue_id() -> str:
+    issues = fetch_issues(project_id=default_project_id)
+    if not issues:
+        print("選択可能なイシューがありません")
+        exit(1)
+    issue_id = questionary.select(
+        "更新するイシューを選択",
+        choices=[
+            questionary.Choice(f"#{i['id']} {i['subject']}", value=str(i["id"]))
+            for i in issues
+        ],
+    ).ask(kbi_msg="")
+    if not issue_id:
+        print("イシューが選択されていないためキャンセルしました")
+        exit(1)
+    return issue_id
+
+
+def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
+    current = fetch_issue(args.issue_id)
+    field_choices = [
+        questionary.Choice("トラッカー (tracker)", value="tracker"),
+        questionary.Choice("題名 (subject)", value="subject"),
+        questionary.Choice("説明 (description)", value="description"),
+        questionary.Choice("ステータス (status)", value="status"),
+        questionary.Choice("優先度 (priority)", value="priority"),
+        questionary.Choice("対象バージョン (fixed_version)", value="fixed_version"),
+        questionary.Choice("コメント (notes)", value="notes"),
+        questionary.Choice("作業時間 (time_entry)", value="time_entry"),
+    ]
+    description_choice = next(c for c in field_choices if c.value == "description")
+    selected = questionary.checkbox(
+        "更新する項目を選択",
+        choices=field_choices,
+        style=questionary.Style([("selected", "noreverse")]),
+        initial_choice=description_choice,
+    ).ask(kbi_msg="")
+    if not selected:
+        print("更新する項目が選択されていないためキャンセルしました")
+        exit(1)
+    if "tracker" in selected:
+        trackers = fetch_trackers()
+        args.tracker_id = questionary.select(
+            "トラッカー",
+            choices=[
+                questionary.Choice(t["name"], value=str(t["id"])) for t in trackers
+            ],
+        ).ask(kbi_msg="")
+    if "subject" in selected:
+        args.subject = questionary.text(
+            "題名", default=current.get("subject") or ""
+        ).ask(kbi_msg="")
+    if "description" in selected:
+        args.description = ""
+    if "status" in selected:
+        statuses = fetch_issue_statuses()
+        args.status_id = questionary.select(
+            "ステータス",
+            choices=[
+                questionary.Choice(s["name"], value=str(s["id"])) for s in statuses
+            ],
+        ).ask(kbi_msg="")
+    if "priority" in selected:
+        priorities = fetch_issue_priorities()
+        args.priority_id = questionary.select(
+            "優先度",
+            choices=[
+                questionary.Choice(p["name"], value=str(p["id"])) for p in priorities
+            ],
+        ).ask(kbi_msg="")
+    if "fixed_version" in selected:
+        project_id = (current.get("project") or {}).get("id")
+        if not project_id:
+            print("プロジェクトが特定できないためキャンセルしました")
+            exit(1)
+        versions = fetch_versions(str(project_id))
+        args.fixed_version_id = questionary.select(
+            "対象バージョン",
+            choices=[
+                questionary.Choice(f"{v['name']} ({v['status']})", value=str(v["id"]))
+                for v in versions
+            ],
+        ).ask(kbi_msg="")
+    if "notes" in selected:
+        args.notes = questionary.text("コメント").ask(kbi_msg="")
+    if "time_entry" in selected:
+        hours_str = questionary.text(
+            "作業時間（例: 1.5 (h)）",
+            validate=lambda v: (
+                v.replace(".", "", 1).isdigit() or "数値を入力してください"
+            ),
+        ).ask(kbi_msg="")
+        if hours_str:
+            args.hours = float(hours_str)
+        activities = fetch_time_entry_activities()
+        args.activity_id = questionary.select(
+            "作業分類",
+            choices=[
+                questionary.Choice(a["name"], value=str(a["id"])) for a in activities
+            ],
+        ).ask(kbi_msg="")
+        args.spent_on = (
+            questionary.text("作業日（YYYY-MM-DD、省略で今日）", default="").ask(
+                kbi_msg=""
+            )
+            or None
+        )
+        args.time_comments = (
+            questionary.text("作業時間のコメント", default="").ask(kbi_msg="") or None
+        )
+
+
+def handle_issue_create(args: argparse.Namespace) -> None:
+    project_id = args.project_id or default_project_id
+    if not project_id:
+        print("project_idを指定するか、default_project_idを設定してください")
+        exit(1)
+    subject = args.subject
+    tracker_id = args.tracker_id
+    if subject is None:
+        if tracker_id is None:
+            trackers = fetch_trackers()
+            choices = [
+                questionary.Choice(title=t["name"], value=str(t["id"]))
+                for t in trackers
+            ]
+            tracker_id = questionary.select("トラッカーを選択", choices=choices).ask(
+                kbi_msg=""
+            )
+            if tracker_id is None:
+                print("キャンセルしました")
+                exit(1)
+        subject = questionary.text("題名").ask(kbi_msg="")
+        if not subject:
+            print("題名が空のためキャンセルしました")
+            exit(1)
+        subject = subject.strip()
+    if args.description is None:
+        description = open_editor()
+    else:
+        description = args.description
+    create_issue(
+        project_id=project_id,
+        subject=subject,
+        description=description,
+        tracker_id=tracker_id,
+        priority_id=args.priority_id,
+        assigned_to_id=args.assigned_to_id,
+        custom_fields=args.custom_fields,
+    )
+
+
+def handle_issue_update(args: argparse.Namespace) -> None:
+    if not args.issue_id:
+        args.issue_id = _interactive_select_issue_id()
+    no_args_provided = not (
+        args.subject
+        or args.description is not None
+        or args.tracker_id
+        or args.status_id
+        or args.priority_id
+        or args.assigned_to_id
+        or args.fixed_version_id
+        or args.parent_issue_id is not None
+        or args.notes
+        or args.custom_fields
+        or args.relate
+        or args.relate_to
+        or args.delete_relation
+        or args.attach
+        or args.hours is not None
+    )
+    if no_args_provided:
+        _interactive_fill_issue_update_args(args)
+    description = args.description
+    if description is not None and description == "":
+        current = fetch_issue(args.issue_id)
+        description = open_editor(current.get("description") or "")
+    should_update_issue = (
+        args.subject
+        or description is not None
+        or args.tracker_id
+        or args.status_id
+        or args.priority_id
+        or args.assigned_to_id
+        or args.fixed_version_id
+        or args.parent_issue_id is not None
+        or args.notes
+        or args.custom_fields
+        or args.attach
+    )
+    should_update_issue_relation = args.delete_relation or (
+        args.relate and args.relate_to
+    )
+    should_create_time_entry = args.hours is not None
+    if should_update_issue:
+        update_issue(
+            issue_id=args.issue_id,
+            subject=args.subject,
+            description=description if description else None,
+            tracker_id=args.tracker_id,
+            status_id=args.status_id,
+            priority_id=args.priority_id,
+            assigned_to_id=args.assigned_to_id,
+            fixed_version_id=args.fixed_version_id,
+            parent_issue_id=args.parent_issue_id,
+            notes=args.notes or "",
+            custom_fields=args.custom_fields,
+            attachments=args.attach,
+        )
+    if args.delete_relation:
+        if not args.relate_to:
+            print("--delete-relation には --to が必要です")
+            exit(1)
+        delete_relation(
+            issue_id=args.issue_id,
+            issue_to_id=args.relate_to,
+        )
+    elif args.relate and args.relate_to:
+        create_relation(
+            issue_id=args.issue_id,
+            issue_to_id=args.relate_to,
+            relation_type=args.relate,
+        )
+    elif args.relate or args.relate_to:
+        print("--relate と --to は両方指定してください")
+        exit(1)
+    if should_create_time_entry:
+        create_time_entry(
+            issue_id=args.issue_id,
+            hours=args.hours,
+            activity_id=args.activity_id,
+            spent_on=args.spent_on,
+            comments=args.time_comments,
+        )
+    if (
+        not should_update_issue
+        and not should_update_issue_relation
+        and not should_create_time_entry
+    ):
+        print("更新内容がないので更新をキャンセルしました")
+        exit(1)
+
+
+def handle_issue(args: argparse.Namespace) -> None:
+    cmd = resolve_alias(args.issue_command)
+    if cmd == "view":
+        read_issue(
+            args.issue_id,
+            include=args.include or "",
+            full=args.full,
+            web=args.web,
+        )
+    elif cmd == "create":
+        handle_issue_create(args)
+    elif cmd == "update":
+        handle_issue_update(args)
+    elif cmd == "comment":
+        if args.notes:
+            add_note(args.issue_id, args.notes)
+        else:
+            notes = open_editor()
+            if notes:
+                add_note(args.issue_id, notes)
+            else:
+                print("コメントが空のためキャンセルしました")
+    else:
+        list_issues(
+            project_id=args.project_id or default_project_id,
+            fixed_version_id=args.version,
+            assigned_to=args.assigned_to,
+            status_id=args.status_id,
+            tracker_id=args.tracker_id,
+            priority_id=args.priority_id,
+            query_id=args.query_id,
+            limit=args.limit,
+            offset=args.offset,
+            full=args.full,
+        )
