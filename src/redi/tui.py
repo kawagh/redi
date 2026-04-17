@@ -10,7 +10,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from wcwidth import wcswidth
 
 from redi.config import default_project_id, redmine_url
-from redi.issue import fetch_issues, read_issue
+from redi.issue import fetch_issues
 
 
 def _pad_display(text: str, width: int) -> str:
@@ -26,14 +26,14 @@ class TuiState:
     issues: list[dict] = field(default_factory=list)
 
 
-def run_issue_tui() -> None:
+def run_issue_tui() -> tuple[str, str] | None:
     state = TuiState(page_size=max(1, shutil.get_terminal_size().lines - 1))
     state.issues = fetch_issues(
         project_id=default_project_id, limit=state.page_size, offset=state.offset
     )
     if not state.issues:
         print("イシューが見つかりません")
-        return
+        return None
 
     def render_issues():
         result = []
@@ -90,7 +90,7 @@ def run_issue_tui() -> None:
             (
                 "reverse",
                 f" Page {page} (offset={state.offset})  "
-                "↑↓/jk:移動 ←→/hl:ページ Enter:表示 v:web q:終了 ",
+                "↑↓/jk:移動 ←→/hl:ページ Enter:表示 u:更新 v:web q:終了 ",
             )
         ]
 
@@ -133,7 +133,11 @@ def run_issue_tui() -> None:
 
     @kb.add("enter")
     def _(event):
-        event.app.exit(result=str(state.issues[state.cursor]["id"]))
+        event.app.exit(result=("view", str(state.issues[state.cursor]["id"])))
+
+    @kb.add("u")
+    def _(event):
+        event.app.exit(result=("update", str(state.issues[state.cursor]["id"])))
 
     @kb.add("v")
     def _(event):
@@ -164,6 +168,4 @@ def run_issue_tui() -> None:
         key_bindings=kb,
         full_screen=True,
     )
-    result = app.run()
-    if result is not None:
-        read_issue(result)
+    return app.run()

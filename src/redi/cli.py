@@ -1164,7 +1164,35 @@ def main() -> None:
     check_config()
 
     if args.tui and args.command is None:
-        run_issue_tui()
+        tui_result = run_issue_tui()
+        if tui_result is None:
+            return
+        action, issue_id = tui_result
+        if action == "view":
+            read_issue(issue_id)
+        elif action == "update":
+            update_args = argparse.Namespace(
+                issue_id=issue_id,
+                subject=None,
+                description=None,
+                tracker_id=None,
+                status_id=None,
+                priority_id=None,
+                assigned_to_id=None,
+                fixed_version_id=None,
+                parent_issue_id=None,
+                notes=None,
+                custom_fields=None,
+                relate=None,
+                relate_to=None,
+                delete_relation=False,
+                attach=None,
+                hours=None,
+                activity_id=None,
+                spent_on=None,
+                time_comments=None,
+            )
+            _handle_issue_update(update_args)
         return
 
     if args.command in ("project", "p"):
