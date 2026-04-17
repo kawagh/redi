@@ -71,7 +71,7 @@ from redi.wiki import (
     read_wiki,
     update_wiki,
 )
-from redi.tui import run_issue_tui
+from redi.tui import TuiPosition, run_issue_tui
 
 questionary.prompts.common.INDICATOR_SELECTED = "[x]"  # pyright: ignore[reportPrivateImportUsage]
 questionary.prompts.common.INDICATOR_UNSELECTED = "[ ]"  # pyright: ignore[reportPrivateImportUsage]
@@ -1164,8 +1164,38 @@ def main() -> None:
     check_config()
 
     if args.tui and args.command is None:
-        run_issue_tui()
-        return
+        tui_position = TuiPosition()
+        while True:
+            tui_result = run_issue_tui(position=tui_position)
+            if tui_result is None:
+                return
+            tui_position = tui_result.position
+            if tui_result.action == "view":
+                read_issue(tui_result.issue_id)
+                input("Enter で TUI に戻る...")
+            elif tui_result.action == "update":
+                update_args = argparse.Namespace(
+                    issue_id=tui_result.issue_id,
+                    subject=None,
+                    description=None,
+                    tracker_id=None,
+                    status_id=None,
+                    priority_id=None,
+                    assigned_to_id=None,
+                    fixed_version_id=None,
+                    parent_issue_id=None,
+                    notes=None,
+                    custom_fields=None,
+                    relate=None,
+                    relate_to=None,
+                    delete_relation=False,
+                    attach=None,
+                    hours=None,
+                    activity_id=None,
+                    spent_on=None,
+                    time_comments=None,
+                )
+                _handle_issue_update(update_args)
 
     if args.command in ("project", "p"):
         _handle_project(args)

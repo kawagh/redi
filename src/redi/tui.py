@@ -1,6 +1,7 @@
 import shutil
 import webbrowser
 from dataclasses import dataclass, field
+from typing import Literal
 
 from prompt_toolkit import Application
 from prompt_toolkit.key_binding import KeyBindings
@@ -10,7 +11,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from wcwidth import wcswidth
 
 from redi.config import default_project_id, redmine_url
-from redi.issue import fetch_issues, read_issue
+from redi.issue import fetch_issues
 
 
 def _pad_display(text: str, width: int) -> str:
@@ -26,14 +27,34 @@ class TuiState:
     issues: list[dict] = field(default_factory=list)
 
 
-def run_issue_tui() -> None:
+TuiAction = Literal["view", "update"]
+
+
+@dataclass
+class TuiPosition:
+    offset: int = 0
+    cursor: int = 0
+
+
+@dataclass
+class TuiResult:
+    action: TuiAction
+    issue_id: str
+    position: TuiPosition
+
+
+def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
+    if position is None:
+        position = TuiPosition()
     state = TuiState(page_size=max(1, shutil.get_terminal_size().lines - 1))
+    state.offset = position.offset
     state.issues = fetch_issues(
         project_id=default_project_id, limit=state.page_size, offset=state.offset
     )
     if not state.issues:
         print("イシューが見つかりません")
-        return
+        return None
+    state.cursor = max(0, min(position.cursor, len(state.issues) - 1))
 
     def render_issues():
         result = []
@@ -90,7 +111,7 @@ def run_issue_tui() -> None:
             (
                 "reverse",
                 f" Page {page} (offset={state.offset})  "
-                "↑↓/jk:移動 ←→/hl:ページ Enter:表示 v:web q:終了 ",
+                "↑↓/jk:移動 ←→/hl:ページ Enter:表示 u:更新 v:web q:終了 ",
             )
         ]
 
@@ -131,9 +152,23 @@ def run_issue_tui() -> None:
             )
             state.cursor = 0
 
+    def _exit_with(action: TuiAction):
+        """
+        直前の位置を引き継いでTUIのアクションを返す
+        """
+        return TuiResult(
+            action=action,
+            issue_id=str(state.issues[state.cursor]["id"]),
+            position=TuiPosition(offset=state.offset, cursor=state.cursor),
+        )
+
     @kb.add("enter")
     def _(event):
-        event.app.exit(result=str(state.issues[state.cursor]["id"]))
+        event.app.exit(result=_exit_with("view"))
+
+    @kb.add("u")
+    def _(event):
+        event.app.exit(result=_exit_with("update"))
 
     @kb.add("v")
     def _(event):
@@ -164,6 +199,4 @@ def run_issue_tui() -> None:
         key_bindings=kb,
         full_screen=True,
     )
-    result = app.run()
-    if result is not None:
-        read_issue(result)
+    return app.run()
