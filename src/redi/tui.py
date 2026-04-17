@@ -146,6 +146,9 @@ def run_issue_tui(offset: int = 0, cursor: int = 0) -> TuiResult | None:
             state.cursor = 0
 
     def _exit_with(action: TuiAction):
+        """
+        直前の位置を引き継いでTUIのアクションを返す
+        """
         return TuiResult(
             action=action,
             issue_id=str(state.issues[state.cursor]["id"]),
