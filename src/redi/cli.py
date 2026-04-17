@@ -909,10 +909,9 @@ def _handle_issue(args: argparse.Namespace) -> None:
         )
 
 
-def _interactive_create_version(
-    project_id: str, args: argparse.Namespace
-) -> None:
+def _interactive_create_version(project_id: str, args: argparse.Namespace) -> None:
     from prompt_toolkit import prompt
+    from prompt_toolkit.shortcuts import choice
     from prompt_toolkit.validation import Validator
 
     non_empty_validator = Validator.from_callable(
@@ -937,15 +936,23 @@ def _interactive_create_version(
         print("キャンセルしました")
         exit(1)
 
-    sharing_choices = ["none", "descendants", "hierarchy", "tree", "system"]
+    sharing_options: list[tuple[str, str]] = [
+        ("none", "none (共有しない)"),
+        ("descendants", "descendants (子プロジェクトと共有)"),
+        ("hierarchy", "hierarchy (階層内で共有)"),
+        ("tree", "tree (ツリー全体で共有)"),
+        ("system", "system (システム全体で共有)"),
+    ]
     try:
-        sharing_input = prompt(
-            f"共有設定 ({'/'.join(sharing_choices)}) [none]: "
-        ).strip()
-    except (KeyboardInterrupt, EOFError):
+        sharing_input = choice(
+            "共有設定",
+            options=sharing_options,
+            default="none",
+        )
+    except KeyboardInterrupt:
         print("キャンセルしました")
         exit(1)
-    sharing = sharing_input if sharing_input in sharing_choices else None
+    sharing = sharing_input if sharing_input != "none" else None
 
     create_version(
         project_id=project_id,
