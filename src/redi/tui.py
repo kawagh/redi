@@ -27,7 +27,7 @@ class TuiState:
     issues: list[dict] = field(default_factory=list)
 
 
-TuiAction = Literal["view", "update"]
+TuiAction = Literal["view", "update", "create"]
 
 
 @dataclass
@@ -39,7 +39,7 @@ class TuiPosition:
 @dataclass
 class TuiResult:
     action: TuiAction
-    issue_id: str
+    issue_id: str | None
     position: TuiPosition
 
 
@@ -111,7 +111,7 @@ def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
             (
                 "reverse",
                 f" Page {page} (offset={state.offset})  "
-                "↑↓/jk:移動 ←→/hl:ページ Enter:表示 u:更新 v:web q:終了 ",
+                "↑↓/jk:移動 ←→/hl:ページ Enter:表示 c:作成 u:更新 v:web q:終了 ",
             )
         ]
 
@@ -152,13 +152,15 @@ def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
             )
             state.cursor = 0
 
-    def _exit_with(action: TuiAction):
+    def _exit_with(action: TuiAction, issue_id: str | None = None):
         """
         直前の位置を引き継いでTUIのアクションを返す
         """
+        if issue_id is None and state.issues:
+            issue_id = str(state.issues[state.cursor]["id"])
         return TuiResult(
             action=action,
-            issue_id=str(state.issues[state.cursor]["id"]),
+            issue_id=issue_id,
             position=TuiPosition(offset=state.offset, cursor=state.cursor),
         )
 
@@ -169,6 +171,10 @@ def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
     @kb.add("u")
     def _(event):
         event.app.exit(result=_exit_with("update"))
+
+    @kb.add("c")
+    def _(event):
+        event.app.exit(result=_exit_with("create", issue_id=""))
 
     @kb.add("v")
     def _(event):

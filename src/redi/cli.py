@@ -1196,6 +1196,17 @@ def main() -> None:
                     time_comments=None,
                 )
                 _handle_issue_update(update_args)
+            elif tui_result.action == "create":
+                create_args = argparse.Namespace(
+                    subject=None,
+                    project_id=None,
+                    tracker_id=None,
+                    priority_id=None,
+                    assigned_to_id=None,
+                    description=None,
+                    custom_fields=None,
+                )
+                _handle_issue_create(create_args)
 
     if args.command in ("project", "p"):
         _handle_project(args)
