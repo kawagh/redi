@@ -71,7 +71,7 @@ from redi.wiki import (
     read_wiki,
     update_wiki,
 )
-from redi.tui import run_issue_tui
+from redi.tui import TuiPosition, run_issue_tui
 
 questionary.prompts.common.INDICATOR_SELECTED = "[x]"  # pyright: ignore[reportPrivateImportUsage]
 questionary.prompts.common.INDICATOR_UNSELECTED = "[ ]"  # pyright: ignore[reportPrivateImportUsage]
@@ -1164,14 +1164,12 @@ def main() -> None:
     check_config()
 
     if args.tui and args.command is None:
-        tui_offset = 0
-        tui_cursor = 0
+        tui_position = TuiPosition()
         while True:
-            tui_result = run_issue_tui(offset=tui_offset, cursor=tui_cursor)
+            tui_result = run_issue_tui(position=tui_position)
             if tui_result is None:
                 return
-            tui_offset = tui_result.offset
-            tui_cursor = tui_result.cursor
+            tui_position = tui_result.position
             if tui_result.action == "view":
                 read_issue(tui_result.issue_id)
                 input("Enter で TUI に戻る...")

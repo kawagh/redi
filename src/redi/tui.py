@@ -31,23 +31,30 @@ TuiAction = Literal["view", "update"]
 
 
 @dataclass
+class TuiPosition:
+    offset: int = 0
+    cursor: int = 0
+
+
+@dataclass
 class TuiResult:
     action: TuiAction
     issue_id: str
-    offset: int
-    cursor: int
+    position: TuiPosition
 
 
-def run_issue_tui(offset: int = 0, cursor: int = 0) -> TuiResult | None:
+def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
+    if position is None:
+        position = TuiPosition()
     state = TuiState(page_size=max(1, shutil.get_terminal_size().lines - 1))
-    state.offset = offset
+    state.offset = position.offset
     state.issues = fetch_issues(
         project_id=default_project_id, limit=state.page_size, offset=state.offset
     )
     if not state.issues:
         print("イシューが見つかりません")
         return None
-    state.cursor = max(0, min(cursor, len(state.issues) - 1))
+    state.cursor = max(0, min(position.cursor, len(state.issues) - 1))
 
     def render_issues():
         result = []
@@ -152,8 +159,7 @@ def run_issue_tui(offset: int = 0, cursor: int = 0) -> TuiResult | None:
         return TuiResult(
             action=action,
             issue_id=str(state.issues[state.cursor]["id"]),
-            offset=state.offset,
-            cursor=state.cursor,
+            position=TuiPosition(offset=state.offset, cursor=state.cursor),
         )
 
     @kb.add("enter")
