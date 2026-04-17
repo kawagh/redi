@@ -911,6 +911,9 @@ def _handle_issue(args: argparse.Namespace) -> None:
 
 def _interactive_create_version(project_id: str, args: argparse.Namespace) -> None:
     from prompt_toolkit import prompt
+    from prompt_toolkit.key_binding import KeyBindings
+    from prompt_toolkit.key_binding.key_processor import KeyPress
+    from prompt_toolkit.keys import Keys
     from prompt_toolkit.shortcuts import choice
     from prompt_toolkit.validation import Validator
 
@@ -943,11 +946,22 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
         ("tree", "tree (ツリー全体で共有)"),
         ("system", "system (システム全体で共有)"),
     ]
+    choice_kb = KeyBindings()
+
+    @choice_kb.add("c-p")
+    def _move_up(event):
+        event.app.key_processor.feed(KeyPress(Keys.Up))
+
+    @choice_kb.add("c-n")
+    def _move_down(event):
+        event.app.key_processor.feed(KeyPress(Keys.Down))
+
     try:
         sharing_input = choice(
             "共有設定",
             options=sharing_options,
             default="none",
+            key_bindings=choice_kb,
         )
     except KeyboardInterrupt:
         print("キャンセルしました")
