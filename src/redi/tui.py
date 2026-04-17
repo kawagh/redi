@@ -26,14 +26,16 @@ class TuiState:
     issues: list[dict] = field(default_factory=list)
 
 
-def run_issue_tui() -> tuple[str, str] | None:
+def run_issue_tui(offset: int = 0, cursor: int = 0) -> tuple[str, str, int, int] | None:
     state = TuiState(page_size=max(1, shutil.get_terminal_size().lines - 1))
+    state.offset = offset
     state.issues = fetch_issues(
         project_id=default_project_id, limit=state.page_size, offset=state.offset
     )
     if not state.issues:
         print("イシューが見つかりません")
         return None
+    state.cursor = max(0, min(cursor, len(state.issues) - 1))
 
     def render_issues():
         result = []
@@ -133,11 +135,25 @@ def run_issue_tui() -> tuple[str, str] | None:
 
     @kb.add("enter")
     def _(event):
-        event.app.exit(result=("view", str(state.issues[state.cursor]["id"])))
+        event.app.exit(
+            result=(
+                "view",
+                str(state.issues[state.cursor]["id"]),
+                state.offset,
+                state.cursor,
+            )
+        )
 
     @kb.add("u")
     def _(event):
-        event.app.exit(result=("update", str(state.issues[state.cursor]["id"])))
+        event.app.exit(
+            result=(
+                "update",
+                str(state.issues[state.cursor]["id"]),
+                state.offset,
+                state.cursor,
+            )
+        )
 
     @kb.add("v")
     def _(event):

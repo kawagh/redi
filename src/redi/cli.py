@@ -1164,11 +1164,13 @@ def main() -> None:
     check_config()
 
     if args.tui and args.command is None:
+        tui_offset = 0
+        tui_cursor = 0
         while True:
-            tui_result = run_issue_tui()
+            tui_result = run_issue_tui(offset=tui_offset, cursor=tui_cursor)
             if tui_result is None:
                 return
-            action, issue_id = tui_result
+            action, issue_id, tui_offset, tui_cursor = tui_result
             if action == "view":
                 read_issue(issue_id)
                 input("Enter で TUI に戻る...")
