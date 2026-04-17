@@ -9,6 +9,12 @@ from importlib.metadata import version
 
 import questionary
 import questionary.prompts.common
+from prompt_toolkit import prompt
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.key_binding.key_processor import KeyPress
+from prompt_toolkit.keys import Keys
+from prompt_toolkit.shortcuts import choice
+from prompt_toolkit.validation import Validator
 
 
 from redi.config import (
@@ -910,13 +916,6 @@ def _handle_issue(args: argparse.Namespace) -> None:
 
 
 def _interactive_create_version(project_id: str, args: argparse.Namespace) -> None:
-    from prompt_toolkit import prompt
-    from prompt_toolkit.key_binding import KeyBindings
-    from prompt_toolkit.key_binding.key_processor import KeyPress
-    from prompt_toolkit.keys import Keys
-    from prompt_toolkit.shortcuts import choice
-    from prompt_toolkit.validation import Validator
-
     non_empty_validator = Validator.from_callable(
         lambda text: len(text.strip()) > 0,
         error_message="入力してください",
