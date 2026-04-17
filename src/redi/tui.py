@@ -11,7 +11,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from wcwidth import wcswidth
 
 from redi.config import default_project_id, redmine_url
-from redi.issue import fetch_issues
+from redi.api.issue import fetch_issues
 
 
 def _pad_display(text: str, width: int) -> str:

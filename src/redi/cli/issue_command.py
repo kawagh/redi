@@ -4,8 +4,8 @@ import questionary
 
 from redi.cli._common import open_editor, resolve_alias
 from redi.config import default_project_id
-from redi.enumeration import fetch_issue_priorities, fetch_time_entry_activities
-from redi.issue import (
+from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
+from redi.api.issue import (
     add_note,
     create_issue,
     fetch_issue,
@@ -14,11 +14,11 @@ from redi.issue import (
     read_issue,
     update_issue,
 )
-from redi.issue_relation import create_relation, delete_relation
-from redi.issue_status import fetch_issue_statuses
-from redi.time_entry import create_time_entry
-from redi.tracker import fetch_trackers
-from redi.version import fetch_versions
+from redi.api.issue_relation import create_relation, delete_relation
+from redi.api.issue_status import fetch_issue_statuses
+from redi.api.time_entry import create_time_entry
+from redi.api.tracker import fetch_trackers
+from redi.api.version import fetch_versions
 
 
 def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:

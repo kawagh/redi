@@ -2,7 +2,7 @@ import argparse
 
 from redi.cli._common import resolve_alias
 from redi.config import default_project_id
-from redi.time_entry import create_time_entry, list_time_entries
+from redi.api.time_entry import create_time_entry, list_time_entries
 
 
 def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:

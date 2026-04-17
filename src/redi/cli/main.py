@@ -30,16 +30,16 @@ from redi.cli.user_command import add_user_parser, handle_user
 from redi.cli.version_command import add_version_parser, handle_version
 from redi.cli.wiki_command import add_wiki_parser, handle_wiki
 from redi.config import CONFIG_PATH, check_config
-from redi.custom_field import list_custom_fields
-from redi.enumeration import (
+from redi.api.custom_field import list_custom_fields
+from redi.api.enumeration import (
     list_document_categories,
     list_issue_priorities,
     list_time_entry_activities,
 )
-from redi.issue import read_issue
-from redi.issue_status import list_issue_statuses
-from redi.query import list_queries
-from redi.tracker import list_trackers
+from redi.api.issue import read_issue
+from redi.api.issue_status import list_issue_statuses
+from redi.api.query import list_queries
+from redi.api.tracker import list_trackers
 from redi.tui import TuiPosition, run_issue_tui
 
 

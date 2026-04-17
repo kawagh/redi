@@ -1,7 +1,7 @@
 import argparse
 
 from redi.cli._common import resolve_alias
-from redi.role import list_roles, read_role
+from redi.api.role import list_roles, read_role
 
 
 def add_role_parser(subparsers: argparse._SubParsersAction) -> None:

@@ -1,6 +1,6 @@
 import argparse
 
-from redi.attachment import read_attachment, update_attachment
+from redi.api.attachment import read_attachment, update_attachment
 from redi.cli._common import resolve_alias
 
 

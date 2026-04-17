@@ -1,6 +1,6 @@
 import argparse
 
-from redi.search import search
+from redi.api.search import search
 
 
 def add_search_parser(subparsers: argparse._SubParsersAction) -> None:

@@ -4,7 +4,7 @@ import questionary
 
 from redi.cli._common import open_editor, resolve_alias
 from redi.config import default_project_id, wiki_project_id
-from redi.wiki import (
+from redi.api.wiki import (
     build_children_map,
     create_wiki,
     fetch_wiki,

@@ -1,7 +1,7 @@
 import argparse
 
 from redi.cli._common import resolve_alias
-from redi.project import create_project, list_projects, read_project, update_project
+from redi.api.project import create_project, list_projects, read_project, update_project
 
 
 def add_project_parser(subparsers: argparse._SubParsersAction) -> None:

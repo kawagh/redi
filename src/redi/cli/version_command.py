@@ -9,7 +9,7 @@ from prompt_toolkit.validation import Validator
 
 from redi.cli._common import resolve_alias
 from redi.config import default_project_id
-from redi.version import create_version, list_versions, read_version, update_version
+from redi.api.version import create_version, list_versions, read_version, update_version
 
 
 def add_version_parser(subparsers: argparse._SubParsersAction) -> None:

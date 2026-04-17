@@ -3,7 +3,7 @@ import webbrowser
 
 import requests
 
-from redi.attachment import upload_file
+from redi.api.attachment import upload_file
 from redi.client import client
 from redi.config import redmine_url
 

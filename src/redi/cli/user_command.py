@@ -1,7 +1,7 @@
 import argparse
 
 from redi.config import default_project_id
-from redi.user import list_users
+from redi.api.user import list_users
 
 
 def add_user_parser(subparsers: argparse._SubParsersAction) -> None:
