@@ -9,6 +9,12 @@ from importlib.metadata import version
 
 import questionary
 import questionary.prompts.common
+from prompt_toolkit import prompt
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.key_binding.key_processor import KeyPress
+from prompt_toolkit.keys import Keys
+from prompt_toolkit.shortcuts import choice
+from prompt_toolkit.validation import Validator
 
 
 from redi.config import (
@@ -296,7 +302,7 @@ def _add_version_parser(subparsers: argparse._SubParsersAction) -> None:
     v_create_parser = v_subparsers.add_parser(
         "create", aliases=["c"], help="バージョン作成"
     )
-    v_create_parser.add_argument("name", help="バージョン名")
+    v_create_parser.add_argument("name", nargs="?", default=None, help="バージョン名")
     v_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     v_create_parser.add_argument(
         "--status", choices=["open", "locked", "closed"], help="ステータス"
@@ -909,6 +915,67 @@ def _handle_issue(args: argparse.Namespace) -> None:
         )
 
 
+def _interactive_create_version(project_id: str, args: argparse.Namespace) -> None:
+    non_empty_validator = Validator.from_callable(
+        lambda text: len(text.strip()) > 0,
+        error_message="入力してください",
+    )
+    try:
+        name = prompt("バージョン名: ", validator=non_empty_validator).strip()
+    except (KeyboardInterrupt, EOFError):
+        print("キャンセルしました")
+        exit(1)
+
+    try:
+        due_date = prompt("期日（YYYY-MM-DD、省略可）: ").strip() or None
+    except (KeyboardInterrupt, EOFError):
+        print("キャンセルしました")
+        exit(1)
+
+    try:
+        description = prompt("説明（省略可）: ").strip() or None
+    except (KeyboardInterrupt, EOFError):
+        print("キャンセルしました")
+        exit(1)
+
+    sharing_options: list[tuple[str, str]] = [
+        ("none", "none (共有しない)"),
+        ("descendants", "descendants (子プロジェクトと共有)"),
+        ("hierarchy", "hierarchy (階層内で共有)"),
+        ("tree", "tree (ツリー全体で共有)"),
+        ("system", "system (システム全体で共有)"),
+    ]
+    choice_kb = KeyBindings()
+
+    @choice_kb.add("c-p")
+    def _move_up(event):
+        event.app.key_processor.feed(KeyPress(Keys.Up))
+
+    @choice_kb.add("c-n")
+    def _move_down(event):
+        event.app.key_processor.feed(KeyPress(Keys.Down))
+
+    try:
+        sharing_input = choice(
+            "共有設定",
+            options=sharing_options,
+            default="none",
+            key_bindings=choice_kb,
+        )
+    except KeyboardInterrupt:
+        print("キャンセルしました")
+        exit(1)
+    sharing = sharing_input if sharing_input != "none" else None
+
+    create_version(
+        project_id=project_id,
+        name=name,
+        due_date=due_date,
+        description=description,
+        sharing=sharing,
+    )
+
+
 def _handle_version(args: argparse.Namespace) -> None:
     cmd = _resolve_alias(args.version_command)
     if cmd == "view":
@@ -918,14 +985,17 @@ def _handle_version(args: argparse.Namespace) -> None:
         if not project_id:
             print("project_idを指定するか、default_project_idを設定してください")
             exit(1)
-        create_version(
-            project_id=project_id,
-            name=args.name,
-            status=args.status,
-            due_date=args.due_date,
-            description=args.description,
-            sharing=args.sharing,
-        )
+        if args.name is None:
+            _interactive_create_version(project_id, args)
+        else:
+            create_version(
+                project_id=project_id,
+                name=args.name,
+                status=args.status,
+                due_date=args.due_date,
+                description=args.description,
+                sharing=args.sharing,
+            )
     elif cmd == "update":
         update_version(
             version_id=args.version_id,
