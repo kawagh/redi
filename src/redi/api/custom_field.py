@@ -6,7 +6,7 @@ from redi.client import client
 CACHE_KEY = "custom_fields"
 
 
-def fetch_custom_fields() -> list[dict]:
+def fetch_custom_fields() -> list[dict] | None:
     cached = cache.load(CACHE_KEY)
     if cached is not None:
         return cached
@@ -15,7 +15,7 @@ def fetch_custom_fields() -> list[dict]:
         # https://www.redmine.org/projects/redmine/wiki/Rest_CustomFields
         # https://www.redmine.org/issues/18875
         print("カスタムフィールドの取得には管理者権限が必要です")
-        exit()
+        return
     response.raise_for_status()
     data = response.json()["custom_fields"]
     cache.save(CACHE_KEY, data)
@@ -27,8 +27,9 @@ def list_custom_fields(full: bool = False) -> None:
     if full:
         print(json.dumps(custom_fields, ensure_ascii=False))
     else:
-        for cf in custom_fields:
-            print(f"{cf['id']} {cf['name']}")
+        if custom_fields:
+            for cf in custom_fields:
+                print(f"{cf['id']} {cf['name']}")
 
 
 def fetch_project_issue_custom_field_ids(project_id: str) -> set[int]:
