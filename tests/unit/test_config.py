@@ -286,6 +286,59 @@ class TestSetDefaultProfile:
         assert "default_profile" not in doc
 
 
+class TestResolveProfileName:
+    """resolve_profile_name()はargvの--profileを優先しdefault_profileにfallbackする"""
+
+    def test_returns_default_profile_when_no_cli_flag(self):
+        """--profileが無ければdefault_profileを返し、明示フラグはFalse"""
+        toml = {"default_profile": "main"}
+
+        name, explicit = config.resolve_profile_name(toml, ["redi", "issue"])
+
+        assert name == "main"
+        assert explicit is False
+
+    def test_cli_flag_space_separated_overrides_default(self):
+        """`--profile sub`形式のargvがdefault_profileを上書きする"""
+        toml = {"default_profile": "main"}
+
+        name, explicit = config.resolve_profile_name(
+            toml, ["redi", "--profile", "sub", "issue"]
+        )
+
+        assert name == "sub"
+        assert explicit is True
+
+    def test_cli_flag_equals_form_overrides_default(self):
+        """`--profile=sub`形式のargvがdefault_profileを上書きする"""
+        toml = {"default_profile": "main"}
+
+        name, explicit = config.resolve_profile_name(
+            toml, ["redi", "--profile=sub", "issue"]
+        )
+
+        assert name == "sub"
+        assert explicit is True
+
+    def test_returns_none_when_no_default_and_no_flag(self):
+        """default_profileもargvも無い場合はNoneを返す"""
+        name, explicit = config.resolve_profile_name({}, ["redi", "issue"])
+
+        assert name is None
+        assert explicit is False
+
+    def test_does_not_match_default_profile_flag(self):
+        """--default_profileは--profileに誤マッチしない"""
+        toml = {"default_profile": "main"}
+
+        name, explicit = config.resolve_profile_name(
+            toml, ["redi", "config", "update", "--default_profile", "sub"]
+        )
+
+        assert name == "main"
+        assert explicit is False
+
+
 class TestShowAllProfiles:
     """show_all_profiles()はconfig_path指定時にそのファイルの全プロファイルを表示する"""
 

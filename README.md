@@ -67,6 +67,7 @@ redi config create <profile_name> --url <url> --api_key <key> # create new profi
 redi config create <profile_name> --url <url> --api_key <key> --set_default
 redi config update --default_profile <profile_name> # switch profile
 redi config update <profile_name> --editor nvim # update profile
+redi --profile <profile_name> issue # 一時的にプロファイルを切り替えて実行
 
 # project (alias: p)
 redi project # list projects

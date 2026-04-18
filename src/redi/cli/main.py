@@ -52,6 +52,10 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     )
     parser.add_argument("--tui", action="store_true", help="TUI")
     parser.add_argument("--debug", action="store_true", help="デバッグログを有効にする")
+    parser.add_argument(
+        "--profile",
+        help="使用するプロファイル名（config.tomlのdefault_profileを一時的に上書き）",
+    )
     subparsers = parser.add_subparsers(dest="command")
     add_project_parser(subparsers)
     add_issue_parser(subparsers)

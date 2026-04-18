@@ -1,4 +1,5 @@
 import os
+import sys
 import tomllib
 from pathlib import Path
 from typing import NamedTuple
@@ -32,15 +33,35 @@ def load_env_config() -> dict:
     }
 
 
+def resolve_profile_name(toml: dict, argv: list[str]) -> tuple[str | None, bool]:
+    """argvに--profileがあればそれを、なければdefault_profileを返す。
+
+    第二要素はCLI(--profile)で明示指定されたかどうかを示す。
+    """
+    for i, arg in enumerate(argv):
+        if arg == "--profile" and i + 1 < len(argv):
+            return argv[i + 1], True
+        if arg.startswith("--profile="):
+            return arg.split("=", 1)[1], True
+    return toml.get("default_profile"), False
+
+
 # 設定値の上書き
 merged_config = _default_config
 toml = load_toml()
-default_profile_name = toml.get("default_profile")
-if default_profile_name:
-    toml_config = load_toml()[default_profile_name]
-    for k, v in toml_config.items():
-        if v:
-            merged_config[k] = v
+selected_profile_name, _profile_explicit = resolve_profile_name(toml, sys.argv)
+if selected_profile_name:
+    if selected_profile_name in toml and isinstance(toml[selected_profile_name], dict):
+        toml_config = toml[selected_profile_name]
+        for k, v in toml_config.items():
+            if v:
+                merged_config[k] = v
+    elif _profile_explicit:
+        print(
+            f"profile '{selected_profile_name}' not found in {CONFIG_PATH}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 env_config = load_env_config()
 for k, v in env_config.items():
