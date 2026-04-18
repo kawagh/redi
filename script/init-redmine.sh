@@ -25,16 +25,17 @@ INSTANT_API_KEY=$(docker exec -i redi-redmine-for-test-1 rails runner - <<RUBY
     project.enabled_module_names = %w[issue_tracking time_tracking news wiki]
     project.save!
 
-    # カスタムフィールドを作成（全プロジェクト・全トラッカーに適用）
+    # カスタムフィールドを作成（全プロジェクト・バグトラッカーのみに適用）
     cf_defs = [
       { name: 'バージョン',               field_format: 'string' },
     ]
+    bug_tracker_ids = Tracker.where(name: 'バグ').pluck(:id)
     cf_defs.each do |attrs|
       cf = IssueCustomField.find_or_initialize_by(name: attrs[:name])
       cf.assign_attributes(attrs)
       cf.is_for_all = true
       cf.is_required = false
-      cf.tracker_ids = Tracker.pluck(:id)
+      cf.tracker_ids = bug_tracker_ids
       cf.save!
     end
 
