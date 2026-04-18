@@ -15,7 +15,7 @@ class TestCreateProfile:
 
         result = config.create_profile(
             "main",
-            redmine_url="https://example.com",
+            redmine_url="https://redmine.example.com",
             redmine_api_key="secret",
             default_project_id="1",
             wiki_project_id="2",
@@ -27,7 +27,7 @@ class TestCreateProfile:
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
         assert doc["main"] == {
-            "redmine_url": "https://example.com",
+            "redmine_url": "https://redmine.example.com",
             "redmine_api_key": "secret",
             "default_project_id": "1",
             "wiki_project_id": "2",
@@ -39,12 +39,12 @@ class TestCreateProfile:
         config_path = tmp_path / "config.toml"
 
         config.create_profile(
-            "main", redmine_url="https://example.com", config_path=config_path
+            "main", redmine_url="https://redmine.example.com", config_path=config_path
         )
 
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
-        assert doc["main"] == {"redmine_url": "https://example.com"}
+        assert doc["main"] == {"redmine_url": "https://redmine.example.com"}
 
     def test_creates_parent_directory(self, tmp_path):
         """親ディレクトリが存在しなくても自動作成する"""
@@ -62,19 +62,21 @@ class TestCreateProfile:
             default_profile = "main"
 
             [main]
-            redmine_url = "https://example.com/main"
+            redmine_url = "https://redmine.example.com/main"
         """)
         )
 
         config.create_profile(
-            "sub", redmine_url="https://example.com/sub", config_path=config_path
+            "sub",
+            redmine_url="https://redmine.example.com/sub",
+            config_path=config_path,
         )
 
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
         assert doc["default_profile"] == "main"
-        assert doc["main"]["redmine_url"] == "https://example.com/main"
-        assert doc["sub"]["redmine_url"] == "https://example.com/sub"
+        assert doc["main"]["redmine_url"] == "https://redmine.example.com/main"
+        assert doc["sub"]["redmine_url"] == "https://redmine.example.com/sub"
 
     def test_returns_false_when_profile_already_exists(self, tmp_path):
         """同名プロファイルが既に存在する場合はFalseを返し、内容を変更しない"""
@@ -82,26 +84,28 @@ class TestCreateProfile:
         config_path.write_text(
             textwrap.dedent("""\
             [main]
-            redmine_url = "https://example.com/original"
+            redmine_url = "https://redmine.example.com/original"
         """)
         )
 
         result = config.create_profile(
-            "main", redmine_url="https://example.com/overwrite", config_path=config_path
+            "main",
+            redmine_url="https://redmine.example.com/overwrite",
+            config_path=config_path,
         )
 
         assert result.created is False
         assert result.set_as_default is False
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
-        assert doc["main"]["redmine_url"] == "https://example.com/original"
+        assert doc["main"]["redmine_url"] == "https://redmine.example.com/original"
 
     def test_sets_as_default_when_only_profile(self, tmp_path):
         """作成したプロファイルが唯一のプロファイルであればdefault_profileに設定される"""
         config_path = tmp_path / "config.toml"
 
         result = config.create_profile(
-            "main", redmine_url="https://example.com", config_path=config_path
+            "main", redmine_url="https://redmine.example.com", config_path=config_path
         )
 
         assert result.set_as_default is True
@@ -117,12 +121,14 @@ class TestCreateProfile:
             default_profile = "main"
 
             [main]
-            redmine_url = "https://example.com/main"
+            redmine_url = "https://redmine.example.com/main"
         """)
         )
 
         result = config.create_profile(
-            "sub", redmine_url="https://example.com/sub", config_path=config_path
+            "sub",
+            redmine_url="https://redmine.example.com/sub",
+            config_path=config_path,
         )
 
         assert result.set_as_default is False
@@ -142,14 +148,14 @@ class TestLoadToml:
             default_profile = "main"
 
             [main]
-            redmine_url = "https://example.com"
+            redmine_url = "https://redmine.example.com"
         """)
         )
 
         result = config.load_toml(config_path=config_path)
 
         assert result["default_profile"] == "main"
-        assert result["main"]["redmine_url"] == "https://example.com"
+        assert result["main"]["redmine_url"] == "https://redmine.example.com"
 
     def test_returns_empty_dict_when_missing(self, tmp_path):
         """指定したパスが存在しない場合は空の辞書を返す"""
@@ -169,17 +175,17 @@ class TestUpdateConfig:
             default_profile = "main"
 
             [main]
-            redmine_url = "https://example.com/old"
+            redmine_url = "https://redmine.example.com/old"
         """)
         )
 
         config.update_config(
-            "redmine_url", "https://example.com/new", config_path=config_path
+            "redmine_url", "https://redmine.example.com/new", config_path=config_path
         )
 
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
-        assert doc["main"]["redmine_url"] == "https://example.com/new"
+        assert doc["main"]["redmine_url"] == "https://redmine.example.com/new"
 
     def test_updates_specified_profile(self, tmp_path):
         """profile引数で指定したプロファイルを更新する"""
@@ -189,24 +195,24 @@ class TestUpdateConfig:
             default_profile = "main"
 
             [main]
-            redmine_url = "https://example.com/main"
+            redmine_url = "https://redmine.example.com/main"
 
             [sub]
-            redmine_url = "https://example.com/sub"
+            redmine_url = "https://redmine.example.com/sub"
         """)
         )
 
         config.update_config(
             "redmine_url",
-            "https://example.com/sub-new",
+            "https://redmine.example.com/sub-new",
             profile="sub",
             config_path=config_path,
         )
 
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
-        assert doc["main"]["redmine_url"] == "https://example.com/main"
-        assert doc["sub"]["redmine_url"] == "https://example.com/sub-new"
+        assert doc["main"]["redmine_url"] == "https://redmine.example.com/main"
+        assert doc["sub"]["redmine_url"] == "https://redmine.example.com/sub-new"
 
     def test_exits_when_default_profile_missing(self, tmp_path):
         """default_profileもprofile引数もない場合はexit 1する"""
@@ -214,7 +220,7 @@ class TestUpdateConfig:
         config_path.write_text(
             textwrap.dedent("""\
             [main]
-            redmine_url = "https://example.com/main"
+            redmine_url = "https://redmine.example.com/main"
         """)
         )
 
@@ -228,7 +234,7 @@ class TestUpdateConfig:
         config_path.write_text(
             textwrap.dedent("""\
             [main]
-            redmine_url = "https://example.com/main"
+            redmine_url = "https://redmine.example.com/main"
         """)
         )
 
@@ -248,10 +254,10 @@ class TestSetDefaultProfile:
         config_path.write_text(
             textwrap.dedent("""\
             [main]
-            redmine_url = "https://example.com/main"
+            redmine_url = "https://redmine.example.com/main"
 
             [sub]
-            redmine_url = "https://example.com/sub"
+            redmine_url = "https://redmine.example.com/sub"
         """)
         )
 
@@ -268,7 +274,7 @@ class TestSetDefaultProfile:
         config_path.write_text(
             textwrap.dedent("""\
             [main]
-            redmine_url = "https://example.com/main"
+            redmine_url = "https://redmine.example.com/main"
         """)
         )
 
@@ -291,11 +297,11 @@ class TestShowAllProfiles:
             default_profile = "main"
 
             [main]
-            redmine_url = "https://example.com/main"
+            redmine_url = "https://redmine.example.com/main"
             default_project_id = "1"
 
             [sub]
-            redmine_url = "https://example.com/sub"
+            redmine_url = "https://redmine.example.com/sub"
             default_project_id = "2"
         """)
         )
@@ -305,8 +311,8 @@ class TestShowAllProfiles:
         out = capsys.readouterr().out
         doc = tomllib.loads(out)
         assert doc["default_profile"] == "main"
-        assert doc["main"]["redmine_url"] == "https://example.com/main"
-        assert doc["sub"]["redmine_url"] == "https://example.com/sub"
+        assert doc["main"]["redmine_url"] == "https://redmine.example.com/main"
+        assert doc["sub"]["redmine_url"] == "https://redmine.example.com/sub"
 
     def test_hides_api_key(self, tmp_path, capsys):
         """APIキーは出力に含まれない"""
@@ -314,11 +320,11 @@ class TestShowAllProfiles:
         config_path.write_text(
             textwrap.dedent("""\
             [main]
-            redmine_url = "https://example.com/main"
+            redmine_url = "https://redmine.example.com/main"
             redmine_api_key = "secret-main"
 
             [sub]
-            redmine_url = "https://example.com/sub"
+            redmine_url = "https://redmine.example.com/sub"
             redmine_api_key = "secret-sub"
         """)
         )
