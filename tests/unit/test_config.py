@@ -1,3 +1,4 @@
+import textwrap
 import tomllib
 
 import pytest
@@ -57,7 +58,12 @@ class TestCreateProfile:
         """既存プロファイルを保持したまま新しいプロファイルを追記する"""
         config_path = tmp_path / "config.toml"
         config_path.write_text(
-            'default_profile = "main"\n\n[main]\nredmine_url = "https://main"\n'
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://main"
+        """)
         )
 
         config.create_profile("sub", redmine_url="https://sub", config_path=config_path)
@@ -71,7 +77,12 @@ class TestCreateProfile:
     def test_returns_false_when_profile_already_exists(self, tmp_path):
         """同名プロファイルが既に存在する場合はFalseを返し、内容を変更しない"""
         config_path = tmp_path / "config.toml"
-        config_path.write_text('[main]\nredmine_url = "https://original"\n')
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://original"
+        """)
+        )
 
         result = config.create_profile(
             "main", redmine_url="https://overwrite", config_path=config_path
@@ -100,7 +111,12 @@ class TestCreateProfile:
         """既存プロファイルがある場合はdefault_profileを変更しない"""
         config_path = tmp_path / "config.toml"
         config_path.write_text(
-            'default_profile = "main"\n\n[main]\nredmine_url = "https://main"\n'
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://main"
+        """)
         )
 
         result = config.create_profile(
@@ -120,7 +136,12 @@ class TestLoadToml:
         """指定したパスが存在すれば内容を辞書として返す"""
         config_path = tmp_path / "config.toml"
         config_path.write_text(
-            'default_profile = "main"\n\n[main]\nredmine_url = "https://example.com"\n'
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://example.com"
+        """)
         )
 
         result = config.load_toml(config_path=config_path)
@@ -142,7 +163,12 @@ class TestUpdateConfig:
         """default_profileで指定されたプロファイルのキーを更新する"""
         config_path = tmp_path / "config.toml"
         config_path.write_text(
-            'default_profile = "main"\n\n[main]\nredmine_url = "https://old"\n'
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://old"
+        """)
         )
 
         config.update_config("redmine_url", "https://new", config_path=config_path)
@@ -155,7 +181,15 @@ class TestUpdateConfig:
         """profile引数で指定したプロファイルを更新する"""
         config_path = tmp_path / "config.toml"
         config_path.write_text(
-            'default_profile = "main"\n\n[main]\nredmine_url = "https://main"\n\n[sub]\nredmine_url = "https://sub"\n'
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://main"
+
+            [sub]
+            redmine_url = "https://sub"
+        """)
         )
 
         config.update_config(
@@ -170,7 +204,12 @@ class TestUpdateConfig:
     def test_exits_when_default_profile_missing(self, tmp_path):
         """default_profileもprofile引数もない場合はexit 1する"""
         config_path = tmp_path / "config.toml"
-        config_path.write_text('[main]\nredmine_url = "https://main"\n')
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://main"
+        """)
+        )
 
         with pytest.raises(SystemExit) as e:
             config.update_config("redmine_url", "v", config_path=config_path)
@@ -179,7 +218,12 @@ class TestUpdateConfig:
     def test_exits_when_profile_not_found(self, tmp_path):
         """指定したprofileが存在しない場合はexit 1する"""
         config_path = tmp_path / "config.toml"
-        config_path.write_text('[main]\nredmine_url = "https://main"\n')
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://main"
+        """)
+        )
 
         with pytest.raises(SystemExit) as e:
             config.update_config(
@@ -195,7 +239,13 @@ class TestSetDefaultProfile:
         """既存プロファイルをdefault_profileに設定しTrueを返す"""
         config_path = tmp_path / "config.toml"
         config_path.write_text(
-            '[main]\nredmine_url = "https://main"\n\n[sub]\nredmine_url = "https://sub"\n'
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://main"
+
+            [sub]
+            redmine_url = "https://sub"
+        """)
         )
 
         result = config.set_default_profile("sub", config_path=config_path)
@@ -208,7 +258,12 @@ class TestSetDefaultProfile:
     def test_returns_false_when_profile_not_found(self, tmp_path):
         """指定したプロファイルが存在しない場合はFalseを返し、ファイルを変更しない"""
         config_path = tmp_path / "config.toml"
-        config_path.write_text('[main]\nredmine_url = "https://main"\n')
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://main"
+        """)
+        )
 
         result = config.set_default_profile("missing", config_path=config_path)
 
@@ -225,13 +280,17 @@ class TestShowAllProfiles:
         """複数プロファイルがdefault_profileと共にTOML形式で出力される"""
         config_path = tmp_path / "config.toml"
         config_path.write_text(
-            'default_profile = "main"\n\n'
-            "[main]\n"
-            'redmine_url = "https://main"\n'
-            'default_project_id = "1"\n\n'
-            "[sub]\n"
-            'redmine_url = "https://sub"\n'
-            'default_project_id = "2"\n'
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://main"
+            default_project_id = "1"
+
+            [sub]
+            redmine_url = "https://sub"
+            default_project_id = "2"
+        """)
         )
 
         config.show_all_profiles(config_path=config_path)
@@ -246,12 +305,15 @@ class TestShowAllProfiles:
         """APIキーは出力に含まれない"""
         config_path = tmp_path / "config.toml"
         config_path.write_text(
-            "[main]\n"
-            'redmine_url = "https://main"\n'
-            'redmine_api_key = "secret-main"\n\n'
-            "[sub]\n"
-            'redmine_url = "https://sub"\n'
-            'redmine_api_key = "secret-sub"\n'
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://main"
+            redmine_api_key = "secret-main"
+
+            [sub]
+            redmine_url = "https://sub"
+            redmine_api_key = "secret-sub"
+        """)
         )
 
         config.show_all_profiles(config_path=config_path)
