@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 docker compose down
 docker compose up -d
 sleep 5
@@ -20,7 +22,7 @@ RUBY
 )
 INSTANT_API_KEY=$(echo "$INSTANT_API_KEY" | tail -1)
 
-redi config create test
+redi config create test || true # profile作成がべき等でないので失敗するのを当座で防ぐ
 redi config update --default_profile test
 redi config update test \
     --url "http://localhost:3000" \
