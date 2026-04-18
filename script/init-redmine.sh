@@ -17,6 +17,27 @@ INSTANT_API_KEY=$(docker exec -i redi-redmine-for-test-1 rails runner - <<RUBY
 
     Setting.rest_api_enabled = '1'
 
+    # テスト用プロジェクトを作成
+    project = Project.find_or_initialize_by(identifier: 'reditest')
+    project.name = 'reditestプロジェクト'
+    project.description = 'rediのtest用に作成されたプロジェクト'
+    project.is_public = true
+    project.enabled_module_names = %w[issue_tracking time_tracking news wiki]
+    project.save!
+
+    # カスタムフィールドを作成（全プロジェクト・全トラッカーに適用）
+    cf_defs = [
+      { name: 'バージョン',               field_format: 'string' },
+    ]
+    cf_defs.each do |attrs|
+      cf = IssueCustomField.find_or_initialize_by(name: attrs[:name])
+      cf.assign_attributes(attrs)
+      cf.is_for_all = true
+      cf.is_required = false
+      cf.tracker_ids = Tracker.pluck(:id)
+      cf.save!
+    end
+
     puts User.active[0].api_key
 RUBY
 )
@@ -26,5 +47,6 @@ redi config create test || true # profile作成がべき等でないので失敗
 redi config update --default_profile test
 redi config update test \
     --url "http://localhost:3000" \
-    --api_key "$INSTANT_API_KEY"
+    --api_key "$INSTANT_API_KEY" \
+    --project_id "reditest"
 
