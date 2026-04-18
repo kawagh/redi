@@ -36,8 +36,7 @@ def add_config_parser(subparsers: argparse._SubParsersAction) -> None:
     c_create_parser.add_argument("--wiki_project_id", help="Wiki用プロジェクトID")
     c_create_parser.add_argument("--editor", help="エディタ")
     c_create_parser.add_argument(
-        "--set-default",
-        dest="set_default",
+        "--set_default",
         action="store_true",
         help="作成したプロファイルをdefault_profileに設定",
     )
