@@ -16,6 +16,7 @@ from redi.cli.enumerations_command import (
     add_time_entry_activity_parser,
     add_tracker_parser,
 )
+from redi.cli._common import open_editor
 from redi.cli.issue_command import (
     add_issue_parser,
     handle_issue,
@@ -36,11 +37,11 @@ from redi.api.enumeration import (
     list_issue_priorities,
     list_time_entry_activities,
 )
-from redi.api.issue import read_issue
+from redi.api.issue import add_note
 from redi.api.issue_status import list_issue_statuses
 from redi.api.query import list_queries
 from redi.api.tracker import list_trackers
-from redi.tui import TuiPosition, run_issue_tui
+from redi.tui import TuiState, run_issue_tui
 
 
 def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
@@ -94,16 +95,13 @@ def main() -> None:
     check_config()
 
     if args.tui and args.command is None:
-        tui_position = TuiPosition()
+        tui_state = TuiState()
         while True:
-            tui_result = run_issue_tui(position=tui_position)
+            tui_result = run_issue_tui(state=tui_state)
             if tui_result is None:
                 return
-            tui_position = tui_result.position
-            if tui_result.action == "view":
-                read_issue(tui_result.issue_id)
-                input("Enter で TUI に戻る...")
-            elif tui_result.action == "update":
+            tui_state = TuiState(last_result=tui_result)
+            if tui_result.action == "update":
                 update_args = argparse.Namespace(
                     issue_id=tui_result.issue_id,
                     subject=None,
@@ -137,6 +135,10 @@ def main() -> None:
                     custom_fields=None,
                 )
                 handle_issue_create(create_args)
+            elif tui_result.action == "comment":
+                notes = open_editor()
+                if notes:
+                    add_note(tui_result.issue_id, notes)
 
     if args.command in ("project", "p"):
         handle_project(args)

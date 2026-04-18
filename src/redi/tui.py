@@ -11,7 +11,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from wcwidth import wcswidth
 
 from redi.config import default_project_id, redmine_url
-from redi.api.issue import fetch_issues
+from redi.api.issue import fetch_issue, fetch_issues
 
 
 def _pad_display(text: str, width: int) -> str:
@@ -19,15 +19,12 @@ def _pad_display(text: str, width: int) -> str:
     return text + " " * padding
 
 
-@dataclass
-class TuiState:
-    page_size: int
-    offset: int = 0
-    cursor: int = 0
-    issues: list[dict] = field(default_factory=list)
+def _load_journals(issue: dict) -> None:
+    fetched = fetch_issue(str(issue["id"]), include="journals")
+    issue["journals"] = fetched.get("journals") or []
 
 
-TuiAction = Literal["view", "update", "create"]
+TuiAction = Literal["update", "create", "comment"]
 
 
 @dataclass
@@ -43,10 +40,21 @@ class TuiResult:
     position: TuiPosition
 
 
-def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
-    if position is None:
-        position = TuiPosition()
-    state = TuiState(page_size=max(1, shutil.get_terminal_size().lines - 1))
+@dataclass
+class TuiState:
+    last_result: TuiResult | None = None
+    page_size: int = 0
+    offset: int = 0
+    cursor: int = 0
+    issues: list[dict] = field(default_factory=list)
+
+
+def run_issue_tui(state: TuiState | None = None) -> TuiResult | None:
+    if state is None:
+        state = TuiState()
+    last = state.last_result
+    position = last.position if last else TuiPosition()
+    state.page_size = max(1, shutil.get_terminal_size().lines - 1)
     state.offset = position.offset
     state.issues = fetch_issues(
         project_id=default_project_id, limit=state.page_size, offset=state.offset
@@ -55,6 +63,11 @@ def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
         print("イシューが見つかりません")
         return None
     state.cursor = max(0, min(position.cursor, len(state.issues) - 1))
+    if last and last.action == "comment" and last.issue_id:
+        target_id = int(last.issue_id)
+        target = next((i for i in state.issues if i.get("id") == target_id), None)
+        if target is not None:
+            _load_journals(target)
 
     def render_issues():
         result = []
@@ -103,6 +116,19 @@ def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
             lines.append("----")
             lines.extend(description.splitlines())
 
+        journals = issue.get("journals") or []
+        notes = [j for j in journals if (j.get("notes") or "").strip()]
+        if notes:
+            lines.append("")
+            lines.append("----")
+            lines.append("コメント:")
+            for j in notes:
+                author = (j.get("user") or {}).get("name", "")
+                created = j.get("created_on", "")
+                lines.append(f"[{created}] {author}")
+                for nl in (j.get("notes") or "").splitlines():
+                    lines.append(f"  {nl}")
+
         return [("", "\n".join(lines))]
 
     def render_status():
@@ -111,7 +137,7 @@ def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
             (
                 "reverse",
                 f" Page {page} (offset={state.offset})  "
-                "↑↓/jk:移動 ←→/hl:ページ Enter:表示 c:作成 u:更新 v:web q:終了 ",
+                "↑↓/jk:移動 ←→/hl:ページ Enter:コメント読込 c:作成 u:更新 n:コメント v:web q:終了 ",
             )
         ]
 
@@ -166,7 +192,12 @@ def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
 
     @kb.add("enter")
     def _(event):
-        event.app.exit(result=_exit_with("view"))
+        if not state.issues:
+            return
+        issue = state.issues[state.cursor]
+        if issue.get("id") is None:
+            return
+        _load_journals(issue)
 
     @kb.add("u")
     def _(event):
@@ -175,6 +206,11 @@ def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
     @kb.add("c")
     def _(event):
         event.app.exit(result=_exit_with("create", issue_id=""))
+
+    # n is first letter of note
+    @kb.add("n")
+    def _(event):
+        event.app.exit(result=_exit_with("comment"))
 
     @kb.add("v")
     def _(event):
