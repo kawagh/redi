@@ -15,9 +15,10 @@ _default_config = {
 }
 
 
-def load_toml() -> dict:
-    if CONFIG_PATH.exists():
-        with open(CONFIG_PATH, "rb") as f:
+def load_toml(config_path: Path | None = None) -> dict:
+    path = config_path or CONFIG_PATH
+    if path.exists():
+        with open(path, "rb") as f:
             return tomllib.load(f)
     else:
         return {}
@@ -62,10 +63,16 @@ def check_config() -> None:
         exit(1)
 
 
-def update_config(key: str, value: str, profile: str | None = None) -> None:
-    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if CONFIG_PATH.exists():
-        with open(CONFIG_PATH) as f:
+def update_config(
+    key: str,
+    value: str,
+    profile: str | None = None,
+    config_path: Path | None = None,
+) -> None:
+    path = config_path or CONFIG_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        with open(path) as f:
             doc = tomlkit.load(f)
     else:
         doc = tomlkit.document()
@@ -76,11 +83,11 @@ def update_config(key: str, value: str, profile: str | None = None) -> None:
         exit(1)
     profile_table = doc.get(target_profile) if target_profile in doc else None
     if not isinstance(profile_table, Table):
-        print(f"profile '{target_profile}' not found in {CONFIG_PATH}")
+        print(f"profile '{target_profile}' not found in {path}")
         exit(1)
 
     profile_table[key] = value
-    with open(CONFIG_PATH, "w") as f:
+    with open(path, "w") as f:
         tomlkit.dump(doc, f)
 
 
@@ -133,20 +140,21 @@ def create_profile(
     return CreateProfileResult(created=True, set_as_default=set_as_default)
 
 
-def set_default_profile(profile_name: str) -> bool:
-    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if CONFIG_PATH.exists():
-        with open(CONFIG_PATH) as f:
+def set_default_profile(profile_name: str, config_path: Path | None = None) -> bool:
+    path = config_path or CONFIG_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        with open(path) as f:
             doc = tomlkit.load(f)
     else:
         doc = tomlkit.document()
 
     if profile_name not in doc or not isinstance(doc.get(profile_name), dict):
-        print(f"profile '{profile_name}' not found in {CONFIG_PATH}")
+        print(f"profile '{profile_name}' not found in {path}")
         return False
 
     doc["default_profile"] = profile_name
-    with open(CONFIG_PATH, "w") as f:
+    with open(path, "w") as f:
         tomlkit.dump(doc, f)
     return True
 
