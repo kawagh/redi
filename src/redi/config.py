@@ -159,10 +159,27 @@ def set_default_profile(profile_name: str, config_path: Path | None = None) -> b
     return True
 
 
-def show_config() -> None:
+def show_config(full: bool = False, config_path: Path | None = None) -> None:
+    if full:
+        show_all_profiles(config_path=config_path)
+        return
     doc = tomlkit.document()
     doc["redmine_url"] = redmine_url
     doc["default_project_id"] = default_project_id or ""
     doc["wiki_project_id"] = wiki_project_id or ""
     doc["editor"] = editor
+    print(tomlkit.dumps(doc).rstrip())
+
+
+def show_all_profiles(config_path: Path | None = None) -> None:
+    path = config_path or CONFIG_PATH
+    if not path.exists():
+        print(f"config file not found: {path}")
+        return
+    with open(path) as f:
+        doc = tomlkit.load(f)
+    for key in list(doc.keys()):
+        value = doc[key]
+        if isinstance(value, Table) and "redmine_api_key" in value:
+            del value["redmine_api_key"]
     print(tomlkit.dumps(doc).rstrip())
