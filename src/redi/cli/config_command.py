@@ -1,7 +1,12 @@
 import argparse
 
 from redi.cli._common import resolve_alias
-from redi.config import set_default_profile, show_config, update_config
+from redi.config import (
+    create_profile,
+    set_default_profile,
+    show_config,
+    update_config,
+)
 
 
 def add_config_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -21,10 +26,42 @@ def add_config_parser(subparsers: argparse._SubParsersAction) -> None:
     c_update_parser.add_argument(
         "--default_profile", help="デフォルトプロファイルを設定"
     )
+    c_create_parser = c_subparsers.add_parser(
+        "create", aliases=["c"], help="プロファイル作成"
+    )
+    c_create_parser.add_argument("profile_name", help="作成するプロファイル名")
+    c_create_parser.add_argument("--url", help="Redmine URL")
+    c_create_parser.add_argument("--api_key", help="Redmine APIキー")
+    c_create_parser.add_argument("--project_id", help="デフォルトプロジェクトID")
+    c_create_parser.add_argument("--wiki_project_id", help="Wiki用プロジェクトID")
+    c_create_parser.add_argument("--editor", help="エディタ")
+    c_create_parser.add_argument(
+        "--set_default",
+        action="store_true",
+        help="作成したプロファイルをdefault_profileに設定",
+    )
 
 
 def handle_config(args: argparse.Namespace) -> None:
-    if resolve_alias(args.config_command) != "update":
+    cmd = resolve_alias(args.config_command)
+    if cmd == "create":
+        result = create_profile(
+            profile_name=args.profile_name,
+            redmine_url=args.url,
+            redmine_api_key=args.api_key,
+            default_project_id=args.project_id,
+            wiki_project_id=args.wiki_project_id,
+            editor=args.editor,
+        )
+        if not result.created:
+            exit(1)
+        print(f"profile '{args.profile_name}' を作成しました")
+        if result.set_as_default:
+            print(f"default_profileを {args.profile_name} に設定しました")
+        elif args.set_default and set_default_profile(args.profile_name):
+            print(f"default_profileを {args.profile_name} に設定しました")
+        return
+    if cmd != "update":
         show_config()
         return
     updated = False

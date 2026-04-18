@@ -1,6 +1,7 @@
 import os
 import tomllib
 from pathlib import Path
+from typing import NamedTuple
 
 import tomlkit
 from tomlkit.items import Table
@@ -81,6 +82,55 @@ def update_config(key: str, value: str, profile: str | None = None) -> None:
     profile_table[key] = value
     with open(CONFIG_PATH, "w") as f:
         tomlkit.dump(doc, f)
+
+
+class CreateProfileResult(NamedTuple):
+    created: bool
+    set_as_default: bool
+
+
+def create_profile(
+    profile_name: str,
+    redmine_url: str | None = None,
+    redmine_api_key: str | None = None,
+    default_project_id: str | None = None,
+    wiki_project_id: str | None = None,
+    editor: str | None = None,
+    config_path: Path | None = None,
+) -> CreateProfileResult:
+    path = config_path or CONFIG_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        with open(path) as f:
+            doc = tomlkit.load(f)
+    else:
+        doc = tomlkit.document()
+
+    if profile_name in doc:
+        print(f"profile '{profile_name}' は既に存在します")
+        return CreateProfileResult(created=False, set_as_default=False)
+
+    table = tomlkit.table()
+    if redmine_url is not None:
+        table["redmine_url"] = redmine_url
+    if redmine_api_key is not None:
+        table["redmine_api_key"] = redmine_api_key
+    if default_project_id is not None:
+        table["default_project_id"] = default_project_id
+    if wiki_project_id is not None:
+        table["wiki_project_id"] = wiki_project_id
+    if editor is not None:
+        table["editor"] = editor
+    doc[profile_name] = table
+
+    profile_names = [k for k, v in doc.items() if isinstance(v, Table)]
+    set_as_default = profile_names == [profile_name]
+    if set_as_default:
+        doc["default_profile"] = profile_name
+
+    with open(path, "w") as f:
+        tomlkit.dump(doc, f)
+    return CreateProfileResult(created=True, set_as_default=set_as_default)
 
 
 def set_default_profile(profile_name: str) -> bool:
