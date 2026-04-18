@@ -41,7 +41,7 @@ from redi.api.issue import add_note
 from redi.api.issue_status import list_issue_statuses
 from redi.api.query import list_queries
 from redi.api.tracker import list_trackers
-from redi.tui import TuiPosition, run_issue_tui
+from redi.tui import TuiState, run_issue_tui
 
 
 def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
@@ -95,12 +95,12 @@ def main() -> None:
     check_config()
 
     if args.tui and args.command is None:
-        tui_position = TuiPosition()
+        tui_state = TuiState()
         while True:
-            tui_result = run_issue_tui(position=tui_position)
+            tui_result = run_issue_tui(state=tui_state)
             if tui_result is None:
                 return
-            tui_position = tui_result.position
+            tui_state = TuiState(last_result=tui_result)
             if tui_result.action == "update":
                 update_args = argparse.Namespace(
                     issue_id=tui_result.issue_id,

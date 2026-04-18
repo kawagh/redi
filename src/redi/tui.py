@@ -19,14 +19,6 @@ def _pad_display(text: str, width: int) -> str:
     return text + " " * padding
 
 
-@dataclass
-class TuiState:
-    page_size: int
-    offset: int = 0
-    cursor: int = 0
-    issues: list[dict] = field(default_factory=list)
-
-
 TuiAction = Literal["update", "create", "comment"]
 
 
@@ -43,10 +35,21 @@ class TuiResult:
     position: TuiPosition
 
 
-def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
-    if position is None:
-        position = TuiPosition()
-    state = TuiState(page_size=max(1, shutil.get_terminal_size().lines - 1))
+@dataclass
+class TuiState:
+    last_result: TuiResult | None = None
+    page_size: int = 0
+    offset: int = 0
+    cursor: int = 0
+    issues: list[dict] = field(default_factory=list)
+
+
+def run_issue_tui(state: TuiState | None = None) -> TuiResult | None:
+    if state is None:
+        state = TuiState()
+    last = state.last_result
+    position = last.position if last else TuiPosition()
+    state.page_size = max(1, shutil.get_terminal_size().lines - 1)
     state.offset = position.offset
     state.issues = fetch_issues(
         project_id=default_project_id, limit=state.page_size, offset=state.offset
@@ -55,6 +58,13 @@ def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
         print("イシューが見つかりません")
         return None
     state.cursor = max(0, min(position.cursor, len(state.issues) - 1))
+    if last and last.action == "comment" and last.issue_id:
+        target_id = int(last.issue_id)
+        for issue in state.issues:
+            if issue.get("id") == target_id:
+                fetched = fetch_issue(last.issue_id, include="journals")
+                issue["journals"] = fetched.get("journals") or []
+                break
 
     def render_issues():
         result = []
