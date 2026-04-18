@@ -20,6 +20,9 @@ RUBY
 )
 INSTANT_API_KEY=$(echo "$INSTANT_API_KEY" | tail -1)
 
-redi config --api_key "$INSTANT_API_KEY"
-redi config --url "http://localhost:3000"
+redi config create test
+redi config update --default_profile test
+redi config update test \
+    --url "http://localhost:3000" \
+    --api_key "$INSTANT_API_KEY"
 
