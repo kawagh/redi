@@ -14,7 +14,6 @@ def fetch_custom_fields() -> list[dict] | None:
     if response.status_code == 403:
         # https://www.redmine.org/projects/redmine/wiki/Rest_CustomFields
         # https://www.redmine.org/issues/18875
-        print("カスタムフィールドの取得には管理者権限が必要です")
         return
     response.raise_for_status()
     data = response.json()["custom_fields"]
@@ -24,12 +23,14 @@ def fetch_custom_fields() -> list[dict] | None:
 
 def list_custom_fields(full: bool = False) -> None:
     custom_fields = fetch_custom_fields()
+    if custom_fields is None:
+        print("カスタムフィールドの取得には管理者権限が必要です")
+        exit(1)
     if full:
         print(json.dumps(custom_fields, ensure_ascii=False))
     else:
-        if custom_fields:
-            for cf in custom_fields:
-                print(f"{cf['id']} {cf['name']}")
+        for cf in custom_fields:
+            print(f"{cf['id']} {cf['name']}")
 
 
 def fetch_project_issue_custom_field_ids(project_id: str) -> set[int]:

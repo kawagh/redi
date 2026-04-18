@@ -284,9 +284,7 @@ def _interactive_fill_required_custom_fields(
 ) -> str | None:
     custom_fields = fetch_custom_fields()
     if custom_fields is None:
-        print(
-            "カスタムフィールドの取得には管理者権限が必要なため、必須カスタムフィールドの対話入力をスキップしました"
-        )
+        # 非管理者はあらかじめ渡されているパラメータを使うしかない
         return existing
     project_cf_ids = fetch_project_issue_custom_field_ids(project_id)
     required = filter_required_issue_custom_fields(
