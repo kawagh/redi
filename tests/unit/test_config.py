@@ -1,5 +1,7 @@
 import tomllib
 
+import pytest
+
 from redi import config
 
 
@@ -109,3 +111,108 @@ class TestCreateProfile:
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
         assert doc["default_profile"] == "main"
+
+
+class TestLoadToml:
+    """load_toml()はconfig_path指定時にそのファイルを読み込む"""
+
+    def test_loads_existing_file(self, tmp_path):
+        """指定したパスが存在すれば内容を辞書として返す"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            'default_profile = "main"\n\n[main]\nredmine_url = "https://example.com"\n'
+        )
+
+        result = config.load_toml(config_path=config_path)
+
+        assert result["default_profile"] == "main"
+        assert result["main"]["redmine_url"] == "https://example.com"
+
+    def test_returns_empty_dict_when_missing(self, tmp_path):
+        """指定したパスが存在しない場合は空の辞書を返す"""
+        config_path = tmp_path / "missing.toml"
+
+        assert config.load_toml(config_path=config_path) == {}
+
+
+class TestUpdateConfig:
+    """update_config()はconfig_path指定時にそのファイルを更新する"""
+
+    def test_updates_default_profile_value(self, tmp_path):
+        """default_profileで指定されたプロファイルのキーを更新する"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            'default_profile = "main"\n\n[main]\nredmine_url = "https://old"\n'
+        )
+
+        config.update_config("redmine_url", "https://new", config_path=config_path)
+
+        with open(config_path, "rb") as f:
+            doc = tomllib.load(f)
+        assert doc["main"]["redmine_url"] == "https://new"
+
+    def test_updates_specified_profile(self, tmp_path):
+        """profile引数で指定したプロファイルを更新する"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            'default_profile = "main"\n\n[main]\nredmine_url = "https://main"\n\n[sub]\nredmine_url = "https://sub"\n'
+        )
+
+        config.update_config(
+            "redmine_url", "https://sub-new", profile="sub", config_path=config_path
+        )
+
+        with open(config_path, "rb") as f:
+            doc = tomllib.load(f)
+        assert doc["main"]["redmine_url"] == "https://main"
+        assert doc["sub"]["redmine_url"] == "https://sub-new"
+
+    def test_exits_when_default_profile_missing(self, tmp_path):
+        """default_profileもprofile引数もない場合はexit 1する"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text('[main]\nredmine_url = "https://main"\n')
+
+        with pytest.raises(SystemExit) as e:
+            config.update_config("redmine_url", "v", config_path=config_path)
+        assert e.value.code == 1
+
+    def test_exits_when_profile_not_found(self, tmp_path):
+        """指定したprofileが存在しない場合はexit 1する"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text('[main]\nredmine_url = "https://main"\n')
+
+        with pytest.raises(SystemExit) as e:
+            config.update_config(
+                "redmine_url", "v", profile="missing", config_path=config_path
+            )
+        assert e.value.code == 1
+
+
+class TestSetDefaultProfile:
+    """set_default_profile()はconfig_path指定時にそのファイルのdefault_profileを更新する"""
+
+    def test_sets_default_profile(self, tmp_path):
+        """既存プロファイルをdefault_profileに設定しTrueを返す"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            '[main]\nredmine_url = "https://main"\n\n[sub]\nredmine_url = "https://sub"\n'
+        )
+
+        result = config.set_default_profile("sub", config_path=config_path)
+
+        assert result is True
+        with open(config_path, "rb") as f:
+            doc = tomllib.load(f)
+        assert doc["default_profile"] == "sub"
+
+    def test_returns_false_when_profile_not_found(self, tmp_path):
+        """指定したプロファイルが存在しない場合はFalseを返し、ファイルを変更しない"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text('[main]\nredmine_url = "https://main"\n')
+
+        result = config.set_default_profile("missing", config_path=config_path)
+
+        assert result is False
+        with open(config_path, "rb") as f:
+            doc = tomllib.load(f)
+        assert "default_profile" not in doc
