@@ -83,6 +83,43 @@ def update_config(key: str, value: str, profile: str | None = None) -> None:
         tomlkit.dump(doc, f)
 
 
+def create_profile(
+    profile_name: str,
+    redmine_url: str | None = None,
+    redmine_api_key: str | None = None,
+    default_project_id: str | None = None,
+    wiki_project_id: str | None = None,
+    editor: str | None = None,
+) -> bool:
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if CONFIG_PATH.exists():
+        with open(CONFIG_PATH) as f:
+            doc = tomlkit.load(f)
+    else:
+        doc = tomlkit.document()
+
+    if profile_name in doc:
+        print(f"profile '{profile_name}' は既に存在します")
+        return False
+
+    table = tomlkit.table()
+    if redmine_url is not None:
+        table["redmine_url"] = redmine_url
+    if redmine_api_key is not None:
+        table["redmine_api_key"] = redmine_api_key
+    if default_project_id is not None:
+        table["default_project_id"] = default_project_id
+    if wiki_project_id is not None:
+        table["wiki_project_id"] = wiki_project_id
+    if editor is not None:
+        table["editor"] = editor
+    doc[profile_name] = table
+
+    with open(CONFIG_PATH, "w") as f:
+        tomlkit.dump(doc, f)
+    return True
+
+
 def set_default_profile(profile_name: str) -> bool:
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
     if CONFIG_PATH.exists():

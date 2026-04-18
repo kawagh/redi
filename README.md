@@ -63,6 +63,8 @@ echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
 ```sh
 # config (alias: c)
 redi config
+redi config create <profile_name> --url <url> --api_key <key> # create new profile
+redi config create <profile_name> --url <url> --api_key <key> --set-default
 redi config update --default_profile <profile_name> # switch profile
 redi config update <profile_name> --editor nvim # update profile
 
