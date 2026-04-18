@@ -46,7 +46,7 @@ def add_config_parser(subparsers: argparse._SubParsersAction) -> None:
 def handle_config(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.config_command)
     if cmd == "create":
-        created = create_profile(
+        result = create_profile(
             profile_name=args.profile_name,
             redmine_url=args.url,
             redmine_api_key=args.api_key,
@@ -54,10 +54,12 @@ def handle_config(args: argparse.Namespace) -> None:
             wiki_project_id=args.wiki_project_id,
             editor=args.editor,
         )
-        if not created:
+        if not result.created:
             exit(1)
         print(f"profile '{args.profile_name}' を作成しました")
-        if args.set_default and set_default_profile(args.profile_name):
+        if result.set_as_default:
+            print(f"default_profileを {args.profile_name} に設定しました")
+        elif args.set_default and set_default_profile(args.profile_name):
             print(f"default_profileを {args.profile_name} に設定しました")
         return
     if cmd != "update":

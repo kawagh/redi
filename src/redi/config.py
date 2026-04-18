@@ -1,6 +1,7 @@
 import os
 import tomllib
 from pathlib import Path
+from typing import NamedTuple
 
 import tomlkit
 from tomlkit.items import Table
@@ -83,6 +84,11 @@ def update_config(key: str, value: str, profile: str | None = None) -> None:
         tomlkit.dump(doc, f)
 
 
+class CreateProfileResult(NamedTuple):
+    created: bool
+    set_as_default: bool
+
+
 def create_profile(
     profile_name: str,
     redmine_url: str | None = None,
@@ -90,7 +96,7 @@ def create_profile(
     default_project_id: str | None = None,
     wiki_project_id: str | None = None,
     editor: str | None = None,
-) -> bool:
+) -> CreateProfileResult:
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
     if CONFIG_PATH.exists():
         with open(CONFIG_PATH) as f:
@@ -100,7 +106,7 @@ def create_profile(
 
     if profile_name in doc:
         print(f"profile '{profile_name}' は既に存在します")
-        return False
+        return CreateProfileResult(created=False, set_as_default=False)
 
     table = tomlkit.table()
     if redmine_url is not None:
@@ -115,9 +121,14 @@ def create_profile(
         table["editor"] = editor
     doc[profile_name] = table
 
+    profile_names = [k for k, v in doc.items() if isinstance(v, Table)]
+    set_as_default = profile_names == [profile_name]
+    if set_as_default:
+        doc["default_profile"] = profile_name
+
     with open(CONFIG_PATH, "w") as f:
         tomlkit.dump(doc, f)
-    return True
+    return CreateProfileResult(created=True, set_as_default=set_as_default)
 
 
 def set_default_profile(profile_name: str) -> bool:

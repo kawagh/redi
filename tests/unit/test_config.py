@@ -11,7 +11,7 @@ class TestCreateProfile:
         config_path = tmp_path / "config.toml"
         monkeypatch.setattr(config, "CONFIG_PATH", config_path)
 
-        created = config.create_profile(
+        result = config.create_profile(
             "main",
             redmine_url="https://example.com",
             redmine_api_key="secret",
@@ -20,7 +20,7 @@ class TestCreateProfile:
             editor="nvim",
         )
 
-        assert created is True
+        assert result.created is True
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
         assert doc["main"] == {
@@ -75,9 +75,39 @@ class TestCreateProfile:
         config_path.write_text('[main]\nredmine_url = "https://original"\n')
         monkeypatch.setattr(config, "CONFIG_PATH", config_path)
 
-        created = config.create_profile("main", redmine_url="https://overwrite")
+        result = config.create_profile("main", redmine_url="https://overwrite")
 
-        assert created is False
+        assert result.created is False
+        assert result.set_as_default is False
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
         assert doc["main"]["redmine_url"] == "https://original"
+
+    def test_sets_as_default_when_only_profile(self, tmp_path, monkeypatch):
+        """作成したプロファイルが唯一のプロファイルであればdefault_profileに設定される"""
+        config_path = tmp_path / "config.toml"
+        monkeypatch.setattr(config, "CONFIG_PATH", config_path)
+
+        result = config.create_profile("main", redmine_url="https://example.com")
+
+        assert result.set_as_default is True
+        with open(config_path, "rb") as f:
+            doc = tomllib.load(f)
+        assert doc["default_profile"] == "main"
+
+    def test_keeps_existing_default_when_other_profiles_exist(
+        self, tmp_path, monkeypatch
+    ):
+        """既存プロファイルがある場合はdefault_profileを変更しない"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            'default_profile = "main"\n\n[main]\nredmine_url = "https://main"\n'
+        )
+        monkeypatch.setattr(config, "CONFIG_PATH", config_path)
+
+        result = config.create_profile("sub", redmine_url="https://sub")
+
+        assert result.set_as_default is False
+        with open(config_path, "rb") as f:
+            doc = tomllib.load(f)
+        assert doc["default_profile"] == "main"
