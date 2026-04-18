@@ -76,7 +76,7 @@ def update_config(key: str, value: str, profile: str | None = None) -> None:
         print(f"profile '{target_profile}' not found in {CONFIG_PATH}")
         exit(1)
 
-    doc[target_profile][key] = value
+    doc[target_profile][key] = value  # ty: ignore[invalid-assignment]
     with open(CONFIG_PATH, "w") as f:
         tomlkit.dump(doc, f)
 

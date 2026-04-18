@@ -7,8 +7,8 @@ import questionary.prompts.common
 
 from redi.config import editor
 
-questionary.prompts.common.INDICATOR_SELECTED = "[x]"  # pyright: ignore[reportPrivateImportUsage]
-questionary.prompts.common.INDICATOR_UNSELECTED = "[ ]"  # pyright: ignore[reportPrivateImportUsage]
+questionary.prompts.common.INDICATOR_SELECTED = "[x]"  # ty: ignore[invalid-assignment]  # pyright: ignore[reportPrivateImportUsage]
+questionary.prompts.common.INDICATOR_UNSELECTED = "[ ]"  # ty: ignore[invalid-assignment]  # pyright: ignore[reportPrivateImportUsage]
 
 
 SUBCOMMAND_ALIASES: dict[str, str] = {
