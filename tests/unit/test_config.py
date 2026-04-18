@@ -216,3 +216,59 @@ class TestSetDefaultProfile:
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
         assert "default_profile" not in doc
+
+
+class TestShowAllProfiles:
+    """show_all_profiles()はconfig.tomlの全プロファイルをTOML形式で表示する"""
+
+    def test_outputs_all_profiles(self, tmp_path, monkeypatch, capsys):
+        """複数プロファイルがdefault_profileと共にTOML形式で出力される"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            'default_profile = "main"\n\n'
+            "[main]\n"
+            'redmine_url = "https://main"\n'
+            'default_project_id = "1"\n\n'
+            "[sub]\n"
+            'redmine_url = "https://sub"\n'
+            'default_project_id = "2"\n'
+        )
+        monkeypatch.setattr(config, "CONFIG_PATH", config_path)
+
+        config.show_all_profiles()
+
+        out = capsys.readouterr().out
+        doc = tomllib.loads(out)
+        assert doc["default_profile"] == "main"
+        assert doc["main"]["redmine_url"] == "https://main"
+        assert doc["sub"]["redmine_url"] == "https://sub"
+
+    def test_hides_api_key(self, tmp_path, monkeypatch, capsys):
+        """APIキーは出力に含まれない"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            "[main]\n"
+            'redmine_url = "https://main"\n'
+            'redmine_api_key = "secret-main"\n\n'
+            "[sub]\n"
+            'redmine_url = "https://sub"\n'
+            'redmine_api_key = "secret-sub"\n'
+        )
+        monkeypatch.setattr(config, "CONFIG_PATH", config_path)
+
+        config.show_all_profiles()
+
+        out = capsys.readouterr().out
+        assert "secret-main" not in out
+        assert "secret-sub" not in out
+        assert "redmine_api_key" not in out
+
+    def test_prints_message_when_config_missing(self, tmp_path, monkeypatch, capsys):
+        """config.tomlが存在しない場合はメッセージを出力する"""
+        config_path = tmp_path / "missing.toml"
+        monkeypatch.setattr(config, "CONFIG_PATH", config_path)
+
+        config.show_all_profiles()
+
+        out = capsys.readouterr().out
+        assert "not found" in out

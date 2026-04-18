@@ -11,6 +11,7 @@ from redi.config import (
 
 def add_config_parser(subparsers: argparse._SubParsersAction) -> None:
     c_parser = subparsers.add_parser("config", aliases=["c"], help="設定表示/更新")
+    c_parser.add_argument("--full", action="store_true", help="全プロファイルを表示")
     c_subparsers = c_parser.add_subparsers(dest="config_command")
     c_update_parser = c_subparsers.add_parser("update", aliases=["u"], help="設定更新")
     c_update_parser.add_argument(
@@ -62,7 +63,7 @@ def handle_config(args: argparse.Namespace) -> None:
             print(f"default_profileを {args.profile_name} に設定しました")
         return
     if cmd != "update":
-        show_config()
+        show_config(full=args.full)
         return
     updated = False
     profile = args.profile_name
