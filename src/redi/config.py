@@ -3,6 +3,7 @@ import tomllib
 from pathlib import Path
 
 import tomlkit
+from tomlkit.items import Table
 
 CONFIG_PATH = Path.home() / ".config" / "redi" / "config.toml"
 
@@ -72,11 +73,12 @@ def update_config(key: str, value: str, profile: str | None = None) -> None:
     if not target_profile:
         print("default_profile not found")
         exit(1)
-    if target_profile not in doc or not isinstance(doc.get(target_profile), dict):
+    profile_table = doc.get(target_profile) if target_profile in doc else None
+    if not isinstance(profile_table, Table):
         print(f"profile '{target_profile}' not found in {CONFIG_PATH}")
         exit(1)
 
-    doc[target_profile][key] = value  # ty: ignore[invalid-assignment]
+    profile_table[key] = value
     with open(CONFIG_PATH, "w") as f:
         tomlkit.dump(doc, f)
 
