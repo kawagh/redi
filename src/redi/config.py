@@ -159,9 +159,9 @@ def set_default_profile(profile_name: str, config_path: Path | None = None) -> b
     return True
 
 
-def show_config(full: bool = False) -> None:
+def show_config(full: bool = False, config_path: Path | None = None) -> None:
     if full:
-        show_all_profiles()
+        show_all_profiles(config_path=config_path)
         return
     doc = tomlkit.document()
     doc["redmine_url"] = redmine_url
@@ -171,11 +171,12 @@ def show_config(full: bool = False) -> None:
     print(tomlkit.dumps(doc).rstrip())
 
 
-def show_all_profiles() -> None:
-    if not CONFIG_PATH.exists():
-        print(f"config file not found: {CONFIG_PATH}")
+def show_all_profiles(config_path: Path | None = None) -> None:
+    path = config_path or CONFIG_PATH
+    if not path.exists():
+        print(f"config file not found: {path}")
         return
-    with open(CONFIG_PATH) as f:
+    with open(path) as f:
         doc = tomlkit.load(f)
     for key in list(doc.keys()):
         value = doc[key]
