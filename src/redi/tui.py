@@ -19,6 +19,11 @@ def _pad_display(text: str, width: int) -> str:
     return text + " " * padding
 
 
+def _load_journals(issue: dict) -> None:
+    fetched = fetch_issue(str(issue["id"]), include="journals")
+    issue["journals"] = fetched.get("journals") or []
+
+
 TuiAction = Literal["update", "create", "comment"]
 
 
@@ -60,11 +65,9 @@ def run_issue_tui(state: TuiState | None = None) -> TuiResult | None:
     state.cursor = max(0, min(position.cursor, len(state.issues) - 1))
     if last and last.action == "comment" and last.issue_id:
         target_id = int(last.issue_id)
-        for issue in state.issues:
-            if issue.get("id") == target_id:
-                fetched = fetch_issue(last.issue_id, include="journals")
-                issue["journals"] = fetched.get("journals") or []
-                break
+        target = next((i for i in state.issues if i.get("id") == target_id), None)
+        if target is not None:
+            _load_journals(target)
 
     def render_issues():
         result = []
@@ -192,11 +195,9 @@ def run_issue_tui(state: TuiState | None = None) -> TuiResult | None:
         if not state.issues:
             return
         issue = state.issues[state.cursor]
-        issue_id = issue.get("id")
-        if issue_id is None:
+        if issue.get("id") is None:
             return
-        fetched = fetch_issue(str(issue_id), include="journals")
-        issue["journals"] = fetched.get("journals") or []
+        _load_journals(issue)
 
     @kb.add("u")
     def _(event):
