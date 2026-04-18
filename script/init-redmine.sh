@@ -34,7 +34,7 @@ INSTANT_API_KEY=$(docker exec -i redi-redmine-for-test-1 rails runner - <<RUBY
       cf = IssueCustomField.find_or_initialize_by(name: attrs[:name])
       cf.assign_attributes(attrs)
       cf.is_for_all = true
-      cf.is_required = false
+      cf.is_required = true
       cf.tracker_ids = bug_tracker_ids
       cf.save!
     end
