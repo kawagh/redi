@@ -7,10 +7,11 @@ tasks:
       - task --list-all --sort none
 
   check:
-    desc: format, lint, test
+    desc: format, lint, typecheck, test
     cmds:
       - task: format
       - task: lint
+      - task: typecheck
       - task: test
 
   format:
@@ -22,6 +23,11 @@ tasks:
     desc: lint
     cmds:
       - uv run ruff check
+
+  typecheck:
+    desc: typecheck
+    cmds:
+      - uv run ty check
 
   test:
     desc: run tests

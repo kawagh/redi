@@ -136,6 +136,8 @@ def main() -> None:
                 )
                 handle_issue_create(create_args)
             elif tui_result.action == "comment":
+                if tui_result.issue_id is None:
+                    continue
                 notes = open_editor()
                 if notes:
                     add_note(tui_result.issue_id, notes)

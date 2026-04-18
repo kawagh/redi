@@ -27,5 +27,8 @@ jobs:
       - name: Lint
         run: uv run ruff check
 
+      - name: Typecheck
+        run: uv run ty check
+
       - name: Test
         run: uv run pytest
