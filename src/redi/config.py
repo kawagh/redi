@@ -96,10 +96,12 @@ def create_profile(
     default_project_id: str | None = None,
     wiki_project_id: str | None = None,
     editor: str | None = None,
+    config_path: Path | None = None,
 ) -> CreateProfileResult:
-    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if CONFIG_PATH.exists():
-        with open(CONFIG_PATH) as f:
+    path = config_path or CONFIG_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        with open(path) as f:
             doc = tomlkit.load(f)
     else:
         doc = tomlkit.document()
@@ -126,7 +128,7 @@ def create_profile(
     if set_as_default:
         doc["default_profile"] = profile_name
 
-    with open(CONFIG_PATH, "w") as f:
+    with open(path, "w") as f:
         tomlkit.dump(doc, f)
     return CreateProfileResult(created=True, set_as_default=set_as_default)
 
