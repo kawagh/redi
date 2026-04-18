@@ -27,7 +27,11 @@ INSTANT_API_KEY=$(docker exec -i redi-redmine-for-test-1 rails runner - <<RUBY
 
     # カスタムフィールドを作成（全プロジェクト・バグトラッカーのみに適用）
     cf_defs = [
-      { name: 'バージョン',               field_format: 'string' },
+      {
+        name: 'バージョン',
+        field_format: 'string',
+        description: 'redi --version の出力',
+      },
     ]
     bug_tracker_ids = Tracker.where(name: 'バグ').pluck(:id)
     cf_defs.each do |attrs|
