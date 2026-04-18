@@ -11,7 +11,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from wcwidth import wcswidth
 
 from redi.config import default_project_id, redmine_url
-from redi.api.issue import fetch_issues
+from redi.api.issue import fetch_issue, fetch_issues
 
 
 def _pad_display(text: str, width: int) -> str:
@@ -27,7 +27,7 @@ class TuiState:
     issues: list[dict] = field(default_factory=list)
 
 
-TuiAction = Literal["view", "update", "create"]
+TuiAction = Literal["update", "create", "comment"]
 
 
 @dataclass
@@ -103,6 +103,19 @@ def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
             lines.append("----")
             lines.extend(description.splitlines())
 
+        journals = issue.get("journals") or []
+        notes = [j for j in journals if (j.get("notes") or "").strip()]
+        if notes:
+            lines.append("")
+            lines.append("----")
+            lines.append("コメント:")
+            for j in notes:
+                author = (j.get("user") or {}).get("name", "")
+                created = j.get("created_on", "")
+                lines.append(f"[{created}] {author}")
+                for nl in (j.get("notes") or "").splitlines():
+                    lines.append(f"  {nl}")
+
         return [("", "\n".join(lines))]
 
     def render_status():
@@ -111,7 +124,7 @@ def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
             (
                 "reverse",
                 f" Page {page} (offset={state.offset})  "
-                "↑↓/jk:移動 ←→/hl:ページ Enter:表示 c:作成 u:更新 v:web q:終了 ",
+                "↑↓/jk:移動 ←→/hl:ページ Enter:コメント読込 c:作成 u:更新 n:コメント v:web q:終了 ",
             )
         ]
 
@@ -166,7 +179,14 @@ def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
 
     @kb.add("enter")
     def _(event):
-        event.app.exit(result=_exit_with("view"))
+        if not state.issues:
+            return
+        issue = state.issues[state.cursor]
+        issue_id = issue.get("id")
+        if issue_id is None:
+            return
+        fetched = fetch_issue(str(issue_id), include="journals")
+        issue["journals"] = fetched.get("journals") or []
 
     @kb.add("u")
     def _(event):
@@ -175,6 +195,11 @@ def run_issue_tui(position: TuiPosition | None = None) -> TuiResult | None:
     @kb.add("c")
     def _(event):
         event.app.exit(result=_exit_with("create", issue_id=""))
+
+    # n is first letter of note
+    @kb.add("n")
+    def _(event):
+        event.app.exit(result=_exit_with("comment"))
 
     @kb.add("v")
     def _(event):

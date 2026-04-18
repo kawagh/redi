@@ -16,6 +16,7 @@ from redi.cli.enumerations_command import (
     add_time_entry_activity_parser,
     add_tracker_parser,
 )
+from redi.cli._common import open_editor
 from redi.cli.issue_command import (
     add_issue_parser,
     handle_issue,
@@ -36,7 +37,7 @@ from redi.api.enumeration import (
     list_issue_priorities,
     list_time_entry_activities,
 )
-from redi.api.issue import read_issue
+from redi.api.issue import add_note
 from redi.api.issue_status import list_issue_statuses
 from redi.api.query import list_queries
 from redi.api.tracker import list_trackers
@@ -100,10 +101,7 @@ def main() -> None:
             if tui_result is None:
                 return
             tui_position = tui_result.position
-            if tui_result.action == "view":
-                read_issue(tui_result.issue_id)
-                input("Enter で TUI に戻る...")
-            elif tui_result.action == "update":
+            if tui_result.action == "update":
                 update_args = argparse.Namespace(
                     issue_id=tui_result.issue_id,
                     subject=None,
@@ -137,6 +135,10 @@ def main() -> None:
                     custom_fields=None,
                 )
                 handle_issue_create(create_args)
+            elif tui_result.action == "comment":
+                notes = open_editor()
+                if notes:
+                    add_note(tui_result.issue_id, notes)
 
     if args.command in ("project", "p"):
         handle_project(args)
