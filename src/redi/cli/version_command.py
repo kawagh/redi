@@ -110,7 +110,7 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
     try:
         if "name" in selected:
             args.name = prompt(
-                "バージョン名: ", default=current.get("name") or ""
+                "バージョン名: ", default=current.get("name", "")
             ).strip()
 
         if "status" in selected:
@@ -120,20 +120,18 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
                 ("closed", "closed"),
             ]
             args.status = inline_choice(
-                "ステータス",
-                status_options,
-                default=current.get("status") or "open",
+                "ステータス", status_options, default=current.get("status", "open")
             )
             print(f"ステータス: {args.status}")
 
         if "due_date" in selected:
             args.due_date = prompt(
-                "期日（YYYY-MM-DD）: ", default=current.get("due_date") or ""
+                "期日（YYYY-MM-DD）: ", default=current.get("due_date", "")
             ).strip()
 
         if "description" in selected:
             args.description = prompt(
-                "説明: ", default=current.get("description") or ""
+                "説明: ", default=current.get("description", "")
             ).strip()
 
         if "sharing" in selected:
@@ -147,7 +145,7 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
             args.sharing = inline_choice(
                 "共有設定",
                 sharing_options,
-                default=current.get("sharing") or "none",
+                default=current.get("sharing", "none"),
             )
             print(f"共有設定: {args.sharing}")
     except (KeyboardInterrupt, EOFError):
