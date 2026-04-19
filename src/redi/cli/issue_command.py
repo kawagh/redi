@@ -2,7 +2,7 @@ import argparse
 
 import questionary
 
-from redi.cli._common import open_editor, resolve_alias
+from redi.cli._common import inline_checkbox, open_editor, resolve_alias
 from redi.config import default_project_id
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
 from redi.api.issue import (
@@ -168,26 +168,30 @@ def _interactive_select_issue_id() -> str:
 
 def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
     current = fetch_issue(args.issue_id)
-    field_choices = [
-        questionary.Choice("トラッカー (tracker)", value="tracker"),
-        questionary.Choice("題名 (subject)", value="subject"),
-        questionary.Choice("説明 (description)", value="description"),
-        questionary.Choice("ステータス (status)", value="status"),
-        questionary.Choice("優先度 (priority)", value="priority"),
-        questionary.Choice("対象バージョン (fixed_version)", value="fixed_version"),
-        questionary.Choice("コメント (notes)", value="notes"),
-        questionary.Choice("作業時間 (time_entry)", value="time_entry"),
+    field_values: list[tuple[str, str]] = [
+        ("tracker", "トラッカー (tracker)"),
+        ("subject", "題名 (subject)"),
+        ("description", "説明 (description)"),
+        ("status", "ステータス (status)"),
+        ("priority", "優先度 (priority)"),
+        ("fixed_version", "対象バージョン (fixed_version)"),
+        ("notes", "コメント (notes)"),
+        ("time_entry", "作業時間 (time_entry)"),
     ]
-    description_choice = next(c for c in field_choices if c.value == "description")
-    selected = questionary.checkbox(
-        "更新する項目を選択",
-        choices=field_choices,
-        style=questionary.Style([("selected", "noreverse")]),
-        initial_choice=description_choice,
-    ).ask(kbi_msg="")
+    try:
+        selected = inline_checkbox(
+            "更新する項目を選択 (Spaceで選択、Enterで確定)",
+            field_values,
+            initial_value="description",
+        )
+    except KeyboardInterrupt:
+        print("キャンセルしました")
+        exit(1)
     if not selected:
         print("更新する項目が選択されていないためキャンセルしました")
         exit(1)
+    labels = dict(field_values)
+    print(f"更新する項目: {', '.join(labels[v] for v in selected)}")
     if "tracker" in selected:
         trackers = fetch_trackers()
         args.tracker_id = questionary.select(

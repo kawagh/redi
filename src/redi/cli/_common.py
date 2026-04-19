@@ -32,8 +32,10 @@ def resolve_alias(command: str | None) -> str | None:
 def inline_checkbox(
     message: str,
     values: list[tuple[str, str]],
+    initial_value: str | None = None,
 ) -> list[str]:
-    cursor = 0
+    keys = [v for v, _ in values]
+    cursor = keys.index(initial_value) if initial_value in keys else 0
     checked: set[str] = set()
 
     def render():
