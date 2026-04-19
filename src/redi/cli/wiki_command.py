@@ -1,8 +1,9 @@
 import argparse
 
-import questionary
+from prompt_toolkit import prompt
+from prompt_toolkit.validation import ValidationError, Validator
 
-from redi.cli._common import open_editor, resolve_alias
+from redi.cli._common import inline_choice, open_editor, resolve_alias
 from redi.config import default_project_id, wiki_project_id
 from redi.api.wiki import (
     build_children_map,
@@ -16,17 +17,17 @@ from redi.api.wiki import (
 )
 
 
-def build_wiki_tree_choices(pages: list[dict]) -> list[questionary.Choice]:
+def build_wiki_tree_choices(pages: list[dict]) -> list[tuple[str, str]]:
     children_map = build_children_map(pages)
-    choices: list[questionary.Choice] = []
+    options: list[tuple[str, str]] = []
 
     def walk(parent: str | None, depth: int) -> None:
         for title in children_map.get(parent, []):
-            choices.append(questionary.Choice("  " * depth + title, value=title))
+            options.append((title, "  " * depth + title))
             walk(title, depth + 1)
 
     walk(None, 0)
-    return choices
+    return options
 
 
 def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -92,26 +93,38 @@ def handle_wiki(args: argparse.Namespace) -> None:
             pages = fetch_wikis(project_id)
             existing_titles = {normalize_title(p["title"]) for p in pages}
 
-            def validate_page_title(value: str) -> bool | str:
-                stripped = value.strip()
-                if not stripped:
-                    return "ページタイトルを入力してください"
-                if normalize_title(stripped) in existing_titles:
-                    return "既存のページタイトルと重複しています"
-                return True
+            class _PageTitleValidator(Validator):
+                def validate(self, document) -> None:
+                    stripped = document.text.strip()
+                    if not stripped:
+                        raise ValidationError(
+                            message="ページタイトルを入力してください"
+                        )
+                    if normalize_title(stripped) in existing_titles:
+                        raise ValidationError(
+                            message="既存のページタイトルと重複しています"
+                        )
 
-            page_title = questionary.text(
-                "ページタイトル",
-                validate=validate_page_title,
-            ).ask(kbi_msg="")
+            try:
+                page_title = prompt(
+                    "ページタイトル: ", validator=_PageTitleValidator()
+                ).strip()
+            except (KeyboardInterrupt, EOFError):
+                print("キャンセルしました")
+                exit(1)
             if not page_title:
                 print("ページタイトルが空のためキャンセルしました")
                 exit(1)
             if parent_title is None:
-                parent_title = questionary.select(
-                    "親ページ",
-                    choices=build_wiki_tree_choices(pages),
-                ).ask(kbi_msg="")
+                parent_options = build_wiki_tree_choices(pages)
+                if parent_options:
+                    parent_labels = dict(parent_options)
+                    try:
+                        parent_title = inline_choice("親ページ", parent_options)
+                    except KeyboardInterrupt:
+                        print("キャンセルしました")
+                        exit(1)
+                    print(f"親ページ: {parent_labels[parent_title].strip()}")
         if args.description and args.description != "":
             text = args.description
         else:
@@ -130,13 +143,14 @@ def handle_wiki(args: argparse.Namespace) -> None:
             if not pages:
                 print("Wikiページが存在しません")
                 exit(1)
-            page_title = questionary.select(
-                "編集するページ",
-                choices=build_wiki_tree_choices(pages),
-            ).ask(kbi_msg="")
-            if not page_title:
+            page_options = build_wiki_tree_choices(pages)
+            page_labels = dict(page_options)
+            try:
+                page_title = inline_choice("編集するページ", page_options)
+            except KeyboardInterrupt:
                 print("キャンセルしました")
                 exit(1)
+            print(f"編集するページ: {page_labels[page_title].strip()}")
         if args.description and args.description != "":
             text = args.description
         else:
