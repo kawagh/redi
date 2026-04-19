@@ -1,8 +1,9 @@
 import argparse
 
 import questionary
+from prompt_toolkit import prompt
 
-from redi.cli._common import inline_checkbox, open_editor, resolve_alias
+from redi.cli._common import inline_checkbox, inline_choice, open_editor, resolve_alias
 from redi.config import default_project_id
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
 from redi.api.issue import (
@@ -271,16 +272,20 @@ def _prompt_custom_field_value(cf: dict) -> str | None:
     # not support All formats
     if fmt == "list":
         possible = cf.get("possible_values") or []
-        choices = [
-            questionary.Choice(
-                title=str(pv.get("value", "")), value=str(pv.get("value", ""))
-            )
+        options: list[tuple[str, str]] = [
+            (str(pv.get("value", "")), str(pv.get("value", "")))
             for pv in possible
             if pv.get("value", "") != ""
         ]
-        if choices:
-            return questionary.select(label, choices=choices).ask(kbi_msg="")
-    return questionary.text(label).ask(kbi_msg="")
+        if options:
+            try:
+                return inline_choice(label, options)
+            except KeyboardInterrupt:
+                return None
+    try:
+        return prompt(f"{label}: ").strip() or None
+    except (KeyboardInterrupt, EOFError):
+        return None
 
 
 def _interactive_fill_required_custom_fields(
@@ -330,21 +335,22 @@ def handle_issue_create(args: argparse.Namespace) -> None:
     if subject is None:
         if tracker_id is None:
             trackers = fetch_trackers()
-            choices = [
-                questionary.Choice(title=t["name"], value=str(t["id"]))
-                for t in trackers
+            tracker_options: list[tuple[str, str]] = [
+                (str(t["id"]), t["name"]) for t in trackers
             ]
-            tracker_id = questionary.select("トラッカーを選択", choices=choices).ask(
-                kbi_msg=""
-            )
-            if tracker_id is None:
+            try:
+                tracker_id = inline_choice("トラッカーを選択", tracker_options)
+            except KeyboardInterrupt:
                 print("キャンセルしました")
                 exit(1)
-        subject = questionary.text("題名").ask(kbi_msg="")
+        try:
+            subject = prompt("題名: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("キャンセルしました")
+            exit(1)
         if not subject:
             print("題名が空のためキャンセルしました")
             exit(1)
-        subject = subject.strip()
         # 必要なカスタムフィールドを対話的に入力
         custom_fields = _interactive_fill_required_custom_fields(
             project_id=project_id,
