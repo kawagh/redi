@@ -127,7 +127,7 @@ def _inline_checkbox(
                     height=1,
                 ),
                 Window(
-                    FormattedTextControl(render, focusable=True),
+                    FormattedTextControl(render, focusable=True, show_cursor=False),
                     dont_extend_height=True,
                 ),
             ]
