@@ -9,7 +9,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.shortcuts import choice
 from prompt_toolkit.validation import Validator
 
-from redi.cli._common import resolve_alias
+from redi.cli._common import inline_choice, resolve_alias
 from redi.config import default_project_id
 from redi.api.version import (
     create_version,
@@ -145,70 +145,6 @@ def _inline_checkbox(
     return app.run()
 
 
-def _inline_choice(
-    message: str,
-    options: list[tuple[str, str]],
-    default: str | None = None,
-) -> str:
-    keys = [v for v, _ in options]
-    cursor = keys.index(default) if default in keys else 0
-
-    def render():
-        fragments: list[tuple[str, str]] = []
-        for i, (_, label) in enumerate(options):
-            prefix = "> " if i == cursor else "  "
-            fragments.append(("", f"{prefix}{label}\n"))
-        return fragments
-
-    kb = KeyBindings()
-
-    @kb.add("up")
-    @kb.add("c-p")
-    @kb.add("k")
-    def _up(event):
-        nonlocal cursor
-        cursor = max(0, cursor - 1)
-
-    @kb.add("down")
-    @kb.add("c-n")
-    @kb.add("j")
-    def _down(event):
-        nonlocal cursor
-        cursor = min(len(options) - 1, cursor + 1)
-
-    @kb.add("enter")
-    def _accept(event):
-        event.app.exit(result=options[cursor][0])
-
-    @kb.add("c-c")
-    def _cancel(event):
-        event.app.exit(exception=KeyboardInterrupt())
-
-    layout = Layout(
-        HSplit(
-            [
-                Window(
-                    FormattedTextControl(message),
-                    dont_extend_height=True,
-                    height=1,
-                ),
-                Window(
-                    FormattedTextControl(render, focusable=True, show_cursor=False),
-                    dont_extend_height=True,
-                ),
-            ]
-        ),
-    )
-    app: Application[str] = Application(
-        layout=layout,
-        key_bindings=kb,
-        full_screen=False,
-        # 描画した選択候補一覧を選択後に消去
-        erase_when_done=True,
-    )
-    return app.run()
-
-
 def _interactive_select_version_id(project_id: str) -> str:
     versions = fetch_versions(project_id)
     if not versions:
@@ -219,7 +155,7 @@ def _interactive_select_version_id(project_id: str) -> str:
     ]
     labels = dict(options)
     try:
-        selected = _inline_choice("更新するバージョンを選択", options)
+        selected = inline_choice("更新するバージョンを選択", options)
     except KeyboardInterrupt:
         print("キャンセルしました")
         exit(1)
@@ -260,7 +196,7 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
                 ("locked", "locked"),
                 ("closed", "closed"),
             ]
-            args.status = _inline_choice(
+            args.status = inline_choice(
                 "ステータス",
                 status_options,
                 default=current.get("status") or "open",
@@ -285,7 +221,7 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
                 ("tree", "tree"),
                 ("system", "system"),
             ]
-            args.sharing = _inline_choice(
+            args.sharing = inline_choice(
                 "共有設定",
                 sharing_options,
                 default=current.get("sharing") or "none",

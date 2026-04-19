@@ -4,6 +4,10 @@ import tempfile
 
 import questionary
 import questionary.prompts.common
+from prompt_toolkit import Application
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.layout import HSplit, Layout, Window
+from prompt_toolkit.layout.controls import FormattedTextControl
 
 from redi.config import editor
 
@@ -23,6 +27,70 @@ def resolve_alias(command: str | None) -> str | None:
     if command is None:
         return None
     return SUBCOMMAND_ALIASES.get(command, command)
+
+
+def inline_choice(
+    message: str,
+    options: list[tuple[str, str]],
+    default: str | None = None,
+) -> str:
+    keys = [v for v, _ in options]
+    cursor = keys.index(default) if default in keys else 0
+
+    def render():
+        fragments: list[tuple[str, str]] = []
+        for i, (_, label) in enumerate(options):
+            prefix = "> " if i == cursor else "  "
+            fragments.append(("", f"{prefix}{label}\n"))
+        return fragments
+
+    kb = KeyBindings()
+
+    @kb.add("up")
+    @kb.add("c-p")
+    @kb.add("k")
+    def _up(event):
+        nonlocal cursor
+        cursor = max(0, cursor - 1)
+
+    @kb.add("down")
+    @kb.add("c-n")
+    @kb.add("j")
+    def _down(event):
+        nonlocal cursor
+        cursor = min(len(options) - 1, cursor + 1)
+
+    @kb.add("enter")
+    def _accept(event):
+        event.app.exit(result=options[cursor][0])
+
+    @kb.add("c-c")
+    def _cancel(event):
+        event.app.exit(exception=KeyboardInterrupt())
+
+    layout = Layout(
+        HSplit(
+            [
+                Window(
+                    FormattedTextControl(message),
+                    dont_extend_height=True,
+                    height=1,
+                ),
+                Window(
+                    FormattedTextControl(render, focusable=True, show_cursor=False),
+                    dont_extend_height=True,
+                ),
+            ]
+        ),
+    )
+    app: Application[str] = Application(
+        layout=layout,
+        key_bindings=kb,
+        full_screen=False,
+        # 描画した選択候補一覧を選択後に消去
+        erase_when_done=True,
+    )
+    return app.run()
 
 
 def open_editor(initial_text: str = "") -> str:
