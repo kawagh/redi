@@ -1,6 +1,8 @@
 import shutil
 import webbrowser
 from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
 from typing import Literal
 
 from prompt_toolkit import Application
@@ -12,6 +14,39 @@ from wcwidth import wcswidth
 
 from redi.config import default_project_id, redmine_url
 from redi.api.issue import fetch_issue, fetch_issues
+
+
+def dump_rendered_screen(app: Application) -> dict:
+    """
+    最後にレンダリングした画面 (`_last_screen`) の内容を
+    `{"width": int, "height": int, "lines": [str, ...]}` 形式で返す。
+    """
+    screen = app.renderer._last_screen
+    if screen is None:
+        return {"width": 0, "height": 0, "lines": []}
+    size = app.output.get_size()
+    width, height = size.columns, size.rows
+    lines = []
+    for y in range(height):
+        row = screen.data_buffer[y]
+        line = "".join(row[x].char for x in range(width)).rstrip()
+        lines.append(line)
+    return {"width": width, "height": height, "lines": lines}
+
+
+def _append_screen_yaml(path: Path, dumped: dict, key: str) -> None:
+    timestamp = datetime.now().isoformat(timespec="microseconds")
+    lines = dumped["lines"]
+    indented = "\n".join(f"    {line}" for line in lines) if lines else "    "
+    entry = (
+        f"- timestamp: {timestamp}\n"
+        f"  key: {key}\n"
+        f"  width: {dumped['width']}\n"
+        f"  height: {dumped['height']}\n"
+        f"  screen: |\n{indented}\n"
+    )
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(entry)
 
 
 def _pad_display(text: str, width: int) -> str:
@@ -49,7 +84,10 @@ class TuiState:
     issues: list[dict] = field(default_factory=list)
 
 
-def run_issue_tui(state: TuiState | None = None) -> TuiResult | None:
+def run_issue_tui(
+    state: TuiState | None = None,
+    debug_log_path: Path | None = None,
+) -> TuiResult | None:
     if state is None:
         state = TuiState()
     last = state.last_result
@@ -241,4 +279,14 @@ def run_issue_tui(state: TuiState | None = None) -> TuiResult | None:
         key_bindings=kb,
         full_screen=True,
     )
+
+    if debug_log_path is not None:
+
+        def _on_after_render(sender: Application) -> None:
+            seq = sender.key_processor._previous_key_sequence
+            key = " ".join(getattr(kp.key, "value", str(kp.key)) for kp in seq)
+            _append_screen_yaml(debug_log_path, dump_rendered_screen(sender), key=key)
+
+        app.after_render += _on_after_render
+
     return app.run()
