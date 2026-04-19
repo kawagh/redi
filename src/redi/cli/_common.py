@@ -29,6 +29,81 @@ def resolve_alias(command: str | None) -> str | None:
     return SUBCOMMAND_ALIASES.get(command, command)
 
 
+def inline_checkbox(
+    message: str,
+    values: list[tuple[str, str]],
+) -> list[str]:
+    cursor = 0
+    checked: set[str] = set()
+
+    def render():
+        fragments = []
+        for i, (value, label) in enumerate(values):
+            is_checked = value in checked
+            mark = "[x]" if is_checked else "[ ]"
+            prefix = "> " if i == cursor else "  "
+            mark_style = "ansigreen" if is_checked else ""
+            fragments.append(("", prefix))
+            fragments.append((mark_style, mark))
+            fragments.append(("", f" {label}\n"))
+        return fragments
+
+    kb = KeyBindings()
+
+    @kb.add("up")
+    @kb.add("c-p")
+    @kb.add("k")
+    def _up(event):
+        nonlocal cursor
+        cursor = max(0, cursor - 1)
+
+    @kb.add("down")
+    @kb.add("c-n")
+    @kb.add("j")
+    def _down(event):
+        nonlocal cursor
+        cursor = min(len(values) - 1, cursor + 1)
+
+    @kb.add(" ")
+    def _toggle(event):
+        value = values[cursor][0]
+        if value in checked:
+            checked.remove(value)
+        else:
+            checked.add(value)
+
+    @kb.add("enter")
+    def _accept(event):
+        event.app.exit(result=[v for v, _ in values if v in checked])
+
+    @kb.add("c-c")
+    def _cancel(event):
+        event.app.exit(exception=KeyboardInterrupt())
+
+    layout = Layout(
+        HSplit(
+            [
+                Window(
+                    FormattedTextControl(message),
+                    dont_extend_height=True,
+                    height=1,
+                ),
+                Window(
+                    FormattedTextControl(render, focusable=True, show_cursor=False),
+                    dont_extend_height=True,
+                ),
+            ]
+        ),
+    )
+    app: Application[list[str]] = Application(
+        layout=layout,
+        key_bindings=kb,
+        full_screen=False,
+        erase_when_done=True,
+    )
+    return app.run()
+
+
 def inline_choice(
     message: str,
     options: list[tuple[str, str]],

@@ -1,15 +1,13 @@
 import argparse
 
-from prompt_toolkit import Application, prompt
+from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding.key_processor import KeyPress
 from prompt_toolkit.keys import Keys
-from prompt_toolkit.layout import HSplit, Layout, Window
-from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.shortcuts import choice
 from prompt_toolkit.validation import Validator
 
-from redi.cli._common import inline_choice, resolve_alias
+from redi.cli._common import inline_checkbox, inline_choice, resolve_alias
 from redi.config import default_project_id
 from redi.api.version import (
     create_version,
@@ -70,81 +68,6 @@ def add_version_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
 
-def _inline_checkbox(
-    message: str,
-    values: list[tuple[str, str]],
-) -> list[str]:
-    cursor = 0
-    checked: set[str] = set()
-
-    def render():
-        fragments = []
-        for i, (value, label) in enumerate(values):
-            is_checked = value in checked
-            mark = "[x]" if is_checked else "[ ]"
-            prefix = "> " if i == cursor else "  "
-            mark_style = "ansigreen" if is_checked else ""
-            fragments.append(("", prefix))
-            fragments.append((mark_style, mark))
-            fragments.append(("", f" {label}\n"))
-        return fragments
-
-    kb = KeyBindings()
-
-    @kb.add("up")
-    @kb.add("c-p")
-    @kb.add("k")
-    def _up(event):
-        nonlocal cursor
-        cursor = max(0, cursor - 1)
-
-    @kb.add("down")
-    @kb.add("c-n")
-    @kb.add("j")
-    def _down(event):
-        nonlocal cursor
-        cursor = min(len(values) - 1, cursor + 1)
-
-    @kb.add(" ")
-    def _toggle(event):
-        value = values[cursor][0]
-        if value in checked:
-            checked.remove(value)
-        else:
-            checked.add(value)
-
-    @kb.add("enter")
-    def _accept(event):
-        event.app.exit(result=[v for v, _ in values if v in checked])
-
-    @kb.add("c-c")
-    def _cancel(event):
-        event.app.exit(exception=KeyboardInterrupt())
-
-    layout = Layout(
-        HSplit(
-            [
-                Window(
-                    FormattedTextControl(message),
-                    dont_extend_height=True,
-                    height=1,
-                ),
-                Window(
-                    FormattedTextControl(render, focusable=True, show_cursor=False),
-                    dont_extend_height=True,
-                ),
-            ]
-        ),
-    )
-    app: Application[list[str]] = Application(
-        layout=layout,
-        key_bindings=kb,
-        full_screen=False,
-        erase_when_done=True,
-    )
-    return app.run()
-
-
 def _interactive_select_version_id(project_id: str) -> str:
     versions = fetch_versions(project_id)
     if not versions:
@@ -173,7 +96,7 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
         ("sharing", "共有設定 (sharing)"),
     ]
     try:
-        selected = _inline_checkbox(
+        selected = inline_checkbox(
             "更新する項目を選択 (Spaceで選択、Enterで確定)", field_values
         )
     except KeyboardInterrupt:
