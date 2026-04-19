@@ -1,6 +1,7 @@
 # PYTHON_ARGCOMPLETE_OK
 import argparse
 import logging
+from datetime import datetime
 from importlib.metadata import version
 
 import argcomplete
@@ -53,6 +54,11 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     parser.add_argument("--tui", action="store_true", help="TUI")
     parser.add_argument("--debug", action="store_true", help="デバッグログを有効にする")
     parser.add_argument(
+        "--debug-tui",
+        action="store_true",
+        help="TUI のスクリーン内容を YAML 形式でログ出力する",
+    )
+    parser.add_argument(
         "--profile",
         help="使用するプロファイル名（config.tomlのdefault_profileを一時的に上書き）",
     )
@@ -83,6 +89,9 @@ def main() -> None:
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
+    if args.debug_tui:
+        args.tui = True
+
     if args.debug:
         log_path = CONFIG_PATH.parent / "redi-debug.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -102,8 +111,13 @@ def main() -> None:
 
     if args.tui and args.command is None:
         tui_state = TuiState()
+        debug_log_path = None
+        if args.debug_tui:
+            timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+            debug_log_path = CONFIG_PATH.parent / f"redi-debug-tui-{timestamp}.yaml"
+            debug_log_path.parent.mkdir(parents=True, exist_ok=True)
         while True:
-            tui_result = run_issue_tui(state=tui_state)
+            tui_result = run_issue_tui(state=tui_state, debug_log_path=debug_log_path)
             if tui_result is None:
                 return
             tui_state = TuiState(last_result=tui_result)
