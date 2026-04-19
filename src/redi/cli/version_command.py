@@ -246,6 +246,8 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
     if not selected:
         print("更新する項目が選択されていないためキャンセルしました")
         exit(1)
+    labels = dict(field_values)
+    print(f"更新する項目: {', '.join(labels[v] for v in selected)}")
     try:
         if "name" in selected:
             args.name = prompt(
