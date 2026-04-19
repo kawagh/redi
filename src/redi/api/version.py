@@ -53,9 +53,9 @@ def update_version(
         version_data["name"] = name
     if status:
         version_data["status"] = status
-    if due_date:
+    if due_date is not None:
         version_data["due_date"] = due_date
-    if description:
+    if description is not None:
         version_data["description"] = description
     if sharing:
         version_data["sharing"] = sharing
@@ -72,7 +72,16 @@ def update_version(
         print(e.response.text)
         print("バージョンの更新に失敗しました")
         exit(1)
-    print(f"バージョンを更新しました: {version_id}")
+    print(f"バージョンを更新しました: {version_id} {redmine_url}/versions/{version_id}")
+
+
+def fetch_version(version_id: str) -> dict:
+    response = client.get(f"/versions/{version_id}.json")
+    if response.status_code == 404:
+        print(f"バージョンが見つかりません: {version_id}")
+        exit(1)
+    response.raise_for_status()
+    return response.json()["version"]
 
 
 def read_version(version_id: str, full: bool = False, web: bool = False) -> None:
@@ -81,12 +90,7 @@ def read_version(version_id: str, full: bool = False, web: bool = False) -> None
         print(url)
         webbrowser.open(url)
         return
-    response = client.get(f"/versions/{version_id}.json")
-    if response.status_code == 404:
-        print(f"バージョンが見つかりません: {version_id}")
-        exit(1)
-    response.raise_for_status()
-    version = response.json()["version"]
+    version = fetch_version(version_id)
     if full:
         print(json.dumps(version, ensure_ascii=False))
         return
