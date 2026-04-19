@@ -145,18 +145,68 @@ def _inline_checkbox(
     return app.run()
 
 
-def _make_choice_key_bindings() -> KeyBindings:
+def _inline_choice(
+    message: str,
+    options: list[tuple[str, str]],
+    default: str | None = None,
+) -> str:
+    keys = [v for v, _ in options]
+    cursor = keys.index(default) if default in keys else 0
+
+    def render():
+        fragments: list[tuple[str, str]] = []
+        for i, (_, label) in enumerate(options):
+            prefix = "> " if i == cursor else "  "
+            fragments.append(("", f"{prefix}{label}\n"))
+        return fragments
+
     kb = KeyBindings()
 
+    @kb.add("up")
     @kb.add("c-p")
-    def _move_up(event):
-        event.app.key_processor.feed(KeyPress(Keys.Up))
+    @kb.add("k")
+    def _up(event):
+        nonlocal cursor
+        cursor = max(0, cursor - 1)
 
+    @kb.add("down")
     @kb.add("c-n")
-    def _move_down(event):
-        event.app.key_processor.feed(KeyPress(Keys.Down))
+    @kb.add("j")
+    def _down(event):
+        nonlocal cursor
+        cursor = min(len(options) - 1, cursor + 1)
 
-    return kb
+    @kb.add("enter")
+    def _accept(event):
+        event.app.exit(result=options[cursor][0])
+
+    @kb.add("c-c")
+    def _cancel(event):
+        event.app.exit(exception=KeyboardInterrupt())
+
+    layout = Layout(
+        HSplit(
+            [
+                Window(
+                    FormattedTextControl(message),
+                    dont_extend_height=True,
+                    height=1,
+                ),
+                Window(
+                    FormattedTextControl(render, focusable=True, show_cursor=False),
+                    dont_extend_height=True,
+                ),
+            ]
+        ),
+    )
+    app: Application[str] = Application(
+        layout=layout,
+        key_bindings=kb,
+        full_screen=False,
+        # 描画した選択候補一覧を選択後に消去
+        erase_when_done=True,
+    )
+    return app.run()
 
 
 def _interactive_select_version_id(project_id: str) -> str:
@@ -167,15 +217,14 @@ def _interactive_select_version_id(project_id: str) -> str:
     options: list[tuple[str, str]] = [
         (str(v["id"]), f"{v['id']} {v['name']} ({v['status']})") for v in versions
     ]
+    labels = dict(options)
     try:
-        return choice(
-            "更新するバージョンを選択",
-            options=options,
-            key_bindings=_make_choice_key_bindings(),
-        )
+        selected = _inline_choice("更新するバージョンを選択", options)
     except KeyboardInterrupt:
         print("キャンセルしました")
         exit(1)
+    print(f"更新するバージョン: {labels[selected]}")
+    return selected
 
 
 def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
@@ -209,12 +258,12 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
                 ("locked", "locked"),
                 ("closed", "closed"),
             ]
-            args.status = choice(
+            args.status = _inline_choice(
                 "ステータス",
-                options=status_options,
+                status_options,
                 default=current.get("status") or "open",
-                key_bindings=_make_choice_key_bindings(),
             )
+            print(f"ステータス: {args.status}")
 
         if "due_date" in selected:
             args.due_date = prompt(
@@ -234,12 +283,12 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
                 ("tree", "tree"),
                 ("system", "system"),
             ]
-            args.sharing = choice(
+            args.sharing = _inline_choice(
                 "共有設定",
-                options=sharing_options,
+                sharing_options,
                 default=current.get("sharing") or "none",
-                key_bindings=_make_choice_key_bindings(),
             )
+            print(f"共有設定: {args.sharing}")
     except (KeyboardInterrupt, EOFError):
         print("キャンセルしました")
         exit(1)
