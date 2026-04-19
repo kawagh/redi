@@ -89,6 +89,9 @@ def main() -> None:
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
+    if args.debug_tui:
+        args.tui = True
+
     if args.debug:
         log_path = CONFIG_PATH.parent / "redi-debug.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
