@@ -75,18 +75,22 @@ def update_version(
     print(f"バージョンを更新しました: {version_id}")
 
 
+def fetch_version(version_id: str) -> dict:
+    response = client.get(f"/versions/{version_id}.json")
+    if response.status_code == 404:
+        print(f"バージョンが見つかりません: {version_id}")
+        exit(1)
+    response.raise_for_status()
+    return response.json()["version"]
+
+
 def read_version(version_id: str, full: bool = False, web: bool = False) -> None:
     if web:
         url = f"{redmine_url}/versions/{version_id}"
         print(url)
         webbrowser.open(url)
         return
-    response = client.get(f"/versions/{version_id}.json")
-    if response.status_code == 404:
-        print(f"バージョンが見つかりません: {version_id}")
-        exit(1)
-    response.raise_for_status()
-    version = response.json()["version"]
+    version = fetch_version(version_id)
     if full:
         print(json.dumps(version, ensure_ascii=False))
         return
