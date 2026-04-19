@@ -72,7 +72,7 @@ def update_version(
         print(e.response.text)
         print("バージョンの更新に失敗しました")
         exit(1)
-    print(f"バージョンを更新しました: {version_id}")
+    print(f"バージョンを更新しました: {version_id} {redmine_url}/versions/{version_id}")
 
 
 def fetch_version(version_id: str) -> dict:
