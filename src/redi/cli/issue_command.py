@@ -279,9 +279,11 @@ def _prompt_custom_field_value(cf: dict) -> str | None:
         ]
         if options:
             try:
-                return inline_choice(label, options)
+                value = inline_choice(label, options)
             except KeyboardInterrupt:
                 return None
+            print(f"{name}: {value}")
+            return value
     try:
         return prompt(f"{label}: ").strip() or None
     except (KeyboardInterrupt, EOFError):
@@ -338,11 +340,13 @@ def handle_issue_create(args: argparse.Namespace) -> None:
             tracker_options: list[tuple[str, str]] = [
                 (str(t["id"]), t["name"]) for t in trackers
             ]
+            labels = dict(tracker_options)
             try:
                 tracker_id = inline_choice("トラッカーを選択", tracker_options)
             except KeyboardInterrupt:
                 print("キャンセルしました")
                 exit(1)
+            print(f"トラッカー: {labels[tracker_id]}")
         try:
             subject = prompt("題名: ").strip()
         except (KeyboardInterrupt, EOFError):
