@@ -78,13 +78,16 @@ def _inline_checkbox(
     checked: set[str] = set()
 
     def render():
-        lines = []
+        fragments = []
         for i, (value, label) in enumerate(values):
-            mark = "[x]" if value in checked else "[ ]"
+            is_checked = value in checked
+            mark = "[x]" if is_checked else "[ ]"
             prefix = "> " if i == cursor else "  "
-            style = "reverse" if i == cursor else ""
-            lines.append((style, f"{prefix}{mark} {label}\n"))
-        return lines
+            mark_style = "ansigreen" if is_checked else ""
+            fragments.append(("", prefix))
+            fragments.append((mark_style, mark))
+            fragments.append(("", f" {label}\n"))
+        return fragments
 
     kb = KeyBindings()
 
