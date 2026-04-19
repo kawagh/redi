@@ -1,9 +1,11 @@
 import argparse
 
-from prompt_toolkit import prompt
+from prompt_toolkit import Application, prompt
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding.key_processor import KeyPress
 from prompt_toolkit.keys import Keys
+from prompt_toolkit.layout import HSplit, Layout, Window
+from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.shortcuts import choice
 from prompt_toolkit.validation import Validator
 
@@ -68,6 +70,78 @@ def add_version_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
 
+def _inline_checkbox(
+    message: str,
+    values: list[tuple[str, str]],
+) -> list[str]:
+    cursor = 0
+    checked: set[str] = set()
+
+    def render():
+        lines = []
+        for i, (value, label) in enumerate(values):
+            mark = "[x]" if value in checked else "[ ]"
+            prefix = "> " if i == cursor else "  "
+            style = "reverse" if i == cursor else ""
+            lines.append((style, f"{prefix}{mark} {label}\n"))
+        return lines
+
+    kb = KeyBindings()
+
+    @kb.add("up")
+    @kb.add("c-p")
+    @kb.add("k")
+    def _up(event):
+        nonlocal cursor
+        cursor = max(0, cursor - 1)
+
+    @kb.add("down")
+    @kb.add("c-n")
+    @kb.add("j")
+    def _down(event):
+        nonlocal cursor
+        cursor = min(len(values) - 1, cursor + 1)
+
+    @kb.add(" ")
+    def _toggle(event):
+        value = values[cursor][0]
+        if value in checked:
+            checked.remove(value)
+        else:
+            checked.add(value)
+
+    @kb.add("enter")
+    def _accept(event):
+        event.app.exit(result=[v for v, _ in values if v in checked])
+
+    @kb.add("c-c")
+    def _cancel(event):
+        event.app.exit(exception=KeyboardInterrupt())
+
+    layout = Layout(
+        HSplit(
+            [
+                Window(
+                    FormattedTextControl(message),
+                    dont_extend_height=True,
+                    height=1,
+                ),
+                Window(
+                    FormattedTextControl(render, focusable=True),
+                    dont_extend_height=True,
+                ),
+            ]
+        ),
+    )
+    app: Application[list[str]] = Application(
+        layout=layout,
+        key_bindings=kb,
+        full_screen=False,
+        erase_when_done=True,
+    )
+    return app.run()
+
+
 def _make_choice_key_bindings() -> KeyBindings:
     kb = KeyBindings()
 
@@ -103,57 +177,66 @@ def _interactive_select_version_id(project_id: str) -> str:
 
 def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
     current = fetch_version(args.version_id)
-    skip_label = "変更しない"
+    field_values: list[tuple[str, str]] = [
+        ("name", "バージョン名 (name)"),
+        ("status", "ステータス (status)"),
+        ("due_date", "期日 (due_date)"),
+        ("description", "説明 (description)"),
+        ("sharing", "共有設定 (sharing)"),
+    ]
     try:
-        name = prompt(
-            f"バージョン名（現在: {current.get('name') or '未設定'}、空で変更しない）: "
-        ).strip()
-        if name:
-            args.name = name
-
-        status_options: list[tuple[str | None, str]] = [
-            (None, skip_label),
-            ("open", "open"),
-            ("locked", "locked"),
-            ("closed", "closed"),
-        ]
-        status = choice(
-            f"ステータス（現在: {current.get('status') or '未設定'}）",
-            options=status_options,
-            default=None,
-            key_bindings=_make_choice_key_bindings(),
+        selected = _inline_checkbox(
+            "更新する項目を選択 (Spaceで選択、Enterで確定)", field_values
         )
-        if status:
-            args.status = status
+    except KeyboardInterrupt:
+        print("キャンセルしました")
+        exit(1)
+    if not selected:
+        print("更新する項目が選択されていないためキャンセルしました")
+        exit(1)
+    try:
+        if "name" in selected:
+            args.name = prompt(
+                "バージョン名: ", default=current.get("name") or ""
+            ).strip()
 
-        due_date = prompt(
-            f"期日（現在: {current.get('due_date') or '未設定'}、YYYY-MM-DD、空で変更しない）: "
-        ).strip()
-        if due_date:
-            args.due_date = due_date
+        if "status" in selected:
+            status_options: list[tuple[str, str]] = [
+                ("open", "open"),
+                ("locked", "locked"),
+                ("closed", "closed"),
+            ]
+            args.status = choice(
+                "ステータス",
+                options=status_options,
+                default=current.get("status") or "open",
+                key_bindings=_make_choice_key_bindings(),
+            )
 
-        description = prompt(
-            f"説明（現在: {current.get('description') or '未設定'}、空で変更しない）: "
-        ).strip()
-        if description:
-            args.description = description
+        if "due_date" in selected:
+            args.due_date = prompt(
+                "期日（YYYY-MM-DD）: ", default=current.get("due_date") or ""
+            ).strip()
 
-        sharing_options: list[tuple[str | None, str]] = [
-            (None, skip_label),
-            ("none", "none"),
-            ("descendants", "descendants"),
-            ("hierarchy", "hierarchy"),
-            ("tree", "tree"),
-            ("system", "system"),
-        ]
-        sharing = choice(
-            f"共有設定（現在: {current.get('sharing') or '未設定'}）",
-            options=sharing_options,
-            default=None,
-            key_bindings=_make_choice_key_bindings(),
-        )
-        if sharing:
-            args.sharing = sharing
+        if "description" in selected:
+            args.description = prompt(
+                "説明: ", default=current.get("description") or ""
+            ).strip()
+
+        if "sharing" in selected:
+            sharing_options: list[tuple[str, str]] = [
+                ("none", "none"),
+                ("descendants", "descendants"),
+                ("hierarchy", "hierarchy"),
+                ("tree", "tree"),
+                ("system", "system"),
+            ]
+            args.sharing = choice(
+                "共有設定",
+                options=sharing_options,
+                default=current.get("sharing") or "none",
+                key_bindings=_make_choice_key_bindings(),
+            )
     except (KeyboardInterrupt, EOFError):
         print("キャンセルしました")
         exit(1)
