@@ -1,7 +1,7 @@
 import argparse
 
-import questionary
 from prompt_toolkit import prompt
+from prompt_toolkit.validation import Validator
 
 from redi.cli._common import inline_checkbox, inline_choice, open_editor, resolve_alias
 from redi.config import default_project_id
@@ -154,16 +154,16 @@ def _interactive_select_issue_id() -> str:
     if not issues:
         print("選択可能なイシューがありません")
         exit(1)
-    issue_id = questionary.select(
-        "更新するイシューを選択",
-        choices=[
-            questionary.Choice(f"#{i['id']} {i['subject']}", value=str(i["id"]))
-            for i in issues
-        ],
-    ).ask(kbi_msg="")
-    if not issue_id:
-        print("イシューが選択されていないためキャンセルしました")
+    options: list[tuple[str, str]] = [
+        (str(i["id"]), f"#{i['id']} {i['subject']}") for i in issues
+    ]
+    labels = dict(options)
+    try:
+        issue_id = inline_choice("更新するイシューを選択", options)
+    except KeyboardInterrupt:
+        print("キャンセルしました")
         exit(1)
+    print(f"更新するイシュー: {labels[issue_id]}")
     return issue_id
 
 
@@ -193,76 +193,73 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         exit(1)
     labels = dict(field_values)
     print(f"更新する項目: {', '.join(labels[v] for v in selected)}")
-    if "tracker" in selected:
-        trackers = fetch_trackers()
-        args.tracker_id = questionary.select(
-            "トラッカー",
-            choices=[
-                questionary.Choice(t["name"], value=str(t["id"])) for t in trackers
-            ],
-        ).ask(kbi_msg="")
-    if "subject" in selected:
-        args.subject = questionary.text(
-            "題名", default=current.get("subject") or ""
-        ).ask(kbi_msg="")
-    if "description" in selected:
-        args.description = ""
-    if "status" in selected:
-        statuses = fetch_issue_statuses()
-        args.status_id = questionary.select(
-            "ステータス",
-            choices=[
-                questionary.Choice(s["name"], value=str(s["id"])) for s in statuses
-            ],
-        ).ask(kbi_msg="")
-    if "priority" in selected:
-        priorities = fetch_issue_priorities()
-        args.priority_id = questionary.select(
-            "優先度",
-            choices=[
-                questionary.Choice(p["name"], value=str(p["id"])) for p in priorities
-            ],
-        ).ask(kbi_msg="")
-    if "fixed_version" in selected:
-        project_id = (current.get("project") or {}).get("id")
-        if not project_id:
-            print("プロジェクトが特定できないためキャンセルしました")
-            exit(1)
-        versions = fetch_versions(str(project_id))
-        args.fixed_version_id = questionary.select(
-            "対象バージョン",
-            choices=[
-                questionary.Choice(f"{v['name']} ({v['status']})", value=str(v["id"]))
-                for v in versions
-            ],
-        ).ask(kbi_msg="")
-    if "notes" in selected:
-        args.notes = questionary.text("コメント").ask(kbi_msg="")
-    if "time_entry" in selected:
-        hours_str = questionary.text(
-            "作業時間（例: 1.5 (h)）",
-            validate=lambda v: (
-                v.replace(".", "", 1).isdigit() or "数値を入力してください"
-            ),
-        ).ask(kbi_msg="")
-        if hours_str:
-            args.hours = float(hours_str)
-        activities = fetch_time_entry_activities()
-        args.activity_id = questionary.select(
-            "作業分類",
-            choices=[
-                questionary.Choice(a["name"], value=str(a["id"])) for a in activities
-            ],
-        ).ask(kbi_msg="")
-        args.spent_on = (
-            questionary.text("作業日（YYYY-MM-DD、省略で今日）", default="").ask(
-                kbi_msg=""
+    try:
+        if "tracker" in selected:
+            trackers = fetch_trackers()
+            tracker_options: list[tuple[str, str]] = [
+                (str(t["id"]), t["name"]) for t in trackers
+            ]
+            tracker_labels = dict(tracker_options)
+            args.tracker_id = inline_choice("トラッカー", tracker_options)
+            print(f"トラッカー: {tracker_labels[args.tracker_id]}")
+        if "subject" in selected:
+            args.subject = prompt(
+                "題名: ", default=current.get("subject") or ""
+            ).strip()
+        if "description" in selected:
+            args.description = ""
+        if "status" in selected:
+            statuses = fetch_issue_statuses()
+            status_options: list[tuple[str, str]] = [
+                (str(s["id"]), s["name"]) for s in statuses
+            ]
+            status_labels = dict(status_options)
+            args.status_id = inline_choice("ステータス", status_options)
+            print(f"ステータス: {status_labels[args.status_id]}")
+        if "priority" in selected:
+            priorities = fetch_issue_priorities()
+            priority_options: list[tuple[str, str]] = [
+                (str(p["id"]), p["name"]) for p in priorities
+            ]
+            priority_labels = dict(priority_options)
+            args.priority_id = inline_choice("優先度", priority_options)
+            print(f"優先度: {priority_labels[args.priority_id]}")
+        if "fixed_version" in selected:
+            project_id = (current.get("project") or {}).get("id")
+            if not project_id:
+                print("プロジェクトが特定できないためキャンセルしました")
+                exit(1)
+            versions = fetch_versions(str(project_id))
+            version_options: list[tuple[str, str]] = [
+                (str(v["id"]), f"{v['name']} ({v['status']})") for v in versions
+            ]
+            version_labels = dict(version_options)
+            args.fixed_version_id = inline_choice("対象バージョン", version_options)
+            print(f"対象バージョン: {version_labels[args.fixed_version_id]}")
+        if "notes" in selected:
+            args.notes = prompt("コメント: ").strip()
+        if "time_entry" in selected:
+            hours_validator = Validator.from_callable(
+                lambda v: v.replace(".", "", 1).isdigit(),
+                error_message="数値を入力してください",
             )
-            or None
-        )
-        args.time_comments = (
-            questionary.text("作業時間のコメント", default="").ask(kbi_msg="") or None
-        )
+            hours_str = prompt(
+                "作業時間（例: 1.5 (h)）: ", validator=hours_validator
+            ).strip()
+            if hours_str:
+                args.hours = float(hours_str)
+            activities = fetch_time_entry_activities()
+            activity_options: list[tuple[str, str]] = [
+                (str(a["id"]), a["name"]) for a in activities
+            ]
+            activity_labels = dict(activity_options)
+            args.activity_id = inline_choice("作業分類", activity_options)
+            print(f"作業分類: {activity_labels[args.activity_id]}")
+            args.spent_on = prompt("作業日（YYYY-MM-DD、省略で今日）: ").strip() or None
+            args.time_comments = prompt("作業時間のコメント: ").strip() or None
+    except (KeyboardInterrupt, EOFError):
+        print("キャンセルしました")
+        exit(1)
 
 
 def _prompt_custom_field_value(cf: dict) -> str | None:
