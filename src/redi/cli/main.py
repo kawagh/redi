@@ -1,6 +1,7 @@
 # PYTHON_ARGCOMPLETE_OK
 import argparse
 import logging
+from datetime import datetime
 from importlib.metadata import version
 
 import argcomplete
@@ -109,9 +110,9 @@ def main() -> None:
         tui_state = TuiState()
         debug_log_path = None
         if args.debug_tui:
-            debug_log_path = CONFIG_PATH.parent / "redi-debug-tui.yaml"
+            timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+            debug_log_path = CONFIG_PATH.parent / f"redi-debug-tui-{timestamp}.yaml"
             debug_log_path.parent.mkdir(parents=True, exist_ok=True)
-            debug_log_path.write_text("", encoding="utf-8")
         while True:
             tui_result = run_issue_tui(state=tui_state, debug_log_path=debug_log_path)
             if tui_result is None:
