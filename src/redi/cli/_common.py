@@ -2,17 +2,12 @@ import os
 import subprocess
 import tempfile
 
-import questionary
-import questionary.prompts.common
 from prompt_toolkit import Application
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import HSplit, Layout, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 
 from redi.config import editor
-
-questionary.prompts.common.INDICATOR_SELECTED = "[x]"  # ty: ignore[invalid-assignment]  # pyright: ignore[reportPrivateImportUsage]
-questionary.prompts.common.INDICATOR_UNSELECTED = "[ ]"  # ty: ignore[invalid-assignment]  # pyright: ignore[reportPrivateImportUsage]
 
 
 SUBCOMMAND_ALIASES: dict[str, str] = {
@@ -32,8 +27,10 @@ def resolve_alias(command: str | None) -> str | None:
 def inline_checkbox(
     message: str,
     values: list[tuple[str, str]],
+    initial_value: str | None = None,
 ) -> list[str]:
-    cursor = 0
+    keys = [v for v, _ in values]
+    cursor = keys.index(initial_value) if initial_value in keys else 0
     checked: set[str] = set()
 
     def render():
