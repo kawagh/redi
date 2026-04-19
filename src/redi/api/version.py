@@ -53,9 +53,9 @@ def update_version(
         version_data["name"] = name
     if status:
         version_data["status"] = status
-    if due_date:
+    if due_date is not None:
         version_data["due_date"] = due_date
-    if description:
+    if description is not None:
         version_data["description"] = description
     if sharing:
         version_data["sharing"] = sharing
