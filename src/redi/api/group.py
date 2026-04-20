@@ -17,6 +17,47 @@ def list_groups(full: bool = False) -> None:
             print(f"{group['id']} {group['name']}")
 
 
+def fetch_group(group_id: str, include: str = "") -> dict:
+    params: dict = {}
+    if include:
+        params["include"] = include
+    response = client.get(f"/groups/{group_id}.json", params=params)
+    if response.status_code == 404:
+        print(f"グループが見つかりません: #{group_id}")
+        exit(1)
+    if response.status_code == 403:
+        print("グループの取得には管理者権限が必要です")
+        exit(1)
+    response.raise_for_status()
+    return response.json()["group"]
+
+
+def read_group(group_id: str, full: bool = False) -> None:
+    group = fetch_group(group_id, include="users,memberships")
+    if full:
+        print(json.dumps(group, ensure_ascii=False))
+        return
+    lines = [f"{group['id']} {group['name']}"]
+    users = group.get("users") or []
+    if users:
+        lines.append("")
+        lines.append("ユーザー:")
+        for u in users:
+            lines.append(f"  {u['id']} {u['name']}")
+    memberships = group.get("memberships") or []
+    if memberships:
+        lines.append("")
+        lines.append("メンバーシップ:")
+        for m in memberships:
+            project = m.get("project") or {}
+            roles = m.get("roles") or []
+            role_names = ", ".join(r.get("name", "") for r in roles)
+            lines.append(
+                f"  {project.get('id')} {project.get('name', '')} [{role_names}]"
+            )
+    print("\n".join(lines))
+
+
 def create_group(name: str, user_ids: list[int] | None = None) -> None:
     group_data: dict = {"name": name}
     if user_ids:
