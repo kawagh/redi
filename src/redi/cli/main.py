@@ -18,6 +18,7 @@ from redi.cli.enumerations_command import (
     add_tracker_parser,
 )
 from redi.cli._common import open_editor
+from redi.cli.group_command import add_group_parser, handle_group
 from redi.cli.issue_command import (
     add_issue_parser,
     handle_issue,
@@ -76,6 +77,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     add_time_entry_activity_parser(subparsers)
     add_document_category_parser(subparsers)
     add_role_parser(subparsers)
+    add_group_parser(subparsers)
     add_query_parser(subparsers)
     add_custom_field_parser(subparsers)
     add_search_parser(subparsers)
@@ -186,6 +188,8 @@ def main() -> None:
         list_document_categories(full=args.full)
     elif args.command == "role":
         handle_role(args)
+    elif args.command == "group":
+        handle_group(args)
     elif args.command == "query":
         list_queries(full=args.full)
     elif args.command == "custom_field":
