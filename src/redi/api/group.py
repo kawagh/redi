@@ -58,6 +58,36 @@ def read_group(group_id: str, full: bool = False) -> None:
     print("\n".join(lines))
 
 
+def update_group(
+    group_id: str,
+    name: str | None = None,
+    user_ids: list[int] | None = None,
+) -> None:
+    data: dict = {}
+    if name is not None:
+        data["name"] = name
+    if user_ids is not None:
+        data["user_ids"] = user_ids
+    if len(data) == 0:
+        print("更新をキャンセルしました")
+        exit()
+    response = client.put(f"/groups/{group_id}.json", json={"group": data})
+    if response.status_code == 404:
+        print(f"グループが見つかりません: #{group_id}")
+        exit(1)
+    if response.status_code == 403:
+        print("グループの更新には管理者権限が必要です")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("グループの更新に失敗しました")
+        exit(1)
+    print(f"グループを更新しました: {group_id}")
+
+
 def create_group(name: str, user_ids: list[int] | None = None) -> None:
     group_data: dict = {"name": name}
     if user_ids:
