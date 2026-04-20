@@ -19,6 +19,10 @@ from redi.cli.enumerations_command import (
 )
 from redi.cli._common import open_editor
 from redi.cli.group_command import add_group_parser, handle_group
+from redi.cli.issue_category_command import (
+    add_issue_category_parser,
+    handle_issue_category,
+)
 from redi.cli.issue_command import (
     add_issue_parser,
     handle_issue,
@@ -82,6 +86,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     add_group_parser(subparsers)
     add_query_parser(subparsers)
     add_custom_field_parser(subparsers)
+    add_issue_category_parser(subparsers)
     add_search_parser(subparsers)
     a_parser = add_attachment_parser(subparsers)
     add_time_entry_parser(subparsers)
@@ -198,6 +203,8 @@ def main() -> None:
         list_queries(full=args.full)
     elif args.command == "custom_field":
         list_custom_fields(full=args.full)
+    elif args.command == "issue_category":
+        handle_issue_category(args)
     elif args.command == "search":
         handle_search(args)
     elif args.command == "attachment":

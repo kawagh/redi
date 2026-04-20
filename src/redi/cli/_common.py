@@ -15,6 +15,7 @@ SUBCOMMAND_ALIASES: dict[str, str] = {
     "c": "create",
     "u": "update",
     "co": "comment",
+    "d": "delete",
 }
 
 
