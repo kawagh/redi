@@ -46,6 +46,9 @@ def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
     w_view_parser.add_argument(
         "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
     )
+    w_view_parser.add_argument(
+        "--version", type=int, help="特定バージョンのページを取得"
+    )
     w_create_parser = w_subparsers.add_parser(
         "create", aliases=["c"], help="Wikiページ作成"
     )
@@ -90,7 +93,13 @@ def handle_wiki(args: argparse.Namespace) -> None:
         exit(1)
     cmd = resolve_alias(args.wiki_command)
     if cmd == "view":
-        read_wiki(project_id, args.page_title, full=args.full, web=args.web)
+        read_wiki(
+            project_id,
+            args.page_title,
+            full=args.full,
+            web=args.web,
+            version=args.version,
+        )
     elif cmd == "create":
         page_title = args.page_title
         parent_title = args.parent_title
