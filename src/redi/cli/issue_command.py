@@ -168,6 +168,9 @@ def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
         "delete", aliases=["d"], help="イシュー削除"
     )
     i_delete_parser.add_argument("issue_id", help="イシューID")
+    i_delete_parser.add_argument(
+        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+    )
 
 
 def _interactive_select_issue_id() -> str:
@@ -517,16 +520,17 @@ def handle_issue(args: argparse.Namespace) -> None:
             else:
                 print("コメントが空のためキャンセルしました")
     elif cmd == "delete":
-        issue = fetch_issue(args.issue_id)
-        print(f"削除するイシュー: #{issue['id']} {issue['subject']}")
-        try:
-            confirm = prompt("削除してもよろしいですか? (yes/No): ").strip().lower()
-        except (KeyboardInterrupt, EOFError):
-            print("キャンセルしました")
-            exit(1)
-        if confirm != "yes":
-            print("キャンセルしました")
-            exit(1)
+        if not args.yes:
+            issue = fetch_issue(args.issue_id)
+            print(f"削除するイシュー: #{issue['id']} {issue['subject']}")
+            try:
+                confirm = prompt("削除してもよろしいですか? (yes/No): ").strip().lower()
+            except (KeyboardInterrupt, EOFError):
+                print("キャンセルしました")
+                exit(1)
+            if confirm != "yes":
+                print("キャンセルしました")
+                exit(1)
         delete_issue(args.issue_id)
     else:
         list_issues(
