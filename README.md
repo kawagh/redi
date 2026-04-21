@@ -71,6 +71,7 @@ redi --profile <profile_name> issue # 一時的にプロファイルを切り替
 
 # project (alias: p)
 redi project # list projects
+redi project list # 同上 (`redi project l` / `redi p list` / `redi p l` / `redi p` も同じ)
 redi project view <project_id> # view project
 redi project view <project_id> --include trackers,issue_categories
 redi project create <name> <identifier>

@@ -18,11 +18,14 @@ def _parse_role_ids(value: str) -> list[int]:
 
 def add_membership_parser(subparsers: argparse._SubParsersAction) -> None:
     m_parser = subparsers.add_parser(
-        "membership", aliases=["m"], help="メンバーシップ一覧/詳細/作成/更新/削除"
+        "membership",
+        aliases=["m"],
+        help="list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除",
     )
     m_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     m_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     m_subparsers = m_parser.add_subparsers(dest="membership_command")
+    m_subparsers.add_parser("list", aliases=["l"], help="メンバーシップ一覧")
 
     m_view_parser = m_subparsers.add_parser(
         "view", aliases=["v"], help="メンバーシップ詳細"
@@ -104,8 +107,9 @@ def handle_membership(args: argparse.Namespace) -> None:
         delete_membership(args.membership_id)
         return
 
-    project_id = args.project_id or default_project_id
-    if not project_id:
-        print("project_idを指定するか、default_project_idを設定してください")
-        exit(1)
-    list_memberships(project_id, full=args.full)
+    if cmd == "list" or cmd is None:
+        project_id = args.project_id or default_project_id
+        if not project_id:
+            print("project_idを指定するか、default_project_idを設定してください")
+            exit(1)
+        list_memberships(project_id, full=args.full)

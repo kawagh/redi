@@ -15,12 +15,14 @@ from redi.api.group import (
 
 def add_group_parser(subparsers: argparse._SubParsersAction) -> None:
     group_parser = subparsers.add_parser(
-        "group", help="グループ一覧/詳細/作成/更新/削除"
+        "group",
+        help="list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除",
     )
     group_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
     group_subparsers = group_parser.add_subparsers(dest="group_command")
+    group_subparsers.add_parser("list", aliases=["l"], help="グループ一覧")
     g_view_parser = group_subparsers.add_parser(
         "view", aliases=["v"], help="グループ詳細"
     )
@@ -104,4 +106,5 @@ def handle_group(args: argparse.Namespace) -> None:
             confirm_delete(f"削除するグループ: {group['id']} {group['name']}")
         delete_group(args.group_id)
         return
-    list_groups(full=args.full)
+    if cmd == "list" or cmd is None:
+        list_groups(full=args.full)

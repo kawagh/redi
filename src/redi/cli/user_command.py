@@ -23,10 +23,13 @@ MAIL_NOTIFICATION_CHOICES = [
 
 def add_user_parser(subparsers: argparse._SubParsersAction) -> None:
     u_parser = subparsers.add_parser(
-        "user", aliases=["u"], help="ユーザー一覧/詳細/作成/更新/削除"
+        "user",
+        aliases=["u"],
+        help="list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除",
     )
     u_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     u_subparsers = u_parser.add_subparsers(dest="user_command")
+    u_subparsers.add_parser("list", aliases=["l"], help="ユーザー一覧")
     u_create_parser = u_subparsers.add_parser(
         "create", aliases=["c"], help="ユーザー作成（管理者権限が必要）"
     )
@@ -141,4 +144,5 @@ def handle_user(args: argparse.Namespace) -> None:
             confirm_delete_with_identifier(summary, user.get("login", ""), "ログイン名")
         delete_user(args.user_id)
         return
-    list_users(full=args.full)
+    if cmd == "list" or cmd is None:
+        list_users(full=args.full)

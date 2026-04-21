@@ -33,11 +33,14 @@ def build_wiki_tree_choices(pages: list[dict]) -> list[tuple[str, str]]:
 
 def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
     w_parser = subparsers.add_parser(
-        "wiki", aliases=["w"], help="Wiki一覧/詳細/作成/更新/削除"
+        "wiki",
+        aliases=["w"],
+        help="list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除",
     )
     w_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     w_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     w_subparsers = w_parser.add_subparsers(dest="wiki_command")
+    w_subparsers.add_parser("list", aliases=["l"], help="Wikiページ一覧")
     w_view_parser = w_subparsers.add_parser(
         "view", aliases=["v"], help="Wikiページ詳細"
     )
@@ -185,5 +188,5 @@ def handle_wiki(args: argparse.Namespace) -> None:
             update_wiki(project_id, page_title, text)
         else:
             print("テキストが空のためキャンセルしました")
-    else:
+    elif cmd == "list" or cmd is None:
         list_wikis(project_id, full=args.full)

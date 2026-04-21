@@ -14,7 +14,8 @@ from redi.api.time_entry import (
 
 def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
     time_entry_parser = subparsers.add_parser(
-        "time_entry", help="作業時間一覧/詳細/登録/更新/削除"
+        "time_entry",
+        help="list(l): 一覧, view(v): 詳細, create(c): 登録, update(u): 更新, delete(d): 削除",
     )
     time_entry_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     time_entry_parser.add_argument(
@@ -24,6 +25,7 @@ def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )
     te_subparsers = time_entry_parser.add_subparsers(dest="time_entry_command")
+    te_subparsers.add_parser("list", aliases=["l"], help="作業時間一覧")
     te_create_parser = te_subparsers.add_parser(
         "create", aliases=["c"], help="作業時間登録"
     )
@@ -92,6 +94,6 @@ def handle_time_entry(args: argparse.Namespace) -> None:
                 f"({te['spent_on']})"
             )
         delete_time_entry(args.time_entry_id)
-    else:
+    elif cmd == "list" or cmd is None:
         project_id = args.project_id or default_project_id
         list_time_entries(project_id=project_id, user_id=args.user_id, full=args.full)
