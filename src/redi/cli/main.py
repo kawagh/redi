@@ -33,6 +33,7 @@ from redi.cli.me_command import add_me_parser, handle_me
 from redi.cli.membership_command import add_membership_parser, handle_membership
 from redi.cli.news_command import add_news_parser, handle_news
 from redi.cli.project_command import add_project_parser, handle_project
+from redi.cli.relation_command import add_relation_parser, handle_relation
 from redi.cli.role_command import add_role_parser, handle_role
 from redi.cli.search_command import add_search_parser, handle_search
 from redi.cli.time_entry_command import add_time_entry_parser, handle_time_entry
@@ -53,7 +54,9 @@ from redi.api.tracker import list_trackers
 from redi.tui import TuiState, run_issue_tui
 
 
-def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
+def _build_parser() -> tuple[
+    argparse.ArgumentParser, argparse.ArgumentParser, argparse.ArgumentParser
+]:
     parser = argparse.ArgumentParser(description="Redmine CLI")
     parser.add_argument(
         "-V", "--version", action="version", version=f"redi {version('redi')}"
@@ -91,12 +94,13 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     add_issue_category_parser(subparsers)
     add_search_parser(subparsers)
     a_parser = add_attachment_parser(subparsers)
+    r_parser = add_relation_parser(subparsers)
     add_time_entry_parser(subparsers)
-    return parser, a_parser
+    return parser, a_parser, r_parser
 
 
 def main() -> None:
-    parser, a_parser = _build_parser()
+    parser, a_parser, r_parser = _build_parser()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
@@ -215,6 +219,8 @@ def main() -> None:
         handle_search(args)
     elif args.command == "attachment":
         handle_attachment(args, a_parser)
+    elif args.command == "relation":
+        handle_relation(args, r_parser)
     elif args.command == "time_entry":
         handle_time_entry(args)
     else:
