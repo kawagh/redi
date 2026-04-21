@@ -2,6 +2,8 @@ import json
 import webbrowser
 from collections import defaultdict
 
+import requests
+
 from redi.client import client
 from redi.config import redmine_url
 
@@ -51,24 +53,36 @@ def list_wikis(project_id: str, full: bool = False) -> None:
     print_tree(None)
 
 
-def fetch_wiki(project_id: str, page_title: str) -> dict:
-    response = client.get(f"/projects/{project_id}/wiki/{page_title}.json")
+def fetch_wiki(project_id: str, page_title: str, version: int | None = None) -> dict:
+    path = f"/projects/{project_id}/wiki/{page_title}.json"
+    if version is not None:
+        path = f"/projects/{project_id}/wiki/{page_title}/{version}.json"
+    response = client.get(path)
     if response.status_code == 404:
-        print(f"Wikiページが見つかりません: {page_title}")
+        if version is not None:
+            print(f"Wikiページが見つかりません: {page_title} (version={version})")
+        else:
+            print(f"Wikiページが見つかりません: {page_title}")
         exit(1)
     response.raise_for_status()
     return response.json()["wiki_page"]
 
 
 def read_wiki(
-    project_id: str, page_title: str, full: bool = False, web: bool = False
+    project_id: str,
+    page_title: str,
+    full: bool = False,
+    web: bool = False,
+    version: int | None = None,
 ) -> None:
     if web:
         url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
+        if version is not None:
+            url = f"{url}/{version}"
         print(url)
         webbrowser.open(url)
         return
-    wiki = fetch_wiki(project_id, page_title)
+    wiki = fetch_wiki(project_id, page_title, version=version)
     if full:
         print(json.dumps(wiki, ensure_ascii=False, indent=2))
     else:
@@ -83,6 +97,21 @@ def update_wiki(project_id: str, page_title: str, text: str) -> None:
     response.raise_for_status()
     url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
     print(f"Wikiページを更新しました: {url}")
+
+
+def delete_wiki(project_id: str, page_title: str) -> None:
+    response = client.delete(f"/projects/{project_id}/wiki/{page_title}.json")
+    if response.status_code == 404:
+        print(f"Wikiページが見つかりません: {page_title}")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("Wikiページの削除に失敗しました")
+        exit(1)
+    print(f"Wikiページを削除しました: {page_title}")
 
 
 def create_wiki(

@@ -1,6 +1,34 @@
+import json
+
 import requests
 
 from redi.client import client
+from redi.config import redmine_url
+
+
+def fetch_relation(relation_id: str) -> dict:
+    response = client.get(f"/relations/{relation_id}.json")
+    if response.status_code == 404:
+        print(f"関係性が見つかりません: #{relation_id}")
+        exit(1)
+    response.raise_for_status()
+    return response.json()["relation"]
+
+
+def read_relation(relation_id: str, full: bool = False) -> None:
+    relation = fetch_relation(relation_id)
+    if full:
+        print(json.dumps(relation, ensure_ascii=False))
+        return
+    issue_url = f"{redmine_url}/issues/{relation['issue_id']}"
+    issue_to_url = f"{redmine_url}/issues/{relation['issue_to_id']}"
+    print(
+        f"{relation['id']} #{relation['issue_id']} --[{relation['relation_type']}]--> #{relation['issue_to_id']}"
+    )
+    print(f"  {issue_url}")
+    print(f"  {issue_to_url}")
+    if relation.get("delay") is not None:
+        print(f"  delay: {relation['delay']}")
 
 
 def create_relation(

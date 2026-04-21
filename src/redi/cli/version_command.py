@@ -11,6 +11,7 @@ from redi.cli._common import inline_checkbox, inline_choice, resolve_alias
 from redi.config import default_project_id
 from redi.api.version import (
     create_version,
+    delete_version,
     fetch_version,
     fetch_versions,
     list_versions,
@@ -49,6 +50,10 @@ def add_version_parser(subparsers: argparse._SubParsersAction) -> None:
         choices=["none", "descendants", "hierarchy", "tree", "system"],
         help="共有設定",
     )
+    v_delete_parser = v_subparsers.add_parser(
+        "delete", aliases=["d"], help="バージョン削除"
+    )
+    v_delete_parser.add_argument("version_id", help="バージョンID")
     v_update_parser = v_subparsers.add_parser(
         "update", aliases=["u"], help="バージョン更新"
     )
@@ -234,6 +239,8 @@ def handle_version(args: argparse.Namespace) -> None:
                 description=args.description,
                 sharing=args.sharing,
             )
+    elif cmd == "delete":
+        delete_version(args.version_id)
     elif cmd == "update":
         if not args.version_id:
             project_id = args.project_id or default_project_id

@@ -8,11 +8,14 @@ from redi.config import default_project_id
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
 from redi.api.issue import (
     add_note,
+    add_watcher,
     create_issue,
+    delete_issue,
     fetch_issue,
     fetch_issues,
     list_issues,
     read_issue,
+    remove_watcher,
     update_issue,
 )
 from redi.api.issue_relation import create_relation, delete_relation
@@ -140,6 +143,20 @@ def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_update_parser.add_argument("--activity_id", help="作業分類ID")
     i_update_parser.add_argument("--spent_on", help="作業日（YYYY-MM-DD、省略で今日）")
     i_update_parser.add_argument("--time_comments", help="作業時間のコメント")
+    i_update_parser.add_argument(
+        "--add-watcher",
+        type=int,
+        action="append",
+        dest="add_watcher_ids",
+        help="ウォッチャーに追加するユーザーID（複数指定可）",
+    )
+    i_update_parser.add_argument(
+        "--remove-watcher",
+        type=int,
+        action="append",
+        dest="remove_watcher_ids",
+        help="ウォッチャーから削除するユーザーID（複数指定可）",
+    )
     i_comment_parser = i_subparsers.add_parser(
         "comment", aliases=["co"], help="イシューにコメント追加"
     )
@@ -147,6 +164,10 @@ def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_comment_parser.add_argument(
         "notes", nargs="?", default="", help="コメント（省略でエディタ起動）"
     )
+    i_delete_parser = i_subparsers.add_parser(
+        "delete", aliases=["d"], help="イシュー削除"
+    )
+    i_delete_parser.add_argument("issue_id", help="イシューID")
 
 
 def _interactive_select_issue_id() -> str:
@@ -392,6 +413,8 @@ def handle_issue_update(args: argparse.Namespace) -> None:
         or args.delete_relation
         or args.attach
         or args.hours is not None
+        or args.add_watcher_ids
+        or args.remove_watcher_ids
     )
     if no_args_provided:
         _interactive_fill_issue_update_args(args)
@@ -456,10 +479,16 @@ def handle_issue_update(args: argparse.Namespace) -> None:
             spent_on=args.spent_on,
             comments=args.time_comments,
         )
+    for user_id in args.add_watcher_ids or []:
+        add_watcher(args.issue_id, user_id)
+    for user_id in args.remove_watcher_ids or []:
+        remove_watcher(args.issue_id, user_id)
+    should_update_watchers = bool(args.add_watcher_ids or args.remove_watcher_ids)
     if (
         not should_update_issue
         and not should_update_issue_relation
         and not should_create_time_entry
+        and not should_update_watchers
     ):
         print("更新内容がないので更新をキャンセルしました")
         exit(1)
@@ -487,6 +516,8 @@ def handle_issue(args: argparse.Namespace) -> None:
                 add_note(args.issue_id, notes)
             else:
                 print("コメントが空のためキャンセルしました")
+    elif cmd == "delete":
+        delete_issue(args.issue_id)
     else:
         list_issues(
             project_id=args.project_id or default_project_id,

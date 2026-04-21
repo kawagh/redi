@@ -1,7 +1,15 @@
 import argparse
 
 from redi.cli._common import resolve_alias
-from redi.api.project import create_project, list_projects, read_project, update_project
+from redi.api.project import (
+    archive_project,
+    create_project,
+    delete_project,
+    list_projects,
+    read_project,
+    unarchive_project,
+    update_project,
+)
 
 
 def add_project_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -41,6 +49,10 @@ def add_project_parser(subparsers: argparse._SubParsersAction) -> None:
     p_create_parser.add_argument(
         "--tracker_ids", help="トラッカーID（カンマ区切り。例: 1,2,3）"
     )
+    p_delete_parser = p_subparsers.add_parser(
+        "delete", aliases=["d"], help="プロジェクト削除"
+    )
+    p_delete_parser.add_argument("project_id", help="プロジェクトID")
     p_update_parser = p_subparsers.add_parser(
         "update", aliases=["u"], help="プロジェクト更新"
     )
@@ -55,6 +67,12 @@ def add_project_parser(subparsers: argparse._SubParsersAction) -> None:
     p_update_parser.add_argument("--parent_id", help="親プロジェクトID")
     p_update_parser.add_argument(
         "--tracker_ids", help="トラッカーID（カンマ区切り。例: 1,2,3）"
+    )
+    p_update_parser.add_argument(
+        "--archive",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="アーカイブ (--no-archive で解除)",
     )
 
 
@@ -82,6 +100,8 @@ def handle_project(args: argparse.Namespace) -> None:
             parent_id=args.parent_id,
             tracker_ids=tracker_ids,
         )
+    elif cmd == "delete":
+        delete_project(args.project_id)
     elif cmd == "update":
         is_public = None
         if args.is_public is not None:
@@ -89,13 +109,28 @@ def handle_project(args: argparse.Namespace) -> None:
         tracker_ids = None
         if args.tracker_ids:
             tracker_ids = [int(x) for x in args.tracker_ids.split(",")]
-        update_project(
-            project_id=args.project_id,
-            name=args.name,
-            description=args.description,
-            is_public=is_public,
-            parent_id=args.parent_id,
-            tracker_ids=tracker_ids,
+        should_update = (
+            args.name is not None
+            or args.description is not None
+            or is_public is not None
+            or args.parent_id is not None
+            or tracker_ids is not None
         )
+        if should_update:
+            update_project(
+                project_id=args.project_id,
+                name=args.name,
+                description=args.description,
+                is_public=is_public,
+                parent_id=args.parent_id,
+                tracker_ids=tracker_ids,
+            )
+        if args.archive is True:
+            archive_project(args.project_id)
+        elif args.archive is False:
+            unarchive_project(args.project_id)
+        elif not should_update:
+            print("更新をキャンセルしました")
+            exit()
     else:
         list_projects(full=args.full)

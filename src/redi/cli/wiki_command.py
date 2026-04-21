@@ -8,6 +8,7 @@ from redi.config import default_project_id, wiki_project_id
 from redi.api.wiki import (
     build_children_map,
     create_wiki,
+    delete_wiki,
     fetch_wiki,
     fetch_wikis,
     list_wikis,
@@ -45,6 +46,9 @@ def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
     w_view_parser.add_argument(
         "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
     )
+    w_view_parser.add_argument(
+        "--version", type=int, help="特定バージョンのページを取得"
+    )
     w_create_parser = w_subparsers.add_parser(
         "create", aliases=["c"], help="Wikiページ作成"
     )
@@ -60,6 +64,10 @@ def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
         default=None,
         help="説明（値省略でエディタ起動）",
     )
+    w_delete_parser = w_subparsers.add_parser(
+        "delete", aliases=["d"], help="Wikiページ削除"
+    )
+    w_delete_parser.add_argument("page_title", help="Wikiページタイトル")
     w_update_parser = w_subparsers.add_parser(
         "update", aliases=["u"], help="Wikiページ更新"
     )
@@ -85,7 +93,13 @@ def handle_wiki(args: argparse.Namespace) -> None:
         exit(1)
     cmd = resolve_alias(args.wiki_command)
     if cmd == "view":
-        read_wiki(project_id, args.page_title, full=args.full, web=args.web)
+        read_wiki(
+            project_id,
+            args.page_title,
+            full=args.full,
+            web=args.web,
+            version=args.version,
+        )
     elif cmd == "create":
         page_title = args.page_title
         parent_title = args.parent_title
@@ -136,6 +150,8 @@ def handle_wiki(args: argparse.Namespace) -> None:
             create_wiki(project_id, page_title, text, parent_title=parent_title)
         else:
             print("テキストが空のためキャンセルしました")
+    elif cmd == "delete":
+        delete_wiki(project_id, normalize_title(args.page_title))
     elif cmd == "update":
         page_title = args.page_title
         if page_title is None:

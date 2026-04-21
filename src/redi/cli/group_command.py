@@ -1,7 +1,15 @@
 import argparse
 
 from redi.cli._common import resolve_alias
-from redi.api.group import create_group, list_groups, read_group, update_group
+from redi.api.group import (
+    add_group_user,
+    create_group,
+    delete_group,
+    list_groups,
+    read_group,
+    remove_group_user,
+    update_group,
+)
 
 
 def add_group_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -40,6 +48,24 @@ def add_group_parser(subparsers: argparse._SubParsersAction) -> None:
         dest="user_ids",
         help="所属ユーザーIDを指定（複数指定可、既存の所属ユーザーを置き換え）",
     )
+    g_update_parser.add_argument(
+        "--add-user",
+        type=int,
+        action="append",
+        dest="add_user_ids",
+        help="グループに追加するユーザーID（複数指定可）",
+    )
+    g_update_parser.add_argument(
+        "--remove-user",
+        type=int,
+        action="append",
+        dest="remove_user_ids",
+        help="グループから削除するユーザーID（複数指定可）",
+    )
+    g_delete_parser = group_subparsers.add_parser(
+        "delete", aliases=["d"], help="グループ削除（管理者権限が必要）"
+    )
+    g_delete_parser.add_argument("group_id", help="グループID")
 
 
 def handle_group(args: argparse.Namespace) -> None:
@@ -51,10 +77,22 @@ def handle_group(args: argparse.Namespace) -> None:
         create_group(name=args.name, user_ids=args.user_ids)
         return
     if cmd == "update":
-        update_group(
-            group_id=args.group_id,
-            name=args.name,
-            user_ids=args.user_ids,
-        )
+        should_update = args.name is not None or args.user_ids is not None
+        if should_update:
+            update_group(
+                group_id=args.group_id,
+                name=args.name,
+                user_ids=args.user_ids,
+            )
+        for user_id in args.add_user_ids or []:
+            add_group_user(args.group_id, user_id)
+        for user_id in args.remove_user_ids or []:
+            remove_group_user(args.group_id, user_id)
+        if not should_update and not args.add_user_ids and not args.remove_user_ids:
+            print("更新をキャンセルしました")
+            exit()
+        return
+    if cmd == "delete":
+        delete_group(args.group_id)
         return
     list_groups(full=args.full)
