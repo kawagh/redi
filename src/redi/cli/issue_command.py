@@ -517,6 +517,16 @@ def handle_issue(args: argparse.Namespace) -> None:
             else:
                 print("コメントが空のためキャンセルしました")
     elif cmd == "delete":
+        issue = fetch_issue(args.issue_id)
+        print(f"削除するイシュー: #{issue['id']} {issue['subject']}")
+        try:
+            confirm = prompt("削除してもよろしいですか? (y/N): ").strip().lower()
+        except (KeyboardInterrupt, EOFError):
+            print("キャンセルしました")
+            exit(1)
+        if confirm not in ("y", "yes"):
+            print("キャンセルしました")
+            exit(1)
         delete_issue(args.issue_id)
     else:
         list_issues(
