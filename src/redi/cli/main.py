@@ -30,6 +30,7 @@ from redi.cli.issue_command import (
     handle_issue_update,
 )
 from redi.cli.me_command import add_me_parser, handle_me
+from redi.cli.membership_command import add_membership_parser, handle_membership
 from redi.cli.news_command import add_news_parser, handle_news
 from redi.cli.project_command import add_project_parser, handle_project
 from redi.cli.role_command import add_role_parser, handle_role
@@ -76,6 +77,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     add_config_parser(subparsers)
     add_user_parser(subparsers)
     add_me_parser(subparsers)
+    add_membership_parser(subparsers)
     add_news_parser(subparsers)
     add_tracker_parser(subparsers)
     add_issue_status_parser(subparsers)
@@ -183,6 +185,8 @@ def main() -> None:
         handle_user(args)
     elif args.command == "me":
         handle_me(args)
+    elif args.command in ("membership", "m"):
+        handle_membership(args)
     elif args.command == "news":
         handle_news(args)
     elif args.command == "tracker":
