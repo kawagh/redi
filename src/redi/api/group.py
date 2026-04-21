@@ -88,6 +88,45 @@ def update_group(
     print(f"グループを更新しました: {group_id}")
 
 
+def add_group_user(group_id: str, user_id: int) -> None:
+    response = client.post(
+        f"/groups/{group_id}/users.json",
+        json={"user_id": user_id},
+    )
+    if response.status_code == 404:
+        print(f"グループが見つかりません: #{group_id}")
+        exit(1)
+    if response.status_code == 403:
+        print("グループへのユーザー追加には管理者権限が必要です")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("グループへのユーザー追加に失敗しました")
+        exit(1)
+    print(f"グループ {group_id} にユーザー {user_id} を追加しました")
+
+
+def remove_group_user(group_id: str, user_id: int) -> None:
+    response = client.delete(f"/groups/{group_id}/users/{user_id}.json")
+    if response.status_code == 404:
+        print(f"グループまたはユーザーが見つかりません: #{group_id} / #{user_id}")
+        exit(1)
+    if response.status_code == 403:
+        print("グループからのユーザー削除には管理者権限が必要です")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("グループからのユーザー削除に失敗しました")
+        exit(1)
+    print(f"グループ {group_id} からユーザー {user_id} を削除しました")
+
+
 def delete_group(group_id: str) -> None:
     response = client.delete(f"/groups/{group_id}.json")
     if response.status_code == 404:
