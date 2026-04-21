@@ -108,9 +108,33 @@ def run_issue_tui(
             _load_journals(target)
 
     def render_issues():
+        def named(issue: dict, field: str) -> str:
+            value = issue.get(field)
+            if isinstance(value, dict):
+                return value.get("name", "") or ""
+            return ""
+
+        id_width = max(
+            (wcswidth(f"#{issue['id']}") for issue in state.issues), default=0
+        )
+        status_width = max(
+            (wcswidth(named(issue, "status")) for issue in state.issues), default=0
+        )
+        assignee_width = max(
+            (wcswidth(named(issue, "assigned_to")) for issue in state.issues),
+            default=0,
+        )
+
         result = []
         for i, issue in enumerate(state.issues):
-            text = f"#{issue['id']} {issue['subject']}\n"
+            cursor_mark = "> " if i == state.cursor else "  "
+            id_text = _pad_display(f"#{issue['id']}", id_width)
+            status_text = _pad_display(named(issue, "status"), status_width)
+            assignee_text = _pad_display(named(issue, "assigned_to"), assignee_width)
+            text = (
+                f"{cursor_mark}{id_text} {status_text} {assignee_text} "
+                f"{issue['subject']}\n"
+            )
             result.append(("reverse" if i == state.cursor else "", text))
         return result
 
