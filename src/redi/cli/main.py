@@ -153,6 +153,8 @@ def main() -> None:
                     activity_id=None,
                     spent_on=None,
                     time_comments=None,
+                    add_watcher_ids=None,
+                    remove_watcher_ids=None,
                 )
                 handle_issue_update(update_args)
             elif tui_result.action == "create":

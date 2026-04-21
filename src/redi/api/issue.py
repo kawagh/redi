@@ -304,6 +304,39 @@ def update_issue(
     print(f"イシューを更新しました: {url}")
 
 
+def add_watcher(issue_id: str, user_id: int) -> None:
+    response = client.post(
+        f"/issues/{issue_id}/watchers.json",
+        json={"user_id": user_id},
+    )
+    if response.status_code == 404:
+        print(f"イシューが見つかりません: #{issue_id}")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("ウォッチャーの追加に失敗しました")
+        exit(1)
+    print(f"#{issue_id} にウォッチャー {user_id} を追加しました")
+
+
+def remove_watcher(issue_id: str, user_id: int) -> None:
+    response = client.delete(f"/issues/{issue_id}/watchers/{user_id}.json")
+    if response.status_code == 404:
+        print(f"イシューまたはユーザーが見つかりません: #{issue_id} / #{user_id}")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("ウォッチャーの削除に失敗しました")
+        exit(1)
+    print(f"#{issue_id} からウォッチャー {user_id} を削除しました")
+
+
 def delete_issue(issue_id: str) -> None:
     response = client.delete(f"/issues/{issue_id}.json")
     if response.status_code == 404:
