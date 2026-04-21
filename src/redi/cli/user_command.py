@@ -1,7 +1,6 @@
 import argparse
 
 from redi.cli._common import resolve_alias
-from redi.config import default_project_id
 from redi.api.user import (
     create_user,
     delete_user,
@@ -25,7 +24,6 @@ def add_user_parser(subparsers: argparse._SubParsersAction) -> None:
     u_parser = subparsers.add_parser(
         "user", aliases=["u"], help="ユーザー一覧/詳細/作成/更新/削除"
     )
-    u_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     u_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     u_subparsers = u_parser.add_subparsers(dest="user_command")
     u_create_parser = u_subparsers.add_parser(
@@ -134,5 +132,4 @@ def handle_user(args: argparse.Namespace) -> None:
     if cmd == "delete":
         delete_user(args.user_id)
         return
-    project_id = args.project_id or default_project_id
-    list_users(project_id=project_id, full=args.full)
+    list_users(full=args.full)

@@ -58,35 +58,22 @@ def pop_apikey(user: dict) -> dict:
     return user
 
 
-def list_users(project_id: str | None = None, full: bool = False) -> None:
-    if project_id:
-        response = client.get(f"/projects/{project_id}/memberships.json")
-        response.raise_for_status()
-        memberships = response.json()["memberships"]
-        for m in memberships:
-            if "user" in m:
-                pop_apikey(m["user"])
-        if full:
-            print(json.dumps(memberships, ensure_ascii=False))
-        else:
-            for m in memberships:
-                if "user" in m:
-                    user = m["user"]
-                    print(f"{user['id']} {user['name']}")
+def list_users(full: bool = False) -> None:
+    response = client.get("/users.json")
+    if response.status_code == 403:
+        print("ユーザー一覧の取得には管理者権限が必要です")
+        print(
+            "プロジェクトメンバーの一覧は `redi membership -p <project_id>` を使ってください"
+        )
+        return
+    # 未知のステータスコードに遭遇した際にエラーをraiseする(jsonのdecodeエラーよりは原因がわかりやすい)
+    response.raise_for_status()
+    users = [pop_apikey(u) for u in response.json()["users"]]
+    if full:
+        print(json.dumps(users, ensure_ascii=False))
     else:
-        response = client.get("/users.json")
-        if response.status_code == 403:
-            print("ユーザー一覧の取得には管理者権限が必要です")
-            print("プロジェクトを指定してください: redi u -p <project_id>")
-            return
-        # 未知のステータスコードに遭遇した際にエラーをraiseする(jsonのdecodeエラーよりは原因がわかりやすい)
-        response.raise_for_status()
-        users = [pop_apikey(u) for u in response.json()["users"]]
-        if full:
-            print(json.dumps(users, ensure_ascii=False))
-        else:
-            for user in users:
-                print(f"{user['id']} {user['login']}")
+        for user in users:
+            print(f"{user['id']} {user['login']}")
 
 
 def fetch_user(user_id: str, include: list[str] | None = None) -> dict:
@@ -105,8 +92,7 @@ def fetch_user(user_id: str, include: list[str] | None = None) -> dict:
 
 
 def read_user(user_id: str, full: bool = False) -> None:
-    include = ["memberships", "groups"]
-    user = fetch_user(user_id, include=include)
+    user = fetch_user(user_id, include=["memberships", "groups"])
     if full:
         print(json.dumps(user, ensure_ascii=False))
         return
