@@ -520,11 +520,11 @@ def handle_issue(args: argparse.Namespace) -> None:
         issue = fetch_issue(args.issue_id)
         print(f"削除するイシュー: #{issue['id']} {issue['subject']}")
         try:
-            confirm = prompt("削除してもよろしいですか? (y/N): ").strip().lower()
+            confirm = prompt("削除してもよろしいですか? (yes/No): ").strip().lower()
         except (KeyboardInterrupt, EOFError):
             print("キャンセルしました")
             exit(1)
-        if confirm not in ("y", "yes"):
+        if confirm != "yes":
             print("キャンセルしました")
             exit(1)
         delete_issue(args.issue_id)
