@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 from prompt_toolkit import Application
+from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import HSplit, VSplit, Window
@@ -82,6 +83,8 @@ class TuiState:
     offset: int = 0
     cursor: int = 0
     issues: list[dict] = field(default_factory=list)
+    search_mode: bool = False
+    search_query: str = ""
 
 
 def run_issue_tui(
@@ -195,28 +198,57 @@ def run_issue_tui(
 
     def render_status():
         page = state.offset // state.page_size + 1
+        if state.search_mode:
+            return [("reverse", f" Page {page}  /{state.search_query} ")]
         return [
             (
                 "reverse",
                 f" Page {page} (offset={state.offset})  "
-                "↑↓/jk:移動 ←→/hl:ページ Enter:コメント読込 c:作成 u:更新 n:コメント v:web q:終了 ",
+                "↑↓/jk:移動 ←→/hl:ページ Enter:コメント読込 c:作成 u:更新 n:コメント v:web /:検索 q:終了 ",
             )
         ]
 
+    def _find_match() -> None:
+        if not state.search_query:
+            return
+        q = state.search_query.lower()
+
+        def _named(issue: dict, name: str) -> str:
+            value = issue.get(name)
+            if isinstance(value, dict):
+                return value.get("name", "") or ""
+            return ""
+
+        for i, issue in enumerate(state.issues):
+            haystack = " ".join(
+                [
+                    f"#{issue.get('id', '')}",
+                    str(issue.get("subject") or ""),
+                    _named(issue, "status"),
+                    _named(issue, "assigned_to"),
+                ]
+            ).lower()
+            if q in haystack:
+                state.cursor = i
+                return
+
     kb = KeyBindings()
 
-    @kb.add("up")
-    @kb.add("k")
+    is_searching = Condition(lambda: state.search_mode)
+    not_searching = Condition(lambda: not state.search_mode)
+
+    @kb.add("up", filter=not_searching)
+    @kb.add("k", filter=not_searching)
     def _(event):
         state.cursor = max(0, state.cursor - 1)
 
-    @kb.add("down")
-    @kb.add("j")
+    @kb.add("down", filter=not_searching)
+    @kb.add("j", filter=not_searching)
     def _(event):
         state.cursor = min(len(state.issues) - 1, state.cursor + 1)
 
-    @kb.add("right")
-    @kb.add("l")
+    @kb.add("right", filter=not_searching)
+    @kb.add("l", filter=not_searching)
     def _(event):
         next_issues = fetch_issues(
             project_id=default_project_id,
@@ -228,8 +260,8 @@ def run_issue_tui(
             state.issues = next_issues
             state.cursor = 0
 
-    @kb.add("left")
-    @kb.add("h")
+    @kb.add("left", filter=not_searching)
+    @kb.add("h", filter=not_searching)
     def _(event):
         if state.offset > 0:
             state.offset = max(0, state.offset - state.page_size)
@@ -252,7 +284,7 @@ def run_issue_tui(
             position=TuiPosition(offset=state.offset, cursor=state.cursor),
         )
 
-    @kb.add("enter")
+    @kb.add("enter", filter=not_searching)
     def _(event):
         if not state.issues:
             return
@@ -261,29 +293,55 @@ def run_issue_tui(
             return
         _load_journals(issue)
 
-    @kb.add("u")
+    @kb.add("u", filter=not_searching)
     def _(event):
         event.app.exit(result=_exit_with("update"))
 
-    @kb.add("c")
+    @kb.add("c", filter=not_searching)
     def _(event):
         event.app.exit(result=_exit_with("create", issue_id=""))
 
     # n is first letter of note
-    @kb.add("n")
+    @kb.add("n", filter=not_searching)
     def _(event):
         event.app.exit(result=_exit_with("comment"))
 
-    @kb.add("v")
+    @kb.add("v", filter=not_searching)
     def _(event):
         issue_id = state.issues[state.cursor]["id"]
         webbrowser.open(f"{redmine_url}/issues/{issue_id}")
 
-    @kb.add("q")
-    @kb.add("escape")
+    @kb.add("q", filter=not_searching)
+    @kb.add("escape", filter=not_searching)
     @kb.add("c-c")
     def _(event):
         event.app.exit(result=None)
+
+    @kb.add("/", filter=not_searching)
+    def _(event):
+        state.search_mode = True
+        state.search_query = ""
+
+    @kb.add("enter", filter=is_searching)
+    def _(event):
+        state.search_mode = False
+
+    @kb.add("escape", filter=is_searching)
+    def _(event):
+        state.search_mode = False
+        state.search_query = ""
+
+    @kb.add("backspace", filter=is_searching)
+    def _(event):
+        state.search_query = state.search_query[:-1]
+        _find_match()
+
+    @kb.add("<any>", filter=is_searching)
+    def _(event):
+        data = event.data
+        if data and len(data) == 1 and data.isprintable():
+            state.search_query += data
+            _find_match()
 
     app = Application(
         layout=Layout(
