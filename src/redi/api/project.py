@@ -81,6 +81,36 @@ def update_project(
     print(f"プロジェクトを更新しました: {project_id}")
 
 
+def archive_project(project_id: str) -> None:
+    response = client.put(f"/projects/{project_id}/archive.json")
+    if response.status_code == 404:
+        print(f"プロジェクトが見つかりません: {project_id}")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("プロジェクトのアーカイブに失敗しました")
+        exit(1)
+    print(f"プロジェクトをアーカイブしました: {project_id}")
+
+
+def unarchive_project(project_id: str) -> None:
+    response = client.put(f"/projects/{project_id}/unarchive.json")
+    if response.status_code == 404:
+        print(f"プロジェクトが見つかりません: {project_id}")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("プロジェクトのアーカイブ解除に失敗しました")
+        exit(1)
+    print(f"プロジェクトのアーカイブを解除しました: {project_id}")
+
+
 def delete_project(project_id: str) -> None:
     response = client.delete(f"/projects/{project_id}.json")
     if response.status_code == 404:
