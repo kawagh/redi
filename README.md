@@ -91,6 +91,8 @@ redi issue update <issue_id> --status_id <status_id> -n "notes"
 redi issue update <issue_id> --relate relates --to <other_issue_id>
 redi issue update <issue_id> --attach ./foo.png --attach ./bar.log
 redi issue comment <issue_id> "hello~"
+redi issue delete <issue_id> # (confirm before delete)
+redi issue delete <issue_id> -y # skip confirmation
 
 # version (alias: v)
 redi version # list versions(fixed_versions)
