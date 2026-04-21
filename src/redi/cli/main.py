@@ -8,6 +8,7 @@ import argcomplete
 
 from redi.cli.attachment_command import add_attachment_parser, handle_attachment
 from redi.cli.config_command import add_config_parser, handle_config
+from redi.cli.file_command import add_file_parser, handle_file
 from redi.cli.enumerations_command import (
     add_custom_field_parser,
     add_document_category_parser,
@@ -96,6 +97,7 @@ def _build_parser() -> tuple[
     a_parser = add_attachment_parser(subparsers)
     r_parser = add_relation_parser(subparsers)
     add_time_entry_parser(subparsers)
+    add_file_parser(subparsers)
     return parser, a_parser, r_parser
 
 
@@ -223,5 +225,7 @@ def main() -> None:
         handle_relation(args, r_parser)
     elif args.command == "time_entry":
         handle_time_entry(args)
+    elif args.command == "file":
+        handle_file(args)
     else:
         parser.print_help()
