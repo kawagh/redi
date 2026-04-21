@@ -18,6 +18,11 @@ from redi.cli.enumerations_command import (
     add_tracker_parser,
 )
 from redi.cli._common import open_editor
+from redi.cli.group_command import add_group_parser, handle_group
+from redi.cli.issue_category_command import (
+    add_issue_category_parser,
+    handle_issue_category,
+)
 from redi.cli.issue_command import (
     add_issue_parser,
     handle_issue,
@@ -25,6 +30,7 @@ from redi.cli.issue_command import (
     handle_issue_update,
 )
 from redi.cli.me_command import add_me_parser, handle_me
+from redi.cli.news_command import add_news_parser, handle_news
 from redi.cli.project_command import add_project_parser, handle_project
 from redi.cli.role_command import add_role_parser, handle_role
 from redi.cli.search_command import add_search_parser, handle_search
@@ -70,14 +76,17 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     add_config_parser(subparsers)
     add_user_parser(subparsers)
     add_me_parser(subparsers)
+    add_news_parser(subparsers)
     add_tracker_parser(subparsers)
     add_issue_status_parser(subparsers)
     add_issue_priority_parser(subparsers)
     add_time_entry_activity_parser(subparsers)
     add_document_category_parser(subparsers)
     add_role_parser(subparsers)
+    add_group_parser(subparsers)
     add_query_parser(subparsers)
     add_custom_field_parser(subparsers)
+    add_issue_category_parser(subparsers)
     add_search_parser(subparsers)
     a_parser = add_attachment_parser(subparsers)
     add_time_entry_parser(subparsers)
@@ -174,6 +183,8 @@ def main() -> None:
         handle_user(args)
     elif args.command == "me":
         handle_me(args)
+    elif args.command == "news":
+        handle_news(args)
     elif args.command == "tracker":
         list_trackers(full=args.full)
     elif args.command == "issue_status":
@@ -186,10 +197,14 @@ def main() -> None:
         list_document_categories(full=args.full)
     elif args.command == "role":
         handle_role(args)
+    elif args.command == "group":
+        handle_group(args)
     elif args.command == "query":
         list_queries(full=args.full)
     elif args.command == "custom_field":
         list_custom_fields(full=args.full)
+    elif args.command == "issue_category":
+        handle_issue_category(args)
     elif args.command == "search":
         handle_search(args)
     elif args.command == "attachment":
