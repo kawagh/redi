@@ -7,7 +7,12 @@ from prompt_toolkit.keys import Keys
 from prompt_toolkit.shortcuts import choice
 from prompt_toolkit.validation import Validator
 
-from redi.cli._common import inline_checkbox, inline_choice, resolve_alias
+from redi.cli._common import (
+    confirm_delete,
+    inline_checkbox,
+    inline_choice,
+    resolve_alias,
+)
 from redi.config import default_project_id
 from redi.api.version import (
     create_version,
@@ -56,6 +61,9 @@ def add_version_parser(subparsers: argparse._SubParsersAction) -> None:
         "delete", aliases=["d"], help="バージョン削除"
     )
     v_delete_parser.add_argument("version_id", help="バージョンID")
+    v_delete_parser.add_argument(
+        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+    )
     v_update_parser = v_subparsers.add_parser(
         "update", aliases=["u"], help="バージョン更新"
     )
@@ -242,6 +250,9 @@ def handle_version(args: argparse.Namespace) -> None:
                 sharing=args.sharing,
             )
     elif cmd == "delete":
+        if not args.yes:
+            version = fetch_version(args.version_id)
+            confirm_delete(f"削除するバージョン: {version['id']} {version['name']}")
         delete_version(args.version_id)
     elif cmd == "update":
         if not args.version_id:

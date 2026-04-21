@@ -1,10 +1,11 @@
 import argparse
 
-from redi.cli._common import resolve_alias
+from redi.cli._common import confirm_delete, resolve_alias
 from redi.config import default_project_id
 from redi.api.issue_category import (
     create_issue_category,
     delete_issue_category,
+    fetch_issue_category,
     list_issue_categories,
     read_issue_category,
     update_issue_category,
@@ -54,6 +55,9 @@ def add_issue_category_parser(subparsers: argparse._SubParsersAction) -> None:
         type=int,
         help="削除に伴い既存チケットを再割り当てするカテゴリID",
     )
+    ic_delete_parser.add_argument(
+        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+    )
 
 
 def handle_issue_category(args: argparse.Namespace) -> None:
@@ -80,6 +84,11 @@ def handle_issue_category(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "delete":
+        if not args.yes:
+            category = fetch_issue_category(args.category_id)
+            confirm_delete(
+                f"削除するイシューカテゴリ: {category['id']} {category['name']}"
+            )
         delete_issue_category(
             category_id=args.category_id,
             reassign_to_id=args.reassign_to_id,

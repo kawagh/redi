@@ -3,7 +3,13 @@ import argparse
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
 
-from redi.cli._common import inline_checkbox, inline_choice, open_editor, resolve_alias
+from redi.cli._common import (
+    confirm_delete,
+    inline_checkbox,
+    inline_choice,
+    open_editor,
+    resolve_alias,
+)
 from redi.config import default_project_id
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
 from redi.api.issue import (
@@ -522,15 +528,7 @@ def handle_issue(args: argparse.Namespace) -> None:
     elif cmd == "delete":
         if not args.yes:
             issue = fetch_issue(args.issue_id)
-            print(f"削除するイシュー: #{issue['id']} {issue['subject']}")
-            try:
-                confirm = prompt("削除してもよろしいですか? (yes/No): ").strip().lower()
-            except (KeyboardInterrupt, EOFError):
-                print("キャンセルしました")
-                exit(1)
-            if confirm != "yes":
-                print("キャンセルしました")
-                exit(1)
+            confirm_delete(f"削除するイシュー: #{issue['id']} {issue['subject']}")
         delete_issue(args.issue_id)
     else:
         list_issues(

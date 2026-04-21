@@ -2,12 +2,24 @@ import os
 import subprocess
 import tempfile
 
-from prompt_toolkit import Application
+from prompt_toolkit import Application, prompt
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import HSplit, Layout, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 
 from redi.config import editor
+
+
+def confirm_delete(summary: str) -> None:
+    print(summary)
+    try:
+        confirm = prompt("削除してもよろしいですか? (yes/No): ").strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        print("キャンセルしました")
+        exit(1)
+    if confirm != "yes":
+        print("キャンセルしました")
+        exit(1)
 
 
 SUBCOMMAND_ALIASES: dict[str, str] = {

@@ -1,10 +1,11 @@
 import argparse
 
-from redi.cli._common import resolve_alias
+from redi.cli._common import confirm_delete, resolve_alias
 from redi.config import default_project_id
 from redi.api.time_entry import (
     create_time_entry,
     delete_time_entry,
+    fetch_time_entry,
     list_time_entries,
     read_time_entry,
     update_time_entry,
@@ -53,6 +54,9 @@ def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
         "delete", aliases=["d"], help="作業時間削除"
     )
     te_delete_parser.add_argument("time_entry_id", help="作業時間ID")
+    te_delete_parser.add_argument(
+        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+    )
 
 
 def handle_time_entry(args: argparse.Namespace) -> None:
@@ -80,6 +84,13 @@ def handle_time_entry(args: argparse.Namespace) -> None:
             comments=args.comments,
         )
     elif cmd == "delete":
+        if not args.yes:
+            te = fetch_time_entry(args.time_entry_id)
+            activity = (te.get("activity") or {}).get("name", "")
+            confirm_delete(
+                f"削除する作業時間: {te['id']} {te['hours']}h {activity} "
+                f"({te['spent_on']})"
+            )
         delete_time_entry(args.time_entry_id)
     else:
         project_id = args.project_id or default_project_id
