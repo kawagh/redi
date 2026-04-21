@@ -27,11 +27,14 @@ from redi.api.version import (
 
 def add_version_parser(subparsers: argparse._SubParsersAction) -> None:
     v_parser = subparsers.add_parser(
-        "version", aliases=["v"], help="バージョン一覧/詳細/作成/更新/削除"
+        "version",
+        aliases=["v"],
+        help="list: 一覧, view: 詳細, create: 作成, update: 更新, delete: 削除",
     )
     v_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     v_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     v_subparsers = v_parser.add_subparsers(dest="version_command")
+    v_subparsers.add_parser("list", aliases=["l"], help="バージョン一覧")
     v_view_parser = v_subparsers.add_parser(
         "view", aliases=["v"], help="バージョン詳細"
     )
@@ -278,7 +281,7 @@ def handle_version(args: argparse.Namespace) -> None:
             description=args.description,
             sharing=args.sharing,
         )
-    else:
+    elif cmd == "list" or cmd is None:
         project_id = args.project_id or default_project_id
         if not project_id:
             print("project_idを指定するか、default_project_idを設定してください")

@@ -44,6 +44,7 @@ SUBCOMMAND_ALIASES: dict[str, str] = {
     "u": "update",
     "co": "comment",
     "d": "delete",
+    "l": "list",
 }
 
 

@@ -39,7 +39,9 @@ from redi.api.custom_field import (
 
 def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_parser = subparsers.add_parser(
-        "issue", aliases=["i"], help="イシュー一覧/詳細/作成/更新/コメント/削除"
+        "issue",
+        aliases=["i"],
+        help="list: 一覧, view: 詳細, create: 作成, update: 更新, comment: コメント, delete: 削除",
     )
     i_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     i_parser.add_argument("--project_id", "-p", help="プロジェクトIDでフィルタリング")
@@ -68,6 +70,7 @@ def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_parser.add_argument("--limit", "-l", type=int, help="取得件数")
     i_parser.add_argument("--offset", "-o", type=int, help="オフセット")
     i_subparsers = i_parser.add_subparsers(dest="issue_command")
+    i_subparsers.add_parser("list", aliases=["l"], help="イシュー一覧")
     i_view_parser = i_subparsers.add_parser("view", aliases=["v"], help="イシュー詳細")
     i_view_parser.add_argument("issue_id", help="イシューID")
     i_view_parser.add_argument(
@@ -530,7 +533,7 @@ def handle_issue(args: argparse.Namespace) -> None:
             issue = fetch_issue(args.issue_id)
             confirm_delete(f"削除するイシュー: #{issue['id']} {issue['subject']}")
         delete_issue(args.issue_id)
-    else:
+    elif cmd == "list" or cmd is None:
         list_issues(
             project_id=args.project_id or default_project_id,
             fixed_version_id=args.version,
