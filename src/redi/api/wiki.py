@@ -2,6 +2,8 @@ import json
 import webbrowser
 from collections import defaultdict
 
+import requests
+
 from redi.client import client
 from redi.config import redmine_url
 
@@ -83,6 +85,21 @@ def update_wiki(project_id: str, page_title: str, text: str) -> None:
     response.raise_for_status()
     url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
     print(f"Wikiページを更新しました: {url}")
+
+
+def delete_wiki(project_id: str, page_title: str) -> None:
+    response = client.delete(f"/projects/{project_id}/wiki/{page_title}.json")
+    if response.status_code == 404:
+        print(f"Wikiページが見つかりません: {page_title}")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("Wikiページの削除に失敗しました")
+        exit(1)
+    print(f"Wikiページを削除しました: {page_title}")
 
 
 def create_wiki(
