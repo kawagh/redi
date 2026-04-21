@@ -81,6 +81,21 @@ def update_project(
     print(f"プロジェクトを更新しました: {project_id}")
 
 
+def delete_project(project_id: str) -> None:
+    response = client.delete(f"/projects/{project_id}.json")
+    if response.status_code == 404:
+        print(f"プロジェクトが見つかりません: {project_id}")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("プロジェクトの削除に失敗しました")
+        exit(1)
+    print(f"プロジェクトを削除しました: {project_id}")
+
+
 def read_project(
     project_id: str, include: str = "", full: bool = False, web: bool = False
 ) -> None:

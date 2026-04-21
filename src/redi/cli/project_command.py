@@ -1,7 +1,13 @@
 import argparse
 
 from redi.cli._common import resolve_alias
-from redi.api.project import create_project, list_projects, read_project, update_project
+from redi.api.project import (
+    create_project,
+    delete_project,
+    list_projects,
+    read_project,
+    update_project,
+)
 
 
 def add_project_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -41,6 +47,10 @@ def add_project_parser(subparsers: argparse._SubParsersAction) -> None:
     p_create_parser.add_argument(
         "--tracker_ids", help="トラッカーID（カンマ区切り。例: 1,2,3）"
     )
+    p_delete_parser = p_subparsers.add_parser(
+        "delete", aliases=["d"], help="プロジェクト削除"
+    )
+    p_delete_parser.add_argument("project_id", help="プロジェクトID")
     p_update_parser = p_subparsers.add_parser(
         "update", aliases=["u"], help="プロジェクト更新"
     )
@@ -82,6 +92,8 @@ def handle_project(args: argparse.Namespace) -> None:
             parent_id=args.parent_id,
             tracker_ids=tracker_ids,
         )
+    elif cmd == "delete":
+        delete_project(args.project_id)
     elif cmd == "update":
         is_public = None
         if args.is_public is not None:
