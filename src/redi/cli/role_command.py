@@ -5,7 +5,7 @@ from redi.api.role import list_roles, read_role
 
 
 def add_role_parser(subparsers: argparse._SubParsersAction) -> None:
-    role_parser = subparsers.add_parser("role", help="list: 一覧, view: 詳細")
+    role_parser = subparsers.add_parser("role", help="list(l): 一覧, view(v): 詳細")
     role_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )

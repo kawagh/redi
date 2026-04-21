@@ -15,7 +15,7 @@ from redi.api.time_entry import (
 def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
     time_entry_parser = subparsers.add_parser(
         "time_entry",
-        help="list: 一覧, view: 詳細, create: 登録, update: 更新, delete: 削除",
+        help="list(l): 一覧, view(v): 詳細, create(c): 登録, update(u): 更新, delete(d): 削除",
     )
     time_entry_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     time_entry_parser.add_argument(

@@ -17,7 +17,7 @@ def add_project_parser(subparsers: argparse._SubParsersAction) -> None:
     p_parser = subparsers.add_parser(
         "project",
         aliases=["p"],
-        help="list: 一覧, view: 詳細, create: 作成, update: 更新, delete: 削除",
+        help="list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除",
     )
     p_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     p_subparsers = p_parser.add_subparsers(dest="project_command")
