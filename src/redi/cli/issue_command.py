@@ -3,7 +3,13 @@ import argparse
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
 
-from redi.cli._common import inline_checkbox, inline_choice, open_editor, resolve_alias
+from redi.cli._common import (
+    confirm_delete,
+    inline_checkbox,
+    inline_choice,
+    open_editor,
+    resolve_alias,
+)
 from redi.config import default_project_id
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
 from redi.api.issue import (
@@ -168,6 +174,9 @@ def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
         "delete", aliases=["d"], help="イシュー削除"
     )
     i_delete_parser.add_argument("issue_id", help="イシューID")
+    i_delete_parser.add_argument(
+        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+    )
 
 
 def _interactive_select_issue_id() -> str:
@@ -517,6 +526,9 @@ def handle_issue(args: argparse.Namespace) -> None:
             else:
                 print("コメントが空のためキャンセルしました")
     elif cmd == "delete":
+        if not args.yes:
+            issue = fetch_issue(args.issue_id)
+            confirm_delete(f"削除するイシュー: #{issue['id']} {issue['subject']}")
         delete_issue(args.issue_id)
     else:
         list_issues(

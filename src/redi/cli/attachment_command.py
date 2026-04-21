@@ -1,7 +1,12 @@
 import argparse
 
-from redi.api.attachment import delete_attachment, read_attachment, update_attachment
-from redi.cli._common import resolve_alias
+from redi.api.attachment import (
+    delete_attachment,
+    fetch_attachment,
+    read_attachment,
+    update_attachment,
+)
+from redi.cli._common import confirm_delete, resolve_alias
 
 
 def add_attachment_parser(
@@ -26,6 +31,9 @@ def add_attachment_parser(
         "delete", aliases=["d"], help="添付ファイル削除"
     )
     a_delete_parser.add_argument("attachment_id", help="添付ファイルID")
+    a_delete_parser.add_argument(
+        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+    )
     return a_parser
 
 
@@ -42,6 +50,11 @@ def handle_attachment(
             description=args.description,
         )
     elif cmd == "delete":
+        if not args.yes:
+            attachment = fetch_attachment(args.attachment_id)
+            confirm_delete(
+                f"削除する添付ファイル: {attachment['id']} {attachment['filename']}"
+            )
         delete_attachment(args.attachment_id)
     else:
         a_parser.print_help()

@@ -1,10 +1,11 @@
 import argparse
 
-from redi.cli._common import resolve_alias
+from redi.cli._common import confirm_delete, resolve_alias
 from redi.config import default_project_id
 from redi.api.membership import (
     create_membership,
     delete_membership,
+    fetch_membership,
     list_memberships,
     read_membership,
     update_membership,
@@ -59,6 +60,9 @@ def add_membership_parser(subparsers: argparse._SubParsersAction) -> None:
         "delete", aliases=["d"], help="メンバーシップ削除"
     )
     m_delete_parser.add_argument("membership_id", help="メンバーシップID")
+    m_delete_parser.add_argument(
+        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+    )
 
 
 def handle_membership(args: argparse.Namespace) -> None:
@@ -88,6 +92,15 @@ def handle_membership(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "delete":
+        if not args.yes:
+            m = fetch_membership(args.membership_id)
+            principal = m.get("user") or m.get("group") or {}
+            kind = "user" if "user" in m else "group"
+            roles = ", ".join(r.get("name", "") for r in (m.get("roles") or []))
+            confirm_delete(
+                f"削除するメンバーシップ: {m['id']} [{kind}] "
+                f"{principal.get('id', '?')} {principal.get('name', '')} - {roles}"
+            )
         delete_membership(args.membership_id)
         return
 

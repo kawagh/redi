@@ -91,6 +91,8 @@ redi issue update <issue_id> --status_id <status_id> -n "notes"
 redi issue update <issue_id> --relate relates --to <other_issue_id>
 redi issue update <issue_id> --attach ./foo.png --attach ./bar.log
 redi issue comment <issue_id> "hello~"
+redi issue delete <issue_id> # (confirm before delete)
+redi issue delete <issue_id> -y # skip confirmation
 
 # version (alias: v)
 redi version # list versions(fixed_versions)
@@ -113,7 +115,7 @@ redi file create ./foo.zip -p <project_id> -d "description"
 # attachment
 redi attachment view <attachment_id>
 redi attachment update <attachment_id> -f new_name.png -d "desc"
-redi attachment delete <attachment_id>
+redi attachment delete <attachment_id> # confirm before delete (-y to skip)
 
 # relation (イシュー関係性詳細)
 redi relation view <relation_id>
@@ -122,7 +124,7 @@ redi relation view <relation_id>
 redi time_entry -p <project_id> -u me
 redi time_entry create 1.5 -i <issue_id> -a <activity_id> -c "comment"
 redi time_entry update <time_entry_id> --hours 2.0
-redi time_entry delete <time_entry_id>
+redi time_entry delete <time_entry_id> # confirm before delete (-y to skip)
 
 # me (自分のアカウント)
 redi me

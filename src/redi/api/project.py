@@ -17,6 +17,18 @@ def list_projects(full: bool = False) -> None:
             print(f"{project['id']} {project['name']}")
 
 
+def fetch_project(project_id: str, include: str = "") -> dict:
+    params: dict = {}
+    if include:
+        params["include"] = include
+    response = client.get(f"/projects/{project_id}.json", params=params)
+    if response.status_code == 404:
+        print(f"プロジェクトが見つかりません: {project_id}")
+        exit(1)
+    response.raise_for_status()
+    return response.json()["project"]
+
+
 def create_project(
     name: str,
     identifier: str,

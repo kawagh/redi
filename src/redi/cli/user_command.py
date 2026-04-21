@@ -1,9 +1,10 @@
 import argparse
 
-from redi.cli._common import resolve_alias
+from redi.cli._common import confirm_delete_with_identifier, resolve_alias
 from redi.api.user import (
     create_user,
     delete_user,
+    fetch_user,
     list_users,
     read_user,
     update_user,
@@ -94,6 +95,9 @@ def add_user_parser(subparsers: argparse._SubParsersAction) -> None:
         "delete", aliases=["d"], help="ユーザー削除（管理者権限が必要）"
     )
     u_delete_parser.add_argument("user_id", help="ユーザーID")
+    u_delete_parser.add_argument(
+        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+    )
 
 
 def handle_user(args: argparse.Namespace) -> None:
@@ -130,6 +134,11 @@ def handle_user(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "delete":
+        if not args.yes:
+            user = fetch_user(args.user_id)
+            name = f"{user.get('firstname', '')} {user.get('lastname', '')}".strip()
+            summary = f"削除するユーザー: {user['id']} {user.get('login', '')} {name}".rstrip()
+            confirm_delete_with_identifier(summary, user.get("login", ""), "ログイン名")
         delete_user(args.user_id)
         return
     list_users(full=args.full)

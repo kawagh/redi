@@ -3,7 +3,7 @@ import argparse
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import ValidationError, Validator
 
-from redi.cli._common import inline_choice, open_editor, resolve_alias
+from redi.cli._common import confirm_delete, inline_choice, open_editor, resolve_alias
 from redi.config import default_project_id, wiki_project_id
 from redi.api.wiki import (
     build_children_map,
@@ -70,6 +70,9 @@ def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
         "delete", aliases=["d"], help="Wikiページ削除"
     )
     w_delete_parser.add_argument("page_title", help="Wikiページタイトル")
+    w_delete_parser.add_argument(
+        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+    )
     w_update_parser = w_subparsers.add_parser(
         "update", aliases=["u"], help="Wikiページ更新"
     )
@@ -153,7 +156,11 @@ def handle_wiki(args: argparse.Namespace) -> None:
         else:
             print("テキストが空のためキャンセルしました")
     elif cmd == "delete":
-        delete_wiki(project_id, normalize_title(args.page_title))
+        title = normalize_title(args.page_title)
+        if not args.yes:
+            page = fetch_wiki(project_id, title)
+            confirm_delete(f"削除するWikiページ: {page.get('title', title)}")
+        delete_wiki(project_id, title)
     elif cmd == "update":
         page_title = args.page_title
         if page_title is None:
