@@ -66,6 +66,21 @@ def read_attachment(attachment_id: str, full: bool = False) -> None:
     print("\n".join(lines))
 
 
+def delete_attachment(attachment_id: str) -> None:
+    response = client.delete(f"/attachments/{attachment_id}.json")
+    if response.status_code == 404:
+        print(f"添付ファイルが見つかりません: #{attachment_id}")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("添付ファイルの削除に失敗しました")
+        exit(1)
+    print(f"添付ファイルを削除しました: #{attachment_id}")
+
+
 def update_attachment(
     attachment_id: str,
     filename: str | None = None,
