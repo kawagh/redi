@@ -4,7 +4,7 @@ set -e
 docker compose down
 docker compose up -d
 sleep 5
-INSTANT_API_KEY=$(docker exec -i redi-redmine-for-test-1 rails runner - <<RUBY
+API_KEYS_OUTPUT=$(docker exec -i redi-redmine-for-test-1 rails runner - <<RUBY
     # 初期生成される管理者のパスワードを変更
     admin = User.find_by(login: 'admin')
     admin.password = 'adminadmin'
@@ -43,15 +43,42 @@ INSTANT_API_KEY=$(docker exec -i redi-redmine-for-test-1 rails runner - <<RUBY
       cf.save!
     end
 
-    puts User.active[0].api_key
+    # sandbox_developer ユーザーを作成
+    developer = User.find_or_initialize_by(login: 'sandbox_developer')
+    developer.firstname = 'Sandbox'
+    developer.lastname = 'Developer'
+    developer.mail = 'sandbox_developer@example.com'
+    developer.password = 'sandboxdeveloper'
+    developer.password_confirmation = 'sandboxdeveloper'
+    developer.must_change_passwd = false
+    developer.status = User::STATUS_ACTIVE
+    developer.save!
+
+    # sandbox_developer を reditest プロジェクトのメンバーに追加（開発者ロール）
+    developer_role = Role.find_by(name: '開発者')
+    if developer_role
+      member = Member.find_or_initialize_by(user_id: developer.id, project_id: project.id)
+      member.role_ids = [developer_role.id]
+      member.save!
+    end
+
+    puts "ADMIN_KEY=#{admin.api_key}"
+    puts "DEVELOPER_KEY=#{developer.api_key}"
 RUBY
 )
-INSTANT_API_KEY=$(echo "$INSTANT_API_KEY" | tail -1)
+ADMIN_API_KEY=$(echo "$API_KEYS_OUTPUT" | grep '^ADMIN_KEY=' | tail -1 | cut -d= -f2)
+DEVELOPER_API_KEY=$(echo "$API_KEYS_OUTPUT" | grep '^DEVELOPER_KEY=' | tail -1 | cut -d= -f2)
 
-redi config create test || true # profile作成がべき等でないので失敗するのを当座で防ぐ
-redi config update --default_profile test
-redi config update test \
+redi config create sandbox_admin || true # profile作成がべき等でないので失敗するのを当座で防ぐ
+redi config update --default_profile sandbox_admin
+redi config update sandbox_admin \
     --url "http://localhost:3000" \
-    --api_key "$INSTANT_API_KEY" \
+    --api_key "$ADMIN_API_KEY" \
+    --project_id "reditest"
+
+redi config create sandbox_developer || true
+redi config update sandbox_developer \
+    --url "http://localhost:3000" \
+    --api_key "$DEVELOPER_API_KEY" \
     --project_id "reditest"
 
