@@ -22,6 +22,22 @@ def confirm_delete(summary: str) -> None:
         exit(1)
 
 
+def confirm_delete_with_identifier(
+    summary: str, expected: str, field_label: str
+) -> None:
+    print(summary)
+    try:
+        entered = prompt(
+            f'削除するには{field_label} "{expected}" を入力してください: '
+        ).strip()
+    except (KeyboardInterrupt, EOFError):
+        print("キャンセルしました")
+        exit(1)
+    if entered != expected:
+        print(f"{field_label}が一致しません。キャンセルしました")
+        exit(1)
+
+
 SUBCOMMAND_ALIASES: dict[str, str] = {
     "v": "view",
     "c": "create",

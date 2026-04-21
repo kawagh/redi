@@ -1,10 +1,11 @@
 import argparse
 
-from redi.cli._common import resolve_alias
+from redi.cli._common import confirm_delete_with_identifier, resolve_alias
 from redi.api.project import (
     archive_project,
     create_project,
     delete_project,
+    fetch_project,
     list_projects,
     read_project,
     unarchive_project,
@@ -53,6 +54,9 @@ def add_project_parser(subparsers: argparse._SubParsersAction) -> None:
         "delete", aliases=["d"], help="プロジェクト削除"
     )
     p_delete_parser.add_argument("project_id", help="プロジェクトID")
+    p_delete_parser.add_argument(
+        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+    )
     p_update_parser = p_subparsers.add_parser(
         "update", aliases=["u"], help="プロジェクト更新"
     )
@@ -101,6 +105,16 @@ def handle_project(args: argparse.Namespace) -> None:
             tracker_ids=tracker_ids,
         )
     elif cmd == "delete":
+        if not args.yes:
+            project = fetch_project(args.project_id)
+            summary = (
+                f"削除するプロジェクト: {project['id']} {project['name']} "
+                f"(identifier: {project['identifier']})\n"
+                "**この操作は配下のイシュー等を含めて削除します**"
+            )
+            confirm_delete_with_identifier(
+                summary, project["identifier"], "プロジェクト識別子"
+            )
         delete_project(args.project_id)
     elif cmd == "update":
         is_public = None
