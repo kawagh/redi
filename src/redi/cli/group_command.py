@@ -1,7 +1,13 @@
 import argparse
 
 from redi.cli._common import resolve_alias
-from redi.api.group import create_group, list_groups, read_group, update_group
+from redi.api.group import (
+    create_group,
+    delete_group,
+    list_groups,
+    read_group,
+    update_group,
+)
 
 
 def add_group_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -40,6 +46,10 @@ def add_group_parser(subparsers: argparse._SubParsersAction) -> None:
         dest="user_ids",
         help="所属ユーザーIDを指定（複数指定可、既存の所属ユーザーを置き換え）",
     )
+    g_delete_parser = group_subparsers.add_parser(
+        "delete", aliases=["d"], help="グループ削除（管理者権限が必要）"
+    )
+    g_delete_parser.add_argument("group_id", help="グループID")
 
 
 def handle_group(args: argparse.Namespace) -> None:
@@ -56,5 +66,8 @@ def handle_group(args: argparse.Namespace) -> None:
             name=args.name,
             user_ids=args.user_ids,
         )
+        return
+    if cmd == "delete":
+        delete_group(args.group_id)
         return
     list_groups(full=args.full)

@@ -88,6 +88,24 @@ def update_group(
     print(f"グループを更新しました: {group_id}")
 
 
+def delete_group(group_id: str) -> None:
+    response = client.delete(f"/groups/{group_id}.json")
+    if response.status_code == 404:
+        print(f"グループが見つかりません: #{group_id}")
+        exit(1)
+    if response.status_code == 403:
+        print("グループの削除には管理者権限が必要です")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("グループの削除に失敗しました")
+        exit(1)
+    print(f"グループを削除しました: {group_id}")
+
+
 def create_group(name: str, user_ids: list[int] | None = None) -> None:
     group_data: dict = {"name": name}
     if user_ids:
