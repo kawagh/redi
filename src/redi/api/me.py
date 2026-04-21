@@ -1,5 +1,7 @@
 import json
 
+import requests
+
 from redi.client import client
 
 
@@ -29,3 +31,29 @@ def read_my_account(full: bool = False) -> None:
         for cf in custom_fields:
             lines.append(f"  {cf.get('name')}: {cf.get('value')}")
     print("\n".join(lines))
+
+
+def update_my_account(
+    firstname: str | None = None,
+    lastname: str | None = None,
+    mail: str | None = None,
+) -> None:
+    data: dict = {}
+    if firstname is not None:
+        data["firstname"] = firstname
+    if lastname is not None:
+        data["lastname"] = lastname
+    if mail is not None:
+        data["mail"] = mail
+    if not data:
+        print("更新内容がないので更新をキャンセルしました")
+        exit(1)
+    response = client.put("/my/account.json", json={"user": data})
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("アカウント情報の更新に失敗しました")
+        exit(1)
+    print("アカウント情報を更新しました")
