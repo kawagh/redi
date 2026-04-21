@@ -106,11 +106,49 @@ redi wiki view <page_title>
 redi wiki create # (interactive)
 redi wiki update # (interactive)
 
+# file (プロジェクトファイル)
+redi file -p <project_id> # list
+redi file create ./foo.zip -p <project_id> -d "description"
+
+# attachment
+redi attachment view <attachment_id>
+redi attachment update <attachment_id> -f new_name.png -d "desc"
+redi attachment delete <attachment_id>
+
+# relation (イシュー関係性詳細)
+redi relation view <relation_id>
+
+# time_entry (作業時間)
+redi time_entry -p <project_id> -u me
+redi time_entry create 1.5 -i <issue_id> -a <activity_id> -c "comment"
+redi time_entry update <time_entry_id> --hours 2.0
+redi time_entry delete <time_entry_id>
+
+# me (自分のアカウント)
+redi me
+redi me update -f <firstname> -l <lastname> -m <mail>
+
+# membership (alias: m)
+redi membership -p <project_id>
+redi membership view <membership_id>
+
+# news
+redi news -p <project_id>
+
+# issue_category
+redi issue_category -p <project_id>
+redi issue_category create "category" -p <project_id>
+
 # others
 redi user # list users (alias: u)
 redi tracker # list trackers
 redi issue_status # list issue statuses
 redi issue_priority # list priorities
+redi time_entry_activity # list activities
+redi document_category # list document categories
+redi role # list roles
+redi group # list groups
+redi custom_field # list custom fields
 redi query # list custom queries
 redi search "keyword"
 redi --version
