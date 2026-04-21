@@ -55,6 +55,27 @@ def _pad_display(text: str, width: int) -> str:
     return text + " " * padding
 
 
+def _highlight_segments(
+    text: str, query: str, base_style: str = ""
+) -> list[tuple[str, str]]:
+    if not query:
+        return [(base_style, text)]
+    q = query.lower()
+    lower = text.lower()
+    segments: list[tuple[str, str]] = []
+    i = 0
+    while i < len(text):
+        pos = lower.find(q, i)
+        if pos == -1:
+            segments.append((base_style, text[i:]))
+            break
+        if pos > i:
+            segments.append((base_style, text[i:pos]))
+        segments.append(("reverse", text[pos : pos + len(q)]))
+        i = pos + len(q)
+    return segments
+
+
 def _load_journals(issue: dict) -> None:
     fetched = fetch_issue(str(issue["id"]), include="journals")
     issue["journals"] = fetched.get("journals") or []
@@ -128,6 +149,8 @@ def run_issue_tui(
             default=0,
         )
 
+        query = state.search_query if state.search_mode else ""
+
         result = []
         for i, issue in enumerate(state.issues):
             cursor_mark = "> " if i == state.cursor else "  "
@@ -138,7 +161,7 @@ def run_issue_tui(
                 f"{cursor_mark}{id_text} {status_text} {assignee_text} "
                 f"{issue['subject']}\n"
             )
-            result.append(("", text))
+            result.extend(_highlight_segments(text, query))
         return result
 
     def render_preview():
