@@ -112,6 +112,21 @@ def read_version(version_id: str, full: bool = False, web: bool = False) -> None
     print("\n".join(lines))
 
 
+def delete_version(version_id: str) -> None:
+    response = client.delete(f"/versions/{version_id}.json")
+    if response.status_code == 404:
+        print(f"バージョンが見つかりません: {version_id}")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("バージョンの削除に失敗しました")
+        exit(1)
+    print(f"バージョンを削除しました: {version_id}")
+
+
 def fetch_versions(project_id: str) -> list[dict]:
     response = client.get(f"/projects/{project_id}/versions.json")
     response.raise_for_status()
