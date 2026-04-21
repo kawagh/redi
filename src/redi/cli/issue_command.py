@@ -33,7 +33,7 @@ from redi.api.custom_field import (
 
 def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_parser = subparsers.add_parser(
-        "issue", aliases=["i"], help="イシュー一覧/詳細/作成/コメント"
+        "issue", aliases=["i"], help="イシュー一覧/詳細/作成/更新/コメント/削除"
     )
     i_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     i_parser.add_argument("--project_id", "-p", help="プロジェクトIDでフィルタリング")

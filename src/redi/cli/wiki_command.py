@@ -32,7 +32,9 @@ def build_wiki_tree_choices(pages: list[dict]) -> list[tuple[str, str]]:
 
 
 def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
-    w_parser = subparsers.add_parser("wiki", aliases=["w"], help="Wiki一覧/詳細/作成")
+    w_parser = subparsers.add_parser(
+        "wiki", aliases=["w"], help="Wiki一覧/詳細/作成/更新/削除"
+    )
     w_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     w_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     w_subparsers = w_parser.add_subparsers(dest="wiki_command")

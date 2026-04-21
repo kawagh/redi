@@ -13,7 +13,9 @@ from redi.api.group import (
 
 
 def add_group_parser(subparsers: argparse._SubParsersAction) -> None:
-    group_parser = subparsers.add_parser("group", help="グループ一覧/作成/更新")
+    group_parser = subparsers.add_parser(
+        "group", help="グループ一覧/詳細/作成/更新/削除"
+    )
     group_parser.add_argument(
         "--full", action="store_true", help="JSON形式で全情報を出力"
     )

@@ -7,7 +7,7 @@ from redi.cli._common import resolve_alias
 def add_attachment_parser(
     subparsers: argparse._SubParsersAction,
 ) -> argparse.ArgumentParser:
-    a_parser = subparsers.add_parser("attachment", help="添付ファイル詳細")
+    a_parser = subparsers.add_parser("attachment", help="添付ファイル詳細/更新/削除")
     a_subparsers = a_parser.add_subparsers(dest="attachment_command")
     a_view_parser = a_subparsers.add_parser(
         "view", aliases=["v"], help="添付ファイル詳細"

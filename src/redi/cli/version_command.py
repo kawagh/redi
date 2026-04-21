@@ -21,7 +21,9 @@ from redi.api.version import (
 
 
 def add_version_parser(subparsers: argparse._SubParsersAction) -> None:
-    v_parser = subparsers.add_parser("version", aliases=["v"], help="バージョン一覧")
+    v_parser = subparsers.add_parser(
+        "version", aliases=["v"], help="バージョン一覧/詳細/作成/更新/削除"
+    )
     v_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     v_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     v_subparsers = v_parser.add_subparsers(dest="version_command")

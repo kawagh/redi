@@ -12,7 +12,9 @@ from redi.api.time_entry import (
 
 
 def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
-    time_entry_parser = subparsers.add_parser("time_entry", help="作業時間一覧/登録")
+    time_entry_parser = subparsers.add_parser(
+        "time_entry", help="作業時間一覧/詳細/登録/更新/削除"
+    )
     time_entry_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     time_entry_parser.add_argument(
         "--user_id", "-u", help="ユーザーIDでフィルタリング（'me'も可）"

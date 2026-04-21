@@ -14,7 +14,7 @@ from redi.api.project import (
 
 def add_project_parser(subparsers: argparse._SubParsersAction) -> None:
     p_parser = subparsers.add_parser(
-        "project", aliases=["p"], help="プロジェクト一覧/詳細/作成"
+        "project", aliases=["p"], help="プロジェクト一覧/詳細/作成/更新/削除"
     )
     p_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     p_subparsers = p_parser.add_subparsers(dest="project_command")

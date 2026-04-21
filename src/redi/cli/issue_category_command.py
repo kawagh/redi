@@ -13,7 +13,7 @@ from redi.api.issue_category import (
 
 def add_issue_category_parser(subparsers: argparse._SubParsersAction) -> None:
     ic_parser = subparsers.add_parser(
-        "issue_category", help="イシューカテゴリ 一覧/作成/更新/削除"
+        "issue_category", help="イシューカテゴリ 一覧/詳細/作成/更新/削除"
     )
     ic_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     ic_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
