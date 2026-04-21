@@ -138,7 +138,7 @@ def run_issue_tui(
                 f"{cursor_mark}{id_text} {status_text} {assignee_text} "
                 f"{issue['subject']}\n"
             )
-            result.append(("reverse" if i == state.cursor else "", text))
+            result.append(("", text))
         return result
 
     def render_preview():
