@@ -9,6 +9,7 @@ from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activi
 from redi.api.issue import (
     add_note,
     create_issue,
+    delete_issue,
     fetch_issue,
     fetch_issues,
     list_issues,
@@ -147,6 +148,10 @@ def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_comment_parser.add_argument(
         "notes", nargs="?", default="", help="コメント（省略でエディタ起動）"
     )
+    i_delete_parser = i_subparsers.add_parser(
+        "delete", aliases=["d"], help="イシュー削除"
+    )
+    i_delete_parser.add_argument("issue_id", help="イシューID")
 
 
 def _interactive_select_issue_id() -> str:
@@ -487,6 +492,8 @@ def handle_issue(args: argparse.Namespace) -> None:
                 add_note(args.issue_id, notes)
             else:
                 print("コメントが空のためキャンセルしました")
+    elif cmd == "delete":
+        delete_issue(args.issue_id)
     else:
         list_issues(
             project_id=args.project_id or default_project_id,

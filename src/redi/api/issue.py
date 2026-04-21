@@ -304,6 +304,21 @@ def update_issue(
     print(f"イシューを更新しました: {url}")
 
 
+def delete_issue(issue_id: str) -> None:
+    response = client.delete(f"/issues/{issue_id}.json")
+    if response.status_code == 404:
+        print(f"イシューが見つかりません: #{issue_id}")
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print(e.response.text)
+        print("イシューの削除に失敗しました")
+        exit(1)
+    print(f"イシューを削除しました: #{issue_id}")
+
+
 def add_note(issue_id: str, notes: str) -> None:
     response = client.put(f"/issues/{issue_id}.json", json={"issue": {"notes": notes}})
     response.raise_for_status()
