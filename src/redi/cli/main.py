@@ -60,7 +60,7 @@ def _build_parser() -> tuple[
 ]:
     parser = argparse.ArgumentParser(description="Redmine CLI")
     parser.add_argument(
-        "-V", "--version", action="version", version=f"redi {version('redi')}"
+        "-V", "--version", action="version", version=f"redi {version('redtile')}"
     )
     parser.add_argument("--tui", action="store_true", help="TUI")
     parser.add_argument("--debug", action="store_true", help="デバッグログを有効にする")
