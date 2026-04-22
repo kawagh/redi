@@ -5,8 +5,14 @@ import requests
 from redi.api.wiki import fetch_wiki, fetch_wikis, flatten_wiki_tree
 from redi.config import default_project_id, redmine_url, wiki_project_id
 from redi.tui.render import render_meta_table
-from redi.tui.state import Renderable, TuiState
-from redi.tui.tab import TabView, no_action, noop
+from redi.tui.state import (
+    Renderable,
+    TuiAction,
+    TuiPosition,
+    TuiResult,
+    TuiState,
+)
+from redi.tui.tab import TabView, noop
 
 
 def _wiki_project() -> str | None:
@@ -94,7 +100,24 @@ def _render_preview(state: TuiState) -> Renderable:
 
 
 def _status_hint(state: TuiState) -> str:
-    return " ↑↓/jk:移動 Enter:本文ロード v:web Tab:タブ切替 q:終了 "
+    return " ↑↓/jk:移動 Enter:本文ロード c:作成 u:更新 v:web Tab:タブ切替 q:終了 "
+
+
+def _exit_result(
+    state: TuiState,
+    action: TuiAction,
+    wiki_title: str | None = None,
+    parent_wiki_title: str | None = None,
+) -> TuiResult:
+    if wiki_title is None and state.wiki_tab.pages:
+        wiki_title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
+    return TuiResult(
+        action=action,
+        tab="wiki",
+        wiki_title=wiki_title,
+        parent_wiki_title=parent_wiki_title,
+        position=TuiPosition(cursor=state.wiki_tab.cursor),
+    )
 
 
 def _on_up(state: TuiState) -> None:
@@ -114,6 +137,19 @@ def _on_enter(state: TuiState) -> None:
     title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
     if title:
         _load_wiki_text(state, title)
+
+
+def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
+    if key == "c":
+        parent = None
+        if state.wiki_tab.pages:
+            parent = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
+        return _exit_result(state, "create", parent_wiki_title=parent)
+    if key == "u":
+        if not state.wiki_tab.pages:
+            return None
+        return _exit_result(state, "update")
+    return None
 
 
 def _on_open_web(state: TuiState) -> None:
@@ -139,6 +175,6 @@ WIKI_TAB = TabView(
     on_page_backward=noop,
     on_open_web=_on_open_web,
     on_activate=_load_wikis,
-    on_action_key=no_action,
+    on_action_key=_on_action_key,
     get_cursor_y=lambda state: state.wiki_tab.cursor,
 )
