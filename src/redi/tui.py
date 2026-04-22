@@ -272,7 +272,10 @@ def run_issue_tui(
                                 FormattedTextControl(render_issues, show_cursor=False)
                             ),
                             Window(width=1, char="│"),
-                            Window(FormattedTextControl(render_preview)),
+                            Window(
+                                FormattedTextControl(render_preview),
+                                wrap_lines=True,
+                            ),
                         ]
                     ),
                     Window(FormattedTextControl(render_status), height=1),
