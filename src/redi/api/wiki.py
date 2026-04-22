@@ -53,17 +53,15 @@ def list_wikis(project_id: str, full: bool = False) -> None:
     print_tree(None)
 
 
-def fetch_wiki(project_id: str, page_title: str, version: int | None = None) -> dict:
+def fetch_wiki(
+    project_id: str, page_title: str, version: int | None = None
+) -> dict | None:
     path = f"/projects/{project_id}/wiki/{page_title}.json"
     if version is not None:
         path = f"/projects/{project_id}/wiki/{page_title}/{version}.json"
     response = client.get(path)
     if response.status_code == 404:
-        if version is not None:
-            print(f"Wikiページが見つかりません: {page_title} (version={version})")
-        else:
-            print(f"Wikiページが見つかりません: {page_title}")
-        exit(1)
+        return None
     response.raise_for_status()
     return response.json()["wiki_page"]
 
@@ -83,6 +81,12 @@ def read_wiki(
         webbrowser.open(url)
         return
     wiki = fetch_wiki(project_id, page_title, version=version)
+    if wiki is None:
+        if version is not None:
+            print(f"Wikiページが見つかりません: {page_title} (version={version})")
+        else:
+            print(f"Wikiページが見つかりません: {page_title}")
+        exit(1)
     if full:
         print(json.dumps(wiki, ensure_ascii=False, indent=2))
     else:

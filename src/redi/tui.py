@@ -189,11 +189,11 @@ def run_issue_tui(
             return
         try:
             wiki = fetch_wiki(project, title)
-        except SystemExit:
-            state.wiki_tab.texts[title] = "(読み込みに失敗しました)"
-            return
         except requests.exceptions.RequestException as e:
             state.wiki_tab.texts[title] = f"(読み込みに失敗しました: {e})"
+            return
+        if wiki is None:
+            state.wiki_tab.texts[title] = "(ページが見つかりません)"
             return
         state.wiki_tab.texts[title] = wiki.get("text", "") or ""
 
