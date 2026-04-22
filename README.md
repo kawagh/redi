@@ -1,14 +1,15 @@
 # redi
 
-redmine CLI tool
+redi is redmine CLI tool
 
 ## install
 
-Install via [uv](https://github.com/astral-sh/uv)
+I recommend installation via [uv](https://github.com/astral-sh/uv).
 
-```shell
-uv tool install https://github.com/kawagh/redi.git
+```sh
+uv tool install redtile
 ```
+
 
 ## install(for development)
 
