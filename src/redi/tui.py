@@ -56,6 +56,20 @@ def _pad_display(text: str, width: int) -> str:
     return text + " " * padding
 
 
+def _render_meta_table(meta: list[tuple[str, str]]) -> list[str]:
+    """
+    `[ラベル] 値` 形式のメタ情報テーブルを整形する。ラベル列はメタの中で
+    最大表示幅に揃える。値が空文字列のときは `-` を表示する。
+    """
+    if not meta:
+        return []
+    label_width = max(wcswidth(label) for label, _ in meta)
+    return [
+        f"[{_pad_display(label, label_width)}] {value if value else '-'}"
+        for label, value in meta
+    ]
+
+
 def _load_journals(issue: dict) -> None:
     fetched = fetch_issue(str(issue["id"]), include="journals")
     issue["journals"] = fetched.get("journals") or []
@@ -155,10 +169,7 @@ def _render_issue_preview(state: TuiState) -> list[tuple[str, str]]:
         ("作成", issue.get("created_on") or ""),
         ("更新", issue.get("updated_on") or ""),
     ]
-    label_width = max(wcswidth(label) for label, _ in meta)
-    for label, value in meta:
-        display_value = value if value else "-"
-        lines.append(f"[{_pad_display(label, label_width)}] {display_value}")
+    lines.extend(_render_meta_table(meta))
 
     description = issue.get("description") or ""
     if description:
@@ -210,10 +221,7 @@ def _render_wiki_preview(state: TuiState) -> list[tuple[str, str]]:
         ("作成", page.get("created_on") or ""),
         ("更新", page.get("updated_on") or ""),
     ]
-    label_width = max(wcswidth(label) for label, _ in meta)
-    for label, value in meta:
-        display_value = value if value else "-"
-        lines.append(f"[{_pad_display(label, label_width)}] {display_value}")
+    lines.extend(_render_meta_table(meta))
 
     text = state.wiki_tab.texts.get(title)
     lines.append("")
