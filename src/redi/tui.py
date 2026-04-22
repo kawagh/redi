@@ -457,7 +457,10 @@ def run_issue_tui(
         layout=Layout(
             HSplit(
                 [
-                    Window(FormattedTextControl(render_tabs), height=1),
+                    Window(
+                        FormattedTextControl(render_tabs, show_cursor=False),
+                        height=1,
+                    ),
                     VSplit(
                         [
                             Window(
