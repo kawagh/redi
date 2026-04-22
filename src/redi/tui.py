@@ -108,6 +108,152 @@ class TuiState:
     wiki_tab: WikiTabState = field(default_factory=WikiTabState)
 
 
+def _render_tabs(state: TuiState) -> list[tuple[str, str]]:
+    issues_style = "reverse" if state.tab == "issues" else ""
+    wiki_style = "reverse" if state.tab == "wiki" else ""
+    return [
+        (issues_style, " イシュー "),
+        ("", "  "),
+        (wiki_style, " Wiki "),
+        ("", "   (Tab:切替)"),
+    ]
+
+
+def _render_issues(state: TuiState) -> list[tuple[str, str]]:
+    result: list[tuple[str, str]] = []
+    for i, issue in enumerate(state.issue_tab.issues):
+        prefix = "> " if i == state.issue_tab.cursor else "  "
+        text = f"{prefix}#{issue['id']} {issue['subject']}\n"
+        result.append(("", text))
+    return result
+
+
+def _render_preview(state: TuiState) -> list[tuple[str, str]]:
+    if not state.issue_tab.issues:
+        return []
+    issue = state.issue_tab.issues[state.issue_tab.cursor]
+    lines = [f"#{issue.get('id', '')} {issue.get('subject', '')}", ""]
+
+    def named(field: str) -> str:
+        value = issue.get(field)
+        if isinstance(value, dict):
+            return value.get("name", "")
+        return ""
+
+    meta = [
+        ("ステータス", named("status")),
+        ("優先度", named("priority")),
+        ("トラッカー", named("tracker")),
+        ("担当者", named("assigned_to")),
+        ("作成者", named("author")),
+        ("開始日", issue.get("start_date") or ""),
+        ("期日", issue.get("due_date") or ""),
+        (
+            "進捗",
+            f"{issue['done_ratio']}%" if issue.get("done_ratio") is not None else "",
+        ),
+        ("作成", issue.get("created_on") or ""),
+        ("更新", issue.get("updated_on") or ""),
+    ]
+    label_width = max(wcswidth(label) for label, _ in meta)
+    for label, value in meta:
+        display_value = value if value else "-"
+        lines.append(f"[{_pad_display(label, label_width)}] {display_value}")
+
+    description = issue.get("description") or ""
+    if description:
+        lines.append("")
+        lines.append("----")
+        lines.extend(description.splitlines())
+
+    journals = issue.get("journals") or []
+    notes = [j for j in journals if (j.get("notes") or "").strip()]
+    if notes:
+        lines.append("")
+        lines.append("----")
+        lines.append("コメント:")
+        for j in notes:
+            author = (j.get("user") or {}).get("name", "")
+            created = j.get("created_on", "")
+            lines.append(f"[{created}] {author}")
+            for nl in (j.get("notes") or "").splitlines():
+                lines.append(f"  {nl}")
+
+    return [("", "\n".join(lines))]
+
+
+def _render_wiki_list(state: TuiState) -> list[tuple[str, str]]:
+    if state.wiki_tab.error:
+        return [("", state.wiki_tab.error)]
+    if not state.wiki_tab.labels:
+        if state.wiki_tab.loaded:
+            return [("", "Wikiページが見つかりません")]
+        return [("", "(Wikiを読み込み中...)")]
+    result: list[tuple[str, str]] = []
+    for i, label in enumerate(state.wiki_tab.labels):
+        prefix = "> " if i == state.wiki_tab.cursor else "  "
+        result.append(("", f"{prefix}{label}\n"))
+    return result
+
+
+def _render_wiki_preview(state: TuiState) -> list[tuple[str, str]]:
+    if state.wiki_tab.error:
+        return [("", state.wiki_tab.error)]
+    if not state.wiki_tab.pages:
+        return [("", "")]
+    page = state.wiki_tab.pages[state.wiki_tab.cursor]
+    title = page.get("title", "")
+    lines = [title, ""]
+    meta = [
+        ("親", (page.get("parent") or {}).get("title", "")),
+        ("バージョン", str(page.get("version", "")) if page.get("version") else ""),
+        ("作成", page.get("created_on") or ""),
+        ("更新", page.get("updated_on") or ""),
+    ]
+    label_width = max(wcswidth(label) for label, _ in meta)
+    for label, value in meta:
+        display_value = value if value else "-"
+        lines.append(f"[{_pad_display(label, label_width)}] {display_value}")
+
+    text = state.wiki_tab.texts.get(title)
+    lines.append("")
+    lines.append("----")
+    if text is None:
+        lines.append("(Enter で本文をロード)")
+    else:
+        lines.extend(text.splitlines())
+    return [("", "\n".join(lines))]
+
+
+def _render_list_current(state: TuiState) -> list[tuple[str, str]]:
+    return _render_issues(state) if state.tab == "issues" else _render_wiki_list(state)
+
+
+def _render_preview_current(state: TuiState) -> list[tuple[str, str]]:
+    return (
+        _render_preview(state) if state.tab == "issues" else _render_wiki_preview(state)
+    )
+
+
+def _render_status(state: TuiState) -> list[tuple[str, str]]:
+    if state.tab == "issues":
+        page = state.issue_tab.offset // state.page_size + 1
+        return [
+            (
+                "reverse",
+                f" Page {page} (offset={state.issue_tab.offset})  "
+                "↑↓/jk:移動 ←→/hl:ページ Enter:コメント読込 c:作成 u:更新 "
+                "n:コメント v:web Tab:タブ切替 q:終了 ",
+            )
+        ]
+    return [
+        (
+            "reverse",
+            " ↑↓/jk:移動 Enter:本文ロード v:web Tab:タブ切替 q:終了 ",
+        )
+    ]
+
+
 def run_issue_tui(
     state: TuiState | None = None,
     debug_log_path: Path | None = None,
@@ -177,144 +323,6 @@ def run_issue_tui(
             state.wiki_tab.texts[title] = "(ページが見つかりません)"
             return
         state.wiki_tab.texts[title] = wiki.get("text", "") or ""
-
-    def render_tabs():
-        issues_style = "reverse" if state.tab == "issues" else ""
-        wiki_style = "reverse" if state.tab == "wiki" else ""
-        return [
-            (issues_style, " イシュー "),
-            ("", "  "),
-            (wiki_style, " Wiki "),
-            ("", "   (Tab:切替)"),
-        ]
-
-    def render_issues():
-        result = []
-        for i, issue in enumerate(state.issue_tab.issues):
-            prefix = "> " if i == state.issue_tab.cursor else "  "
-            text = f"{prefix}#{issue['id']} {issue['subject']}\n"
-            result.append(("", text))
-        return result
-
-    def render_preview():
-        if not state.issue_tab.issues:
-            return []
-        issue = state.issue_tab.issues[state.issue_tab.cursor]
-        lines = [f"#{issue.get('id', '')} {issue.get('subject', '')}", ""]
-
-        def named(field: str) -> str:
-            value = issue.get(field)
-            if isinstance(value, dict):
-                return value.get("name", "")
-            return ""
-
-        meta = [
-            ("ステータス", named("status")),
-            ("優先度", named("priority")),
-            ("トラッカー", named("tracker")),
-            ("担当者", named("assigned_to")),
-            ("作成者", named("author")),
-            ("開始日", issue.get("start_date") or ""),
-            ("期日", issue.get("due_date") or ""),
-            (
-                "進捗",
-                f"{issue['done_ratio']}%"
-                if issue.get("done_ratio") is not None
-                else "",
-            ),
-            ("作成", issue.get("created_on") or ""),
-            ("更新", issue.get("updated_on") or ""),
-        ]
-        label_width = max(wcswidth(label) for label, _ in meta)
-        for label, value in meta:
-            display_value = value if value else "-"
-            lines.append(f"[{_pad_display(label, label_width)}] {display_value}")
-
-        description = issue.get("description") or ""
-        if description:
-            lines.append("")
-            lines.append("----")
-            lines.extend(description.splitlines())
-
-        journals = issue.get("journals") or []
-        notes = [j for j in journals if (j.get("notes") or "").strip()]
-        if notes:
-            lines.append("")
-            lines.append("----")
-            lines.append("コメント:")
-            for j in notes:
-                author = (j.get("user") or {}).get("name", "")
-                created = j.get("created_on", "")
-                lines.append(f"[{created}] {author}")
-                for nl in (j.get("notes") or "").splitlines():
-                    lines.append(f"  {nl}")
-
-        return [("", "\n".join(lines))]
-
-    def render_wiki_list():
-        if state.wiki_tab.error:
-            return [("", state.wiki_tab.error)]
-        if not state.wiki_tab.labels:
-            if state.wiki_tab.loaded:
-                return [("", "Wikiページが見つかりません")]
-            return [("", "(Wikiを読み込み中...)")]
-        result = []
-        for i, label in enumerate(state.wiki_tab.labels):
-            prefix = "> " if i == state.wiki_tab.cursor else "  "
-            result.append(("", f"{prefix}{label}\n"))
-        return result
-
-    def render_wiki_preview():
-        if state.wiki_tab.error:
-            return [("", state.wiki_tab.error)]
-        if not state.wiki_tab.pages:
-            return [("", "")]
-        page = state.wiki_tab.pages[state.wiki_tab.cursor]
-        title = page.get("title", "")
-        lines = [title, ""]
-        meta = [
-            ("親", (page.get("parent") or {}).get("title", "")),
-            ("バージョン", str(page.get("version", "")) if page.get("version") else ""),
-            ("作成", page.get("created_on") or ""),
-            ("更新", page.get("updated_on") or ""),
-        ]
-        label_width = max(wcswidth(label) for label, _ in meta)
-        for label, value in meta:
-            display_value = value if value else "-"
-            lines.append(f"[{_pad_display(label, label_width)}] {display_value}")
-
-        text = state.wiki_tab.texts.get(title)
-        lines.append("")
-        lines.append("----")
-        if text is None:
-            lines.append("(Enter で本文をロード)")
-        else:
-            lines.extend(text.splitlines())
-        return [("", "\n".join(lines))]
-
-    def render_list_current():
-        return render_issues() if state.tab == "issues" else render_wiki_list()
-
-    def render_preview_current():
-        return render_preview() if state.tab == "issues" else render_wiki_preview()
-
-    def render_status():
-        if state.tab == "issues":
-            page = state.issue_tab.offset // state.page_size + 1
-            return [
-                (
-                    "reverse",
-                    f" Page {page} (offset={state.issue_tab.offset})  "
-                    "↑↓/jk:移動 ←→/hl:ページ Enter:コメント読込 c:作成 u:更新 "
-                    "n:コメント v:web Tab:タブ切替 q:終了 ",
-                )
-            ]
-        return [
-            (
-                "reverse",
-                " ↑↓/jk:移動 Enter:本文ロード v:web Tab:タブ切替 q:終了 ",
-            )
-        ]
 
     kb = KeyBindings()
 
@@ -452,7 +460,9 @@ def run_issue_tui(
             HSplit(
                 [
                     Window(
-                        FormattedTextControl(render_tabs, show_cursor=False),
+                        FormattedTextControl(
+                            lambda: _render_tabs(state), show_cursor=False
+                        ),
                         height=1,
                     ),
                     Window(height=1, char="─"),
@@ -460,17 +470,22 @@ def run_issue_tui(
                         [
                             Window(
                                 FormattedTextControl(
-                                    render_list_current, show_cursor=False
+                                    lambda: _render_list_current(state),
+                                    show_cursor=False,
                                 )
                             ),
                             Window(width=1, char="│"),
                             Window(
-                                FormattedTextControl(render_preview_current),
+                                FormattedTextControl(
+                                    lambda: _render_preview_current(state)
+                                ),
                                 wrap_lines=True,
                             ),
                         ]
                     ),
-                    Window(FormattedTextControl(render_status), height=1),
+                    Window(
+                        FormattedTextControl(lambda: _render_status(state)), height=1
+                    ),
                 ]
             )
         ),
