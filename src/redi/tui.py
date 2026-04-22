@@ -119,7 +119,7 @@ def _render_tabs(state: TuiState) -> list[tuple[str, str]]:
     ]
 
 
-def _render_issues(state: TuiState) -> list[tuple[str, str]]:
+def _render_issue_list(state: TuiState) -> list[tuple[str, str]]:
     result: list[tuple[str, str]] = []
     for i, issue in enumerate(state.issue_tab.issues):
         prefix = "> " if i == state.issue_tab.cursor else "  "
@@ -128,7 +128,7 @@ def _render_issues(state: TuiState) -> list[tuple[str, str]]:
     return result
 
 
-def _render_preview(state: TuiState) -> list[tuple[str, str]]:
+def _render_issue_preview(state: TuiState) -> list[tuple[str, str]]:
     if not state.issue_tab.issues:
         return []
     issue = state.issue_tab.issues[state.issue_tab.cursor]
@@ -226,12 +226,16 @@ def _render_wiki_preview(state: TuiState) -> list[tuple[str, str]]:
 
 
 def _render_list_current(state: TuiState) -> list[tuple[str, str]]:
-    return _render_issues(state) if state.tab == "issues" else _render_wiki_list(state)
+    return (
+        _render_issue_list(state) if state.tab == "issues" else _render_wiki_list(state)
+    )
 
 
 def _render_preview_current(state: TuiState) -> list[tuple[str, str]]:
     return (
-        _render_preview(state) if state.tab == "issues" else _render_wiki_preview(state)
+        _render_issue_preview(state)
+        if state.tab == "issues"
+        else _render_wiki_preview(state)
     )
 
 
