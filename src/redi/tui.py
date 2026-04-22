@@ -64,6 +64,10 @@ def _load_journals(issue: dict) -> None:
 TuiAction = Literal["update", "create", "comment"]
 TuiTab = Literal["issues", "wiki"]
 
+# 一覧/プレビューの外側にある固定行の合計 (タブバー + 罫線 + ステータスバー)。
+# Layout の HSplit に固定行を増減したらここも更新すること。
+_FIXED_ROWS = 3
+
 
 @dataclass
 class TuiPosition:
@@ -112,7 +116,7 @@ def run_issue_tui(
         state = TuiState()
     last = state.last_result
     position = last.position if last else TuiPosition()
-    state.page_size = max(1, shutil.get_terminal_size().lines - 3)
+    state.page_size = max(1, shutil.get_terminal_size().lines - _FIXED_ROWS)
     state.issue_tab.offset = position.offset
     state.issue_tab.issues = fetch_issues(
         project_id=default_project_id,
