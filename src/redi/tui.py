@@ -112,7 +112,7 @@ def run_issue_tui(
         for i, issue in enumerate(state.issues):
             prefix = "> " if i == state.cursor else "  "
             text = f"{prefix}#{issue['id']} {issue['subject']}\n"
-            result.append(("reverse" if i == state.cursor else "", text))
+            result.append(("", text))
         return result
 
     def render_preview():
