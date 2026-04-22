@@ -268,7 +268,9 @@ def run_issue_tui(
                 [
                     VSplit(
                         [
-                            Window(FormattedTextControl(render_issues)),
+                            Window(
+                                FormattedTextControl(render_issues, show_cursor=False)
+                            ),
                             Window(width=1, char="│"),
                             Window(FormattedTextControl(render_preview)),
                         ]
