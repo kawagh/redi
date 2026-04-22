@@ -1,6 +1,6 @@
 [project]
-name = "redi"
-version = "0.0.16"
+name = "redtile"
+version = "0.0.17"
 description = "Redmine CLI tool"
 readme = "README.md"
 authors = [
@@ -28,3 +28,6 @@ dev = [
     "ruff>=0.15.9",
     "ty>=0.0.31",
 ]
+
+[tool.uv.build-backend]
+module-name = "redi"
