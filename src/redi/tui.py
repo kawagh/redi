@@ -338,13 +338,6 @@ def run_issue_tui(
     kb = KeyBindings()
 
     @kb.add("tab")
-    def _(event):
-        if state.tab == "issues":
-            state.tab = "wiki"
-            _load_wikis()
-        else:
-            state.tab = "issues"
-
     @kb.add("s-tab")
     def _(event):
         if state.tab == "issues":
