@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
+import requests
 from prompt_toolkit import Application
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import Layout
@@ -156,7 +157,7 @@ def run_issue_tui(
             return
         try:
             pages = fetch_wikis(project)
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             state.wiki_error = f"Wikiの取得に失敗しました: {e}"
             return
         ordered, labels = _flatten_wiki_tree(pages)
@@ -175,7 +176,7 @@ def run_issue_tui(
         except SystemExit:
             state.wiki_texts[title] = "(読み込みに失敗しました)"
             return
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             state.wiki_texts[title] = f"(読み込みに失敗しました: {e})"
             return
         state.wiki_texts[title] = wiki.get("text", "") or ""
