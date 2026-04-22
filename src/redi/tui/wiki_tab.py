@@ -104,7 +104,10 @@ def _status_hint(state: TuiState) -> str:
 
 
 def _exit_result(
-    state: TuiState, action: TuiAction, wiki_title: str | None = None
+    state: TuiState,
+    action: TuiAction,
+    wiki_title: str | None = None,
+    parent_wiki_title: str | None = None,
 ) -> TuiResult:
     if wiki_title is None and state.wiki_tab.pages:
         wiki_title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
@@ -112,6 +115,7 @@ def _exit_result(
         action=action,
         tab="wiki",
         wiki_title=wiki_title,
+        parent_wiki_title=parent_wiki_title,
         position=TuiPosition(cursor=state.wiki_tab.cursor),
     )
 
@@ -137,7 +141,10 @@ def _on_enter(state: TuiState) -> None:
 
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
     if key == "c":
-        return _exit_result(state, "create", wiki_title="")
+        parent = None
+        if state.wiki_tab.pages:
+            parent = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
+        return _exit_result(state, "create", parent_wiki_title=parent)
     if key == "u":
         if not state.wiki_tab.pages:
             return None

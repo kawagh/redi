@@ -187,7 +187,7 @@ def main() -> None:
                         project_id=None,
                         full=False,
                         page_title=None,
-                        parent_title=None,
+                        parent_title=tui_result.parent_wiki_title,
                         description=None,
                     )
                 )

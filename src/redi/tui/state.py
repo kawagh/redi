@@ -24,6 +24,7 @@ class TuiResult:
     tab: TuiTab
     issue_id: str | None = None
     wiki_title: str | None = None
+    parent_wiki_title: str | None = None
     position: TuiPosition = field(default_factory=TuiPosition)
 
 
