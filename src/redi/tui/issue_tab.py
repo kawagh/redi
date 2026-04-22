@@ -19,6 +19,7 @@ def _exit_result(
         issue_id = str(state.issue_tab.issues[state.issue_tab.cursor]["id"])
     return TuiResult(
         action=action,
+        tab="issues",
         issue_id=issue_id,
         position=TuiPosition(
             offset=state.issue_tab.offset, cursor=state.issue_tab.cursor

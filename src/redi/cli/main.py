@@ -138,7 +138,7 @@ def main() -> None:
             if tui_result is None:
                 return
             tui_state = TuiState(last_result=tui_result)
-            if tui_result.action == "update":
+            if tui_result.action == "update" and tui_result.tab == "issues":
                 update_args = argparse.Namespace(
                     issue_id=tui_result.issue_id,
                     subject=None,
@@ -163,7 +163,7 @@ def main() -> None:
                     remove_watcher_ids=None,
                 )
                 handle_issue_update(update_args)
-            elif tui_result.action == "create":
+            elif tui_result.action == "create" and tui_result.tab == "issues":
                 create_args = argparse.Namespace(
                     subject=None,
                     project_id=None,
@@ -180,6 +180,27 @@ def main() -> None:
                 notes = open_editor()
                 if notes:
                     add_note(tui_result.issue_id, notes)
+            elif tui_result.action == "create" and tui_result.tab == "wiki":
+                handle_wiki(
+                    argparse.Namespace(
+                        wiki_command="create",
+                        project_id=None,
+                        full=False,
+                        page_title=None,
+                        parent_title=None,
+                        description=None,
+                    )
+                )
+            elif tui_result.action == "update" and tui_result.tab == "wiki":
+                handle_wiki(
+                    argparse.Namespace(
+                        wiki_command="update",
+                        project_id=None,
+                        full=False,
+                        page_title=tui_result.wiki_title,
+                        description=None,
+                    )
+                )
 
     if args.command in ("project", "p"):
         handle_project(args)

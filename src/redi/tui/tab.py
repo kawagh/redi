@@ -24,7 +24,3 @@ class TabView:
 
 def noop(state: TuiState) -> None:
     pass
-
-
-def no_action(state: TuiState, key: str) -> TuiResult | None:
-    return None

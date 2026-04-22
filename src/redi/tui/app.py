@@ -92,20 +92,23 @@ def run_issue_tui(
     if state is None:
         state = TuiState()
     last = state.last_result
+    if last:
+        state.tab = last.tab
     position = last.position if last else TuiPosition()
     state.page_size = max(1, shutil.get_terminal_size().lines - FIXED_ROWS)
-    state.issue_tab.offset = position.offset
+    state.issue_tab.offset = position.offset if state.tab == "issues" else 0
     state.issue_tab.issues = fetch_issues(
         project_id=default_project_id,
         limit=state.page_size,
         offset=state.issue_tab.offset,
     )
-    if not state.issue_tab.issues:
+    if state.tab == "issues" and not state.issue_tab.issues:
         print("イシューが見つかりません")
         return None
-    state.issue_tab.cursor = max(
-        0, min(position.cursor, len(state.issue_tab.issues) - 1)
-    )
+    if state.issue_tab.issues:
+        state.issue_tab.cursor = max(
+            0, min(position.cursor, len(state.issue_tab.issues) - 1)
+        )
     if last and last.action == "comment" and last.issue_id:
         target_id = int(last.issue_id)
         target = next(
@@ -113,6 +116,12 @@ def run_issue_tui(
         )
         if target is not None:
             load_journals(target)
+    if state.tab == "wiki":
+        TABS["wiki"].on_activate(state)
+        if last and last.tab == "wiki" and last.wiki_title:
+            titles = [p.get("title") for p in state.wiki_tab.pages]
+            if last.wiki_title in titles:
+                state.wiki_tab.cursor = titles.index(last.wiki_title)
 
     kb = KeyBindings()
 

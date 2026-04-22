@@ -21,8 +21,10 @@ class TuiPosition:
 @dataclass
 class TuiResult:
     action: TuiAction
-    issue_id: str | None
-    position: TuiPosition
+    tab: TuiTab
+    issue_id: str | None = None
+    wiki_title: str | None = None
+    position: TuiPosition = field(default_factory=TuiPosition)
 
 
 @dataclass
