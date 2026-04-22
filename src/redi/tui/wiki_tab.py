@@ -5,7 +5,7 @@ import requests
 from redi.api.wiki import fetch_wiki, fetch_wikis, flatten_wiki_tree
 from redi.config import default_project_id, redmine_url, wiki_project_id
 from redi.tui.render import render_meta_table
-from redi.tui.state import TuiState
+from redi.tui.state import Renderable, TuiState
 from redi.tui.tab import TabView, no_action, noop
 
 
@@ -53,21 +53,21 @@ def _load_wiki_text(state: TuiState, title: str) -> None:
     state.wiki_tab.texts[title] = wiki.get("text", "") or ""
 
 
-def _render_list(state: TuiState) -> list[tuple[str, str]]:
+def _render_list(state: TuiState) -> Renderable:
     if state.wiki_tab.error:
         return [("", state.wiki_tab.error)]
     if not state.wiki_tab.labels:
         if state.wiki_tab.loaded:
             return [("", "Wikiページが見つかりません")]
         return [("", "(Wikiを読み込み中...)")]
-    result: list[tuple[str, str]] = []
+    result: Renderable = []
     for i, label in enumerate(state.wiki_tab.labels):
         prefix = "> " if i == state.wiki_tab.cursor else "  "
         result.append(("", f"{prefix}{label}\n"))
     return result
 
 
-def _render_preview(state: TuiState) -> list[tuple[str, str]]:
+def _render_preview(state: TuiState) -> Renderable:
     if state.wiki_tab.error:
         return [("", state.wiki_tab.error)]
     if not state.wiki_tab.pages:

@@ -1,6 +1,7 @@
 from redi.tui.app import dump_rendered_screen, run_issue_tui
 from redi.tui.state import (
     IssueTabState,
+    Renderable,
     TuiAction,
     TuiPosition,
     TuiResult,
@@ -11,6 +12,7 @@ from redi.tui.state import (
 
 __all__ = [
     "IssueTabState",
+    "Renderable",
     "TuiAction",
     "TuiPosition",
     "TuiResult",

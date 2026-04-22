@@ -13,6 +13,7 @@ from redi.config import default_project_id
 from redi.tui.issue_tab import ISSUE_TAB, load_journals
 from redi.tui.state import (
     FIXED_ROWS,
+    Renderable,
     TuiPosition,
     TuiResult,
     TuiState,
@@ -60,8 +61,8 @@ def _append_screen_yaml(path: Path, dumped: dict, key: str) -> None:
         f.write(entry)
 
 
-def _render_tabs(state: TuiState) -> list[tuple[str, str]]:
-    parts: list[tuple[str, str]] = []
+def _render_tabs(state: TuiState) -> Renderable:
+    parts: Renderable = []
     for i, (key, tab) in enumerate(TABS.items()):
         if i > 0:
             parts.append(("", "  "))
@@ -71,15 +72,15 @@ def _render_tabs(state: TuiState) -> list[tuple[str, str]]:
     return parts
 
 
-def _render_list_current(state: TuiState) -> list[tuple[str, str]]:
+def _render_list_current(state: TuiState) -> Renderable:
     return TABS[state.tab].render_list(state)
 
 
-def _render_preview_current(state: TuiState) -> list[tuple[str, str]]:
+def _render_preview_current(state: TuiState) -> Renderable:
     return TABS[state.tab].render_preview(state)
 
 
-def _render_status(state: TuiState) -> list[tuple[str, str]]:
+def _render_status(state: TuiState) -> Renderable:
     return [("reverse", TABS[state.tab].status_hint(state))]
 
 

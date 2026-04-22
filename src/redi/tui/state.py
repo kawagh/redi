@@ -4,6 +4,9 @@ from typing import Literal
 TuiAction = Literal["update", "create", "comment"]
 TuiTab = Literal["issues", "wiki"]
 
+# prompt_toolkit の FormattedTextControl に渡す `(style, text)` 断片のリスト。
+Renderable = list[tuple[str, str]]
+
 # 一覧/プレビューの外側にある固定行の合計 (タブバー + 罫線 + ステータスバー)。
 # Layout の HSplit に固定行を増減したらここも更新すること。
 FIXED_ROWS = 3

@@ -1,14 +1,14 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from redi.tui.state import TuiResult, TuiState
+from redi.tui.state import Renderable, TuiResult, TuiState
 
 
 @dataclass
 class TabView:
     label: str
-    render_list: Callable[[TuiState], list[tuple[str, str]]]
-    render_preview: Callable[[TuiState], list[tuple[str, str]]]
+    render_list: Callable[[TuiState], Renderable]
+    render_preview: Callable[[TuiState], Renderable]
     status_hint: Callable[[TuiState], str]
     on_up: Callable[[TuiState], None]
     on_down: Callable[[TuiState], None]

@@ -3,7 +3,7 @@ import webbrowser
 from redi.api.issue import fetch_issue, fetch_issues
 from redi.config import default_project_id, redmine_url
 from redi.tui.render import render_meta_table
-from redi.tui.state import TuiAction, TuiPosition, TuiResult, TuiState
+from redi.tui.state import Renderable, TuiAction, TuiPosition, TuiResult, TuiState
 from redi.tui.tab import TabView, noop
 
 
@@ -26,8 +26,8 @@ def _exit_result(
     )
 
 
-def _render_list(state: TuiState) -> list[tuple[str, str]]:
-    result: list[tuple[str, str]] = []
+def _render_list(state: TuiState) -> Renderable:
+    result: Renderable = []
     for i, issue in enumerate(state.issue_tab.issues):
         prefix = "> " if i == state.issue_tab.cursor else "  "
         text = f"{prefix}#{issue['id']} {issue['subject']}\n"
@@ -35,7 +35,7 @@ def _render_list(state: TuiState) -> list[tuple[str, str]]:
     return result
 
 
-def _render_preview(state: TuiState) -> list[tuple[str, str]]:
+def _render_preview(state: TuiState) -> Renderable:
     if not state.issue_tab.issues:
         return []
     issue = state.issue_tab.issues[state.issue_tab.cursor]
