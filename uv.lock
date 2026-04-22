@@ -160,8 +160,8 @@ wheels = [
 ]
 
 [[package]]
-name = "redi"
-version = "0.0.17"
+name = "redtile"
+version = "0.0.18"
 source = { editable = "." }
 dependencies = [
     { name = "argcomplete" },
