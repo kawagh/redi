@@ -15,7 +15,7 @@ from wcwidth import wcswidth
 
 from redi.config import default_project_id, redmine_url, wiki_project_id
 from redi.api.issue import fetch_issue, fetch_issues
-from redi.api.wiki import build_children_map, fetch_wiki, fetch_wikis
+from redi.api.wiki import fetch_wiki, fetch_wikis, flatten_wiki_tree
 
 
 def dump_rendered_screen(app: Application) -> dict:
@@ -59,31 +59,6 @@ def _pad_display(text: str, width: int) -> str:
 def _load_journals(issue: dict) -> None:
     fetched = fetch_issue(str(issue["id"]), include="journals")
     issue["journals"] = fetched.get("journals") or []
-
-
-def _flatten_wiki_tree(pages: list[dict]) -> tuple[list[dict], list[str]]:
-    """
-    Wiki ページをツリー順に並べ替え、ツリー文字付きラベルと対にして返す。
-    """
-    children_map = build_children_map(pages)
-    by_title = {p["title"]: p for p in pages}
-    ordered: list[dict] = []
-    labels: list[str] = []
-
-    def walk(parent: str | None, prefix: str) -> None:
-        children = children_map.get(parent, [])
-        for i, title in enumerate(children):
-            if title not in by_title:
-                continue
-            is_last = i == len(children) - 1
-            connector = "└── " if is_last else "├── "
-            ordered.append(by_title[title])
-            labels.append(f"{prefix}{connector}{title}")
-            next_prefix = prefix + ("    " if is_last else "│   ")
-            walk(title, next_prefix)
-
-    walk(None, "")
-    return ordered, labels
 
 
 TuiAction = Literal["update", "create", "comment"]
@@ -176,9 +151,11 @@ def run_issue_tui(
         except requests.exceptions.RequestException as e:
             state.wiki_tab.error = f"Wikiの取得に失敗しました: {e}"
             return
-        ordered, labels = _flatten_wiki_tree(pages)
-        state.wiki_tab.pages = ordered
-        state.wiki_tab.labels = labels
+        items = flatten_wiki_tree(pages)
+        state.wiki_tab.pages = [page for page, _ in items]
+        state.wiki_tab.labels = [
+            f"{tree_prefix}{page['title']}" for page, tree_prefix in items
+        ]
         state.wiki_tab.cursor = 0
 
     def _load_wiki_text(title: str) -> None:
