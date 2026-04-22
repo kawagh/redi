@@ -127,7 +127,7 @@ def run_issue_tui(
         state = TuiState()
     last = state.last_result
     position = last.position if last else TuiPosition()
-    state.page_size = max(1, shutil.get_terminal_size().lines - 2)
+    state.page_size = max(1, shutil.get_terminal_size().lines - 3)
     state.offset = position.offset
     state.issues = fetch_issues(
         project_id=default_project_id, limit=state.page_size, offset=state.offset
@@ -461,6 +461,7 @@ def run_issue_tui(
                         FormattedTextControl(render_tabs, show_cursor=False),
                         height=1,
                     ),
+                    Window(height=1, char="─"),
                     VSplit(
                         [
                             Window(
