@@ -168,4 +168,5 @@ ISSUE_TAB = TabView(
     on_open_web=_on_open_web,
     on_activate=noop,
     on_action_key=_on_action_key,
+    get_cursor_y=lambda state: state.issue_tab.cursor,
 )

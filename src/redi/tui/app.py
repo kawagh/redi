@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 from prompt_toolkit import Application
+from prompt_toolkit.data_structures import Point
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import HSplit, VSplit, Window
@@ -180,6 +181,9 @@ def run_issue_tui(
                                 FormattedTextControl(
                                     lambda: _render_list_current(state),
                                     show_cursor=False,
+                                    get_cursor_position=lambda: Point(
+                                        0, TABS[state.tab].get_cursor_y(state)
+                                    ),
                                 )
                             ),
                             Window(width=1, char="│"),

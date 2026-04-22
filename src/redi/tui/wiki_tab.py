@@ -140,4 +140,5 @@ WIKI_TAB = TabView(
     on_open_web=_on_open_web,
     on_activate=_load_wikis,
     on_action_key=no_action,
+    get_cursor_y=lambda state: state.wiki_tab.cursor,
 )
