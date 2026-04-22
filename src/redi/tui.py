@@ -1,5 +1,6 @@
 import shutil
 import webbrowser
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -70,11 +71,6 @@ def _render_meta_table(meta: list[tuple[str, str]]) -> list[str]:
     ]
 
 
-def _load_journals(issue: dict) -> None:
-    fetched = fetch_issue(str(issue["id"]), include="journals")
-    issue["journals"] = fetched.get("journals") or []
-
-
 TuiAction = Literal["update", "create", "comment"]
 TuiTab = Literal["issues", "wiki"]
 
@@ -122,15 +118,73 @@ class TuiState:
     wiki_tab: WikiTabState = field(default_factory=WikiTabState)
 
 
-def _render_tabs(state: TuiState) -> list[tuple[str, str]]:
-    issues_style = "reverse" if state.tab == "issues" else ""
-    wiki_style = "reverse" if state.tab == "wiki" else ""
-    return [
-        (issues_style, " イシュー "),
-        ("", "  "),
-        (wiki_style, " Wiki "),
-        ("", "   (Tab:切替)"),
+# ---- data loaders ---------------------------------------------------------
+
+
+def _load_journals(issue: dict) -> None:
+    fetched = fetch_issue(str(issue["id"]), include="journals")
+    issue["journals"] = fetched.get("journals") or []
+
+
+def _wiki_project() -> str | None:
+    return wiki_project_id or default_project_id
+
+
+def _load_wikis(state: TuiState) -> None:
+    if state.wiki_tab.loaded:
+        return
+    state.wiki_tab.loaded = True
+    project = _wiki_project()
+    if not project:
+        state.wiki_tab.error = (
+            "wiki_project_id か default_project_id を設定してください"
+        )
+        return
+    try:
+        pages = fetch_wikis(project)
+    except requests.exceptions.RequestException as e:
+        state.wiki_tab.error = f"Wikiの取得に失敗しました: {e}"
+        return
+    items = flatten_wiki_tree(pages)
+    state.wiki_tab.pages = [page for page, _ in items]
+    state.wiki_tab.labels = [
+        f"{tree_prefix}{page['title']}" for page, tree_prefix in items
     ]
+    state.wiki_tab.cursor = 0
+
+
+def _load_wiki_text(state: TuiState, title: str) -> None:
+    if title in state.wiki_tab.texts:
+        return
+    project = _wiki_project()
+    if not project:
+        return
+    try:
+        wiki = fetch_wiki(project, title)
+    except requests.exceptions.RequestException as e:
+        state.wiki_tab.texts[title] = f"(読み込みに失敗しました: {e})"
+        return
+    if wiki is None:
+        state.wiki_tab.texts[title] = "(ページが見つかりません)"
+        return
+    state.wiki_tab.texts[title] = wiki.get("text", "") or ""
+
+
+def _exit_result(
+    state: TuiState, action: TuiAction, issue_id: str | None = None
+) -> TuiResult:
+    if issue_id is None and state.issue_tab.issues:
+        issue_id = str(state.issue_tab.issues[state.issue_tab.cursor]["id"])
+    return TuiResult(
+        action=action,
+        issue_id=issue_id,
+        position=TuiPosition(
+            offset=state.issue_tab.offset, cursor=state.issue_tab.cursor
+        ),
+    )
+
+
+# ---- per-tab renderers ---------------------------------------------------
 
 
 def _render_issue_list(state: TuiState) -> list[tuple[str, str]]:
@@ -233,37 +287,202 @@ def _render_wiki_preview(state: TuiState) -> list[tuple[str, str]]:
     return [("", "\n".join(lines))]
 
 
-def _render_list_current(state: TuiState) -> list[tuple[str, str]]:
-    return (
-        _render_issue_list(state) if state.tab == "issues" else _render_wiki_list(state)
+# ---- per-tab handlers ----------------------------------------------------
+
+
+def _issue_on_up(state: TuiState) -> None:
+    state.issue_tab.cursor = max(0, state.issue_tab.cursor - 1)
+
+
+def _issue_on_down(state: TuiState) -> None:
+    state.issue_tab.cursor = min(
+        len(state.issue_tab.issues) - 1, state.issue_tab.cursor + 1
     )
+
+
+def _issue_on_enter(state: TuiState) -> None:
+    if not state.issue_tab.issues:
+        return
+    issue = state.issue_tab.issues[state.issue_tab.cursor]
+    if issue.get("id") is None:
+        return
+    _load_journals(issue)
+
+
+def _issue_on_page_forward(state: TuiState) -> None:
+    next_issues = fetch_issues(
+        project_id=default_project_id,
+        limit=state.page_size,
+        offset=state.issue_tab.offset + state.page_size,
+    )
+    if next_issues:
+        state.issue_tab.offset += state.page_size
+        state.issue_tab.issues = next_issues
+        state.issue_tab.cursor = 0
+
+
+def _issue_on_page_backward(state: TuiState) -> None:
+    if state.issue_tab.offset <= 0:
+        return
+    state.issue_tab.offset = max(0, state.issue_tab.offset - state.page_size)
+    state.issue_tab.issues = fetch_issues(
+        project_id=default_project_id,
+        limit=state.page_size,
+        offset=state.issue_tab.offset,
+    )
+    state.issue_tab.cursor = 0
+
+
+def _issue_on_open_web(state: TuiState) -> None:
+    if not state.issue_tab.issues:
+        return
+    issue_id = state.issue_tab.issues[state.issue_tab.cursor]["id"]
+    webbrowser.open(f"{redmine_url}/issues/{issue_id}")
+
+
+def _issue_on_action_key(state: TuiState, key: str) -> TuiResult | None:
+    if key == "u":
+        return _exit_result(state, "update")
+    if key == "c":
+        return _exit_result(state, "create", issue_id="")
+    if key == "n":
+        return _exit_result(state, "comment")
+    return None
+
+
+def _issue_status_hint(state: TuiState) -> str:
+    page = state.issue_tab.offset // state.page_size + 1
+    return (
+        f" Page {page} (offset={state.issue_tab.offset})  "
+        "↑↓/jk:移動 ←→/hl:ページ Enter:コメント読込 c:作成 u:更新 "
+        "n:コメント v:web Tab:タブ切替 q:終了 "
+    )
+
+
+def _wiki_on_up(state: TuiState) -> None:
+    state.wiki_tab.cursor = max(0, state.wiki_tab.cursor - 1)
+
+
+def _wiki_on_down(state: TuiState) -> None:
+    if state.wiki_tab.pages:
+        state.wiki_tab.cursor = min(
+            len(state.wiki_tab.pages) - 1, state.wiki_tab.cursor + 1
+        )
+
+
+def _wiki_on_enter(state: TuiState) -> None:
+    if not state.wiki_tab.pages:
+        return
+    title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
+    if title:
+        _load_wiki_text(state, title)
+
+
+def _wiki_on_open_web(state: TuiState) -> None:
+    if not state.wiki_tab.pages:
+        return
+    project = _wiki_project()
+    if not project:
+        return
+    title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
+    if title:
+        webbrowser.open(f"{redmine_url}/projects/{project}/wiki/{title}")
+
+
+def _wiki_status_hint(state: TuiState) -> str:
+    return " ↑↓/jk:移動 Enter:本文ロード v:web Tab:タブ切替 q:終了 "
+
+
+def _noop(state: TuiState) -> None:
+    pass
+
+
+def _no_action(state: TuiState, key: str) -> TuiResult | None:
+    return None
+
+
+# ---- tab registry --------------------------------------------------------
+
+
+@dataclass
+class TabView:
+    label: str
+    render_list: Callable[[TuiState], list[tuple[str, str]]]
+    render_preview: Callable[[TuiState], list[tuple[str, str]]]
+    status_hint: Callable[[TuiState], str]
+    on_up: Callable[[TuiState], None]
+    on_down: Callable[[TuiState], None]
+    on_enter: Callable[[TuiState], None]
+    on_page_forward: Callable[[TuiState], None]
+    on_page_backward: Callable[[TuiState], None]
+    on_open_web: Callable[[TuiState], None]
+    on_activate: Callable[[TuiState], None]
+    on_action_key: Callable[[TuiState, str], TuiResult | None]
+
+
+ISSUE_TAB = TabView(
+    label="イシュー",
+    render_list=_render_issue_list,
+    render_preview=_render_issue_preview,
+    status_hint=_issue_status_hint,
+    on_up=_issue_on_up,
+    on_down=_issue_on_down,
+    on_enter=_issue_on_enter,
+    on_page_forward=_issue_on_page_forward,
+    on_page_backward=_issue_on_page_backward,
+    on_open_web=_issue_on_open_web,
+    on_activate=_noop,
+    on_action_key=_issue_on_action_key,
+)
+
+WIKI_TAB = TabView(
+    label="Wiki",
+    render_list=_render_wiki_list,
+    render_preview=_render_wiki_preview,
+    status_hint=_wiki_status_hint,
+    on_up=_wiki_on_up,
+    on_down=_wiki_on_down,
+    on_enter=_wiki_on_enter,
+    on_page_forward=_noop,
+    on_page_backward=_noop,
+    on_open_web=_wiki_on_open_web,
+    on_activate=_load_wikis,
+    on_action_key=_no_action,
+)
+
+TABS: dict[TuiTab, TabView] = {
+    "issues": ISSUE_TAB,
+    "wiki": WIKI_TAB,
+}
+
+
+# ---- top-level renderers (dispatch through TABS) -------------------------
+
+
+def _render_tabs(state: TuiState) -> list[tuple[str, str]]:
+    parts: list[tuple[str, str]] = []
+    for i, (key, tab) in enumerate(TABS.items()):
+        if i > 0:
+            parts.append(("", "  "))
+        style = "reverse" if state.tab == key else ""
+        parts.append((style, f" {tab.label} "))
+    parts.append(("", "   (Tab:切替)"))
+    return parts
+
+
+def _render_list_current(state: TuiState) -> list[tuple[str, str]]:
+    return TABS[state.tab].render_list(state)
 
 
 def _render_preview_current(state: TuiState) -> list[tuple[str, str]]:
-    return (
-        _render_issue_preview(state)
-        if state.tab == "issues"
-        else _render_wiki_preview(state)
-    )
+    return TABS[state.tab].render_preview(state)
 
 
 def _render_status(state: TuiState) -> list[tuple[str, str]]:
-    if state.tab == "issues":
-        page = state.issue_tab.offset // state.page_size + 1
-        return [
-            (
-                "reverse",
-                f" Page {page} (offset={state.issue_tab.offset})  "
-                "↑↓/jk:移動 ←→/hl:ページ Enter:コメント読込 c:作成 u:更新 "
-                "n:コメント v:web Tab:タブ切替 q:終了 ",
-            )
-        ]
-    return [
-        (
-            "reverse",
-            " ↑↓/jk:移動 Enter:本文ロード v:web Tab:タブ切替 q:終了 ",
-        )
-    ]
+    return [("reverse", TABS[state.tab].status_hint(state))]
+
+
+# ---- entry point ---------------------------------------------------------
 
 
 def run_issue_tui(
@@ -295,171 +514,49 @@ def run_issue_tui(
         if target is not None:
             _load_journals(target)
 
-    def _wiki_project() -> str | None:
-        return wiki_project_id or default_project_id
-
-    def _load_wikis() -> None:
-        if state.wiki_tab.loaded:
-            return
-        state.wiki_tab.loaded = True
-        project = _wiki_project()
-        if not project:
-            state.wiki_tab.error = (
-                "wiki_project_id か default_project_id を設定してください"
-            )
-            return
-        try:
-            pages = fetch_wikis(project)
-        except requests.exceptions.RequestException as e:
-            state.wiki_tab.error = f"Wikiの取得に失敗しました: {e}"
-            return
-        items = flatten_wiki_tree(pages)
-        state.wiki_tab.pages = [page for page, _ in items]
-        state.wiki_tab.labels = [
-            f"{tree_prefix}{page['title']}" for page, tree_prefix in items
-        ]
-        state.wiki_tab.cursor = 0
-
-    def _load_wiki_text(title: str) -> None:
-        if title in state.wiki_tab.texts:
-            return
-        project = _wiki_project()
-        if not project:
-            return
-        try:
-            wiki = fetch_wiki(project, title)
-        except requests.exceptions.RequestException as e:
-            state.wiki_tab.texts[title] = f"(読み込みに失敗しました: {e})"
-            return
-        if wiki is None:
-            state.wiki_tab.texts[title] = "(ページが見つかりません)"
-            return
-        state.wiki_tab.texts[title] = wiki.get("text", "") or ""
-
     kb = KeyBindings()
 
     @kb.add("tab")
     @kb.add("s-tab")
     def _(event):
-        if state.tab == "issues":
-            state.tab = "wiki"
-            _load_wikis()
-        else:
-            state.tab = "issues"
+        state.tab = "wiki" if state.tab == "issues" else "issues"
+        TABS[state.tab].on_activate(state)
 
     @kb.add("up")
     @kb.add("k")
     def _(event):
-        if state.tab == "issues":
-            state.issue_tab.cursor = max(0, state.issue_tab.cursor - 1)
-        else:
-            state.wiki_tab.cursor = max(0, state.wiki_tab.cursor - 1)
+        TABS[state.tab].on_up(state)
 
     @kb.add("down")
     @kb.add("j")
     def _(event):
-        if state.tab == "issues":
-            state.issue_tab.cursor = min(
-                len(state.issue_tab.issues) - 1, state.issue_tab.cursor + 1
-            )
-        else:
-            if state.wiki_tab.pages:
-                state.wiki_tab.cursor = min(
-                    len(state.wiki_tab.pages) - 1, state.wiki_tab.cursor + 1
-                )
+        TABS[state.tab].on_down(state)
 
     @kb.add("right")
     @kb.add("l")
     def _(event):
-        if state.tab != "issues":
-            return
-        next_issues = fetch_issues(
-            project_id=default_project_id,
-            limit=state.page_size,
-            offset=state.issue_tab.offset + state.page_size,
-        )
-        if next_issues:
-            state.issue_tab.offset += state.page_size
-            state.issue_tab.issues = next_issues
-            state.issue_tab.cursor = 0
+        TABS[state.tab].on_page_forward(state)
 
     @kb.add("left")
     @kb.add("h")
     def _(event):
-        if state.tab != "issues":
-            return
-        if state.issue_tab.offset > 0:
-            state.issue_tab.offset = max(0, state.issue_tab.offset - state.page_size)
-            state.issue_tab.issues = fetch_issues(
-                project_id=default_project_id,
-                limit=state.page_size,
-                offset=state.issue_tab.offset,
-            )
-            state.issue_tab.cursor = 0
-
-    def _exit_with(action: TuiAction, issue_id: str | None = None):
-        """
-        直前の位置を引き継いでTUIのアクションを返す
-        """
-        if issue_id is None and state.issue_tab.issues:
-            issue_id = str(state.issue_tab.issues[state.issue_tab.cursor]["id"])
-        return TuiResult(
-            action=action,
-            issue_id=issue_id,
-            position=TuiPosition(
-                offset=state.issue_tab.offset, cursor=state.issue_tab.cursor
-            ),
-        )
+        TABS[state.tab].on_page_backward(state)
 
     @kb.add("enter")
     def _(event):
-        if state.tab == "issues":
-            if not state.issue_tab.issues:
-                return
-            issue = state.issue_tab.issues[state.issue_tab.cursor]
-            if issue.get("id") is None:
-                return
-            _load_journals(issue)
-        else:
-            if not state.wiki_tab.pages:
-                return
-            title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
-            if title:
-                _load_wiki_text(title)
-
-    @kb.add("u")
-    def _(event):
-        if state.tab != "issues":
-            return
-        event.app.exit(result=_exit_with("update"))
-
-    @kb.add("c")
-    def _(event):
-        if state.tab != "issues":
-            return
-        event.app.exit(result=_exit_with("create", issue_id=""))
-
-    # n is first letter of note
-    @kb.add("n")
-    def _(event):
-        if state.tab != "issues":
-            return
-        event.app.exit(result=_exit_with("comment"))
+        TABS[state.tab].on_enter(state)
 
     @kb.add("v")
     def _(event):
-        if state.tab == "issues":
-            issue_id = state.issue_tab.issues[state.issue_tab.cursor]["id"]
-            webbrowser.open(f"{redmine_url}/issues/{issue_id}")
-        else:
-            if not state.wiki_tab.pages:
-                return
-            project = _wiki_project()
-            if not project:
-                return
-            title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
-            if title:
-                webbrowser.open(f"{redmine_url}/projects/{project}/wiki/{title}")
+        TABS[state.tab].on_open_web(state)
+
+    for action_key in ("u", "c", "n"):
+
+        @kb.add(action_key)
+        def _(event, action_key=action_key):
+            result = TABS[state.tab].on_action_key(state, action_key)
+            if result is not None:
+                event.app.exit(result=result)
 
     @kb.add("q")
     @kb.add("escape")
