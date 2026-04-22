@@ -162,6 +162,9 @@ def handle_wiki(args: argparse.Namespace) -> None:
         title = normalize_title(args.page_title)
         if not args.yes:
             page = fetch_wiki(project_id, title)
+            if page is None:
+                print(f"Wikiページが見つかりません: {title}")
+                exit(1)
             confirm_delete(f"削除するWikiページ: {page.get('title', title)}")
         delete_wiki(project_id, title)
     elif cmd == "update":
@@ -183,6 +186,9 @@ def handle_wiki(args: argparse.Namespace) -> None:
             text = args.description
         else:
             current = fetch_wiki(project_id, page_title)
+            if current is None:
+                print(f"Wikiページが見つかりません: {page_title}")
+                exit(1)
             text = open_editor(current.get("text") or "")
         if text:
             update_wiki(project_id, page_title, text)

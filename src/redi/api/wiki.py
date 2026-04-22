@@ -33,37 +33,51 @@ def build_children_map(pages: list[dict]) -> dict[str | None, list[str]]:
     return children_map
 
 
+def flatten_wiki_tree(pages: list[dict]) -> list[tuple[dict, str]]:
+    """
+    Wiki ページをツリー順に並べ、(ページ辞書, ツリー前置子) のペア列として返す。
+    前置子は `│   ├── ` のようなツリー装飾で、末尾にタイトル等を連結すれば
+    1 行分のツリー表示になる。
+    """
+    children_map = build_children_map(pages)
+    by_title = {p["title"]: p for p in pages}
+    result: list[tuple[dict, str]] = []
+
+    def walk(parent: str | None, prefix: str) -> None:
+        children = children_map.get(parent, [])
+        for i, title in enumerate(children):
+            if title not in by_title:
+                continue
+            is_last = i == len(children) - 1
+            connector = "└── " if is_last else "├── "
+            result.append((by_title[title], f"{prefix}{connector}"))
+            next_prefix = prefix + ("    " if is_last else "│   ")
+            walk(title, next_prefix)
+
+    walk(None, "")
+    return result
+
+
 def list_wikis(project_id: str, full: bool = False) -> None:
     pages = fetch_wikis(project_id)
     if full:
         print(json.dumps(pages, ensure_ascii=False))
         return
-    children_map = build_children_map(pages)
-
-    def print_tree(parent: str | None, prefix: str = "") -> None:
-        children = children_map.get(parent, [])
-        for i, title in enumerate(children):
-            is_last = i == len(children) - 1
-            connector = "└── " if is_last else "├── "
-            url = f"{redmine_url}/projects/{project_id}/wiki/{title}"
-            print(f"{prefix}{connector}[{title}]({url})")
-            next_prefix = prefix + ("    " if is_last else "│   ")
-            print_tree(title, next_prefix)
-
-    print_tree(None)
+    for page, tree_prefix in flatten_wiki_tree(pages):
+        title = page["title"]
+        url = f"{redmine_url}/projects/{project_id}/wiki/{title}"
+        print(f"{tree_prefix}[{title}]({url})")
 
 
-def fetch_wiki(project_id: str, page_title: str, version: int | None = None) -> dict:
+def fetch_wiki(
+    project_id: str, page_title: str, version: int | None = None
+) -> dict | None:
     path = f"/projects/{project_id}/wiki/{page_title}.json"
     if version is not None:
         path = f"/projects/{project_id}/wiki/{page_title}/{version}.json"
     response = client.get(path)
     if response.status_code == 404:
-        if version is not None:
-            print(f"Wikiページが見つかりません: {page_title} (version={version})")
-        else:
-            print(f"Wikiページが見つかりません: {page_title}")
-        exit(1)
+        return None
     response.raise_for_status()
     return response.json()["wiki_page"]
 
@@ -83,6 +97,12 @@ def read_wiki(
         webbrowser.open(url)
         return
     wiki = fetch_wiki(project_id, page_title, version=version)
+    if wiki is None:
+        if version is not None:
+            print(f"Wikiページが見つかりません: {page_title} (version={version})")
+        else:
+            print(f"Wikiページが見つかりません: {page_title}")
+        exit(1)
     if full:
         print(json.dumps(wiki, ensure_ascii=False, indent=2))
     else:

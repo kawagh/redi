@@ -1,0 +1,171 @@
+import webbrowser
+
+from redi.api.issue import fetch_issue, fetch_issues
+from redi.config import default_project_id, redmine_url
+from redi.tui.render import render_meta_table
+from redi.tui.state import Renderable, TuiAction, TuiPosition, TuiResult, TuiState
+from redi.tui.tab import TabView, noop
+
+
+def load_journals(issue: dict) -> None:
+    fetched = fetch_issue(str(issue["id"]), include="journals")
+    issue["journals"] = fetched.get("journals") or []
+
+
+def _exit_result(
+    state: TuiState, action: TuiAction, issue_id: str | None = None
+) -> TuiResult:
+    if issue_id is None and state.issue_tab.issues:
+        issue_id = str(state.issue_tab.issues[state.issue_tab.cursor]["id"])
+    return TuiResult(
+        action=action,
+        issue_id=issue_id,
+        position=TuiPosition(
+            offset=state.issue_tab.offset, cursor=state.issue_tab.cursor
+        ),
+    )
+
+
+def _render_list(state: TuiState) -> Renderable:
+    result: Renderable = []
+    for i, issue in enumerate(state.issue_tab.issues):
+        prefix = "> " if i == state.issue_tab.cursor else "  "
+        text = f"{prefix}#{issue['id']} {issue['subject']}\n"
+        result.append(("", text))
+    return result
+
+
+def _render_preview(state: TuiState) -> Renderable:
+    if not state.issue_tab.issues:
+        return []
+    issue = state.issue_tab.issues[state.issue_tab.cursor]
+    lines = [f"#{issue.get('id', '')} {issue.get('subject', '')}", ""]
+
+    def named(field: str) -> str:
+        value = issue.get(field)
+        if isinstance(value, dict):
+            return value.get("name", "")
+        return ""
+
+    meta = [
+        ("ステータス", named("status")),
+        ("優先度", named("priority")),
+        ("トラッカー", named("tracker")),
+        ("担当者", named("assigned_to")),
+        ("作成者", named("author")),
+        ("開始日", issue.get("start_date") or ""),
+        ("期日", issue.get("due_date") or ""),
+        (
+            "進捗",
+            f"{issue['done_ratio']}%" if issue.get("done_ratio") is not None else "",
+        ),
+        ("作成", issue.get("created_on") or ""),
+        ("更新", issue.get("updated_on") or ""),
+    ]
+    lines.extend(render_meta_table(meta))
+
+    description = issue.get("description") or ""
+    if description:
+        lines.append("")
+        lines.append("----")
+        lines.extend(description.splitlines())
+
+    journals = issue.get("journals") or []
+    notes = [j for j in journals if (j.get("notes") or "").strip()]
+    if notes:
+        lines.append("")
+        lines.append("----")
+        lines.append("コメント:")
+        for j in notes:
+            author = (j.get("user") or {}).get("name", "")
+            created = j.get("created_on", "")
+            lines.append(f"[{created}] {author}")
+            for nl in (j.get("notes") or "").splitlines():
+                lines.append(f"  {nl}")
+
+    return [("", "\n".join(lines))]
+
+
+def _status_hint(state: TuiState) -> str:
+    page = state.issue_tab.offset // state.page_size + 1
+    return (
+        f" Page {page} (offset={state.issue_tab.offset})  "
+        "↑↓/jk:移動 ←→/hl:ページ Enter:コメント読込 c:作成 u:更新 "
+        "n:コメント v:web Tab:タブ切替 q:終了 "
+    )
+
+
+def _on_up(state: TuiState) -> None:
+    state.issue_tab.cursor = max(0, state.issue_tab.cursor - 1)
+
+
+def _on_down(state: TuiState) -> None:
+    state.issue_tab.cursor = min(
+        len(state.issue_tab.issues) - 1, state.issue_tab.cursor + 1
+    )
+
+
+def _on_enter(state: TuiState) -> None:
+    if not state.issue_tab.issues:
+        return
+    issue = state.issue_tab.issues[state.issue_tab.cursor]
+    if issue.get("id") is None:
+        return
+    load_journals(issue)
+
+
+def _on_page_forward(state: TuiState) -> None:
+    next_issues = fetch_issues(
+        project_id=default_project_id,
+        limit=state.page_size,
+        offset=state.issue_tab.offset + state.page_size,
+    )
+    if next_issues:
+        state.issue_tab.offset += state.page_size
+        state.issue_tab.issues = next_issues
+        state.issue_tab.cursor = 0
+
+
+def _on_page_backward(state: TuiState) -> None:
+    if state.issue_tab.offset <= 0:
+        return
+    state.issue_tab.offset = max(0, state.issue_tab.offset - state.page_size)
+    state.issue_tab.issues = fetch_issues(
+        project_id=default_project_id,
+        limit=state.page_size,
+        offset=state.issue_tab.offset,
+    )
+    state.issue_tab.cursor = 0
+
+
+def _on_open_web(state: TuiState) -> None:
+    if not state.issue_tab.issues:
+        return
+    issue_id = state.issue_tab.issues[state.issue_tab.cursor]["id"]
+    webbrowser.open(f"{redmine_url}/issues/{issue_id}")
+
+
+def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
+    if key == "u":
+        return _exit_result(state, "update")
+    if key == "c":
+        return _exit_result(state, "create", issue_id="")
+    if key == "n":
+        return _exit_result(state, "comment")
+    return None
+
+
+ISSUE_TAB = TabView(
+    label="イシュー",
+    render_list=_render_list,
+    render_preview=_render_preview,
+    status_hint=_status_hint,
+    on_up=_on_up,
+    on_down=_on_down,
+    on_enter=_on_enter,
+    on_page_forward=_on_page_forward,
+    on_page_backward=_on_page_backward,
+    on_open_web=_on_open_web,
+    on_activate=noop,
+    on_action_key=_on_action_key,
+)
