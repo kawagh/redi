@@ -28,8 +28,8 @@ To use redi, you need to set remdine url and redmine_api_key in one of below way
 #### environment variable
 
 ```sh
-export REDMINE_URL=xxx
-export REDMINE_API_KEY=yyy
+export REDMINE_URL=https://redmine.example.com
+export REDMINE_API_KEY=<your_api_key>
 ```
 
 #### ~/.config/redi/config.toml
@@ -38,15 +38,15 @@ export REDMINE_API_KEY=yyy
 default_profile = "main"
 
 ["main"]
-redmine_url = "xxx"
-redmine_api_key = "yyy"
+redmine_url = "https://redmine.example.com"
+redmine_api_key = "<your_api_key"
 default_project_id = "1"
 wiki_project_id = "2"
 editor = "nvim"
 
 ["sub"]
-redmine_url = "vvv"
-redmine_api_key = "www"
+redmine_url = "https://redmine.example.com"
+redmine_api_key = "<your_api_key>"
 default_project_id = "2"
 wiki_project_id = "3"
 editor = "code"
