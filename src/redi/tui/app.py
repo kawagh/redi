@@ -4,6 +4,7 @@ from pathlib import Path
 
 from prompt_toolkit import Application
 from prompt_toolkit.data_structures import Point
+from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import HSplit, VSplit, Window
@@ -82,6 +83,8 @@ def _render_preview_current(state: TuiState) -> Renderable:
 
 
 def _render_status(state: TuiState) -> Renderable:
+    if state.search_mode:
+        return [("reverse", f" /{state.search_query}")]
     hint = TABS[state.tab].status_hint(state)
     if state.number_buffer:
         hint = f" [{state.number_buffer}]" + hint
@@ -127,37 +130,39 @@ def run_issue_tui(
                 state.wiki_tab.cursor = titles.index(last.wiki_title)
 
     kb = KeyBindings()
+    normal_mode = Condition(lambda: not state.search_mode)
+    search_mode = Condition(lambda: state.search_mode)
 
     def _clear_number_buffer() -> None:
         state.number_buffer = ""
 
-    @kb.add("tab")
-    @kb.add("s-tab")
+    @kb.add("tab", filter=normal_mode)
+    @kb.add("s-tab", filter=normal_mode)
     def _(event):
         _clear_number_buffer()
         state.tab = "wiki" if state.tab == "issues" else "issues"
         TABS[state.tab].on_activate(state)
 
-    @kb.add("up")
-    @kb.add("k")
-    @kb.add("c-p")
+    @kb.add("up", filter=normal_mode)
+    @kb.add("k", filter=normal_mode)
+    @kb.add("c-p", filter=normal_mode)
     def _(event):
         _clear_number_buffer()
         TABS[state.tab].on_up(state)
 
-    @kb.add("down")
-    @kb.add("j")
-    @kb.add("c-n")
+    @kb.add("down", filter=normal_mode)
+    @kb.add("j", filter=normal_mode)
+    @kb.add("c-n", filter=normal_mode)
     def _(event):
         _clear_number_buffer()
         TABS[state.tab].on_down(state)
 
-    @kb.add("g", "g")
+    @kb.add("g", "g", filter=normal_mode)
     def _(event):
         _clear_number_buffer()
         TABS[state.tab].on_goto_top(state)
 
-    @kb.add("G")
+    @kb.add("G", filter=normal_mode)
     def _(event):
         if state.number_buffer:
             try:
@@ -172,36 +177,36 @@ def run_issue_tui(
 
     for digit in "0123456789":
 
-        @kb.add(digit)
+        @kb.add(digit, filter=normal_mode)
         def _(event, digit=digit):
             # 先頭 0 は無視 (多桁数字の中では許容)。
             if not state.number_buffer and digit == "0":
                 return
             state.number_buffer += digit
 
-    @kb.add("right")
-    @kb.add("l")
+    @kb.add("right", filter=normal_mode)
+    @kb.add("l", filter=normal_mode)
     def _(event):
         _clear_number_buffer()
         TABS[state.tab].on_page_forward(state)
 
-    @kb.add("left")
-    @kb.add("h")
+    @kb.add("left", filter=normal_mode)
+    @kb.add("h", filter=normal_mode)
     def _(event):
         _clear_number_buffer()
         TABS[state.tab].on_page_backward(state)
 
-    @kb.add("enter")
+    @kb.add("enter", filter=normal_mode)
     def _(event):
         _clear_number_buffer()
         TABS[state.tab].on_enter(state)
 
-    @kb.add("v")
+    @kb.add("v", filter=normal_mode)
     def _(event):
         _clear_number_buffer()
         TABS[state.tab].on_open_web(state)
 
-    @kb.add("V")
+    @kb.add("V", filter=normal_mode)
     def _(event):
         if state.number_buffer:
             try:
@@ -212,20 +217,67 @@ def run_issue_tui(
             if target_id is not None:
                 TABS[state.tab].on_open_web_by_id(state, target_id)
 
-    for action_key in ("u", "c", "n"):
+    for action_key in ("u", "c"):
 
-        @kb.add(action_key)
+        @kb.add(action_key, filter=normal_mode)
         def _(event, action_key=action_key):
             _clear_number_buffer()
             result = TABS[state.tab].on_action_key(state, action_key)
             if result is not None:
                 event.app.exit(result=result)
 
-    @kb.add("q")
-    @kb.add("escape")
-    @kb.add("c-c")
+    @kb.add("n", filter=normal_mode)
+    def _(event):
+        _clear_number_buffer()
+        if state.search_query:
+            TABS[state.tab].on_search(state, state.search_query, forward=True)
+            return
+        result = TABS[state.tab].on_action_key(state, "n")
+        if result is not None:
+            event.app.exit(result=result)
+
+    @kb.add("N", filter=normal_mode)
+    def _(event):
+        _clear_number_buffer()
+        if state.search_query:
+            TABS[state.tab].on_search(state, state.search_query, forward=False)
+
+    @kb.add("/", filter=normal_mode)
+    def _(event):
+        _clear_number_buffer()
+        state.search_mode = True
+        state.search_query = ""
+
+    @kb.add("q", filter=normal_mode)
+    @kb.add("escape", filter=normal_mode)
+    @kb.add("c-c", filter=normal_mode)
     def _(event):
         event.app.exit(result=None)
+
+    @kb.add("enter", filter=search_mode)
+    def _(event):
+        if state.search_query:
+            TABS[state.tab].on_search(state, state.search_query)
+        state.search_mode = False
+
+    @kb.add("escape", filter=search_mode)
+    @kb.add("c-c", filter=search_mode)
+    def _(event):
+        state.search_mode = False
+        state.search_query = ""
+
+    @kb.add("backspace", filter=search_mode)
+    def _(event):
+        if state.search_query:
+            state.search_query = state.search_query[:-1]
+        else:
+            state.search_mode = False
+
+    @kb.add("<any>", filter=search_mode)
+    def _(event):
+        data = event.data
+        if data and len(data) == 1 and data.isprintable():
+            state.search_query += data
 
     app = Application(
         layout=Layout(

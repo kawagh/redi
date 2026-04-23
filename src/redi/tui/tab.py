@@ -22,6 +22,7 @@ class TabView:
     on_open_web_by_id: Callable[[TuiState, int], None]
     on_activate: Callable[[TuiState], None]
     on_action_key: Callable[[TuiState, str], TuiResult | None]
+    on_search: Callable[..., None]
     # 一覧内でのカーソル行 (0-indexed)。prompt_toolkit の Window 自動スクロールに使う。
     get_cursor_y: Callable[[TuiState], int]
 

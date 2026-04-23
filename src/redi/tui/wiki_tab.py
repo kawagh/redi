@@ -4,7 +4,7 @@ import requests
 
 from redi.api.wiki import fetch_wiki, fetch_wikis, flatten_wiki_tree
 from redi.config import default_project_id, redmine_url, wiki_project_id
-from redi.tui.render import render_meta_table
+from redi.tui.render import highlight_segments, render_meta_table
 from redi.tui.state import (
     Renderable,
     TuiAction,
@@ -67,9 +67,12 @@ def _render_list(state: TuiState) -> Renderable:
             return [("", "Wikiページが見つかりません")]
         return [("", "(Wikiを読み込み中...)")]
     result: Renderable = []
+    query = state.search_query
     for i, label in enumerate(state.wiki_tab.labels):
         prefix = "> " if i == state.wiki_tab.cursor else "  "
-        result.append(("", f"{prefix}{label}\n"))
+        text = f"{prefix}{label}"
+        result.extend(highlight_segments(text, query))
+        result.append(("", "\n"))
     return result
 
 
@@ -101,8 +104,8 @@ def _render_preview(state: TuiState) -> Renderable:
 
 def _status_hint(state: TuiState) -> str:
     return (
-        " ↑↓/jk:移動 gg/G:先頭末尾 Enter:本文ロード c:作成 u:更新 "
-        "v:web Tab:タブ切替 q:終了 "
+        " ↑↓/jk:移動 gg/G:先頭末尾 /:検索 n/N:次前 Enter:本文ロード "
+        "c:作成 u:更新 v:web Tab:タブ切替 q:終了 "
     )
 
 
@@ -165,6 +168,24 @@ def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
     return None
 
 
+def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
+    if not query:
+        return
+    labels = state.wiki_tab.labels
+    if not labels:
+        return
+    targets = [label.lower() for label in labels]
+    query_lower = query.lower()
+    n = len(labels)
+    step = 1 if forward else -1
+    start = (state.wiki_tab.cursor + step) % n
+    for i in range(n):
+        idx = (start + step * i) % n
+        if query_lower in targets[idx]:
+            state.wiki_tab.cursor = idx
+            return
+
+
 def _on_open_web(state: TuiState) -> None:
     if not state.wiki_tab.pages:
         return
@@ -193,5 +214,6 @@ WIKI_TAB = TabView(
     on_open_web_by_id=noop_jump,
     on_activate=_load_wikis,
     on_action_key=_on_action_key,
+    on_search=_on_search,
     get_cursor_y=lambda state: state.wiki_tab.cursor,
 )

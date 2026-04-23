@@ -54,3 +54,6 @@ class TuiState:
     wiki_tab: WikiTabState = field(default_factory=WikiTabState)
     # <N>G で issue にジャンプする際に入力中の数字列を保持する。
     number_buffer: str = ""
+    # / で検索中かどうか、および現在のクエリ (確定後も保持して n/N とハイライトに使う)。
+    search_mode: bool = False
+    search_query: str = ""

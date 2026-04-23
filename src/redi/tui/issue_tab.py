@@ -2,7 +2,7 @@ import webbrowser
 
 from redi.api.issue import fetch_issue, fetch_issues
 from redi.config import default_project_id, redmine_url
-from redi.tui.render import render_meta_table
+from redi.tui.render import highlight_segments, render_meta_table
 from redi.tui.state import Renderable, TuiAction, TuiPosition, TuiResult, TuiState
 from redi.tui.tab import TabView, noop
 
@@ -29,10 +29,12 @@ def _exit_result(
 
 def _render_list(state: TuiState) -> Renderable:
     result: Renderable = []
+    query = state.search_query
     for i, issue in enumerate(state.issue_tab.issues):
         prefix = "> " if i == state.issue_tab.cursor else "  "
-        text = f"{prefix}#{issue['id']} {issue['subject']}\n"
-        result.append(("", text))
+        text = f"{prefix}#{issue['id']} {issue['subject']}"
+        result.extend(highlight_segments(text, query))
+        result.append(("", "\n"))
     return result
 
 
@@ -91,7 +93,7 @@ def _status_hint(state: TuiState) -> str:
     page = state.issue_tab.offset // state.page_size + 1
     return (
         f" Page {page} (offset={state.issue_tab.offset})  "
-        "↑↓/jk:移動 gg/G:先頭末尾 <N>G:#Nへ ←→/hl:ページ "
+        "↑↓/jk:移動 gg/G:先頭末尾 <N>G:#Nへ ←→/hl:ページ /:検索 n/N:次前 "
         "Enter:コメント読込 c:作成 u:更新 n:コメント v:web <N>V:#Nをweb "
         "Tab:タブ切替 q:終了 "
     )
@@ -168,6 +170,26 @@ def _on_open_web_by_id(state: TuiState, target_id: int) -> None:
     webbrowser.open(f"{redmine_url}/issues/{target_id}")
 
 
+def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
+    if not query:
+        return
+    issues = state.issue_tab.issues
+    if not issues:
+        return
+    targets = [
+        f"#{issue.get('id', '')} {issue.get('subject', '')}".lower() for issue in issues
+    ]
+    query_lower = query.lower()
+    n = len(issues)
+    step = 1 if forward else -1
+    start = (state.issue_tab.cursor + step) % n
+    for i in range(n):
+        idx = (start + step * i) % n
+        if query_lower in targets[idx]:
+            state.issue_tab.cursor = idx
+            return
+
+
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
     if key == "u":
         return _exit_result(state, "update")
@@ -195,5 +217,6 @@ ISSUE_TAB = TabView(
     on_open_web_by_id=_on_open_web_by_id,
     on_activate=noop,
     on_action_key=_on_action_key,
+    on_search=_on_search,
     get_cursor_y=lambda state: state.issue_tab.cursor,
 )
