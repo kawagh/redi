@@ -92,7 +92,8 @@ def _status_hint(state: TuiState) -> str:
     return (
         f" Page {page} (offset={state.issue_tab.offset})  "
         "↑↓/jk:移動 gg/G:先頭末尾 <N>G:#Nへ ←→/hl:ページ "
-        "Enter:コメント読込 c:作成 u:更新 n:コメント v:web Tab:タブ切替 q:終了 "
+        "Enter:コメント読込 c:作成 u:更新 n:コメント v:web <N>V:#Nをweb "
+        "Tab:タブ切替 q:終了 "
     )
 
 
@@ -163,6 +164,10 @@ def _on_open_web(state: TuiState) -> None:
     webbrowser.open(f"{redmine_url}/issues/{issue_id}")
 
 
+def _on_open_web_by_id(state: TuiState, target_id: int) -> None:
+    webbrowser.open(f"{redmine_url}/issues/{target_id}")
+
+
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
     if key == "u":
         return _exit_result(state, "update")
@@ -187,6 +192,7 @@ ISSUE_TAB = TabView(
     on_page_forward=_on_page_forward,
     on_page_backward=_on_page_backward,
     on_open_web=_on_open_web,
+    on_open_web_by_id=_on_open_web_by_id,
     on_activate=noop,
     on_action_key=_on_action_key,
     get_cursor_y=lambda state: state.issue_tab.cursor,

@@ -201,6 +201,17 @@ def run_issue_tui(
         _clear_number_buffer()
         TABS[state.tab].on_open_web(state)
 
+    @kb.add("V")
+    def _(event):
+        if state.number_buffer:
+            try:
+                target_id = int(state.number_buffer)
+            except ValueError:
+                target_id = None
+            _clear_number_buffer()
+            if target_id is not None:
+                TABS[state.tab].on_open_web_by_id(state, target_id)
+
     for action_key in ("u", "c", "n"):
 
         @kb.add(action_key)

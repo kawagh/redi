@@ -190,6 +190,7 @@ WIKI_TAB = TabView(
     on_page_forward=noop,
     on_page_backward=noop,
     on_open_web=_on_open_web,
+    on_open_web_by_id=noop_jump,
     on_activate=_load_wikis,
     on_action_key=_on_action_key,
     get_cursor_y=lambda state: state.wiki_tab.cursor,
