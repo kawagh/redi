@@ -10,7 +10,7 @@ def highlight_segments(
     text: str,
     query: str,
     base_style: str = "",
-    hit_style: str = "bold underline",
+    hit_style: str = "reverse",
 ) -> list[tuple[str, str]]:
     """
     `text` の中で `query` (case-insensitive) にマッチする部分を
