@@ -12,7 +12,7 @@ from redi.tui.state import (
     TuiResult,
     TuiState,
 )
-from redi.tui.tab import TabView, noop
+from redi.tui.tab import TabView, noop, noop_jump
 
 
 def _wiki_project() -> str | None:
@@ -185,6 +185,7 @@ WIKI_TAB = TabView(
     on_down=_on_down,
     on_goto_top=_on_goto_top,
     on_goto_bottom=_on_goto_bottom,
+    on_jump_to_id=noop_jump,
     on_enter=_on_enter,
     on_page_forward=noop,
     on_page_backward=noop,

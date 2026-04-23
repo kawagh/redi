@@ -82,7 +82,10 @@ def _render_preview_current(state: TuiState) -> Renderable:
 
 
 def _render_status(state: TuiState) -> Renderable:
-    return [("reverse", TABS[state.tab].status_hint(state))]
+    hint = TABS[state.tab].status_hint(state)
+    if state.number_buffer:
+        hint = f" [{state.number_buffer}]" + hint
+    return [("reverse", hint)]
 
 
 def run_issue_tui(
@@ -125,9 +128,13 @@ def run_issue_tui(
 
     kb = KeyBindings()
 
+    def _clear_number_buffer() -> None:
+        state.number_buffer = ""
+
     @kb.add("tab")
     @kb.add("s-tab")
     def _(event):
+        _clear_number_buffer()
         state.tab = "wiki" if state.tab == "issues" else "issues"
         TABS[state.tab].on_activate(state)
 
@@ -135,44 +142,70 @@ def run_issue_tui(
     @kb.add("k")
     @kb.add("c-p")
     def _(event):
+        _clear_number_buffer()
         TABS[state.tab].on_up(state)
 
     @kb.add("down")
     @kb.add("j")
     @kb.add("c-n")
     def _(event):
+        _clear_number_buffer()
         TABS[state.tab].on_down(state)
 
     @kb.add("g", "g")
     def _(event):
+        _clear_number_buffer()
         TABS[state.tab].on_goto_top(state)
 
     @kb.add("G")
     def _(event):
-        TABS[state.tab].on_goto_bottom(state)
+        if state.number_buffer:
+            try:
+                target_id = int(state.number_buffer)
+            except ValueError:
+                target_id = None
+            _clear_number_buffer()
+            if target_id is not None:
+                TABS[state.tab].on_jump_to_id(state, target_id)
+        else:
+            TABS[state.tab].on_goto_bottom(state)
+
+    for digit in "0123456789":
+
+        @kb.add(digit)
+        def _(event, digit=digit):
+            # 先頭 0 は無視 (多桁数字の中では許容)。
+            if not state.number_buffer and digit == "0":
+                return
+            state.number_buffer += digit
 
     @kb.add("right")
     @kb.add("l")
     def _(event):
+        _clear_number_buffer()
         TABS[state.tab].on_page_forward(state)
 
     @kb.add("left")
     @kb.add("h")
     def _(event):
+        _clear_number_buffer()
         TABS[state.tab].on_page_backward(state)
 
     @kb.add("enter")
     def _(event):
+        _clear_number_buffer()
         TABS[state.tab].on_enter(state)
 
     @kb.add("v")
     def _(event):
+        _clear_number_buffer()
         TABS[state.tab].on_open_web(state)
 
     for action_key in ("u", "c", "n"):
 
         @kb.add(action_key)
         def _(event, action_key=action_key):
+            _clear_number_buffer()
             result = TABS[state.tab].on_action_key(state, action_key)
             if result is not None:
                 event.app.exit(result=result)

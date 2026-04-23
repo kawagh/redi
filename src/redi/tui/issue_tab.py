@@ -91,8 +91,8 @@ def _status_hint(state: TuiState) -> str:
     page = state.issue_tab.offset // state.page_size + 1
     return (
         f" Page {page} (offset={state.issue_tab.offset})  "
-        "↑↓/jk:移動 gg/G:先頭末尾 ←→/hl:ページ Enter:コメント読込 c:作成 u:更新 "
-        "n:コメント v:web Tab:タブ切替 q:終了 "
+        "↑↓/jk:移動 gg/G:先頭末尾 <N>G:#Nへ ←→/hl:ページ "
+        "Enter:コメント読込 c:作成 u:更新 n:コメント v:web Tab:タブ切替 q:終了 "
     )
 
 
@@ -114,6 +114,13 @@ def _on_goto_top(state: TuiState) -> None:
 def _on_goto_bottom(state: TuiState) -> None:
     if state.issue_tab.issues:
         state.issue_tab.cursor = len(state.issue_tab.issues) - 1
+
+
+def _on_jump_to_id(state: TuiState, target_id: int) -> None:
+    for i, issue in enumerate(state.issue_tab.issues):
+        if issue.get("id") == target_id:
+            state.issue_tab.cursor = i
+            return
 
 
 def _on_enter(state: TuiState) -> None:
@@ -175,6 +182,7 @@ ISSUE_TAB = TabView(
     on_down=_on_down,
     on_goto_top=_on_goto_top,
     on_goto_bottom=_on_goto_bottom,
+    on_jump_to_id=_on_jump_to_id,
     on_enter=_on_enter,
     on_page_forward=_on_page_forward,
     on_page_backward=_on_page_backward,

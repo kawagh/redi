@@ -14,6 +14,7 @@ class TabView:
     on_down: Callable[[TuiState], None]
     on_goto_top: Callable[[TuiState], None]
     on_goto_bottom: Callable[[TuiState], None]
+    on_jump_to_id: Callable[[TuiState, int], None]
     on_enter: Callable[[TuiState], None]
     on_page_forward: Callable[[TuiState], None]
     on_page_backward: Callable[[TuiState], None]
@@ -25,4 +26,8 @@ class TabView:
 
 
 def noop(state: TuiState) -> None:
+    pass
+
+
+def noop_jump(state: TuiState, target_id: int) -> None:
     pass

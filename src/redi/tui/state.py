@@ -52,3 +52,5 @@ class TuiState:
     tab: TuiTab = "issues"
     issue_tab: IssueTabState = field(default_factory=IssueTabState)
     wiki_tab: WikiTabState = field(default_factory=WikiTabState)
+    # <N>G で issue にジャンプする際に入力中の数字列を保持する。
+    number_buffer: str = ""
