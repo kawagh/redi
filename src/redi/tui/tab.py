@@ -12,6 +12,8 @@ class TabView:
     status_hint: Callable[[TuiState], str]
     on_up: Callable[[TuiState], None]
     on_down: Callable[[TuiState], None]
+    on_goto_top: Callable[[TuiState], None]
+    on_goto_bottom: Callable[[TuiState], None]
     on_enter: Callable[[TuiState], None]
     on_page_forward: Callable[[TuiState], None]
     on_page_backward: Callable[[TuiState], None]

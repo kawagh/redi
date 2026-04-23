@@ -100,7 +100,10 @@ def _render_preview(state: TuiState) -> Renderable:
 
 
 def _status_hint(state: TuiState) -> str:
-    return " ↑↓/jk:移動 Enter:本文ロード c:作成 u:更新 v:web Tab:タブ切替 q:終了 "
+    return (
+        " ↑↓/jk:移動 gg/G:先頭末尾 Enter:本文ロード c:作成 u:更新 "
+        "v:web Tab:タブ切替 q:終了 "
+    )
 
 
 def _exit_result(
@@ -129,6 +132,16 @@ def _on_down(state: TuiState) -> None:
         state.wiki_tab.cursor = min(
             len(state.wiki_tab.pages) - 1, state.wiki_tab.cursor + 1
         )
+
+
+def _on_goto_top(state: TuiState) -> None:
+    if state.wiki_tab.pages:
+        state.wiki_tab.cursor = 0
+
+
+def _on_goto_bottom(state: TuiState) -> None:
+    if state.wiki_tab.pages:
+        state.wiki_tab.cursor = len(state.wiki_tab.pages) - 1
 
 
 def _on_enter(state: TuiState) -> None:
@@ -170,6 +183,8 @@ WIKI_TAB = TabView(
     status_hint=_status_hint,
     on_up=_on_up,
     on_down=_on_down,
+    on_goto_top=_on_goto_top,
+    on_goto_bottom=_on_goto_bottom,
     on_enter=_on_enter,
     on_page_forward=noop,
     on_page_backward=noop,

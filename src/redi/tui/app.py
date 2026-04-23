@@ -143,6 +143,14 @@ def run_issue_tui(
     def _(event):
         TABS[state.tab].on_down(state)
 
+    @kb.add("g", "g")
+    def _(event):
+        TABS[state.tab].on_goto_top(state)
+
+    @kb.add("G")
+    def _(event):
+        TABS[state.tab].on_goto_bottom(state)
+
     @kb.add("right")
     @kb.add("l")
     def _(event):
