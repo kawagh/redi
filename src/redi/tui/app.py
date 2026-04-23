@@ -133,11 +133,13 @@ def run_issue_tui(
 
     @kb.add("up")
     @kb.add("k")
+    @kb.add("c-p")
     def _(event):
         TABS[state.tab].on_up(state)
 
     @kb.add("down")
     @kb.add("j")
+    @kb.add("c-n")
     def _(event):
         TABS[state.tab].on_down(state)
 
