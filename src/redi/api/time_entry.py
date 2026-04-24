@@ -2,6 +2,7 @@ import json
 
 import requests
 
+from redi.api.project import resolve_project_id
 from redi.client import client
 
 
@@ -18,9 +19,8 @@ def create_time_entry(
         exit(1)
     # time_entries は他の API と異なり project_id に slug を受け付けず整数のみ許容
     # https://www.redmine.org/projects/redmine/wiki/Rest_TimeEntries
-    if project_id is not None and not str(project_id).isdigit():
-        print(f"project_idは整数値で指定してください（slug不可）: {project_id}")
-        exit(1)
+    if project_id is not None:
+        project_id = resolve_project_id(project_id)
     data: dict = {"hours": hours}
     if issue_id:
         data["issue_id"] = issue_id
@@ -109,9 +109,8 @@ def update_time_entry(
 ) -> None:
     # time_entries は他の API と異なり project_id に slug を受け付けず整数のみ許容
     # https://www.redmine.org/projects/redmine/wiki/Rest_TimeEntries
-    if project_id is not None and not str(project_id).isdigit():
-        print(f"project_idは整数値で指定してください（slug不可）: {project_id}")
-        exit(1)
+    if project_id is not None:
+        project_id = resolve_project_id(project_id)
     data: dict = {}
     if hours is not None:
         data["hours"] = hours
