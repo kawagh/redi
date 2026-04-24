@@ -64,6 +64,11 @@ def format_time_entry_line(
     if issue_id:
         subject = (issue_subjects or {}).get(issue_id)
         parts.append(f"#{issue_id} {subject}" if subject else f"#{issue_id}")
+    else:
+        project = te.get("project") or {}
+        project_name = project.get("name")
+        if project_name:
+            parts.append(project_name)
     return "\t".join(parts)
 
 
