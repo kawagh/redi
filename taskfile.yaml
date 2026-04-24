@@ -33,3 +33,17 @@ tasks:
     desc: run tests
     cmds:
       - uv run pytest -v
+
+  release:
+    desc: release next version
+    prompt: リリースしますか?
+    cmds:
+      - task: check
+      - git diff --quiet # 未ステージ
+      - git diff --cached --quiet # 未コミット
+      - uv version --bump patch
+      - git add pyproject.toml uv.lock
+      - git commit -m "version $(uv version --short)"
+      - git tag "$(uv version --short)"
+      - git push
+      - git push --tags
