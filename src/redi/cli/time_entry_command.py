@@ -2,11 +2,10 @@ import argparse
 
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
-from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.keys import Keys
 from prompt_toolkit.validation import Validator
 
 from redi.cli._common import confirm_delete, inline_choice, resolve_alias
+from redi.cli.prompt_util import digit_only_key_bindings
 from redi.config import default_project_id
 from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.issue import fetch_issue
@@ -72,23 +71,12 @@ def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
 
-def _digit_only_key_bindings() -> KeyBindings:
-    kb = KeyBindings()
-
-    @kb.add(Keys.Any)
-    def _(event) -> None:
-        if event.data.isdigit():
-            event.current_buffer.insert_text(event.data)
-
-    return kb
-
-
 def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
     try:
         if not args.issue_id and not args.project_id:
             issue_id = prompt(
                 "イシューID（省略でプロジェクト指定に切替）: ",
-                key_bindings=_digit_only_key_bindings(),
+                key_bindings=digit_only_key_bindings(),
             ).strip()
             if issue_id:
                 args.issue_id = issue_id
