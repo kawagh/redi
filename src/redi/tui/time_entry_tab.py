@@ -100,7 +100,10 @@ def _render_preview(state: TuiState) -> Renderable:
 
 
 def _status_hint(state: TuiState) -> str:
-    return " ↑↓/jk:移動 gg/G:先頭末尾 /:検索 n/N:次前 c:作成 v:web Tab:タブ切替 q:終了 "
+    return (
+        " ↑↓/jk:移動 gg/G:先頭末尾 /:検索 n/N:次前 "
+        "c:作成 u:更新 v:web Tab:タブ切替 q:終了 "
+    )
 
 
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
@@ -108,6 +111,17 @@ def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
         return TuiResult(
             action="create",
             tab="time_entries",
+            position=TuiPosition(cursor=state.time_entry_tab.cursor),
+        )
+    if key == "u":
+        entries = state.time_entry_tab.entries
+        if not entries:
+            return None
+        te = entries[state.time_entry_tab.cursor]
+        return TuiResult(
+            action="update",
+            tab="time_entries",
+            time_entry_id=str(te["id"]),
             position=TuiPosition(cursor=state.time_entry_tab.cursor),
         )
     return None

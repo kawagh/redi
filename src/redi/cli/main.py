@@ -215,6 +215,23 @@ def main() -> None:
                         comments=None,
                     )
                 )
+            elif tui_result.action == "update" and tui_result.tab == "time_entries":
+                if tui_result.time_entry_id is None:
+                    continue
+                handle_time_entry(
+                    argparse.Namespace(
+                        time_entry_command="update",
+                        time_entry_id=tui_result.time_entry_id,
+                        project_id=None,
+                        user_id=None,
+                        full=False,
+                        hours=None,
+                        issue_id=None,
+                        activity_id=None,
+                        spent_on=None,
+                        comments=None,
+                    )
+                )
 
     if args.command in ("project", "p"):
         handle_project(args)
