@@ -46,12 +46,15 @@ def create_time_entry(
     )
 
 
+COMMENT_PREVIEW_MAX_LEN = 30
+
+
 def format_time_entry_line(
     te: dict,
     include_user: bool = True,
     issue_subjects: dict[int, str] | None = None,
 ) -> str:
-    # 列順: id / 日付 / 人 / 時間 / チケット(タイトル付き)
+    # 列順: id / 日付 / 人 / 時間 / チケット(またはプロジェクト名) / コメント
     parts = [str(te["id"]), f"({te['spent_on']})"]
     if include_user:
         user = te.get("user") or {}
@@ -69,6 +72,12 @@ def format_time_entry_line(
         project_name = project.get("name")
         if project_name:
             parts.append(project_name)
+    comments = te.get("comments")
+    if comments:
+        preview = comments.strip().split("\n", 1)[0]
+        if len(preview) > COMMENT_PREVIEW_MAX_LEN:
+            preview = preview[:COMMENT_PREVIEW_MAX_LEN] + "…"
+        parts.append(preview)
     return "\t".join(parts)
 
 
