@@ -7,6 +7,7 @@ from prompt_toolkit.validation import Validator
 from redi.cli._common import confirm_delete, inline_choice, resolve_alias
 from redi.config import default_project_id
 from redi.api.enumeration import fetch_time_entry_activities
+from redi.api.issue import fetch_issue, issue_exists
 from redi.api.project import fetch_projects
 from redi.api.time_entry import (
     create_time_entry,
@@ -72,9 +73,19 @@ def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
 def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
     try:
         if not args.issue_id and not args.project_id:
-            issue_id = prompt("イシューID（省略でプロジェクト指定に切替）: ").strip()
+            issue_validator = Validator.from_callable(
+                lambda v: v == "" or (v.isdigit() and issue_exists(v)),
+                error_message="該当するイシューがありません",
+            )
+            issue_id = prompt(
+                "イシューID（省略でプロジェクト指定に切替）: ",
+                validator=issue_validator,
+                validate_while_typing=False,
+            ).strip()
             if issue_id:
                 args.issue_id = issue_id
+                issue = fetch_issue(issue_id)
+                print(f"イシュー: #{issue['id']} {issue['subject']}")
             else:
                 projects = fetch_projects()
                 valid_values: set[str] = set()
