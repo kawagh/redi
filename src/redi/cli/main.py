@@ -201,6 +201,20 @@ def main() -> None:
                         description=None,
                     )
                 )
+            elif tui_result.action == "create" and tui_result.tab == "time_entries":
+                handle_time_entry(
+                    argparse.Namespace(
+                        time_entry_command="create",
+                        project_id=None,
+                        user_id=None,
+                        full=False,
+                        hours=None,
+                        issue_id=None,
+                        activity_id=None,
+                        spent_on=None,
+                        comments=None,
+                    )
+                )
 
     if args.command in ("project", "p"):
         handle_project(args)

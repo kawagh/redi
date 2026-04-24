@@ -6,7 +6,7 @@ from redi.api.time_entry import fetch_issue_subjects, format_time_entry_line
 from redi.client import client
 from redi.config import default_project_id, redmine_url
 from redi.tui.render import highlight_segments, render_meta_table
-from redi.tui.state import Renderable, TuiState
+from redi.tui.state import Renderable, TuiPosition, TuiResult, TuiState
 from redi.tui.tab import TabView, noop, noop_jump
 
 
@@ -100,7 +100,17 @@ def _render_preview(state: TuiState) -> Renderable:
 
 
 def _status_hint(state: TuiState) -> str:
-    return " ↑↓/jk:移動 gg/G:先頭末尾 /:検索 n/N:次前 v:web Tab:タブ切替 q:終了 "
+    return " ↑↓/jk:移動 gg/G:先頭末尾 /:検索 n/N:次前 c:作成 v:web Tab:タブ切替 q:終了 "
+
+
+def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
+    if key == "c":
+        return TuiResult(
+            action="create",
+            tab="time_entries",
+            position=TuiPosition(cursor=state.time_entry_tab.cursor),
+        )
+    return None
 
 
 def _on_up(state: TuiState) -> None:
@@ -175,7 +185,7 @@ TIME_ENTRY_TAB = TabView(
     on_open_web=_on_open_web,
     on_open_web_by_id=noop_jump,
     on_activate=_load_time_entries,
-    on_action_key=lambda state, key: None,
+    on_action_key=_on_action_key,
     on_search=_on_search,
     get_cursor_y=lambda state: state.time_entry_tab.cursor,
 )
