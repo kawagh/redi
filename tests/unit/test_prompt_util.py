@@ -9,8 +9,10 @@ from redi.cli.prompt_util import (
 )
 
 
+# prompt_toolkit.key_binding.key_processor.KeyPressEvent の duck-type。
+# handler が参照する data と current_buffer のみを持つ最小実装。
 @dataclass
-class _FakeEvent:
+class _FakeKeyPressEvent:
     data: str
     current_buffer: Buffer
 
@@ -19,7 +21,7 @@ def _invoke(kb, data: str, initial: str = "") -> str:
     buffer = Buffer()
     if initial:
         buffer.insert_text(initial)
-    kb.bindings[0].handler(_FakeEvent(data=data, current_buffer=buffer))
+    kb.bindings[0].handler(_FakeKeyPressEvent(data=data, current_buffer=buffer))
     return buffer.text
 
 
