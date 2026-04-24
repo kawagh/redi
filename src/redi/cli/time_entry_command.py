@@ -1,7 +1,11 @@
 import argparse
 
-from redi.cli._common import confirm_delete, resolve_alias
+from prompt_toolkit import prompt
+from prompt_toolkit.validation import Validator
+
+from redi.cli._common import confirm_delete, inline_choice, resolve_alias
 from redi.config import default_project_id
+from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.time_entry import (
     create_time_entry,
     delete_time_entry,
@@ -29,7 +33,9 @@ def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
     te_create_parser = te_subparsers.add_parser(
         "create", aliases=["c"], help="作業時間登録"
     )
-    te_create_parser.add_argument("hours", type=float, help="時間（例: 1.5）")
+    te_create_parser.add_argument(
+        "hours", type=float, nargs="?", help="時間（例: 1.5、省略で対話的に入力）"
+    )
     te_create_parser.add_argument("--issue_id", "-i", help="イシューID")
     te_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     te_create_parser.add_argument("--activity_id", "-a", help="作業分類ID")
@@ -61,9 +67,52 @@ def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
 
+def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
+    try:
+        if not args.issue_id and not args.project_id:
+            issue_id = prompt("イシューID（省略でプロジェクト指定に切替）: ").strip()
+            if issue_id:
+                args.issue_id = issue_id
+            else:
+                project_id = prompt(
+                    "プロジェクトID: ", default=default_project_id or ""
+                ).strip()
+                if not project_id:
+                    print(
+                        "イシューIDまたはプロジェクトIDが必要です。キャンセルしました"
+                    )
+                    exit(1)
+                args.project_id = project_id
+        hours_validator = Validator.from_callable(
+            lambda v: v.replace(".", "", 1).isdigit(),
+            error_message="数値を入力してください",
+        )
+        hours_str = prompt(
+            "作業時間（例: 1.5 (h)）: ", validator=hours_validator
+        ).strip()
+        args.hours = float(hours_str)
+        if not args.activity_id:
+            activities = fetch_time_entry_activities()
+            activity_options: list[tuple[str, str]] = [
+                (str(a["id"]), a["name"]) for a in activities
+            ]
+            activity_labels = dict(activity_options)
+            args.activity_id = inline_choice("作業分類", activity_options)
+            print(f"作業分類: {activity_labels[args.activity_id]}")
+        if not args.spent_on:
+            args.spent_on = prompt("作業日（YYYY-MM-DD、省略で今日）: ").strip() or None
+        if not args.comments:
+            args.comments = prompt("コメント: ").strip() or None
+    except (KeyboardInterrupt, EOFError):
+        print("キャンセルしました")
+        exit(1)
+
+
 def handle_time_entry(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.time_entry_command)
     if cmd == "create":
+        if args.hours is None:
+            _interactive_fill_time_entry_create_args(args)
         project_id = args.project_id or default_project_id
         create_time_entry(
             issue_id=args.issue_id,
