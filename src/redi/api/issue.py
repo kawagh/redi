@@ -87,11 +87,6 @@ def fetch_issue(issue_id: str, include: str = "") -> dict:
     return response.json()["issue"]
 
 
-def issue_exists(issue_id: str) -> bool:
-    response = client.get(f"/issues/{issue_id}.json")
-    return response.status_code == 200
-
-
 def read_issue(
     issue_id: str, include: str = "", full: bool = False, web: bool = False
 ) -> None:
