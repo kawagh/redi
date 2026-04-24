@@ -27,8 +27,8 @@ from redi.tui.wiki_tab import WIKI_TAB
 
 TABS: dict[TuiTab, TabView] = {
     "issues": ISSUE_TAB,
-    "wiki": WIKI_TAB,
     "time_entries": TIME_ENTRY_TAB,
+    "wiki": WIKI_TAB,
 }
 
 
