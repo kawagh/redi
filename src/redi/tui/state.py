@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-TuiAction = Literal["update", "create", "comment"]
+TuiAction = Literal["update", "create", "comment", "create_time_entry"]
 TuiTab = Literal["issues", "wiki", "time_entries"]
 
 # prompt_toolkit の FormattedTextControl に渡す `(style, text)` 断片のリスト。

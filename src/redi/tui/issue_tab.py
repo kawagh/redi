@@ -94,7 +94,7 @@ def _status_hint(state: TuiState) -> str:
     return (
         f" Page {page} (offset={state.issue_tab.offset})  "
         "↑↓/jk:移動 gg/G:先頭末尾 <N>G:#Nへ ←→/hl:ページ /:検索 n/N:次前 "
-        "Enter:コメント読込 c:作成 u:更新 n:コメント v:web <N>V:#Nをweb "
+        "Enter:コメント読込 c:作成 u:更新 n:コメント t:時間登録 v:web <N>V:#Nをweb "
         "Tab:タブ切替 q:終了 "
     )
 
@@ -197,6 +197,10 @@ def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
         return _exit_result(state, "create", issue_id="")
     if key == "n":
         return _exit_result(state, "comment")
+    if key == "t":
+        if not state.issue_tab.issues:
+            return None
+        return _exit_result(state, "create_time_entry")
     return None
 
 

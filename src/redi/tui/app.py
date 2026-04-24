@@ -233,7 +233,7 @@ def run_issue_tui(
             if target_id is not None:
                 TABS[state.tab].on_open_web_by_id(state, target_id)
 
-    for action_key in ("u", "c"):
+    for action_key in ("u", "c", "t"):
 
         @kb.add(action_key, filter=normal_mode)
         def _(event, action_key=action_key):
