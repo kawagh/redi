@@ -46,6 +46,38 @@ def create_time_entry(
     )
 
 
+def format_time_entry_line(
+    te: dict,
+    include_user: bool = True,
+    issue_subjects: dict[int, str] | None = None,
+) -> str:
+    # 列順: id / 日付 / 人 / 時間 / チケット(タイトル付き)
+    parts = [str(te["id"]), f"({te['spent_on']})"]
+    if include_user:
+        user = te.get("user") or {}
+        name = user.get("name")
+        if name:
+            parts.append(name)
+    parts.append(f"{te['hours']}h")
+    issue = te.get("issue") or {}
+    issue_id = issue.get("id")
+    if issue_id:
+        subject = (issue_subjects or {}).get(issue_id)
+        parts.append(f"#{issue_id} {subject}" if subject else f"#{issue_id}")
+    return "\t".join(parts)
+
+
+def _fetch_issue_subjects(issue_ids: list[int]) -> dict[int, str]:
+    if not issue_ids:
+        return {}
+    response = client.get(
+        "/issues.json",
+        params={"issue_id": ",".join(str(i) for i in issue_ids)},
+    )
+    response.raise_for_status()
+    return {issue["id"]: issue["subject"] for issue in response.json()["issues"]}
+
+
 def list_time_entries(
     project_id: str | None = None,
     user_id: str | None = None,
@@ -63,11 +95,24 @@ def list_time_entries(
     time_entries = response.json()["time_entries"]
     if full:
         print(json.dumps(time_entries, ensure_ascii=False))
-    else:
-        for te in time_entries:
-            print(
-                f"{te['id']} {te['hours']}h {te['activity']['name']} ({te['spent_on']})"
+        return
+    include_user = user_id is None
+    issue_ids = sorted(
+        {
+            te["issue"]["id"]
+            for te in time_entries
+            if te.get("issue") and te["issue"].get("id")
+        }
+    )
+    issue_subjects = _fetch_issue_subjects(issue_ids)
+    for te in time_entries:
+        print(
+            format_time_entry_line(
+                te,
+                include_user=include_user,
+                issue_subjects=issue_subjects,
             )
+        )
 
 
 def fetch_time_entry(time_entry_id: str) -> dict:
