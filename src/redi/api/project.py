@@ -8,13 +8,30 @@ from redi.config import redmine_url
 
 
 def list_projects(full: bool = False) -> None:
-    response = client.get("/projects.json")
-    projects = response.json()["projects"]
+    projects = fetch_projects()
     if full:
         print(json.dumps(projects, ensure_ascii=False))
     else:
         for project in projects:
             print(f"{project['id']} {project['name']}")
+
+
+def fetch_projects() -> list[dict]:
+    response = client.get("/projects.json")
+    response.raise_for_status()
+    data = response.json()
+    return data.get("projects", [])
+
+
+def resolve_project_id(value: str) -> str:
+    if str(value).isdigit():
+        return str(value)
+    projects = fetch_projects()
+    for p in projects:
+        if p.get("identifier") == value or p.get("name") == value:
+            return str(p["id"])
+    print(f"プロジェクトが見つかりません: {value}")
+    exit(1)
 
 
 def fetch_project(project_id: str, include: str = "") -> dict:
