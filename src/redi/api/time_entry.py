@@ -16,6 +16,11 @@ def create_time_entry(
     if not issue_id and not project_id:
         print("issue_idまたはproject_idを指定してください")
         exit(1)
+    # time_entries は他の API と異なり project_id に slug を受け付けず整数のみ許容
+    # https://www.redmine.org/projects/redmine/wiki/Rest_TimeEntries
+    if project_id is not None and not str(project_id).isdigit():
+        print(f"project_idは整数値で指定してください（slug不可）: {project_id}")
+        exit(1)
     data: dict = {"hours": hours}
     if issue_id:
         data["issue_id"] = issue_id
@@ -102,6 +107,11 @@ def update_time_entry(
     spent_on: str | None = None,
     comments: str | None = None,
 ) -> None:
+    # time_entries は他の API と異なり project_id に slug を受け付けず整数のみ許容
+    # https://www.redmine.org/projects/redmine/wiki/Rest_TimeEntries
+    if project_id is not None and not str(project_id).isdigit():
+        print(f"project_idは整数値で指定してください（slug不可）: {project_id}")
+        exit(1)
     data: dict = {}
     if hours is not None:
         data["hours"] = hours

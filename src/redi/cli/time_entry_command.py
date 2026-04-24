@@ -74,8 +74,14 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
             if issue_id:
                 args.issue_id = issue_id
             else:
+                project_id_validator = Validator.from_callable(
+                    lambda v: v.isdigit(),
+                    error_message="整数値を入力してください",
+                )
                 project_id = prompt(
-                    "プロジェクトID: ", default=default_project_id or ""
+                    "プロジェクトID: ",
+                    default=default_project_id or "",
+                    validator=project_id_validator,
                 ).strip()
                 if not project_id:
                     print(
