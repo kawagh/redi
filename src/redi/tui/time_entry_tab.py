@@ -58,7 +58,7 @@ def _render_list(state: TuiState) -> Renderable:
     subjects = state.time_entry_tab.issue_subjects
     for i, te in enumerate(entries):
         prefix = "> " if i == state.time_entry_tab.cursor else "  "
-        line = format_time_entry_line(te, issue_subjects=subjects).replace("\t", "  ")
+        line = format_time_entry_line(te, issue_subjects=subjects)
         result.extend(highlight_segments(f"{prefix}{line}", query))
         result.append(("", "\n"))
     return result
@@ -143,8 +143,7 @@ def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
         return
     subjects = state.time_entry_tab.issue_subjects
     targets = [
-        format_time_entry_line(te, issue_subjects=subjects).replace("\t", "  ").lower()
-        for te in entries
+        format_time_entry_line(te, issue_subjects=subjects).lower() for te in entries
     ]
     query_lower = query.lower()
     n = len(entries)

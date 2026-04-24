@@ -78,7 +78,7 @@ def format_time_entry_line(
         if len(preview) > COMMENT_PREVIEW_MAX_LEN:
             preview = preview[:COMMENT_PREVIEW_MAX_LEN] + "…"
         parts.append(preview)
-    return "\t".join(parts)
+    return "  ".join(parts)
 
 
 def fetch_issue_subjects(issue_ids: list[int]) -> dict[int, str]:
