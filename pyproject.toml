@@ -1,6 +1,6 @@
 [project]
 name = "redtile"
-version = "0.0.19"
+version = "0.0.20"
 description = "Redmine CLI tool"
 readme = "README.md"
 authors = [
