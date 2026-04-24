@@ -1,0 +1,181 @@
+import webbrowser
+
+import requests
+
+from redi.api.time_entry import fetch_issue_subjects, format_time_entry_line
+from redi.client import client
+from redi.config import default_project_id, redmine_url
+from redi.tui.render import highlight_segments, render_meta_table
+from redi.tui.state import Renderable, TuiState
+from redi.tui.tab import TabView, noop, noop_jump
+
+
+def _fetch_time_entries(project_id: str | None) -> list[dict]:
+    if project_id:
+        path = f"/projects/{project_id}/time_entries.json"
+    else:
+        path = "/time_entries.json"
+    response = client.get(path)
+    response.raise_for_status()
+    return response.json()["time_entries"]
+
+
+def _load_time_entries(state: TuiState) -> None:
+    if state.time_entry_tab.loaded:
+        return
+    state.time_entry_tab.loaded = True
+    try:
+        entries = _fetch_time_entries(default_project_id)
+    except requests.exceptions.RequestException as e:
+        state.time_entry_tab.error = f"作業時間の取得に失敗しました: {e}"
+        return
+    issue_ids = sorted(
+        {
+            te["issue"]["id"]
+            for te in entries
+            if te.get("issue") and te["issue"].get("id")
+        }
+    )
+    try:
+        subjects = fetch_issue_subjects(issue_ids)
+    except requests.exceptions.RequestException:
+        subjects = {}
+    state.time_entry_tab.entries = entries
+    state.time_entry_tab.issue_subjects = subjects
+    state.time_entry_tab.cursor = 0
+
+
+def _render_list(state: TuiState) -> Renderable:
+    if state.time_entry_tab.error:
+        return [("", state.time_entry_tab.error)]
+    entries = state.time_entry_tab.entries
+    if not entries:
+        if state.time_entry_tab.loaded:
+            return [("", "作業時間が見つかりません")]
+        return [("", "(作業時間を読み込み中...)")]
+    result: Renderable = []
+    query = state.search_query
+    subjects = state.time_entry_tab.issue_subjects
+    for i, te in enumerate(entries):
+        prefix = "> " if i == state.time_entry_tab.cursor else "  "
+        line = format_time_entry_line(te, issue_subjects=subjects).replace("\t", "  ")
+        result.extend(highlight_segments(f"{prefix}{line}", query))
+        result.append(("", "\n"))
+    return result
+
+
+def _render_preview(state: TuiState) -> Renderable:
+    if state.time_entry_tab.error:
+        return [("", state.time_entry_tab.error)]
+    entries = state.time_entry_tab.entries
+    if not entries:
+        return [("", "")]
+    te = entries[state.time_entry_tab.cursor]
+    project = te.get("project") or {}
+    user = te.get("user") or {}
+    issue = te.get("issue") or {}
+    issue_id = issue.get("id")
+    subject = state.time_entry_tab.issue_subjects.get(issue_id) if issue_id else None
+    title = f"#{te['id']} {te['hours']}h ({te['spent_on']})"
+    if issue_id:
+        ticket_cell = f"#{issue_id} {subject}" if subject else f"#{issue_id}"
+    else:
+        ticket_cell = ""
+    meta = [
+        ("プロジェクト", f"{project.get('name', '')} (id={project.get('id', '')})"),
+        ("ユーザー", f"{user.get('name', '')} (id={user.get('id', '')})"),
+        ("作業分類", (te.get("activity") or {}).get("name", "")),
+        ("イシュー", ticket_cell),
+        ("作成", te.get("created_on") or ""),
+        ("更新", te.get("updated_on") or ""),
+    ]
+    lines = [title, ""]
+    lines.extend(render_meta_table(meta))
+    comments = te.get("comments")
+    if comments:
+        lines.append("")
+        lines.append("----")
+        lines.extend(comments.splitlines())
+    return [("", "\n".join(lines))]
+
+
+def _status_hint(state: TuiState) -> str:
+    return " ↑↓/jk:移動 gg/G:先頭末尾 /:検索 n/N:次前 v:web Tab:タブ切替 q:終了 "
+
+
+def _on_up(state: TuiState) -> None:
+    state.time_entry_tab.cursor = max(0, state.time_entry_tab.cursor - 1)
+
+
+def _on_down(state: TuiState) -> None:
+    if state.time_entry_tab.entries:
+        state.time_entry_tab.cursor = min(
+            len(state.time_entry_tab.entries) - 1,
+            state.time_entry_tab.cursor + 1,
+        )
+
+
+def _on_goto_top(state: TuiState) -> None:
+    if state.time_entry_tab.entries:
+        state.time_entry_tab.cursor = 0
+
+
+def _on_goto_bottom(state: TuiState) -> None:
+    if state.time_entry_tab.entries:
+        state.time_entry_tab.cursor = len(state.time_entry_tab.entries) - 1
+
+
+def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
+    if not query:
+        return
+    entries = state.time_entry_tab.entries
+    if not entries:
+        return
+    subjects = state.time_entry_tab.issue_subjects
+    targets = [
+        format_time_entry_line(te, issue_subjects=subjects).replace("\t", "  ").lower()
+        for te in entries
+    ]
+    query_lower = query.lower()
+    n = len(entries)
+    step = 1 if forward else -1
+    start = (state.time_entry_tab.cursor + step) % n
+    for i in range(n):
+        idx = (start + step * i) % n
+        if query_lower in targets[idx]:
+            state.time_entry_tab.cursor = idx
+            return
+
+
+def _on_open_web(state: TuiState) -> None:
+    entries = state.time_entry_tab.entries
+    if not entries:
+        return
+    te = entries[state.time_entry_tab.cursor]
+    issue_id = (te.get("issue") or {}).get("id")
+    if issue_id:
+        webbrowser.open(f"{redmine_url}/issues/{issue_id}")
+    else:
+        webbrowser.open(f"{redmine_url}/time_entries")
+
+
+TIME_ENTRY_TAB = TabView(
+    label="作業時間",
+    render_list=_render_list,
+    render_preview=_render_preview,
+    status_hint=_status_hint,
+    on_up=_on_up,
+    on_down=_on_down,
+    on_goto_top=_on_goto_top,
+    on_goto_bottom=_on_goto_bottom,
+    on_jump_to_id=noop_jump,
+    on_enter=noop,
+    on_page_forward=noop,
+    on_page_backward=noop,
+    on_open_web=_on_open_web,
+    on_open_web_by_id=noop_jump,
+    on_activate=_load_time_entries,
+    on_action_key=lambda state, key: None,
+    on_search=_on_search,
+    get_cursor_y=lambda state: state.time_entry_tab.cursor,
+)

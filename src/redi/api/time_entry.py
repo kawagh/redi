@@ -81,7 +81,7 @@ def format_time_entry_line(
     return "\t".join(parts)
 
 
-def _fetch_issue_subjects(issue_ids: list[int]) -> dict[int, str]:
+def fetch_issue_subjects(issue_ids: list[int]) -> dict[int, str]:
     if not issue_ids:
         return {}
     response = client.get(
@@ -118,7 +118,7 @@ def list_time_entries(
             if te.get("issue") and te["issue"].get("id")
         }
     )
-    issue_subjects = _fetch_issue_subjects(issue_ids)
+    issue_subjects = fetch_issue_subjects(issue_ids)
     for te in time_entries:
         print(
             format_time_entry_line(

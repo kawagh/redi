@@ -22,11 +22,13 @@ from redi.tui.state import (
     TuiTab,
 )
 from redi.tui.tab import TabView
+from redi.tui.time_entry_tab import TIME_ENTRY_TAB
 from redi.tui.wiki_tab import WIKI_TAB
 
 TABS: dict[TuiTab, TabView] = {
     "issues": ISSUE_TAB,
     "wiki": WIKI_TAB,
+    "time_entries": TIME_ENTRY_TAB,
 }
 
 
@@ -128,6 +130,11 @@ def run_issue_tui(
             titles = [p.get("title") for p in state.wiki_tab.pages]
             if last.wiki_title in titles:
                 state.wiki_tab.cursor = titles.index(last.wiki_title)
+    if state.tab == "time_entries":
+        TABS["time_entries"].on_activate(state)
+        if last and last.tab == "time_entries":
+            max_cursor = max(0, len(state.time_entry_tab.entries) - 1)
+            state.time_entry_tab.cursor = min(last.position.cursor, max_cursor)
 
     kb = KeyBindings()
     normal_mode = Condition(lambda: not state.search_mode)
@@ -137,10 +144,19 @@ def run_issue_tui(
         state.number_buffer = ""
 
     @kb.add("tab", filter=normal_mode)
+    def _(event):
+        _clear_number_buffer()
+        tab_keys = list(TABS.keys())
+        idx = tab_keys.index(state.tab)
+        state.tab = tab_keys[(idx + 1) % len(tab_keys)]
+        TABS[state.tab].on_activate(state)
+
     @kb.add("s-tab", filter=normal_mode)
     def _(event):
         _clear_number_buffer()
-        state.tab = "wiki" if state.tab == "issues" else "issues"
+        tab_keys = list(TABS.keys())
+        idx = tab_keys.index(state.tab)
+        state.tab = tab_keys[(idx - 1) % len(tab_keys)]
         TABS[state.tab].on_activate(state)
 
     @kb.add("up", filter=normal_mode)
