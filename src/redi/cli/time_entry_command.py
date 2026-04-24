@@ -1,11 +1,13 @@
 import argparse
 
 from prompt_toolkit import prompt
+from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.validation import Validator
 
 from redi.cli._common import confirm_delete, inline_choice, resolve_alias
 from redi.config import default_project_id
 from redi.api.enumeration import fetch_time_entry_activities
+from redi.api.project import fetch_projects
 from redi.api.time_entry import (
     create_time_entry,
     delete_time_entry,
@@ -74,15 +76,27 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
             if issue_id:
                 args.issue_id = issue_id
             else:
+                projects = fetch_projects()
+                valid_values: set[str] = set()
+                for p in projects:
+                    valid_values.add(str(p["id"]))
+                    if p.get("identifier"):
+                        valid_values.add(p["identifier"])
+                    if p.get("name"):
+                        valid_values.add(p["name"])
+                project_validator = Validator.from_callable(
+                    lambda v: v in valid_values,
+                    error_message="該当するプロジェクトがありません",
+                )
+                completer = WordCompleter(
+                    sorted(valid_values), ignore_case=True, match_middle=True
+                )
                 project_id = prompt(
                     "プロジェクトID または 名前/identifier: ",
                     default=default_project_id or "",
+                    validator=project_validator,
+                    completer=completer,
                 ).strip()
-                if not project_id:
-                    print(
-                        "イシューIDまたはプロジェクトIDが必要です。キャンセルしました"
-                    )
-                    exit(1)
                 args.project_id = project_id
         hours_validator = Validator.from_callable(
             lambda v: v.replace(".", "", 1).isdigit(),
