@@ -4,7 +4,12 @@ from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.validation import Validator
 
-from redi.cli._common import confirm_delete, inline_choice, resolve_alias
+from redi.cli._common import (
+    confirm_delete,
+    inline_checkbox,
+    inline_choice,
+    resolve_alias,
+)
 from redi.cli.prompt_util import (
     digit_and_period_key_bindings,
     digit_only_key_bindings,
@@ -135,6 +140,80 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
         exit(1)
 
 
+def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
+    current = fetch_time_entry(args.time_entry_id)
+    field_values: list[tuple[str, str]] = [
+        ("hours", "作業時間 (hours)"),
+        ("activity", "作業分類 (activity)"),
+        ("spent_on", "作業日 (spent_on)"),
+        ("comments", "コメント (comments)"),
+        ("issue_id", "イシュー (issue_id)"),
+    ]
+    try:
+        selected = inline_checkbox(
+            "更新する項目を選択 (Spaceで選択、Enterで確定)", field_values
+        )
+    except KeyboardInterrupt:
+        print("キャンセルしました")
+        exit(1)
+    if not selected:
+        print("更新する項目が選択されていないためキャンセルしました")
+        exit(1)
+    labels = dict(field_values)
+    print(f"更新する項目: {', '.join(labels[v] for v in selected)}")
+    try:
+        if "hours" in selected:
+            hours_validator = Validator.from_callable(
+                lambda v: v.replace(".", "", 1).isdigit(),
+                error_message="数値を入力してください",
+            )
+            hours_str = prompt(
+                "作業時間（例: 1.5 (h)）: ",
+                default=str(current.get("hours", "")),
+                validator=hours_validator,
+                key_bindings=digit_and_period_key_bindings(),
+            ).strip()
+            args.hours = float(hours_str)
+        if "activity" in selected:
+            activities = fetch_time_entry_activities()
+            activity_options: list[tuple[str, str]] = [
+                (str(a["id"]), a["name"]) for a in activities
+            ]
+            activity_labels = dict(activity_options)
+            current_activity_id = str((current.get("activity") or {}).get("id", ""))
+            args.activity_id = inline_choice(
+                "作業分類",
+                activity_options,
+                default=current_activity_id or None,
+            )
+            print(f"作業分類: {activity_labels[args.activity_id]}")
+        if "spent_on" in selected:
+            args.spent_on = (
+                prompt(
+                    "作業日（YYYY-MM-DD）: ", default=current.get("spent_on", "") or ""
+                ).strip()
+                or None
+            )
+        if "comments" in selected:
+            args.comments = prompt(
+                "コメント: ", default=current.get("comments", "") or ""
+            )
+        if "issue_id" in selected:
+            current_issue_id = str((current.get("issue") or {}).get("id", ""))
+            issue_id = prompt(
+                "イシューID: ",
+                default=current_issue_id,
+                key_bindings=digit_only_key_bindings(),
+            ).strip()
+            if issue_id:
+                issue = fetch_issue(issue_id)
+                print(f"イシュー: #{issue['id']} {issue['subject']}")
+                args.issue_id = issue_id
+    except (KeyboardInterrupt, EOFError):
+        print("キャンセルしました")
+        exit(1)
+
+
 def handle_time_entry(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.time_entry_command)
     if cmd == "create":
@@ -152,6 +231,15 @@ def handle_time_entry(args: argparse.Namespace) -> None:
     elif cmd == "view":
         read_time_entry(args.time_entry_id, full=args.full)
     elif cmd == "update":
+        if (
+            args.hours is None
+            and args.issue_id is None
+            and args.project_id is None
+            and args.activity_id is None
+            and args.spent_on is None
+            and args.comments is None
+        ):
+            _interactive_fill_time_entry_update_args(args)
         update_time_entry(
             time_entry_id=args.time_entry_id,
             hours=args.hours,
