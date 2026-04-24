@@ -5,7 +5,10 @@ from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.validation import Validator
 
 from redi.cli._common import confirm_delete, inline_choice, resolve_alias
-from redi.cli.prompt_util import digit_only_key_bindings
+from redi.cli.prompt_util import (
+    digit_and_period_key_bindings,
+    digit_only_key_bindings,
+)
 from redi.config import default_project_id
 from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.issue import fetch_issue
@@ -110,7 +113,9 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
             error_message="数値を入力してください",
         )
         hours_str = prompt(
-            "作業時間（例: 1.5 (h)）: ", validator=hours_validator
+            "作業時間（例: 1.5 (h)）: ",
+            validator=hours_validator,
+            key_bindings=digit_and_period_key_bindings(),
         ).strip()
         args.hours = float(hours_str)
         if not args.activity_id:
