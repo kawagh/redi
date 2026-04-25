@@ -91,6 +91,8 @@ def _render_preview_current(state: TuiState) -> Renderable:
 def _render_status(state: TuiState) -> Renderable:
     if state.confirm_delete_prompt is not None:
         return [("reverse", f" {state.confirm_delete_prompt} ")]
+    if state.flash_message is not None:
+        return [("bold fg:ansiyellow", f" {state.flash_message} ")]
     if state.search_mode:
         return [("reverse", f" /{state.search_query}")]
     hint = TABS[state.tab].status_hint(state)
@@ -151,6 +153,7 @@ def run_issue_tui(
 
     def _clear_number_buffer() -> None:
         state.number_buffer = ""
+        state.flash_message = None
 
     @kb.add("tab", filter=normal_mode)
     def _(event):

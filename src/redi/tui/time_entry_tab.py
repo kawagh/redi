@@ -193,7 +193,7 @@ def confirm_delete(state: TuiState) -> None:
         response = client.delete(f"/time_entries/{te['id']}.json")
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        state.time_entry_tab.error = f"作業時間の削除に失敗しました: {e}"
+        state.flash_message = f"作業時間の削除に失敗しました: {e}"
         return
     entries.pop(cursor)
     if cursor >= len(entries):

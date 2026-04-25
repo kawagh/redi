@@ -70,3 +70,5 @@ class TuiState:
     search_query: str = ""
     # D で削除確認中のとき、ステータスバーに出すプロンプト文字列
     confirm_delete_prompt: str | None = None
+    # 直前のアクション結果をステータスバーに出す一時メッセージ。次のキー入力で消える。
+    flash_message: str | None = None
