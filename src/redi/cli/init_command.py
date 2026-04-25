@@ -97,7 +97,7 @@ def handle_init(_args: argparse.Namespace) -> None:
     if user is None:
         exit(1)
     name = " ".join(filter(None, [user.get("firstname"), user.get("lastname")]))
-    print(f"接続成功: {user.get('login', '')} ({name})")
+    print(f"\033[32m✓\033[0m 接続成功: {user.get('login', '')} ({name})")
 
     projects = _fetch_projects(url, api_key)
     default_project_id: str | None = None
@@ -124,4 +124,4 @@ def handle_init(_args: argparse.Namespace) -> None:
     )
     if not result.created:
         exit(1)
-    print(f"{CONFIG_PATH}に設定が作成されました")
+    print(f"\033[32m✓\033[0m {CONFIG_PATH}に設定が作成されました")
