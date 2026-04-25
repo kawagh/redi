@@ -40,6 +40,7 @@ def _fetch_projects(url: str, api_key: str) -> list[dict]:
             f"{url}/projects.json",
             headers={"X-Redmine-API-Key": api_key},
             params={"limit": 100},
+            timeout=10,
         )
         response.raise_for_status()
         return response.json().get("projects", [])
