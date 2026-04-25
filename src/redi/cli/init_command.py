@@ -83,6 +83,7 @@ def handle_init(_args: argparse.Namespace) -> None:
     )
     try:
         url = prompt("Redmine URL: ", validator=non_empty_validator).strip()
+        print(f"APIキーは {url.rstrip('/')}/my/account で確認できます")
         api_key = prompt(
             "Redmine APIキー: ",
             validator=non_empty_validator,
