@@ -1,13 +1,14 @@
 import argparse
+import tomllib
 
 import requests
-import tomlkit
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
-from tomlkit.items import Table
 
 from redi.cli._common import inline_choice
 from redi.config import CONFIG_PATH, create_profile
+
+PROFILE_NAME = "default"
 
 
 def add_init_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -53,20 +54,17 @@ def _select_project_id(message: str, projects: list[dict]) -> str:
     ]
     try:
         return inline_choice(message, options)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print("キャンセルしました")
         exit(1)
-
-
-PROFILE_NAME = "default"
 
 
 def _has_existing_profile() -> bool:
     if not CONFIG_PATH.exists():
         return False
-    with open(CONFIG_PATH) as f:
-        doc = tomlkit.load(f)
-    return any(isinstance(v, Table) for v in doc.values())
+    with open(CONFIG_PATH, "rb") as f:
+        doc = tomllib.load(f)
+    return any(isinstance(v, dict) for v in doc.values())
 
 
 def handle_init(_args: argparse.Namespace) -> None:
