@@ -22,7 +22,11 @@ from redi.tui.state import (
     TuiTab,
 )
 from redi.tui.tab import TabView
-from redi.tui.time_entry_tab import TIME_ENTRY_TAB
+from redi.tui.time_entry_tab import (
+    TIME_ENTRY_TAB,
+    confirm_delete as time_entry_confirm_delete,
+    request_delete as time_entry_request_delete,
+)
 from redi.tui.wiki_tab import WIKI_TAB
 
 TABS: dict[TuiTab, TabView] = {
@@ -85,6 +89,10 @@ def _render_preview_current(state: TuiState) -> Renderable:
 
 
 def _render_status(state: TuiState) -> Renderable:
+    if state.confirm_delete_prompt is not None:
+        return [("reverse", f" {state.confirm_delete_prompt} ")]
+    if state.flash_message is not None:
+        return [("bold fg:ansiyellow", f" {state.flash_message} ")]
     if state.search_mode:
         return [("reverse", f" /{state.search_query}")]
     hint = TABS[state.tab].status_hint(state)
@@ -137,15 +145,19 @@ def run_issue_tui(
             state.time_entry_tab.cursor = min(last.position.cursor, max_cursor)
 
     kb = KeyBindings()
-    normal_mode = Condition(lambda: not state.search_mode)
+    normal_mode = Condition(
+        lambda: not state.search_mode and state.confirm_delete_prompt is None
+    )
     search_mode = Condition(lambda: state.search_mode)
+    confirm_delete_mode = Condition(lambda: state.confirm_delete_prompt is not None)
 
-    def _clear_number_buffer() -> None:
+    def _clear_temporary_state() -> None:
         state.number_buffer = ""
+        state.flash_message = None
 
     @kb.add("tab", filter=normal_mode)
     def _(event):
-        _clear_number_buffer()
+        _clear_temporary_state()
         tab_keys = list(TABS.keys())
         idx = tab_keys.index(state.tab)
         state.tab = tab_keys[(idx + 1) % len(tab_keys)]
@@ -153,7 +165,7 @@ def run_issue_tui(
 
     @kb.add("s-tab", filter=normal_mode)
     def _(event):
-        _clear_number_buffer()
+        _clear_temporary_state()
         tab_keys = list(TABS.keys())
         idx = tab_keys.index(state.tab)
         state.tab = tab_keys[(idx - 1) % len(tab_keys)]
@@ -163,19 +175,19 @@ def run_issue_tui(
     @kb.add("k", filter=normal_mode)
     @kb.add("c-p", filter=normal_mode)
     def _(event):
-        _clear_number_buffer()
+        _clear_temporary_state()
         TABS[state.tab].on_up(state)
 
     @kb.add("down", filter=normal_mode)
     @kb.add("j", filter=normal_mode)
     @kb.add("c-n", filter=normal_mode)
     def _(event):
-        _clear_number_buffer()
+        _clear_temporary_state()
         TABS[state.tab].on_down(state)
 
     @kb.add("g", "g", filter=normal_mode)
     def _(event):
-        _clear_number_buffer()
+        _clear_temporary_state()
         TABS[state.tab].on_goto_top(state)
 
     @kb.add("G", filter=normal_mode)
@@ -185,7 +197,7 @@ def run_issue_tui(
                 target_id = int(state.number_buffer)
             except ValueError:
                 target_id = None
-            _clear_number_buffer()
+            _clear_temporary_state()
             if target_id is not None:
                 TABS[state.tab].on_jump_to_id(state, target_id)
         else:
@@ -203,23 +215,23 @@ def run_issue_tui(
     @kb.add("right", filter=normal_mode)
     @kb.add("l", filter=normal_mode)
     def _(event):
-        _clear_number_buffer()
+        _clear_temporary_state()
         TABS[state.tab].on_page_forward(state)
 
     @kb.add("left", filter=normal_mode)
     @kb.add("h", filter=normal_mode)
     def _(event):
-        _clear_number_buffer()
+        _clear_temporary_state()
         TABS[state.tab].on_page_backward(state)
 
     @kb.add("enter", filter=normal_mode)
     def _(event):
-        _clear_number_buffer()
+        _clear_temporary_state()
         TABS[state.tab].on_enter(state)
 
     @kb.add("v", filter=normal_mode)
     def _(event):
-        _clear_number_buffer()
+        _clear_temporary_state()
         TABS[state.tab].on_open_web(state)
 
     @kb.add("V", filter=normal_mode)
@@ -229,7 +241,7 @@ def run_issue_tui(
                 target_id = int(state.number_buffer)
             except ValueError:
                 target_id = None
-            _clear_number_buffer()
+            _clear_temporary_state()
             if target_id is not None:
                 TABS[state.tab].on_open_web_by_id(state, target_id)
 
@@ -237,14 +249,14 @@ def run_issue_tui(
 
         @kb.add(action_key, filter=normal_mode)
         def _(event, action_key=action_key):
-            _clear_number_buffer()
+            _clear_temporary_state()
             result = TABS[state.tab].on_action_key(state, action_key)
             if result is not None:
                 event.app.exit(result=result)
 
     @kb.add("n", filter=normal_mode)
     def _(event):
-        _clear_number_buffer()
+        _clear_temporary_state()
         if state.search_query:
             TABS[state.tab].on_search(state, state.search_query, forward=True)
             return
@@ -254,15 +266,35 @@ def run_issue_tui(
 
     @kb.add("N", filter=normal_mode)
     def _(event):
-        _clear_number_buffer()
+        _clear_temporary_state()
         if state.search_query:
             TABS[state.tab].on_search(state, state.search_query, forward=False)
 
     @kb.add("/", filter=normal_mode)
     def _(event):
-        _clear_number_buffer()
+        _clear_temporary_state()
         state.search_mode = True
         state.search_query = ""
+
+    @kb.add("D", filter=normal_mode)
+    def _(event):
+        _clear_temporary_state()
+        if state.tab != "time_entries":
+            return
+        prompt = time_entry_request_delete(state)
+        if prompt is not None:
+            state.confirm_delete_prompt = prompt
+
+    @kb.add("y", filter=confirm_delete_mode)
+    @kb.add("Y", filter=confirm_delete_mode)
+    def _(event):
+        state.confirm_delete_prompt = None
+        if state.tab == "time_entries":
+            time_entry_confirm_delete(state)
+
+    @kb.add("<any>", filter=confirm_delete_mode)
+    def _(event):
+        state.confirm_delete_prompt = None
 
     @kb.add("q", filter=normal_mode)
     @kb.add("escape", filter=normal_mode)
