@@ -102,7 +102,7 @@ def _render_preview(state: TuiState) -> Renderable:
 def _status_hint(state: TuiState) -> str:
     return (
         " ↑↓/jk:移動 gg/G:先頭末尾 /:検索 n/N:次前 "
-        "c:作成 u:更新 v:web Tab:タブ切替 q:終了 "
+        "c:作成 u:更新 D:削除 v:web Tab:タブ切替 q:終了 "
     )
 
 
@@ -168,6 +168,36 @@ def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
         if query_lower in targets[idx]:
             state.time_entry_tab.cursor = idx
             return
+
+
+def request_delete(state: TuiState) -> str | None:
+    """カーソル行の削除確認プロンプトを返す。対象がなければ None。"""
+    entries = state.time_entry_tab.entries
+    if not entries:
+        return None
+    te = entries[state.time_entry_tab.cursor]
+    summary = format_time_entry_line(
+        te, issue_subjects=state.time_entry_tab.issue_subjects
+    )
+    return f"削除しますか? {summary} [y/N]"
+
+
+def confirm_delete(state: TuiState) -> None:
+    """カーソル行の time_entry を削除する。失敗時は error を設定する。"""
+    entries = state.time_entry_tab.entries
+    if not entries:
+        return
+    cursor = state.time_entry_tab.cursor
+    te = entries[cursor]
+    try:
+        response = client.delete(f"/time_entries/{te['id']}.json")
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        state.time_entry_tab.error = f"作業時間の削除に失敗しました: {e}"
+        return
+    entries.pop(cursor)
+    if cursor >= len(entries):
+        state.time_entry_tab.cursor = max(0, len(entries) - 1)
 
 
 def _on_open_web(state: TuiState) -> None:
