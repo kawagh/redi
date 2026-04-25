@@ -25,21 +25,21 @@ uv tool install -e .
 
 To use redi, you need to set remdine url and redmine_api_key in one of below ways.
 
-#### environment variable
+#### redi init (interactive, recommended for first time)
 
 ```sh
-export REDMINE_URL=https://redmine.example.com
-export REDMINE_API_KEY=<your_api_key>
+redi init
 ```
 
-#### ~/.config/redi/config.toml
+Then, profile will be created in `~/.config/redi/config.toml` like below format.
+You can also create profile by `redi config create`, and update profile by `redi config update` (and also by manual edit).
 
 ```toml
-default_profile = "main"
+default_profile = "default"
 
-["main"]
+["default"]
 redmine_url = "https://redmine.example.com"
-redmine_api_key = "<your_api_key"
+redmine_api_key = "<your_api_key>"
 default_project_id = "1"
 wiki_project_id = "2"
 editor = "nvim"
@@ -52,6 +52,14 @@ wiki_project_id = "3"
 editor = "code"
 ```
 
+#### environment variable
+
+```sh
+export REDMINE_URL=https://redmine.example.com
+export REDMINE_API_KEY=<your_api_key>
+```
+
+
 ### setup completion
 
 ```sh
@@ -62,6 +70,9 @@ echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
 ## usage(example)
 
 ```sh
+# init
+redi init (interactive)
+
 # config (alias: c)
 redi config
 redi config create <profile_name> --url <url> --api_key <key> # create new profile

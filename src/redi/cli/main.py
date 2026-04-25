@@ -20,6 +20,7 @@ from redi.cli.enumerations_command import (
 )
 from redi.cli._common import open_editor
 from redi.cli.group_command import add_group_parser, handle_group
+from redi.cli.init_command import add_init_parser, handle_init
 from redi.cli.issue_category_command import (
     add_issue_category_parser,
     handle_issue_category,
@@ -79,6 +80,7 @@ def _build_parser() -> tuple[
     add_version_parser(subparsers)
     add_wiki_parser(subparsers)
     add_config_parser(subparsers)
+    add_init_parser(subparsers)
     add_user_parser(subparsers)
     add_me_parser(subparsers)
     add_membership_parser(subparsers)
@@ -122,6 +124,10 @@ def main() -> None:
 
     if args.command in ("config", "c"):
         handle_config(args)
+        return
+
+    if args.command == "init":
+        handle_init(args)
         return
 
     check_config()

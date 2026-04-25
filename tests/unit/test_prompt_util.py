@@ -2,8 +2,11 @@ from dataclasses import dataclass
 
 import pytest
 from prompt_toolkit.buffer import Buffer
+from prompt_toolkit.document import Document
+from prompt_toolkit.validation import ValidationError
 
 from redi.cli.prompt_util import (
+    UrlValidator,
     digit_and_period_key_bindings,
     digit_only_key_bindings,
 )
@@ -75,3 +78,60 @@ class TestDigitOnlyKeyBindings:
     def test_rejected_input_preserves_existing_text(self):
         """拒否された入力は既存バッファを変更しない"""
         assert _invoke(digit_only_key_bindings(), ".", initial="12") == "12"
+
+
+class TestUrlValidator:
+    """UrlValidator()はhttp(s)://で始まるURLを検証する"""
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "http://example.com",
+            "https://example.com",
+            "https://example.com:3000/redmine",
+            "http://localhost:3000",
+        ],
+    )
+    def test_complete_url_passes(self, text: str):
+        """http(s)://で始まる完成形URLはエラーにならない"""
+        UrlValidator().validate(Document(text=text))
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "h",
+            "ht",
+            "htt",
+            "http",
+            "http:",
+            "http:/",
+            "https",
+            "https:",
+            "https:/",
+        ],
+    )
+    def test_prefix_in_progress_passes(self, text: str):
+        """プレフィックス入力途中はエラーにならない"""
+        UrlValidator().validate(Document(text=text))
+
+    def test_surrounding_whitespace_is_stripped(self):
+        """前後の空白は無視して評価される"""
+        UrlValidator().validate(Document(text="  http://example.com  "))
+
+    @pytest.mark.parametrize("text", ["", " "])
+    def test_empty_or_whitespace_raises_required(self, text: str):
+        """空文字や空白のみは『入力してください』でエラーになる"""
+        with pytest.raises(ValidationError, match="入力してください"):
+            UrlValidator().validate(Document(text=text))
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "http:/example.com",
+            "http//example.com",
+        ],
+    )
+    def test_invalid_prefix_raises(self, text: str):
+        """プレフィックスがhttp(s)://以外ならURLメッセージでエラーになる"""
+        with pytest.raises(ValidationError, match="http://"):
+            UrlValidator().validate(Document(text=text))
