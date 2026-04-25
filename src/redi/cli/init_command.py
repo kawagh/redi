@@ -6,6 +6,7 @@ from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
 
 from redi.cli._common import inline_choice
+from redi.cli.prompt_util import UrlValidator
 from redi.config import CONFIG_PATH, create_profile
 
 PROFILE_NAME = "default"
@@ -81,7 +82,7 @@ def handle_init(_args: argparse.Namespace) -> None:
         error_message="入力してください",
     )
     try:
-        url = prompt("Redmine URL: ", validator=non_empty_validator).strip()
+        url = prompt("Redmine URL: ", validator=UrlValidator()).strip()
         print(f"APIキーは {url.rstrip('/')}/my/account で確認できます")
         api_key = prompt(
             "Redmine APIキー: ",
