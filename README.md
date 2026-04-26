@@ -196,3 +196,10 @@ task lint        # uv run ruff check
 task typecheck   # uv run ty check
 task test        # uv run pytest -v
 ```
+
+### Debug
+
+```sh
+redi --debug <command> # log request URLs and response status codes to ~/.config/redi/redi-debug.log
+redi --debug-tui   # dump rendered TUI screens as YAML to log
+```
