@@ -6,9 +6,9 @@ from .ja import Ja
 
 
 def _select(lang: str) -> MessagesProto:
-    if lang == "en":
-        return En()
-    return Ja()
+    if lang == "ja":
+        return Ja()
+    return En()
 
 
 messages: MessagesProto = _select(config.language)

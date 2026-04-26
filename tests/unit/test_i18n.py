@@ -24,9 +24,9 @@ class TestSelect:
         """language='en' のとき En を返す"""
         assert isinstance(i18n._select("en"), En)
 
-    def test_falls_back_to_ja_for_unknown(self):
-        """未知の言語コードは ja にフォールバックする"""
-        assert isinstance(i18n._select("zz"), Ja)
+    def test_falls_back_to_en_for_unknown(self):
+        """未知の言語コードは default(en) にフォールバックする"""
+        assert isinstance(i18n._select("zz"), En)
 
 
 class TestFormat:
