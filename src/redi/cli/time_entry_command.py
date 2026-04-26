@@ -11,6 +11,7 @@ from redi.cli._common import (
     resolve_alias,
 )
 from redi.cli.prompt_util import (
+    HourValidator,
     digit_and_period_key_bindings,
     digit_only_key_bindings,
 )
@@ -113,13 +114,9 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
                     completer=completer,
                 ).strip()
                 args.project_id = project_id
-        hours_validator = Validator.from_callable(
-            lambda v: v.replace(".", "", 1).isdigit(),
-            error_message="数値を入力してください",
-        )
         hours_str = prompt(
             "作業時間（例: 1.5 (h)）: ",
-            validator=hours_validator,
+            validator=HourValidator(),
             key_bindings=digit_and_period_key_bindings(),
         ).strip()
         args.hours = float(hours_str)
@@ -163,14 +160,10 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
     print(f"更新する項目: {', '.join(labels[v] for v in selected)}")
     try:
         if "hours" in selected:
-            hours_validator = Validator.from_callable(
-                lambda v: v.replace(".", "", 1).isdigit(),
-                error_message="数値を入力してください",
-            )
             hours_str = prompt(
                 "作業時間（例: 1.5 (h)）: ",
                 default=str(current.get("hours", "")),
-                validator=hours_validator,
+                validator=HourValidator(),
                 key_bindings=digit_and_period_key_bindings(),
             ).strip()
             args.hours = float(hours_str)

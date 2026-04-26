@@ -1,4 +1,6 @@
 import argparse
+import re
+from datetime import date
 
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
@@ -10,6 +12,7 @@ from redi.cli._common import (
     open_editor,
     resolve_alias,
 )
+from redi.cli.prompt_util import DueDateValidator, HourValidator
 from redi.config import default_project_id
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
 from redi.api.issue import (
@@ -128,6 +131,14 @@ def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_update_parser.add_argument(
         "--parent_issue_id", help="親チケットID（空文字で解除）"
     )
+    i_update_parser.add_argument(
+        "--start_date", help="開始日（YYYY-MM-DD、空文字で解除）"
+    )
+    i_update_parser.add_argument("--due_date", help="期日（YYYY-MM-DD、空文字で解除）")
+    i_update_parser.add_argument("--done_ratio", type=int, help="進捗率（0-100）")
+    i_update_parser.add_argument(
+        "--estimated_hours", type=float, help="予定工数（例: 1.5）"
+    )
     i_update_parser.add_argument("--notes", "-n", help="コメント")
     i_update_parser.add_argument(
         "--custom_fields",
@@ -209,6 +220,10 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         ("status", "ステータス (status)"),
         ("priority", "優先度 (priority)"),
         ("fixed_version", "対象バージョン (fixed_version)"),
+        ("start_date", "開始日 (start_date)"),
+        ("due_date", "期日 (due_date)"),
+        ("done_ratio", "進捗率 (done_ratio)"),
+        ("estimated_hours", "予定工数 (estimated_hours)"),
         ("notes", "コメント (notes)"),
         ("time_entry", "作業時間 (time_entry)"),
     ]
@@ -269,15 +284,61 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
             version_labels = dict(version_options)
             args.fixed_version_id = inline_choice("対象バージョン", version_options)
             print(f"対象バージョン: {version_labels[args.fixed_version_id]}")
+        date_validator = Validator.from_callable(
+            lambda v: v == "" or bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", v)),
+            error_message="YYYY-MM-DD で入力してください（空文字でクリア）",
+        )
+        if "start_date" in selected:
+            args.start_date = prompt(
+                "開始日（YYYY-MM-DD、空文字でクリア）: ",
+                default=current.get("start_date") or date.today().isoformat(),
+                validator=date_validator,
+            ).strip()
+        if "due_date" in selected:
+            effective_start = (
+                args.start_date
+                if "start_date" in selected
+                else current.get("start_date")
+            )
+            start_date: date | None = None
+            if effective_start:
+                try:
+                    start_date = date.fromisoformat(effective_start)
+                except ValueError:
+                    start_date = None
+            args.due_date = prompt(
+                "期日（YYYY-MM-DD、空文字でクリア）: ",
+                default=current.get("due_date") or date.today().isoformat(),
+                validator=DueDateValidator(start_date),
+            ).strip()
+        if "done_ratio" in selected:
+            ratio_options: list[tuple[str, str]] = [
+                (str(r), f"{r}%") for r in range(0, 101, 10)
+            ]
+            current_ratio = current.get("done_ratio")
+            default_ratio = str(current_ratio) if current_ratio is not None else None
+            args.done_ratio = int(
+                inline_choice("進捗率", ratio_options, default=default_ratio)
+            )
+            print(f"進捗率: {args.done_ratio}%")
+        if "estimated_hours" in selected:
+            current_estimated = current.get("estimated_hours")
+            default_estimated = (
+                str(current_estimated) if current_estimated is not None else ""
+            )
+            args.estimated_hours = float(
+                prompt(
+                    "予定工数（例: 1.5 (h)）: ",
+                    default=default_estimated,
+                    validator=HourValidator(),
+                ).strip()
+            )
+            print(f"予定工数: {args.estimated_hours} h")
         if "notes" in selected:
             args.notes = prompt("コメント: ").strip()
         if "time_entry" in selected:
-            hours_validator = Validator.from_callable(
-                lambda v: v.replace(".", "", 1).isdigit(),
-                error_message="数値を入力してください",
-            )
             hours_str = prompt(
-                "作業時間（例: 1.5 (h)）: ", validator=hours_validator
+                "作業時間（例: 1.5 (h)）: ", validator=HourValidator()
             ).strip()
             if hours_str:
                 args.hours = float(hours_str)
@@ -418,6 +479,10 @@ def handle_issue_update(args: argparse.Namespace) -> None:
         or args.assigned_to_id
         or args.fixed_version_id
         or args.parent_issue_id is not None
+        or args.start_date is not None
+        or args.due_date is not None
+        or args.done_ratio is not None
+        or args.estimated_hours is not None
         or args.notes
         or args.custom_fields
         or args.relate
@@ -443,6 +508,10 @@ def handle_issue_update(args: argparse.Namespace) -> None:
         or args.assigned_to_id
         or args.fixed_version_id
         or args.parent_issue_id is not None
+        or args.start_date is not None
+        or args.due_date is not None
+        or args.done_ratio is not None
+        or args.estimated_hours is not None
         or args.notes
         or args.custom_fields
         or args.attach
@@ -462,6 +531,10 @@ def handle_issue_update(args: argparse.Namespace) -> None:
             assigned_to_id=args.assigned_to_id,
             fixed_version_id=args.fixed_version_id,
             parent_issue_id=args.parent_issue_id,
+            start_date=args.start_date,
+            due_date=args.due_date,
+            done_ratio=args.done_ratio,
+            estimated_hours=args.estimated_hours,
             notes=args.notes or "",
             custom_fields=args.custom_fields,
             attachments=args.attach,
