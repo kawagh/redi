@@ -8,6 +8,7 @@ from prompt_toolkit.validation import ValidationError
 
 from redi.cli.prompt_util import (
     DueDateValidator,
+    HourValidator,
     UrlValidator,
     digit_and_period_key_bindings,
     digit_only_key_bindings,
@@ -137,6 +138,21 @@ class TestUrlValidator:
         """プレフィックスがhttp(s)://以外ならURLメッセージでエラーになる"""
         with pytest.raises(ValidationError, match="http://"):
             UrlValidator().validate(Document(text=text))
+
+
+class TestHourValidator:
+    """HourValidator()は工数入力を整数または小数1個までの数値に制限する"""
+
+    @pytest.mark.parametrize("text", ["0", "1", "1.5", "12.34", "100", "0.5"])
+    def test_valid_numbers_pass(self, text: str):
+        """整数・小数の数値は通る"""
+        HourValidator().validate(Document(text=text))
+
+    @pytest.mark.parametrize("text", ["", "abc", "1.5h", "1,5", "-1", "1..5", "1.2.3"])
+    def test_invalid_inputs_raise(self, text: str):
+        """空文字や数値以外（記号・複数小数点・単位付きなど）はエラーになる"""
+        with pytest.raises(ValidationError, match="数値を入力してください"):
+            HourValidator().validate(Document(text=text))
 
 
 class TestDueDateValidator:
