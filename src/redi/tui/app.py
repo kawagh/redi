@@ -112,11 +112,7 @@ def _build_status_choices() -> list[tuple[str | None, str]]:
         ("*", "全て (open + closed)"),
         ("closed", "closed のみ"),
     ]
-    try:
-        statuses = fetch_issue_statuses()
-    except Exception:
-        statuses = []
-    for s in statuses:
+    for s in fetch_issue_statuses():
         choices.append((str(s["id"]), s.get("name", "")))
     return choices
 
@@ -129,11 +125,7 @@ def _build_assignee_choices(project_id: str | None) -> list[tuple[str | None, st
         ("!*", "未割当"),
     ]
     if project_id:
-        try:
-            users = fetch_project_users(project_id)
-        except Exception:
-            users = []
-        for u in users:
+        for u in fetch_project_users(project_id):
             choices.append((str(u["id"]), u.get("name", "")))
     return choices
 
