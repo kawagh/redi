@@ -31,6 +31,15 @@ class UrlValidator(Validator):
         )
 
 
+class HourValidator(Validator):
+    """工数入力用の Validator。整数または小数1個を含む数値のみ許容する。"""
+
+    def validate(self, document: Document) -> None:
+        text = document.text
+        if not text.replace(".", "", 1).isdigit():
+            raise ValidationError(message="数値を入力してください")
+
+
 class DueDateValidator(Validator):
     """期日入力用の Validator。空文字または開始日以降の YYYY-MM-DD のみ許容する。"""
 

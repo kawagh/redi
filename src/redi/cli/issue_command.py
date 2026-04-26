@@ -12,7 +12,7 @@ from redi.cli._common import (
     open_editor,
     resolve_alias,
 )
-from redi.cli.prompt_util import DueDateValidator
+from redi.cli.prompt_util import DueDateValidator, HourValidator
 from redi.config import default_project_id
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
 from redi.api.issue import (
@@ -322,10 +322,6 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
             )
             print(f"進捗率: {args.done_ratio}%")
         if "estimated_hours" in selected:
-            estimated_validator = Validator.from_callable(
-                lambda v: v.replace(".", "", 1).isdigit(),
-                error_message="数値を入力してください",
-            )
             current_estimated = current.get("estimated_hours")
             default_estimated = (
                 str(current_estimated) if current_estimated is not None else ""
@@ -334,19 +330,15 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
                 prompt(
                     "予定工数（例: 1.5 (h)）: ",
                     default=default_estimated,
-                    validator=estimated_validator,
+                    validator=HourValidator(),
                 ).strip()
             )
             print(f"予定工数: {args.estimated_hours} h")
         if "notes" in selected:
             args.notes = prompt("コメント: ").strip()
         if "time_entry" in selected:
-            hours_validator = Validator.from_callable(
-                lambda v: v.replace(".", "", 1).isdigit(),
-                error_message="数値を入力してください",
-            )
             hours_str = prompt(
-                "作業時間（例: 1.5 (h)）: ", validator=hours_validator
+                "作業時間（例: 1.5 (h)）: ", validator=HourValidator()
             ).strip()
             if hours_str:
                 args.hours = float(hours_str)
