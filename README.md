@@ -103,6 +103,8 @@ redi issue update <issue_id> # (interactive)
 redi issue update <issue_id> --status_id <status_id> -n "notes"
 redi issue update <issue_id> --start_date 2026-04-26 --due_date 2026-05-31 --estimated_hours 1.5
 redi issue update <issue_id> --done_ratio 70
+redi issue update <issue_id> --assigned_to_id <user_id>
+redi issue update <issue_id> --assigned_to_id "" # unset assignee
 redi issue update <issue_id> --relate relates --to <other_issue_id>
 redi issue update <issue_id> --attach ./foo.png --attach ./bar.log
 redi issue comment <issue_id> "hello~"
