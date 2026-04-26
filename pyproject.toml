@@ -7,6 +7,12 @@ authors = [
     { name = "kawagh", email = "kawagh.dev@gmail.com" }
 ]
 requires-python = ">=3.13"
+license = "MIT"
+license-files = ["LICENSE"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+]
 dependencies = [
     "argcomplete>=3.6.3",
     "prompt-toolkit>=3.0.52",
@@ -14,6 +20,11 @@ dependencies = [
     "tomlkit>=0.14.0",
     "wcwidth>=0.2.13",
 ]
+
+[project.urls]
+Homepage = "https://github.com/kawagh/redi"
+Repository = "https://github.com/kawagh/redi"
+Issues = "https://github.com/kawagh/redi/issues"
 
 [project.scripts]
 redi = "redi.cli:main"
