@@ -221,8 +221,13 @@ def run_issue_tui(
         state.tab = last.tab
     position = last.position if last else TuiPosition()
     state.page_size = max(1, shutil.get_terminal_size().lines - FIXED_ROWS)
-    state.issue_tab.offset = position.offset if state.tab == "issues" else 0
-    state.issue_tab.issues = fetch_issues_with_filter(state, state.issue_tab.offset)
+    initial_offset = position.offset if state.tab == "issues" else 0
+    initial_page = fetch_issues_with_filter(state, initial_offset)
+    state.issue_tab.offset = initial_offset
+    state.issue_tab.issues = initial_page["issues"]
+    state.issue_tab.total_count = initial_page.get(
+        "total_count", len(state.issue_tab.issues)
+    )
     if state.tab == "issues" and not state.issue_tab.issues:
         print("イシューが見つかりません")
         return None

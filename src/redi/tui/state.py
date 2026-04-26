@@ -79,6 +79,7 @@ class IssueTabState:
     offset: int = 0
     cursor: int = 0
     issues: list[dict] = field(default_factory=list)
+    total_count: int = 0
     filter: IssueFilter = field(default_factory=IssueFilter)
     filter_modal: FilterModalState = field(default_factory=FilterModalState)
 

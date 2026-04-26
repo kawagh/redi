@@ -1,6 +1,6 @@
 import webbrowser
 
-from redi.api.issue import fetch_issue, fetch_issues
+from redi.api.issue import fetch_issue, fetch_issues_page
 from redi.config import default_project_id, redmine_url
 from redi.tui.render import highlight_segments, render_meta_table
 from redi.tui.state import Renderable, TuiAction, TuiPosition, TuiResult, TuiState
@@ -100,14 +100,26 @@ def _render_preview(state: TuiState) -> Renderable:
 
 
 def _status_hint(state: TuiState) -> str:
-    page = state.issue_tab.offset // state.page_size + 1
     hint = (
-        f" Page {page} (offset={state.issue_tab.offset})  "
+        f" {_page_label(state)}  "
         "jk:移動 /:検索 f:フィルタ c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     )
     if state.issue_tab.filter.is_active():
         hint = f" [{state.issue_tab.filter.short_label()}]" + hint
     return hint
+
+
+def _page_label(state: TuiState) -> str:
+    total = state.issue_tab.total_count
+    page_size = state.page_size or 1
+    current = state.issue_tab.offset // page_size + 1
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    count = len(state.issue_tab.issues)
+    if count == 0:
+        return f"Page {current}/{total_pages} (0 / {total})"
+    start = state.issue_tab.offset + 1
+    end = state.issue_tab.offset + count
+    return f"Page {current}/{total_pages} ({start}-{end} / {total})"
 
 
 def _on_up(state: TuiState) -> None:
@@ -146,9 +158,9 @@ def _on_enter(state: TuiState) -> None:
     load_journals(issue)
 
 
-def fetch_issues_with_filter(state: TuiState, offset: int) -> list[dict]:
+def fetch_issues_with_filter(state: TuiState, offset: int) -> dict:
     f = state.issue_tab.filter
-    return fetch_issues(
+    return fetch_issues_page(
         project_id=default_project_id,
         status_id=f.status_id,
         assigned_to=f.assigned_to_id,
@@ -157,29 +169,30 @@ def fetch_issues_with_filter(state: TuiState, offset: int) -> list[dict]:
     )
 
 
-def reload_with_filter(state: TuiState) -> None:
-    """フィルタ条件で先頭ページから再取得する。filter modal からの適用で呼ぶ。"""
-    state.issue_tab.offset = 0
-    state.issue_tab.issues = fetch_issues_with_filter(state, 0)
+def _apply_page(state: TuiState, page: dict, offset: int) -> None:
+    state.issue_tab.offset = offset
+    state.issue_tab.issues = page["issues"]
+    state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
     state.issue_tab.cursor = 0
 
 
+def reload_with_filter(state: TuiState) -> None:
+    """フィルタ条件で先頭ページから再取得する。filter modal からの適用で呼ぶ。"""
+    _apply_page(state, fetch_issues_with_filter(state, 0), 0)
+
+
 def _on_page_forward(state: TuiState) -> None:
-    next_issues = fetch_issues_with_filter(
-        state, state.issue_tab.offset + state.page_size
-    )
-    if next_issues:
-        state.issue_tab.offset += state.page_size
-        state.issue_tab.issues = next_issues
-        state.issue_tab.cursor = 0
+    next_offset = state.issue_tab.offset + state.page_size
+    page = fetch_issues_with_filter(state, next_offset)
+    if page["issues"]:
+        _apply_page(state, page, next_offset)
 
 
 def _on_page_backward(state: TuiState) -> None:
     if state.issue_tab.offset <= 0:
         return
-    state.issue_tab.offset = max(0, state.issue_tab.offset - state.page_size)
-    state.issue_tab.issues = fetch_issues_with_filter(state, state.issue_tab.offset)
-    state.issue_tab.cursor = 0
+    prev_offset = max(0, state.issue_tab.offset - state.page_size)
+    _apply_page(state, fetch_issues_with_filter(state, prev_offset), prev_offset)
 
 
 def _on_open_web(state: TuiState) -> None:
