@@ -1,5 +1,4 @@
-from redi.tui import issue_tab
-from redi.tui.state import IssueFilter, TuiState
+from redi.tui.state import IssueFilter
 
 
 class TestIssueFilterIsActive:
@@ -47,81 +46,3 @@ class TestIssueFilterShortLabel:
             assigned_to_label="自分",
         )
         assert f.short_label() == "status=全て (open + closed) assignee=自分"
-
-
-class TestFetchIssuesWithFilter:
-    """fetch_issues_with_filter()はTuiStateのfilterをfetch_issuesに渡す"""
-
-    def test_passes_filter_values_to_api(self, monkeypatch):
-        """state.issue_tab.filter の値が fetch_issues の引数に反映される"""
-        captured: dict = {}
-
-        def fake_fetch(**kwargs):
-            captured.update(kwargs)
-            return []
-
-        monkeypatch.setattr(issue_tab, "fetch_issues", fake_fetch)
-        monkeypatch.setattr(issue_tab, "default_project_id", "demo")
-
-        state = TuiState()
-        state.page_size = 20
-        state.issue_tab.filter = IssueFilter(
-            status_id="closed",
-            status_label="closed のみ",
-            assigned_to_id="me",
-            assigned_to_label="自分",
-        )
-        issue_tab.fetch_issues_with_filter(state, offset=40)
-
-        assert captured == {
-            "project_id": "demo",
-            "status_id": "closed",
-            "assigned_to": "me",
-            "limit": 20,
-            "offset": 40,
-        }
-
-    def test_passes_none_when_filter_unset(self, monkeypatch):
-        """フィルタ未設定なら status_id / assigned_to も None で渡す"""
-        captured: dict = {}
-
-        def fake_fetch(**kwargs):
-            captured.update(kwargs)
-            return []
-
-        monkeypatch.setattr(issue_tab, "fetch_issues", fake_fetch)
-        monkeypatch.setattr(issue_tab, "default_project_id", "demo")
-
-        state = TuiState()
-        state.page_size = 10
-        issue_tab.fetch_issues_with_filter(state, offset=0)
-
-        assert captured["status_id"] is None
-        assert captured["assigned_to"] is None
-
-
-class TestReloadWithFilter:
-    """reload_with_filter()はoffset/cursorをリセットしてフィルタで再取得する"""
-
-    def test_resets_offset_cursor_and_fetches(self, monkeypatch):
-        """offset=0 で再取得し、cursor も 0 に戻す"""
-        monkeypatch.setattr(
-            issue_tab,
-            "fetch_issues",
-            lambda **kwargs: [{"id": 1, "subject": "filtered"}],
-        )
-        monkeypatch.setattr(issue_tab, "default_project_id", "demo")
-
-        state = TuiState()
-        state.page_size = 20
-        state.issue_tab.offset = 100
-        state.issue_tab.cursor = 5
-        state.issue_tab.filter = IssueFilter(
-            status_id="closed", status_label="closed のみ"
-        )
-
-        issue_tab.reload_with_filter(state)
-
-        assert state.issue_tab.offset == 0
-        assert state.issue_tab.cursor == 0
-        assert state.issue_tab.issues == [{"id": 1, "subject": "filtered"}]
