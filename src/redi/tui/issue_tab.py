@@ -62,6 +62,12 @@ def _render_preview(state: TuiState) -> Renderable:
             "進捗",
             f"{issue['done_ratio']}%" if issue.get("done_ratio") is not None else "",
         ),
+        (
+            "予定工数",
+            f"{issue['estimated_hours']} h"
+            if issue.get("estimated_hours") is not None
+            else "",
+        ),
         ("作成", issue.get("created_on") or ""),
         ("更新", issue.get("updated_on") or ""),
     ]
