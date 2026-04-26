@@ -56,11 +56,31 @@ class IssueFilter:
 
 
 @dataclass
+class FilterModalState:
+    """f で開くフィルタ modal の表示・選択肢キャッシュ・カーソル状態。
+
+    実際のフィルタ条件 (`IssueFilter`) とは別にして、modal を閉じれば破棄してよい
+    一時的な UI 状態をここにまとめる。
+    """
+
+    show: bool = False
+    # 現在カーソルがあるセクション (status か assignee)
+    focus: FilterField = "status"
+    # 各セクションの選択肢: (Redmine API に渡す値, 表示ラベル) の組
+    status_choices: list[tuple[str | None, str]] = field(default_factory=list)
+    assignee_choices: list[tuple[str | None, str]] = field(default_factory=list)
+    # 各セクション内のカーソル位置
+    status_cursor: int = 0
+    assignee_cursor: int = 0
+
+
+@dataclass
 class IssueTabState:
     offset: int = 0
     cursor: int = 0
     issues: list[dict] = field(default_factory=list)
     filter: IssueFilter = field(default_factory=IssueFilter)
+    filter_modal: FilterModalState = field(default_factory=FilterModalState)
 
 
 @dataclass
@@ -101,13 +121,3 @@ class TuiState:
     flash_message: str | None = None
     # ? でヘルプの floating window を表示しているかどうか。
     show_help: bool = False
-    # f で開く Issue フィルタの floating window を表示中かどうか。
-    show_filter: bool = False
-    # 1ウインドウ式モーダルで現在カーソルがあるセクション (status か assignee)
-    filter_focus: FilterField = "status"
-    # 各セクションの選択肢: (Redmine API に渡す値, 表示ラベル) の組
-    filter_status_choices: list[tuple[str | None, str]] = field(default_factory=list)
-    filter_assignee_choices: list[tuple[str | None, str]] = field(default_factory=list)
-    # 各セクション内のカーソル位置
-    filter_status_cursor: int = 0
-    filter_assignee_cursor: int = 0
