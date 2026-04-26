@@ -1,9 +1,14 @@
+import re
+from datetime import date
+
 from prompt_toolkit.document import Document
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.validation import ValidationError, Validator
 
 _URL_PREFIXES = ("http://", "https://")
+_DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
+_DATE_ERROR_MESSAGE = "YYYY-MM-DD で入力してください（空文字でクリア）"
 
 
 class UrlValidator(Validator):
@@ -24,6 +29,28 @@ class UrlValidator(Validator):
         raise ValidationError(
             message="http:// または https:// で始まるURLを入力してください"
         )
+
+
+class DueDateValidator(Validator):
+    """期日入力用の Validator。空文字または開始日以降の YYYY-MM-DD のみ許容する。"""
+
+    def __init__(self, start_date: date | None) -> None:
+        self.start_date = start_date
+
+    def validate(self, document: Document) -> None:
+        text = document.text.strip()
+        if text == "":
+            return
+        if not _DATE_PATTERN.fullmatch(text):
+            raise ValidationError(message=_DATE_ERROR_MESSAGE)
+        try:
+            d = date.fromisoformat(text)
+        except ValueError:
+            raise ValidationError(message=_DATE_ERROR_MESSAGE)
+        if self.start_date and d < self.start_date:
+            raise ValidationError(
+                message=f"開始日 {self.start_date.isoformat()} 以降の日付を入力してください"
+            )
 
 
 def digit_only_key_bindings() -> KeyBindings:

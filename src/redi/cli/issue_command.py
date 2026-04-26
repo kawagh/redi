@@ -12,6 +12,7 @@ from redi.cli._common import (
     open_editor,
     resolve_alias,
 )
+from redi.cli.prompt_util import DueDateValidator
 from redi.config import default_project_id
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
 from redi.api.issue import (
@@ -290,10 +291,21 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
                 validator=date_validator,
             ).strip()
         if "due_date" in selected:
+            effective_start = (
+                args.start_date
+                if "start_date" in selected
+                else current.get("start_date")
+            )
+            start_date: date | None = None
+            if effective_start:
+                try:
+                    start_date = date.fromisoformat(effective_start)
+                except ValueError:
+                    start_date = None
             args.due_date = prompt(
                 "期日（YYYY-MM-DD、空文字でクリア）: ",
                 default=current.get("due_date") or date.today().isoformat(),
-                validator=date_validator,
+                validator=DueDateValidator(start_date),
             ).strip()
         if "done_ratio" in selected:
             ratio_options: list[tuple[str, str]] = [
