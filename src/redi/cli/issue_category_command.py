@@ -16,50 +16,68 @@ from redi.api.issue_category import (
 def add_issue_category_parser(subparsers: argparse._SubParsersAction) -> None:
     ic_parser = subparsers.add_parser(
         "issue_category",
-        help="list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除",
+        help=messages.arg_help_issue_category_command,
     )
-    ic_parser.add_argument("--project_id", "-p", help="プロジェクトID")
-    ic_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    ic_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
+    ic_parser.add_argument(
+        "--full", action="store_true", help=messages.arg_help_full_json
+    )
     ic_subparsers = ic_parser.add_subparsers(dest="issue_category_command")
-    ic_subparsers.add_parser("list", aliases=["l"], help="イシューカテゴリ一覧")
+    ic_subparsers.add_parser(
+        "list", aliases=["l"], help=messages.arg_help_issue_category_list
+    )
 
     ic_view_parser = ic_subparsers.add_parser(
-        "view", aliases=["v"], help="カテゴリ詳細"
+        "view", aliases=["v"], help=messages.arg_help_issue_category_view
     )
-    ic_view_parser.add_argument("category_id", help="カテゴリID")
     ic_view_parser.add_argument(
-        "--full", action="store_true", help="JSON形式で全情報を出力"
+        "category_id", help=messages.arg_help_issue_category_view_id
+    )
+    ic_view_parser.add_argument(
+        "--full", action="store_true", help=messages.arg_help_full_json
     )
 
     ic_create_parser = ic_subparsers.add_parser(
-        "create", aliases=["c"], help="カテゴリ作成"
+        "create", aliases=["c"], help=messages.arg_help_issue_category_create
     )
-    ic_create_parser.add_argument("name", help="カテゴリ名")
-    ic_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
+    ic_create_parser.add_argument("name", help=messages.arg_help_issue_category_name)
     ic_create_parser.add_argument(
-        "--assigned_to_id", type=int, help="デフォルト担当者のユーザーID"
+        "--project_id", "-p", help=messages.arg_help_project_id
+    )
+    ic_create_parser.add_argument(
+        "--assigned_to_id",
+        type=int,
+        help=messages.arg_help_issue_category_assigned_to_id,
     )
 
     ic_update_parser = ic_subparsers.add_parser(
-        "update", aliases=["u"], help="カテゴリ更新"
+        "update", aliases=["u"], help=messages.arg_help_issue_category_update
     )
-    ic_update_parser.add_argument("category_id", help="カテゴリID")
-    ic_update_parser.add_argument("--name", "-n", help="カテゴリ名")
     ic_update_parser.add_argument(
-        "--assigned_to_id", type=int, help="デフォルト担当者のユーザーID"
+        "category_id", help=messages.arg_help_issue_category_update_id
+    )
+    ic_update_parser.add_argument(
+        "--name", "-n", help=messages.arg_help_issue_category_name_opt
+    )
+    ic_update_parser.add_argument(
+        "--assigned_to_id",
+        type=int,
+        help=messages.arg_help_issue_category_assigned_to_id,
     )
 
     ic_delete_parser = ic_subparsers.add_parser(
-        "delete", aliases=["d"], help="カテゴリ削除"
+        "delete", aliases=["d"], help=messages.arg_help_issue_category_delete
     )
-    ic_delete_parser.add_argument("category_id", help="カテゴリID")
+    ic_delete_parser.add_argument(
+        "category_id", help=messages.arg_help_issue_category_delete_id
+    )
     ic_delete_parser.add_argument(
         "--reassign_to_id",
         type=int,
-        help="削除に伴い既存チケットを再割り当てするカテゴリID",
+        help=messages.arg_help_issue_category_reassign_to_id,
     )
     ic_delete_parser.add_argument(
-        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+        "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
 
 
@@ -90,7 +108,9 @@ def handle_issue_category(args: argparse.Namespace) -> None:
         if not args.yes:
             category = fetch_issue_category(args.category_id)
             confirm_delete(
-                f"削除するイシューカテゴリ: {category['id']} {category['name']}"
+                messages.delete_target_category.format(
+                    id=category["id"], name=category["name"]
+                )
             )
         delete_issue_category(
             category_id=args.category_id,

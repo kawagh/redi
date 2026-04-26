@@ -42,12 +42,16 @@ def read_membership(membership_id: str, full: bool = False) -> None:
     lines = [_format_membership_line(membership)]
     project = membership.get("project")
     if project:
-        lines.append(f"プロジェクト: {project.get('id')} {project.get('name', '')}")
+        lines.append(
+            messages.label_project_field.format(
+                id=project.get("id"), name=project.get("name", "")
+            )
+        )
     roles = membership.get("roles") or []
     if roles:
-        lines.append("ロール:")
+        lines.append(messages.label_roles_header)
         for r in roles:
-            inherited = " (継承)" if r.get("inherited") else ""
+            inherited = messages.label_inherited_suffix if r.get("inherited") else ""
             lines.append(f"  {r.get('id')} {r.get('name', '')}{inherited}")
     print("\n".join(lines))
 

@@ -7,32 +7,45 @@ from redi.api.attachment import (
     update_attachment,
 )
 from redi.cli._common import confirm_delete, resolve_alias
+from redi.i18n import messages
 
 
 def add_attachment_parser(
     subparsers: argparse._SubParsersAction,
 ) -> argparse.ArgumentParser:
-    a_parser = subparsers.add_parser("attachment", help="添付ファイル詳細/更新/削除")
+    a_parser = subparsers.add_parser(
+        "attachment", help=messages.arg_help_attachment_command
+    )
     a_subparsers = a_parser.add_subparsers(dest="attachment_command")
     a_view_parser = a_subparsers.add_parser(
-        "view", aliases=["v"], help="添付ファイル詳細"
+        "view", aliases=["v"], help=messages.arg_help_attachment_view
     )
-    a_view_parser.add_argument("attachment_id", help="添付ファイルID")
     a_view_parser.add_argument(
-        "--full", action="store_true", help="JSON形式で全情報を出力"
+        "attachment_id", help=messages.arg_help_attachment_view_id
+    )
+    a_view_parser.add_argument(
+        "--full", action="store_true", help=messages.arg_help_full_json
     )
     a_update_parser = a_subparsers.add_parser(
-        "update", aliases=["u"], help="添付ファイル更新"
+        "update", aliases=["u"], help=messages.arg_help_attachment_update
     )
-    a_update_parser.add_argument("attachment_id", help="添付ファイルID")
-    a_update_parser.add_argument("--filename", "-f", help="ファイル名")
-    a_update_parser.add_argument("--description", "-d", help="説明")
+    a_update_parser.add_argument(
+        "attachment_id", help=messages.arg_help_attachment_update_id
+    )
+    a_update_parser.add_argument(
+        "--filename", "-f", help=messages.arg_help_attachment_filename
+    )
+    a_update_parser.add_argument(
+        "--description", "-d", help=messages.arg_help_attachment_description
+    )
     a_delete_parser = a_subparsers.add_parser(
-        "delete", aliases=["d"], help="添付ファイル削除"
+        "delete", aliases=["d"], help=messages.arg_help_attachment_delete
     )
-    a_delete_parser.add_argument("attachment_id", help="添付ファイルID")
     a_delete_parser.add_argument(
-        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+        "attachment_id", help=messages.arg_help_attachment_delete_id
+    )
+    a_delete_parser.add_argument(
+        "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
     return a_parser
 
@@ -53,7 +66,9 @@ def handle_attachment(
         if not args.yes:
             attachment = fetch_attachment(args.attachment_id)
             confirm_delete(
-                f"削除する添付ファイル: {attachment['id']} {attachment['filename']}"
+                messages.delete_target_attachment.format(
+                    id=attachment["id"], filename=attachment["filename"]
+                )
             )
         delete_attachment(args.attachment_id)
     else:

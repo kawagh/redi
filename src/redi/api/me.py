@@ -17,18 +17,18 @@ def read_my_account(full: bool = False) -> None:
     lines = [f"{user['id']} {user.get('login', '')}"]
     name = " ".join(filter(None, [user.get("firstname"), user.get("lastname")]))
     if name:
-        lines.append(f"名前: {name}")
+        lines.append(messages.label_name.format(value=name))
     if user.get("mail"):
-        lines.append(f"メール: {user['mail']}")
+        lines.append(messages.label_mail.format(value=user["mail"]))
     if "admin" in user:
-        lines.append(f"管理者: {user['admin']}")
+        lines.append(messages.label_admin.format(value=user["admin"]))
     if user.get("created_on"):
-        lines.append(f"作成日時: {user['created_on']}")
+        lines.append(messages.label_created_on.format(value=user["created_on"]))
     if user.get("last_login_on"):
-        lines.append(f"最終ログイン: {user['last_login_on']}")
+        lines.append(messages.label_last_login_on.format(value=user["last_login_on"]))
     custom_fields = user.get("custom_fields") or []
     if custom_fields:
-        lines.append("カスタムフィールド:")
+        lines.append(messages.label_custom_fields_header)
         for cf in custom_fields:
             lines.append(f"  {cf.get('name')}: {cf.get('value')}")
     print("\n".join(lines))

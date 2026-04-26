@@ -44,11 +44,17 @@ def read_issue_category(category_id: str, full: bool = False) -> None:
     lines = [f"{category['id']} {category['name']}"]
     project = category.get("project") or {}
     if project:
-        lines.append(f"プロジェクト: {project.get('id')} {project.get('name', '')}")
+        lines.append(
+            messages.label_project_field.format(
+                id=project.get("id"), name=project.get("name", "")
+            )
+        )
     assigned = category.get("assigned_to") or {}
     if assigned:
         lines.append(
-            f"デフォルト担当者: {assigned.get('id')} {assigned.get('name', '')}"
+            messages.label_default_assignee.format(
+                id=assigned.get("id"), name=assigned.get("name", "")
+            )
         )
     print("\n".join(lines))
 

@@ -185,23 +185,27 @@ def read_project(
     parent = project.get("parent")
     if parent:
         lines.append("")
-        lines.append(f"親プロジェクト: {parent.get('id')} {parent.get('name', '')}")
+        lines.append(
+            messages.label_parent_project.format(
+                id=parent.get("id"), name=parent.get("name", "")
+            )
+        )
     trackers = project.get("trackers") or []
     if trackers:
         lines.append("")
-        lines.append("トラッカー:")
+        lines.append(messages.label_trackers_header)
         for t in trackers:
             lines.append(f"  {t['id']} {t['name']}")
     issue_categories = project.get("issue_categories") or []
     if issue_categories:
         lines.append("")
-        lines.append("イシューカテゴリ:")
+        lines.append(messages.label_issue_categories_header)
         for c in issue_categories:
             lines.append(f"  {c['id']} {c['name']}")
     enabled_modules = project.get("enabled_modules") or []
     if enabled_modules:
         lines.append("")
-        lines.append("有効モジュール:")
+        lines.append(messages.label_enabled_modules_header)
         for m in enabled_modules:
             lines.append(f"  {m.get('name')}")
     print("\n".join(lines))

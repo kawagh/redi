@@ -42,13 +42,13 @@ def read_group(group_id: str, full: bool = False) -> None:
     users = group.get("users") or []
     if users:
         lines.append("")
-        lines.append("ユーザー:")
+        lines.append(messages.label_users_header)
         for u in users:
             lines.append(f"  {u['id']} {u['name']}")
     memberships = group.get("memberships") or []
     if memberships:
         lines.append("")
-        lines.append("メンバーシップ:")
+        lines.append(messages.label_membership_header)
         for m in memberships:
             project = m.get("project") or {}
             roles = m.get("roles") or []

@@ -7,20 +7,26 @@ from redi.i18n import messages
 
 
 def add_file_parser(subparsers: argparse._SubParsersAction) -> None:
-    f_parser = subparsers.add_parser(
-        "file", help="list(l): 一覧, create(c): アップロード"
+    f_parser = subparsers.add_parser("file", help=messages.arg_help_file_command)
+    f_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
+    f_parser.add_argument(
+        "--full", action="store_true", help=messages.arg_help_full_json
     )
-    f_parser.add_argument("--project_id", "-p", help="プロジェクトID")
-    f_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
     f_subparsers = f_parser.add_subparsers(dest="file_command")
-    f_subparsers.add_parser("list", aliases=["l"], help="プロジェクトファイル一覧")
+    f_subparsers.add_parser("list", aliases=["l"], help=messages.arg_help_file_list)
     f_create_parser = f_subparsers.add_parser(
-        "create", aliases=["c"], help="ファイルアップロード"
+        "create", aliases=["c"], help=messages.arg_help_file_create
     )
-    f_create_parser.add_argument("file_path", help="アップロードするファイルのパス")
-    f_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
-    f_create_parser.add_argument("--version_id", type=int, help="バージョンID")
-    f_create_parser.add_argument("--description", "-d", help="説明")
+    f_create_parser.add_argument("file_path", help=messages.arg_help_file_path)
+    f_create_parser.add_argument(
+        "--project_id", "-p", help=messages.arg_help_project_id
+    )
+    f_create_parser.add_argument(
+        "--version_id", type=int, help=messages.arg_help_file_version_id
+    )
+    f_create_parser.add_argument(
+        "--description", "-d", help=messages.arg_help_file_description
+    )
 
 
 def handle_file(args: argparse.Namespace) -> None:

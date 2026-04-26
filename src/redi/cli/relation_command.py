@@ -2,18 +2,25 @@ import argparse
 
 from redi.api.issue_relation import read_relation
 from redi.cli._common import resolve_alias
+from redi.i18n import messages
 
 
 def add_relation_parser(
     subparsers: argparse._SubParsersAction,
 ) -> argparse.ArgumentParser:
-    r_parser = subparsers.add_parser("relation", help="イシュー関係性 詳細")
-    r_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    r_parser = subparsers.add_parser(
+        "relation", help=messages.arg_help_relation_command
+    )
+    r_parser.add_argument(
+        "--full", action="store_true", help=messages.arg_help_full_json
+    )
     r_subparsers = r_parser.add_subparsers(dest="relation_command")
-    r_view_parser = r_subparsers.add_parser("view", aliases=["v"], help="関係性詳細")
-    r_view_parser.add_argument("relation_id", help="関係性ID")
+    r_view_parser = r_subparsers.add_parser(
+        "view", aliases=["v"], help=messages.arg_help_relation_view
+    )
+    r_view_parser.add_argument("relation_id", help=messages.arg_help_relation_view_id)
     r_view_parser.add_argument(
-        "--full", action="store_true", help="JSON形式で全情報を出力"
+        "--full", action="store_true", help=messages.arg_help_full_json
     )
     return r_parser
 

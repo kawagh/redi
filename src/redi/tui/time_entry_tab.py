@@ -5,6 +5,7 @@ import requests
 from redi.api.time_entry import fetch_issue_subjects, format_time_entry_line
 from redi.client import client
 from redi.config import default_project_id, redmine_url
+from redi.i18n import messages
 from redi.tui.render import highlight_segments, render_meta_table
 from redi.tui.state import Renderable, TuiPosition, TuiResult, TuiState
 from redi.tui.tab import TabView, noop, noop_jump
@@ -27,7 +28,7 @@ def _load_time_entries(state: TuiState) -> None:
     try:
         entries = _fetch_time_entries(default_project_id)
     except requests.exceptions.RequestException as e:
-        state.time_entry_tab.error = f"作業時間の取得に失敗しました: {e}"
+        state.time_entry_tab.error = messages.tui_time_entry_load_failed.format(error=e)
         return
     issue_ids = sorted(
         {
@@ -51,8 +52,8 @@ def _render_list(state: TuiState) -> Renderable:
     entries = state.time_entry_tab.entries
     if not entries:
         if state.time_entry_tab.loaded:
-            return [("", "作業時間が見つかりません")]
-        return [("", "(作業時間を読み込み中...)")]
+            return [("", messages.tui_time_entry_no_entries)]
+        return [("", messages.tui_time_entry_loading)]
     result: Renderable = []
     query = state.search_query
     subjects = state.time_entry_tab.issue_subjects
@@ -82,12 +83,18 @@ def _render_preview(state: TuiState) -> Renderable:
     else:
         ticket_cell = ""
     meta = [
-        ("プロジェクト", f"{project.get('name', '')} (id={project.get('id', '')})"),
-        ("ユーザー", f"{user.get('name', '')} (id={user.get('id', '')})"),
-        ("作業分類", (te.get("activity") or {}).get("name", "")),
-        ("イシュー", ticket_cell),
-        ("作成", te.get("created_on") or ""),
-        ("更新", te.get("updated_on") or ""),
+        (
+            messages.tui_meta_project,
+            f"{project.get('name', '')} (id={project.get('id', '')})",
+        ),
+        (
+            messages.tui_meta_user,
+            f"{user.get('name', '')} (id={user.get('id', '')})",
+        ),
+        (messages.tui_meta_activity, (te.get("activity") or {}).get("name", "")),
+        (messages.tui_meta_issue, ticket_cell),
+        (messages.tui_meta_created, te.get("created_on") or ""),
+        (messages.tui_meta_updated, te.get("updated_on") or ""),
     ]
     lines = [title, ""]
     lines.extend(render_meta_table(meta))
@@ -100,7 +107,7 @@ def _render_preview(state: TuiState) -> Renderable:
 
 
 def _status_hint(state: TuiState) -> str:
-    return " jk:移動 /:検索 c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+    return messages.tui_status_hint_time_entries
 
 
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
@@ -176,7 +183,7 @@ def request_delete(state: TuiState) -> str | None:
     summary = format_time_entry_line(
         te, issue_subjects=state.time_entry_tab.issue_subjects
     )
-    return f"削除しますか? {summary} [y/N]"
+    return messages.tui_time_entry_delete_prompt.format(summary=summary)
 
 
 def confirm_delete(state: TuiState) -> None:
@@ -190,7 +197,7 @@ def confirm_delete(state: TuiState) -> None:
         response = client.delete(f"/time_entries/{te['id']}.json")
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        state.flash_message = f"作業時間の削除に失敗しました: {e}"
+        state.flash_message = messages.tui_time_entry_delete_failed.format(error=e)
         return
     entries.pop(cursor)
     if cursor >= len(entries):
@@ -210,27 +217,27 @@ def _on_open_web(state: TuiState) -> None:
 
 
 _HELP_LINES: list[tuple[str, str]] = [
-    ("移動", ""),
-    ("  ↑/k/Ctrl+P", "上へ"),
-    ("  ↓/j/Ctrl+N", "下へ"),
-    ("  gg / G", "先頭 / 末尾へ"),
-    ("  Tab / Shift+Tab", "タブ切替 (次 / 前)"),
-    ("検索", ""),
-    ("  /", "検索開始"),
-    ("  n / N", "次 / 前の検索結果"),
-    ("アクション", ""),
-    ("  c", "時間記録を作成"),
-    ("  u", "選択した時間記録を更新"),
-    ("  D", "選択した時間記録を削除 (y/Y で確定)"),
-    ("  v", "選択行のイシューを web で開く"),
-    ("その他", ""),
-    ("  ?", "このヘルプを表示 / 閉じる"),
-    ("  q / Esc / Ctrl+C", "終了"),
+    (messages.tui_help_section_navigation, ""),
+    ("  ↑/k/Ctrl+P", messages.tui_help_move_up),
+    ("  ↓/j/Ctrl+N", messages.tui_help_move_down),
+    ("  gg / G", messages.tui_help_goto_top_bottom),
+    ("  Tab / Shift+Tab", messages.tui_help_switch_tab),
+    (messages.tui_help_section_search, ""),
+    ("  /", messages.tui_help_start_search),
+    ("  n / N", messages.tui_help_next_prev_match),
+    (messages.tui_help_section_actions, ""),
+    ("  c", messages.tui_help_time_entry_create),
+    ("  u", messages.tui_help_time_entry_update),
+    ("  D", messages.tui_help_time_entry_delete),
+    ("  v", messages.tui_help_time_entry_open_web),
+    (messages.tui_help_section_other, ""),
+    ("  ?", messages.tui_help_show_or_close),
+    ("  q / Esc / Ctrl+C", messages.tui_help_quit),
 ]
 
 
 TIME_ENTRY_TAB = TabView(
-    label="作業時間",
+    label=messages.tui_tab_label_time_entries,
     render_list=_render_list,
     render_preview=_render_preview,
     status_hint=_status_hint,

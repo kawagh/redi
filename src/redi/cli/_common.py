@@ -14,7 +14,7 @@ from redi.i18n import messages
 def confirm_delete(summary: str) -> None:
     print(summary)
     try:
-        confirm = prompt("削除してもよろしいですか? (yes/No): ").strip().lower()
+        confirm = prompt(messages.prompt_confirm_delete).strip().lower()
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         exit(1)
@@ -29,7 +29,9 @@ def confirm_delete_with_identifier(
     print(summary)
     try:
         entered = prompt(
-            f'削除するには{field_label} "{expected}" を入力してください: '
+            messages.prompt_confirm_delete_with_identifier.format(
+                label=field_label, expected=expected
+            )
         ).strip()
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)

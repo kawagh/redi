@@ -141,7 +141,7 @@ def read_issue(
         relations = issue.get("relations") or []
         if relations:
             lines.append("")
-            lines.append("関係性:")
+            lines.append(messages.label_relations_header)
             target_id = int(issue_id)
             inverse_relation = {
                 "precedes": "follows",
@@ -155,15 +155,15 @@ def read_issue(
                 "relates": "relates",
             }
             relation_labels = {
-                "relates": "関連している",
-                "duplicates": "重複している",
-                "duplicated": "重複されている",
-                "blocks": "ブロック先",
-                "blocked": "ブロック元",
-                "precedes": "先行する",
-                "follows": "後続する",
-                "copied_to": "コピー先",
-                "copied_from": "コピー元",
+                "relates": messages.relation_label_relates,
+                "duplicates": messages.relation_label_duplicates,
+                "duplicated": messages.relation_label_duplicated,
+                "blocks": messages.relation_label_blocks,
+                "blocked": messages.relation_label_blocked,
+                "precedes": messages.relation_label_precedes,
+                "follows": messages.relation_label_follows,
+                "copied_to": messages.relation_label_copied_to,
+                "copied_from": messages.relation_label_copied_from,
             }
             for r in relations:
                 if r["issue_id"] == target_id:
@@ -183,31 +183,31 @@ def read_issue(
         attachments = issue.get("attachments") or []
         if attachments:
             lines.append("")
-            lines.append("添付ファイル:")
+            lines.append(messages.label_attachments_header)
             for a in attachments:
                 lines.append(f"  {a['filename']} {a.get('content_url', '')}")
         children = issue.get("children") or []
         if children:
             lines.append("")
-            lines.append("子チケット:")
+            lines.append(messages.label_children_header)
             for c in children:
                 lines.append(f"  #{c['id']} {c.get('subject', '')}")
         watchers = issue.get("watchers") or []
         if watchers:
             lines.append("")
-            lines.append("ウォッチャー:")
+            lines.append(messages.label_watchers_header)
             for w in watchers:
                 lines.append(f"  {w.get('name', w.get('id', ''))}")
         allowed_statuses = issue.get("allowed_statuses") or []
         if allowed_statuses:
             lines.append("")
-            lines.append("遷移可能なステータス:")
+            lines.append(messages.label_allowed_statuses_header)
             for s in allowed_statuses:
                 lines.append(f"  {s.get('id')} {s.get('name')}")
         changesets = issue.get("changesets") or []
         if changesets:
             lines.append("")
-            lines.append("リビジョン:")
+            lines.append(messages.label_revisions_header)
             for c in changesets:
                 lines.append(
                     f"  {c.get('revision', '')} {c.get('comments', '')}".rstrip()
@@ -215,7 +215,7 @@ def read_issue(
         journals = issue.get("journals") or []
         if journals:
             lines.append("")
-            lines.append("コメント/変更履歴:")
+            lines.append(messages.label_journals_header)
             for j in journals:
                 author = (j.get("user") or {}).get("name", "")
                 created = j.get("created_on", "")

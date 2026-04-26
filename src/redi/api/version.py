@@ -110,11 +110,15 @@ def read_version(version_id: str, full: bool = False, web: bool = False) -> None
     )
     project = version.get("project")
     if project:
-        lines.append(f"プロジェクト: {project.get('id')} {project.get('name', '')}")
+        lines.append(
+            messages.label_project_field.format(
+                id=project.get("id"), name=project.get("name", "")
+            )
+        )
     if version.get("due_date"):
-        lines.append(f"期日: {version['due_date']}")
+        lines.append(messages.label_due_date_field.format(value=version["due_date"]))
     if version.get("sharing"):
-        lines.append(f"共有: {version['sharing']}")
+        lines.append(messages.label_sharing_field.format(value=version["sharing"]))
     if version.get("description"):
         lines.append("")
         lines.append(version["description"])

@@ -16,7 +16,7 @@ PROFILE_NAME = "default"
 def add_init_parser(subparsers: argparse._SubParsersAction) -> None:
     subparsers.add_parser(
         "init",
-        help="初回セットアップ（URL/APIキーの疎通確認後にプロファイルを作成）",
+        help=messages.arg_help_init_command,
     )
 
 
@@ -81,13 +81,13 @@ def handle_init(_args: argparse.Namespace) -> None:
 
     non_empty_validator = Validator.from_callable(
         lambda text: len(text.strip()) > 0,
-        error_message="入力してください",
+        error_message=messages.error_input_required,
     )
     try:
-        url = prompt("Redmine URL: ", validator=UrlValidator()).strip()
+        url = prompt(messages.prompt_redmine_url, validator=UrlValidator()).strip()
         print(messages.api_key_url_hint.format(url=url.rstrip("/")))
         api_key = prompt(
-            "Redmine APIキー: ",
+            messages.prompt_redmine_api_key,
             validator=non_empty_validator,
             is_password=True,
         ).strip()
@@ -108,7 +108,7 @@ def handle_init(_args: argparse.Namespace) -> None:
     if projects:
         projects_by_id = {str(p["id"]): p for p in projects}
         default_project_id = _select_project_id(
-            "普段使用しているプロジェクトを選択してください", projects
+            messages.prompt_select_default_project, projects
         )
         print(
             messages.default_project_label.format(
@@ -116,7 +116,7 @@ def handle_init(_args: argparse.Namespace) -> None:
             )
         )
         wiki_project_id = _select_project_id(
-            "普段閲覧しているwikiのあるプロジェクトを選択してください", projects
+            messages.prompt_select_wiki_project, projects
         )
         print(
             messages.wiki_project_label.format(

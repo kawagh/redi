@@ -33,51 +33,83 @@ from redi.api.time_entry import (
 def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
     time_entry_parser = subparsers.add_parser(
         "time_entry",
-        help="list(l): 一覧, view(v): 詳細, create(c): 登録, update(u): 更新, delete(d): 削除",
-    )
-    time_entry_parser.add_argument("--project_id", "-p", help="プロジェクトID")
-    time_entry_parser.add_argument(
-        "--user_id", "-u", help="ユーザーIDでフィルタリング（'me'も可）"
+        help=messages.arg_help_time_entry_command,
     )
     time_entry_parser.add_argument(
-        "--full", action="store_true", help="JSON形式で全情報を出力"
+        "--project_id", "-p", help=messages.arg_help_project_id
+    )
+    time_entry_parser.add_argument(
+        "--user_id", "-u", help=messages.arg_help_time_entry_user_id
+    )
+    time_entry_parser.add_argument(
+        "--full", action="store_true", help=messages.arg_help_full_json
     )
     te_subparsers = time_entry_parser.add_subparsers(dest="time_entry_command")
-    te_subparsers.add_parser("list", aliases=["l"], help="作業時間一覧")
+    te_subparsers.add_parser(
+        "list", aliases=["l"], help=messages.arg_help_time_entry_list
+    )
     te_create_parser = te_subparsers.add_parser(
-        "create", aliases=["c"], help="作業時間登録"
+        "create", aliases=["c"], help=messages.arg_help_time_entry_create
     )
     te_create_parser.add_argument(
-        "hours", type=float, nargs="?", help="時間（例: 1.5、省略で対話的に入力）"
+        "hours", type=float, nargs="?", help=messages.arg_help_time_entry_hours
     )
-    te_create_parser.add_argument("--issue_id", "-i", help="イシューID")
-    te_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
-    te_create_parser.add_argument("--activity_id", "-a", help="作業分類ID")
-    te_create_parser.add_argument("--spent_on", help="日付（YYYY-MM-DD、省略で今日）")
-    te_create_parser.add_argument("--comments", "-c", help="コメント")
+    te_create_parser.add_argument(
+        "--issue_id", "-i", help=messages.arg_help_time_entry_issue_id
+    )
+    te_create_parser.add_argument(
+        "--project_id", "-p", help=messages.arg_help_project_id
+    )
+    te_create_parser.add_argument(
+        "--activity_id", "-a", help=messages.arg_help_time_entry_activity_id
+    )
+    te_create_parser.add_argument(
+        "--spent_on", help=messages.arg_help_time_entry_spent_on
+    )
+    te_create_parser.add_argument(
+        "--comments", "-c", help=messages.arg_help_time_entry_comments
+    )
     te_view_parser = te_subparsers.add_parser(
-        "view", aliases=["v"], help="作業時間詳細"
+        "view", aliases=["v"], help=messages.arg_help_time_entry_view
     )
-    te_view_parser.add_argument("time_entry_id", help="作業時間ID")
     te_view_parser.add_argument(
-        "--full", action="store_true", help="JSON形式で全情報を出力"
+        "time_entry_id", help=messages.arg_help_time_entry_view_id
+    )
+    te_view_parser.add_argument(
+        "--full", action="store_true", help=messages.arg_help_full_json
     )
     te_update_parser = te_subparsers.add_parser(
-        "update", aliases=["u"], help="作業時間更新"
+        "update", aliases=["u"], help=messages.arg_help_time_entry_update
     )
-    te_update_parser.add_argument("time_entry_id", help="作業時間ID")
-    te_update_parser.add_argument("--hours", type=float, help="時間（例: 1.5）")
-    te_update_parser.add_argument("--issue_id", "-i", help="イシューID")
-    te_update_parser.add_argument("--project_id", "-p", help="プロジェクトID")
-    te_update_parser.add_argument("--activity_id", "-a", help="作業分類ID")
-    te_update_parser.add_argument("--spent_on", help="日付（YYYY-MM-DD）")
-    te_update_parser.add_argument("--comments", "-c", help="コメント")
+    te_update_parser.add_argument(
+        "time_entry_id", help=messages.arg_help_time_entry_update_id
+    )
+    te_update_parser.add_argument(
+        "--hours", type=float, help=messages.arg_help_time_entry_update_hours
+    )
+    te_update_parser.add_argument(
+        "--issue_id", "-i", help=messages.arg_help_time_entry_issue_id
+    )
+    te_update_parser.add_argument(
+        "--project_id", "-p", help=messages.arg_help_project_id
+    )
+    te_update_parser.add_argument(
+        "--activity_id", "-a", help=messages.arg_help_time_entry_activity_id
+    )
+    te_update_parser.add_argument(
+        "--spent_on", help=messages.arg_help_time_entry_update_spent_on
+    )
+    te_update_parser.add_argument(
+        "--comments", "-c", help=messages.arg_help_time_entry_comments
+    )
     te_delete_parser = te_subparsers.add_parser(
-        "delete", aliases=["d"], help="作業時間削除"
+        "delete", aliases=["d"], help=messages.arg_help_time_entry_delete
     )
-    te_delete_parser.add_argument("time_entry_id", help="作業時間ID")
     te_delete_parser.add_argument(
-        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+        "time_entry_id", help=messages.arg_help_time_entry_delete_id
+    )
+    te_delete_parser.add_argument(
+        "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
 
 
@@ -85,7 +117,7 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
     try:
         if not args.issue_id and not args.project_id:
             issue_id = prompt(
-                "イシューID（省略でプロジェクト指定に切替）: ",
+                messages.prompt_issue_id_or_project,
                 key_bindings=digit_only_key_bindings(),
             ).strip()
             if issue_id:
@@ -107,20 +139,20 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
                         valid_values.add(p["name"])
                 project_validator = Validator.from_callable(
                     lambda v: v in valid_values,
-                    error_message="該当するプロジェクトがありません",
+                    error_message=messages.error_no_matching_project,
                 )
                 completer = WordCompleter(
                     sorted(valid_values), ignore_case=True, match_middle=True
                 )
                 project_id = prompt(
-                    "プロジェクトID または 名前/identifier: ",
+                    messages.prompt_project_id_or_name,
                     default=default_project_id or "",
                     validator=project_validator,
                     completer=completer,
                 ).strip()
                 args.project_id = project_id
         hours_str = prompt(
-            "作業時間（例: 1.5 (h)）: ",
+            messages.prompt_hours,
             validator=HourValidator(),
             key_bindings=digit_and_period_key_bindings(),
         ).strip()
@@ -131,14 +163,16 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
                 (str(a["id"]), a["name"]) for a in activities
             ]
             activity_labels = dict(activity_options)
-            args.activity_id = inline_choice("作業分類", activity_options)
+            args.activity_id = inline_choice(
+                messages.prompt_select_activity, activity_options
+            )
             print(
                 messages.activity_label.format(value=activity_labels[args.activity_id])
             )
         if not args.spent_on:
-            args.spent_on = prompt("作業日（YYYY-MM-DD、省略で今日）: ").strip() or None
+            args.spent_on = prompt(messages.prompt_spent_on).strip() or None
         if not args.comments:
-            args.comments = prompt("コメント: ").strip() or None
+            args.comments = prompt(messages.prompt_comment).strip() or None
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         exit(1)
@@ -147,16 +181,14 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
 def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
     current = fetch_time_entry(args.time_entry_id)
     field_values: list[tuple[str, str]] = [
-        ("hours", "作業時間 (hours)"),
-        ("activity", "作業分類 (activity)"),
-        ("spent_on", "作業日 (spent_on)"),
-        ("comments", "コメント (comments)"),
-        ("issue_id", "イシュー (issue_id)"),
+        ("hours", messages.field_hours),
+        ("activity", messages.field_activity),
+        ("spent_on", messages.field_spent_on),
+        ("comments", messages.field_comments),
+        ("issue_id", messages.field_issue_id),
     ]
     try:
-        selected = inline_checkbox(
-            "更新する項目を選択 (Spaceで選択、Enterで確定)", field_values
-        )
+        selected = inline_checkbox(messages.prompt_select_update_items, field_values)
     except KeyboardInterrupt:
         print(messages.canceled)
         exit(1)
@@ -168,7 +200,7 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
     try:
         if "hours" in selected:
             hours_str = prompt(
-                "作業時間（例: 1.5 (h)）: ",
+                messages.prompt_hours,
                 default=str(current.get("hours", "")),
                 validator=HourValidator(),
                 key_bindings=digit_and_period_key_bindings(),
@@ -182,7 +214,7 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
             activity_labels = dict(activity_options)
             current_activity_id = str((current.get("activity") or {}).get("id", ""))
             args.activity_id = inline_choice(
-                "作業分類",
+                messages.prompt_select_activity,
                 activity_options,
                 default=current_activity_id or None,
             )
@@ -192,18 +224,19 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
         if "spent_on" in selected:
             args.spent_on = (
                 prompt(
-                    "作業日（YYYY-MM-DD）: ", default=current.get("spent_on", "") or ""
+                    messages.prompt_update_spent_on,
+                    default=current.get("spent_on", "") or "",
                 ).strip()
                 or None
             )
         if "comments" in selected:
             args.comments = prompt(
-                "コメント: ", default=current.get("comments", "") or ""
+                messages.prompt_comment, default=current.get("comments", "") or ""
             )
         if "issue_id" in selected:
             current_issue_id = str((current.get("issue") or {}).get("id", ""))
             issue_id = prompt(
-                "イシューID: ",
+                messages.prompt_issue_id_update,
                 default=current_issue_id,
                 key_bindings=digit_only_key_bindings(),
             ).strip()
@@ -260,8 +293,12 @@ def handle_time_entry(args: argparse.Namespace) -> None:
             te = fetch_time_entry(args.time_entry_id)
             activity = (te.get("activity") or {}).get("name", "")
             confirm_delete(
-                f"削除する作業時間: {te['id']} {te['hours']}h {activity} "
-                f"({te['spent_on']})"
+                messages.delete_target_time_entry.format(
+                    id=te["id"],
+                    hours=te["hours"],
+                    activity=activity,
+                    spent_on=te["spent_on"],
+                )
             )
         delete_time_entry(args.time_entry_id)
     elif cmd == "list" or cmd is None:

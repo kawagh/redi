@@ -102,19 +102,19 @@ def read_user(user_id: str, full: bool = False) -> None:
     name = f"{user.get('firstname', '')} {user.get('lastname', '')}".strip()
     lines = [
         f"{user['id']} {user.get('login', '')} {name}".rstrip(),
-        f"  メール: {user.get('mail', '')}",
+        "  " + messages.label_mail.format(value=user.get("mail", "")),
     ]
     if user.get("admin"):
-        lines.append("  管理者: yes")
+        lines.append(messages.label_admin_yes)
     created_on = user.get("created_on")
     if created_on:
-        lines.append(f"  作成日時: {created_on}")
+        lines.append("  " + messages.label_created_on.format(value=created_on))
     last_login_on = user.get("last_login_on")
     if last_login_on:
-        lines.append(f"  最終ログイン: {last_login_on}")
+        lines.append("  " + messages.label_last_login_on.format(value=last_login_on))
     memberships = user.get("memberships") or []
     if memberships:
-        lines.append("  メンバーシップ:")
+        lines.append("  " + messages.label_membership_header)
         for m in memberships:
             project = m.get("project") or {}
             roles = m.get("roles") or []
@@ -124,7 +124,7 @@ def read_user(user_id: str, full: bool = False) -> None:
             )
     groups = user.get("groups") or []
     if groups:
-        lines.append("  グループ:")
+        lines.append("  " + messages.label_groups_header)
         for g in groups:
             lines.append(f"    {g.get('id', '?')} {g.get('name', '')}")
     print("\n".join(lines))

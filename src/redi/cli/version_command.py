@@ -30,60 +30,76 @@ def add_version_parser(subparsers: argparse._SubParsersAction) -> None:
     v_parser = subparsers.add_parser(
         "version",
         aliases=["v"],
-        help="list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除",
+        help=messages.arg_help_version_command,
     )
-    v_parser.add_argument("--project_id", "-p", help="プロジェクトID")
-    v_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    v_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
+    v_parser.add_argument(
+        "--full", action="store_true", help=messages.arg_help_full_json
+    )
     v_subparsers = v_parser.add_subparsers(dest="version_command")
-    v_subparsers.add_parser("list", aliases=["l"], help="バージョン一覧")
+    v_subparsers.add_parser("list", aliases=["l"], help=messages.arg_help_version_list)
     v_view_parser = v_subparsers.add_parser(
-        "view", aliases=["v"], help="バージョン詳細"
+        "view", aliases=["v"], help=messages.arg_help_version_view
     )
-    v_view_parser.add_argument("version_id", help="バージョンID")
+    v_view_parser.add_argument("version_id", help=messages.arg_help_version_view_id)
     v_view_parser.add_argument(
-        "--full", action="store_true", help="JSON形式で全情報を出力"
+        "--full", action="store_true", help=messages.arg_help_full_json
     )
     v_view_parser.add_argument(
-        "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
+        "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
     v_create_parser = v_subparsers.add_parser(
-        "create", aliases=["c"], help="バージョン作成"
+        "create", aliases=["c"], help=messages.arg_help_version_create
     )
-    v_create_parser.add_argument("name", nargs="?", default=None, help="バージョン名")
-    v_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
     v_create_parser.add_argument(
-        "--status", choices=["open", "locked", "closed"], help="ステータス"
+        "name", nargs="?", default=None, help=messages.arg_help_version_name_arg
     )
-    v_create_parser.add_argument("--due_date", help="期日（YYYY-MM-DD）")
-    v_create_parser.add_argument("--description", "-d", help="説明")
+    v_create_parser.add_argument(
+        "--project_id", "-p", help=messages.arg_help_project_id
+    )
+    v_create_parser.add_argument(
+        "--status",
+        choices=["open", "locked", "closed"],
+        help=messages.arg_help_version_status,
+    )
+    v_create_parser.add_argument("--due_date", help=messages.arg_help_version_due_date)
+    v_create_parser.add_argument(
+        "--description", "-d", help=messages.arg_help_version_description
+    )
     v_create_parser.add_argument(
         "--sharing",
         choices=["none", "descendants", "hierarchy", "tree", "system"],
-        help="共有設定",
+        help=messages.arg_help_version_sharing,
     )
     v_delete_parser = v_subparsers.add_parser(
-        "delete", aliases=["d"], help="バージョン削除"
+        "delete", aliases=["d"], help=messages.arg_help_version_delete
     )
-    v_delete_parser.add_argument("version_id", help="バージョンID")
+    v_delete_parser.add_argument("version_id", help=messages.arg_help_version_delete_id)
     v_delete_parser.add_argument(
-        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+        "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
     v_update_parser = v_subparsers.add_parser(
-        "update", aliases=["u"], help="バージョン更新"
+        "update", aliases=["u"], help=messages.arg_help_version_update
     )
     v_update_parser.add_argument(
-        "version_id", nargs="?", help="バージョンID（省略で対話的に選択）"
+        "version_id", nargs="?", help=messages.arg_help_version_update_id
     )
-    v_update_parser.add_argument("--name", "-n", help="バージョン名")
     v_update_parser.add_argument(
-        "--status", choices=["open", "locked", "closed"], help="ステータス"
+        "--name", "-n", help=messages.arg_help_version_name_opt
     )
-    v_update_parser.add_argument("--due_date", help="期日（YYYY-MM-DD）")
-    v_update_parser.add_argument("--description", "-d", help="説明")
+    v_update_parser.add_argument(
+        "--status",
+        choices=["open", "locked", "closed"],
+        help=messages.arg_help_version_status,
+    )
+    v_update_parser.add_argument("--due_date", help=messages.arg_help_version_due_date)
+    v_update_parser.add_argument(
+        "--description", "-d", help=messages.arg_help_version_description
+    )
     v_update_parser.add_argument(
         "--sharing",
         choices=["none", "descendants", "hierarchy", "tree", "system"],
-        help="共有設定",
+        help=messages.arg_help_version_sharing,
     )
 
 
@@ -97,7 +113,7 @@ def _interactive_select_version_id(project_id: str) -> str:
     ]
     labels = dict(options)
     try:
-        selected = inline_choice("更新するバージョンを選択", options)
+        selected = inline_choice(messages.prompt_select_version_to_update, options)
     except KeyboardInterrupt:
         print(messages.canceled)
         exit(1)
@@ -108,16 +124,14 @@ def _interactive_select_version_id(project_id: str) -> str:
 def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
     current = fetch_version(args.version_id)
     field_values: list[tuple[str, str]] = [
-        ("name", "バージョン名 (name)"),
-        ("status", "ステータス (status)"),
-        ("due_date", "期日 (due_date)"),
-        ("description", "説明 (description)"),
-        ("sharing", "共有設定 (sharing)"),
+        ("name", messages.field_version_name),
+        ("status", messages.field_status),
+        ("due_date", messages.field_due_date),
+        ("description", messages.field_description),
+        ("sharing", messages.field_sharing),
     ]
     try:
-        selected = inline_checkbox(
-            "更新する項目を選択 (Spaceで選択、Enterで確定)", field_values
-        )
+        selected = inline_checkbox(messages.prompt_select_update_items, field_values)
     except KeyboardInterrupt:
         print(messages.canceled)
         exit(1)
@@ -129,7 +143,7 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
     try:
         if "name" in selected:
             args.name = prompt(
-                "バージョン名: ", default=current.get("name", "")
+                messages.prompt_version_name, default=current.get("name", "")
             ).strip()
 
         if "status" in selected:
@@ -139,18 +153,21 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
                 ("closed", "closed"),
             ]
             args.status = inline_choice(
-                "ステータス", status_options, default=current.get("status", "open")
+                messages.prompt_select_status,
+                status_options,
+                default=current.get("status", "open"),
             )
             print(messages.status_label.format(value=args.status))
 
         if "due_date" in selected:
             args.due_date = prompt(
-                "期日（YYYY-MM-DD）: ", default=current.get("due_date", "")
+                messages.prompt_due_date_optional, default=current.get("due_date", "")
             ).strip()
 
         if "description" in selected:
             args.description = prompt(
-                "説明: ", default=current.get("description", "")
+                messages.prompt_description_optional,
+                default=current.get("description", ""),
             ).strip()
 
         if "sharing" in selected:
@@ -162,7 +179,7 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
                 ("system", "system"),
             ]
             args.sharing = inline_choice(
-                "共有設定",
+                messages.prompt_select_sharing,
                 sharing_options,
                 default=current.get("sharing", "none"),
             )
@@ -175,32 +192,34 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
 def _interactive_create_version(project_id: str, args: argparse.Namespace) -> None:
     non_empty_validator = Validator.from_callable(
         lambda text: len(text.strip()) > 0,
-        error_message="入力してください",
+        error_message=messages.error_input_required,
     )
     try:
-        name = prompt("バージョン名: ", validator=non_empty_validator).strip()
+        name = prompt(
+            messages.prompt_version_name, validator=non_empty_validator
+        ).strip()
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         exit(1)
 
     try:
-        due_date = prompt("期日（YYYY-MM-DD、省略可）: ").strip() or None
+        due_date = prompt(messages.prompt_due_date_optional).strip() or None
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         exit(1)
 
     try:
-        description = prompt("説明（省略可）: ").strip() or None
+        description = prompt(messages.prompt_description_optional).strip() or None
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         exit(1)
 
     sharing_options: list[tuple[str, str]] = [
-        ("none", "none (共有しない)"),
-        ("descendants", "descendants (子プロジェクトと共有)"),
-        ("hierarchy", "hierarchy (階層内で共有)"),
-        ("tree", "tree (ツリー全体で共有)"),
-        ("system", "system (システム全体で共有)"),
+        ("none", messages.sharing_none),
+        ("descendants", messages.sharing_descendants),
+        ("hierarchy", messages.sharing_hierarchy),
+        ("tree", messages.sharing_tree),
+        ("system", messages.sharing_system),
     ]
     choice_kb = KeyBindings()
 
@@ -214,7 +233,7 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
 
     try:
         sharing_input = choice(
-            "共有設定",
+            messages.prompt_select_sharing,
             options=sharing_options,
             default="none",
             key_bindings=choice_kb,
@@ -256,7 +275,11 @@ def handle_version(args: argparse.Namespace) -> None:
     elif cmd == "delete":
         if not args.yes:
             version = fetch_version(args.version_id)
-            confirm_delete(f"削除するバージョン: {version['id']} {version['name']}")
+            confirm_delete(
+                messages.delete_target_version.format(
+                    id=version["id"], name=version["name"]
+                )
+            )
         delete_version(args.version_id)
     elif cmd == "update":
         if not args.version_id:

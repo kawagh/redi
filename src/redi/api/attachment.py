@@ -52,18 +52,20 @@ def read_attachment(attachment_id: str, full: bool = False) -> None:
         return
     lines = [
         f"{attachment['id']} {attachment['filename']}",
-        f"サイズ: {attachment.get('filesize', '')}",
-        f"種別: {attachment.get('content_type', '')}",
+        messages.label_size.format(value=attachment.get("filesize", "")),
+        messages.label_kind.format(value=attachment.get("content_type", "")),
     ]
     author = attachment.get("author") or {}
     if author:
-        lines.append(f"作成者: {author.get('name', '')}")
+        lines.append(messages.label_author.format(value=author.get("name", "")))
     if attachment.get("created_on"):
-        lines.append(f"作成日時: {attachment['created_on']}")
+        lines.append(messages.label_created_on.format(value=attachment["created_on"]))
     if attachment.get("description"):
-        lines.append(f"説明: {attachment['description']}")
+        lines.append(
+            messages.label_description_field.format(value=attachment["description"])
+        )
     if attachment.get("content_url"):
-        lines.append(f"URL: {attachment['content_url']}")
+        lines.append(messages.label_url_field.format(value=attachment["content_url"]))
     print("\n".join(lines))
 
 

@@ -2,6 +2,7 @@ import webbrowser
 
 from redi.api.issue import fetch_issue, fetch_issues_page
 from redi.config import default_project_id, redmine_url
+from redi.i18n import messages
 from redi.tui.render import highlight_segments, render_meta_table
 from redi.tui.state import Renderable, TuiAction, TuiPosition, TuiResult, TuiState
 from redi.tui.tab import TabView, noop
@@ -51,29 +52,29 @@ def _render_preview(state: TuiState) -> Renderable:
         return ""
 
     meta = [
-        ("ステータス", named("status")),
-        ("優先度", named("priority")),
-        ("トラッカー", named("tracker")),
-        ("担当者", named("assigned_to")),
-        ("作成者", named("author")),
-        ("開始日", issue.get("start_date") or ""),
-        ("期日", issue.get("due_date") or ""),
+        (messages.tui_meta_status, named("status")),
+        (messages.tui_meta_priority, named("priority")),
+        (messages.tui_meta_tracker, named("tracker")),
+        (messages.tui_meta_assignee, named("assigned_to")),
+        (messages.tui_meta_author, named("author")),
+        (messages.tui_meta_start_date, issue.get("start_date") or ""),
+        (messages.tui_meta_due_date, issue.get("due_date") or ""),
         (
-            "進捗",
+            messages.tui_meta_progress,
             f"{issue['done_ratio']}%" if issue.get("done_ratio") is not None else "",
         ),
         (
-            "予定工数",
+            messages.tui_meta_estimated_hours,
             f"{issue['estimated_hours']} h"
             if issue.get("estimated_hours") is not None
             else "",
         ),
         (
-            "作業時間",
+            messages.tui_meta_spent_hours,
             f"{issue['spent_hours']} h" if issue.get("spent_hours") is not None else "",
         ),
-        ("作成", issue.get("created_on") or ""),
-        ("更新", issue.get("updated_on") or ""),
+        (messages.tui_meta_created, issue.get("created_on") or ""),
+        (messages.tui_meta_updated, issue.get("updated_on") or ""),
     ]
     lines.extend(render_meta_table(meta))
 
@@ -88,7 +89,7 @@ def _render_preview(state: TuiState) -> Renderable:
     if notes:
         lines.append("")
         lines.append("----")
-        lines.append("コメント:")
+        lines.append(messages.tui_preview_comments_header)
         for j in notes:
             author = (j.get("user") or {}).get("name", "")
             created = j.get("created_on", "")
@@ -100,10 +101,7 @@ def _render_preview(state: TuiState) -> Renderable:
 
 
 def _status_hint(state: TuiState) -> str:
-    hint = (
-        f" {_page_label(state)}  "
-        "jk:移動 /:検索 f:フィルタ c:作成 u:更新 v:web ?:ヘルプ q:終了 "
-    )
+    hint = messages.tui_status_hint_issues.format(page_label=_page_label(state))
     if state.issue_tab.filter.is_active():
         hint = f" [{state.issue_tab.filter.short_label()}]" + hint
     return hint
@@ -241,32 +239,32 @@ def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
 
 
 _HELP_LINES: list[tuple[str, str]] = [
-    ("移動", ""),
-    ("  ↑/k/Ctrl+P", "上へ"),
-    ("  ↓/j/Ctrl+N", "下へ"),
-    ("  gg / G", "先頭 / 末尾へ"),
-    ("  <N>G", "#N のイシューへジャンプ"),
-    ("  ←/h / →/l", "前ページ / 次ページ"),
-    ("  Tab / Shift+Tab", "タブ切替 (次 / 前)"),
-    ("検索", ""),
-    ("  /", "検索開始"),
-    ("  n / N", "次 / 前の検索結果"),
-    ("フィルタ", ""),
-    ("  f", "ステータス/担当者でフィルタ (フローティング)"),
-    ("アクション", ""),
-    ("  Enter", "選択イシューのコメントを読込"),
-    ("  c / u", "イシュー作成 / 更新"),
-    ("  n", "コメント追加 (検索クエリ未設定時)"),
-    ("  t", "時間記録の作成"),
-    ("  v / <N>V", "選択イシューを web で開く / #N を web で開く"),
-    ("その他", ""),
-    ("  ?", "このヘルプを表示 / 閉じる"),
-    ("  q / Esc / Ctrl+C", "終了"),
+    (messages.tui_help_section_navigation, ""),
+    ("  ↑/k/Ctrl+P", messages.tui_help_move_up),
+    ("  ↓/j/Ctrl+N", messages.tui_help_move_down),
+    ("  gg / G", messages.tui_help_goto_top_bottom),
+    ("  <N>G", messages.tui_help_jump_to_issue_n),
+    ("  ←/h / →/l", messages.tui_help_prev_next_page),
+    ("  Tab / Shift+Tab", messages.tui_help_switch_tab),
+    (messages.tui_help_section_search, ""),
+    ("  /", messages.tui_help_start_search),
+    ("  n / N", messages.tui_help_next_prev_match),
+    (messages.tui_help_section_filter, ""),
+    ("  f", messages.tui_help_filter_status_assignee),
+    (messages.tui_help_section_actions, ""),
+    ("  Enter", messages.tui_help_issue_load_comments),
+    ("  c / u", messages.tui_help_issue_create_or_update),
+    ("  n", messages.tui_help_issue_add_comment),
+    ("  t", messages.tui_help_issue_create_time_entry),
+    ("  v / <N>V", messages.tui_help_issue_open_web_or_n),
+    (messages.tui_help_section_other, ""),
+    ("  ?", messages.tui_help_show_or_close),
+    ("  q / Esc / Ctrl+C", messages.tui_help_quit),
 ]
 
 
 ISSUE_TAB = TabView(
-    label="イシュー",
+    label=messages.tui_tab_label_issues,
     render_list=_render_list,
     render_preview=_render_preview,
     status_hint=_status_hint,

@@ -53,26 +53,27 @@ from redi.api.issue import add_note
 from redi.api.issue_status import list_issue_statuses
 from redi.api.query import list_queries
 from redi.api.tracker import list_trackers
+from redi.i18n import messages
 from redi.tui import TuiState, run_issue_tui
 
 
 def _build_parser() -> tuple[
     argparse.ArgumentParser, argparse.ArgumentParser, argparse.ArgumentParser
 ]:
-    parser = argparse.ArgumentParser(description="Redmine CLI")
+    parser = argparse.ArgumentParser(description=messages.arg_help_root_description)
     parser.add_argument(
         "-V", "--version", action="version", version=f"redi {version('redtile')}"
     )
-    parser.add_argument("--tui", action="store_true", help="TUI")
-    parser.add_argument("--debug", action="store_true", help="デバッグログを有効にする")
+    parser.add_argument("--tui", action="store_true", help=messages.arg_help_tui)
+    parser.add_argument("--debug", action="store_true", help=messages.arg_help_debug)
     parser.add_argument(
         "--debug-tui",
         action="store_true",
-        help="TUI のスクリーン内容を YAML 形式でログ出力する",
+        help=messages.arg_help_debug_tui,
     )
     parser.add_argument(
         "--profile",
-        help="使用するプロファイル名（config.tomlのdefault_profileを一時的に上書き）",
+        help=messages.arg_help_profile,
     )
     subparsers = parser.add_subparsers(dest="command")
     add_project_parser(subparsers)

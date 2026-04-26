@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
+from redi.i18n import messages
+
 TuiAction = Literal["update", "create", "comment", "create_time_entry"]
 TuiTab = Literal["issues", "wiki", "time_entries"]
 FilterField = Literal["status", "assignee"]
@@ -39,9 +41,9 @@ class IssueFilter:
     """
 
     status_id: str | None = None
-    status_label: str = "open (デフォルト)"
+    status_label: str = messages.tui_filter_status_open_default
     assigned_to_id: str | None = None
-    assigned_to_label: str = "(指定なし)"
+    assigned_to_label: str = messages.tui_filter_assignee_none
 
     def is_active(self) -> bool:
         return self.status_id is not None or self.assigned_to_id is not None

@@ -148,15 +148,17 @@ def read_time_entry(time_entry_id: str, full: bool = False) -> None:
         return
     lines = [
         f"{te['id']} {te['hours']}h {te['activity']['name']} ({te['spent_on']})",
-        f"  プロジェクト: {te['project']['name']} (id={te['project']['id']})",
-        f"  ユーザー: {te['user']['name']} (id={te['user']['id']})",
+        messages.label_project_in_te.format(
+            name=te["project"]["name"], id=te["project"]["id"]
+        ),
+        messages.label_user_in_te.format(name=te["user"]["name"], id=te["user"]["id"]),
     ]
     issue = te.get("issue")
     if issue:
-        lines.append(f"  イシュー: #{issue['id']}")
+        lines.append(messages.label_issue_field.format(id=issue["id"]))
     comments = te.get("comments")
     if comments:
-        lines.append(f"  コメント: {comments}")
+        lines.append(messages.label_comments_field.format(value=comments))
     print("\n".join(lines))
 
 

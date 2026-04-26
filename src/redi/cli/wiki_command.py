@@ -36,52 +36,56 @@ def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
     w_parser = subparsers.add_parser(
         "wiki",
         aliases=["w"],
-        help="list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除",
+        help=messages.arg_help_wiki_command,
     )
-    w_parser.add_argument("--project_id", "-p", help="プロジェクトID")
-    w_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    w_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
+    w_parser.add_argument(
+        "--full", action="store_true", help=messages.arg_help_full_json
+    )
     w_subparsers = w_parser.add_subparsers(dest="wiki_command")
-    w_subparsers.add_parser("list", aliases=["l"], help="Wikiページ一覧")
+    w_subparsers.add_parser("list", aliases=["l"], help=messages.arg_help_wiki_list)
     w_view_parser = w_subparsers.add_parser(
-        "view", aliases=["v"], help="Wikiページ詳細"
+        "view", aliases=["v"], help=messages.arg_help_wiki_view
     )
-    w_view_parser.add_argument("page_title", help="Wikiページタイトル")
+    w_view_parser.add_argument("page_title", help=messages.arg_help_wiki_page_title)
     w_view_parser.add_argument(
-        "--full", action="store_true", help="JSON形式で全情報を出力"
-    )
-    w_view_parser.add_argument(
-        "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
+        "--full", action="store_true", help=messages.arg_help_full_json
     )
     w_view_parser.add_argument(
-        "--version", type=int, help="特定バージョンのページを取得"
+        "--web", "-w", action="store_true", help=messages.arg_help_open_web
+    )
+    w_view_parser.add_argument(
+        "--version", type=int, help=messages.arg_help_wiki_version
     )
     w_create_parser = w_subparsers.add_parser(
-        "create", aliases=["c"], help="Wikiページ作成"
+        "create", aliases=["c"], help=messages.arg_help_wiki_create
     )
     w_create_parser.add_argument(
-        "page_title", nargs="?", help="Wikiページタイトル（省略で対話的に入力）"
+        "page_title", nargs="?", help=messages.arg_help_wiki_create_title
     )
-    w_create_parser.add_argument("--parent_title", help="親ページタイトル")
+    w_create_parser.add_argument(
+        "--parent_title", help=messages.arg_help_wiki_parent_title
+    )
     w_create_parser.add_argument(
         "--description",
         "-d",
         nargs="?",
         const="",
         default=None,
-        help="説明（値省略でエディタ起動）",
+        help=messages.arg_help_wiki_description,
     )
     w_delete_parser = w_subparsers.add_parser(
-        "delete", aliases=["d"], help="Wikiページ削除"
+        "delete", aliases=["d"], help=messages.arg_help_wiki_delete
     )
-    w_delete_parser.add_argument("page_title", help="Wikiページタイトル")
+    w_delete_parser.add_argument("page_title", help=messages.arg_help_wiki_page_title)
     w_delete_parser.add_argument(
-        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+        "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
     w_update_parser = w_subparsers.add_parser(
-        "update", aliases=["u"], help="Wikiページ更新"
+        "update", aliases=["u"], help=messages.arg_help_wiki_update
     )
     w_update_parser.add_argument(
-        "page_title", nargs="?", help="Wikiページタイトル（省略で対話的に選択）"
+        "page_title", nargs="?", help=messages.arg_help_wiki_update_title
     )
     w_update_parser.add_argument(
         "--description",
@@ -89,7 +93,7 @@ def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
         nargs="?",
         const="",
         default=None,
-        help="説明（値省略でエディタ起動）",
+        help=messages.arg_help_wiki_description,
     )
 
 
@@ -119,16 +123,16 @@ def handle_wiki(args: argparse.Namespace) -> None:
                     stripped = document.text.strip()
                     if not stripped:
                         raise ValidationError(
-                            message="ページタイトルを入力してください"
+                            message=messages.error_page_title_required
                         )
                     if normalize_title(stripped) in existing_titles:
                         raise ValidationError(
-                            message="既存のページタイトルと重複しています"
+                            message=messages.error_page_title_duplicate
                         )
 
             try:
                 page_title = prompt(
-                    "ページタイトル: ", validator=_PageTitleValidator()
+                    messages.prompt_page_title, validator=_PageTitleValidator()
                 ).strip()
             except (KeyboardInterrupt, EOFError):
                 print(messages.canceled)
@@ -141,7 +145,9 @@ def handle_wiki(args: argparse.Namespace) -> None:
                 if parent_options:
                     parent_labels = dict(parent_options)
                     try:
-                        parent_title = inline_choice("親ページ", parent_options)
+                        parent_title = inline_choice(
+                            messages.prompt_parent_page, parent_options
+                        )
                     except KeyboardInterrupt:
                         print(messages.canceled)
                         exit(1)
@@ -168,7 +174,9 @@ def handle_wiki(args: argparse.Namespace) -> None:
             if page is None:
                 print(messages.wiki_page_not_found.format(title=title))
                 exit(1)
-            confirm_delete(f"削除するWikiページ: {page.get('title', title)}")
+            confirm_delete(
+                messages.delete_target_wiki_page.format(title=page.get("title", title))
+            )
         delete_wiki(project_id, title)
     elif cmd == "update":
         page_title = args.page_title
@@ -180,7 +188,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
             page_options = build_wiki_tree_choices(pages)
             page_labels = dict(page_options)
             try:
-                page_title = inline_choice("編集するページ", page_options)
+                page_title = inline_choice(messages.prompt_edit_page, page_options)
             except KeyboardInterrupt:
                 print(messages.canceled)
                 exit(1)

@@ -94,7 +94,7 @@ def _render_tabs(state: TuiState) -> Renderable:
             parts.append(("", "  "))
         style = "reverse" if state.tab == key else ""
         parts.append((style, f" {tab.label} "))
-    parts.append(("", "   (Tab:切替)"))
+    parts.append(("", messages.tui_tab_switch_hint))
     return parts
 
 
@@ -109,9 +109,9 @@ def _render_preview_current(state: TuiState) -> Renderable:
 def _build_status_choices() -> list[tuple[str | None, str]]:
     """フィルタモーダルのステータス選択肢。先頭の3つは Redmine の特殊指定。"""
     choices: list[tuple[str | None, str]] = [
-        (None, "open (デフォルト)"),
-        ("*", "全て (open + closed)"),
-        ("closed", "closed のみ"),
+        (None, messages.tui_filter_status_open_default),
+        ("*", messages.tui_filter_status_all),
+        ("closed", messages.tui_filter_status_closed_only),
     ]
     for s in fetch_issue_statuses():
         choices.append((str(s["id"]), s.get("name", "")))
@@ -121,9 +121,9 @@ def _build_status_choices() -> list[tuple[str | None, str]]:
 def _build_assignee_choices(project_id: str | None) -> list[tuple[str | None, str]]:
     """フィルタモーダルの担当者選択肢。先頭は特殊指定 (未設定/me/未割当)。"""
     choices: list[tuple[str | None, str]] = [
-        (None, "(指定なし)"),
-        ("me", "自分"),
-        ("!*", "未割当"),
+        (None, messages.tui_filter_assignee_none),
+        ("me", messages.tui_filter_assignee_me),
+        ("!*", messages.tui_filter_assignee_unassigned),
     ]
     if project_id:
         for u in fetch_project_users(project_id):
@@ -160,7 +160,7 @@ def _render_filter_modal(state: TuiState) -> Renderable:
         _render_filter_section(
             modal,
             "status",
-            "ステータス",
+            messages.tui_filter_status,
             modal.status_choices,
             modal.status_cursor,
             f.status_id,
@@ -171,13 +171,13 @@ def _render_filter_modal(state: TuiState) -> Renderable:
         _render_filter_section(
             modal,
             "assignee",
-            "担当者",
+            messages.tui_filter_assignee,
             modal.assignee_choices,
             modal.assignee_cursor,
             f.assigned_to_id,
         )
     )
-    parts.append(("", "\nTab/h/l:列切替 jk:移動 Enter:適用 c:全クリア Esc/f:閉じる"))
+    parts.append(("", messages.tui_filter_hint))
     return parts
 
 
@@ -588,9 +588,8 @@ def run_issue_tui(
                             ),
                             wrap_lines=False,
                         ),
-                        title=lambda: (
-                            f"ヘルプ - {TABS[state.tab].label} タブ "
-                            "(任意のキーで閉じる)"
+                        title=lambda: messages.tui_help_title.format(
+                            label=TABS[state.tab].label
                         ),
                     ),
                     Window(width=1, char=" "),
@@ -613,7 +612,7 @@ def run_issue_tui(
                             ),
                             wrap_lines=False,
                         ),
-                        title="フィルタ (Esc/f で閉じる)",
+                        title=messages.tui_filter_title,
                     ),
                     Window(width=1, char=" "),
                 ]
