@@ -100,9 +100,13 @@ def _render_help(state: TuiState) -> Renderable:
     lines = TABS[state.tab].help_lines
     width = max(len(key) for key, _ in lines) + 2
     parts: Renderable = []
+    seen_section = False
     for key, desc in lines:
         if not desc:
+            if seen_section:
+                parts.append(("", "\n"))
             parts.append(("bold", f"{key}\n"))
+            seen_section = True
         else:
             parts.append(("bold fg:ansicyan", key.ljust(width)))
             parts.append(("", f"  {desc}\n"))
