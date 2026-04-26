@@ -1,4 +1,5 @@
 import argparse
+import re
 
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
@@ -214,6 +215,9 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         ("status", "ステータス (status)"),
         ("priority", "優先度 (priority)"),
         ("fixed_version", "対象バージョン (fixed_version)"),
+        ("start_date", "開始日 (start_date)"),
+        ("due_date", "期日 (due_date)"),
+        ("done_ratio", "進捗率 (done_ratio)"),
         ("notes", "コメント (notes)"),
         ("time_entry", "作業時間 (time_entry)"),
     ]
@@ -274,6 +278,32 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
             version_labels = dict(version_options)
             args.fixed_version_id = inline_choice("対象バージョン", version_options)
             print(f"対象バージョン: {version_labels[args.fixed_version_id]}")
+        date_validator = Validator.from_callable(
+            lambda v: v == "" or bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", v)),
+            error_message="YYYY-MM-DD で入力してください（空文字でクリア）",
+        )
+        if "start_date" in selected:
+            args.start_date = prompt(
+                "開始日（YYYY-MM-DD、空文字でクリア）: ",
+                default=current.get("start_date") or "",
+                validator=date_validator,
+            ).strip()
+        if "due_date" in selected:
+            args.due_date = prompt(
+                "期日（YYYY-MM-DD、空文字でクリア）: ",
+                default=current.get("due_date") or "",
+                validator=date_validator,
+            ).strip()
+        if "done_ratio" in selected:
+            ratio_options: list[tuple[str, str]] = [
+                (str(r), f"{r}%") for r in range(0, 101, 10)
+            ]
+            current_ratio = current.get("done_ratio")
+            default_ratio = str(current_ratio) if current_ratio is not None else None
+            args.done_ratio = int(
+                inline_choice("進捗率", ratio_options, default=default_ratio)
+            )
+            print(f"進捗率: {args.done_ratio}%")
         if "notes" in selected:
             args.notes = prompt("コメント: ").strip()
         if "time_entry" in selected:
