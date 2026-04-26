@@ -20,14 +20,6 @@ I recommend installation via [uv](https://github.com/astral-sh/uv).
 uv tool install redtile  # name on PyPI is redtile, NOT redi
 ```
 
-### Install (for development)
-
-In repository root:
-
-```sh
-uv tool install -e .
-```
-
 ## Setup
 
 ### Config
@@ -183,4 +175,24 @@ redi custom_field # list custom fields
 redi query # list custom queries
 redi search "keyword"
 redi --version
+```
+
+## Development
+
+### install
+
+```sh
+uv tool install -e .
+```
+
+### task
+
+Common tasks (managed by [go-task](https://taskfile.dev)):
+
+```sh
+task check       # format → lint → typecheck → test (run before opening a PR)
+task format      # uv run ruff format
+task lint        # uv run ruff check
+task typecheck   # uv run ty check
+task test        # uv run pytest -v
 ```
