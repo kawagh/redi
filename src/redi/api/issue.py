@@ -262,6 +262,9 @@ def update_issue(
     assigned_to_id: str | None = None,
     fixed_version_id: str | None = None,
     parent_issue_id: str | None = None,
+    start_date: str | None = None,
+    due_date: str | None = None,
+    done_ratio: int | None = None,
     notes: str = "",
     custom_fields: str | None = None,
     attachments: list[str] = [],
@@ -283,6 +286,12 @@ def update_issue(
         issue_data["fixed_version_id"] = fixed_version_id
     if parent_issue_id is not None:
         issue_data["parent_issue_id"] = parent_issue_id
+    if start_date is not None:
+        issue_data["start_date"] = start_date
+    if due_date is not None:
+        issue_data["due_date"] = due_date
+    if done_ratio is not None:
+        issue_data["done_ratio"] = done_ratio
     if notes:
         issue_data["notes"] = notes
     if custom_fields:

@@ -128,6 +128,11 @@ def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_update_parser.add_argument(
         "--parent_issue_id", help="親チケットID（空文字で解除）"
     )
+    i_update_parser.add_argument(
+        "--start_date", help="開始日（YYYY-MM-DD、空文字で解除）"
+    )
+    i_update_parser.add_argument("--due_date", help="期日（YYYY-MM-DD、空文字で解除）")
+    i_update_parser.add_argument("--done_ratio", type=int, help="進捗率（0-100）")
     i_update_parser.add_argument("--notes", "-n", help="コメント")
     i_update_parser.add_argument(
         "--custom_fields",
@@ -418,6 +423,9 @@ def handle_issue_update(args: argparse.Namespace) -> None:
         or args.assigned_to_id
         or args.fixed_version_id
         or args.parent_issue_id is not None
+        or args.start_date is not None
+        or args.due_date is not None
+        or args.done_ratio is not None
         or args.notes
         or args.custom_fields
         or args.relate
@@ -443,6 +451,9 @@ def handle_issue_update(args: argparse.Namespace) -> None:
         or args.assigned_to_id
         or args.fixed_version_id
         or args.parent_issue_id is not None
+        or args.start_date is not None
+        or args.due_date is not None
+        or args.done_ratio is not None
         or args.notes
         or args.custom_fields
         or args.attach
@@ -462,6 +473,9 @@ def handle_issue_update(args: argparse.Namespace) -> None:
             assigned_to_id=args.assigned_to_id,
             fixed_version_id=args.fixed_version_id,
             parent_issue_id=args.parent_issue_id,
+            start_date=args.start_date,
+            due_date=args.due_date,
+            done_ratio=args.done_ratio,
             notes=args.notes or "",
             custom_fields=args.custom_fields,
             attachments=args.attach,
