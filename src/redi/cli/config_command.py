@@ -7,6 +7,7 @@ from redi.config import (
     show_config,
     update_config,
 )
+from redi.i18n import messages
 
 
 def add_config_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -58,7 +59,7 @@ def handle_config(args: argparse.Namespace) -> None:
         )
         if not result.created:
             exit(1)
-        print(f"profile '{args.profile_name}' を作成しました")
+        print(messages.profile_created.format(name=args.profile_name))
         if result.set_as_default:
             print(f"default_profileを {args.profile_name} に設定しました")
         elif args.set_default and set_default_profile(args.profile_name):

@@ -13,6 +13,7 @@ _default_config = {
     "redmine_url": "",
     "redmine_api_key": "",
     "editor": "vim",
+    "language": "ja",
 }
 
 
@@ -30,6 +31,7 @@ def load_env_config() -> dict:
         "redmine_url": os.environ.get("REDMINE_URL"),
         "redmine_api_key": os.environ.get("REDMINE_API_KEY"),
         "editor": os.environ.get("REDI_EDITOR"),
+        "language": os.environ.get("REDI_LANGUAGE"),
     }
 
 
@@ -73,6 +75,7 @@ redmine_api_key = merged_config["redmine_api_key"]
 default_project_id: str | None = merged_config.get("default_project_id")
 wiki_project_id: str | None = merged_config.get("wiki_project_id")
 editor: str = merged_config["editor"]
+language: str = merged_config["language"]
 
 
 def check_config() -> None:
