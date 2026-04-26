@@ -79,11 +79,11 @@ redi config create <profile_name> --url <url> --api_key <key> # create new profi
 redi config create <profile_name> --url <url> --api_key <key> --set_default
 redi config update --default_profile <profile_name> # switch profile
 redi config update <profile_name> --editor nvim # update profile
-redi --profile <profile_name> issue # 一時的にプロファイルを切り替えて実行
+redi --profile <profile_name> issue # temporarily switch profile for this command
 
 # project (alias: p)
 redi project # list projects
-redi project list # 同上 (`redi project l` / `redi p list` / `redi p l` / `redi p` も同じ)
+redi project list # same as above (`redi project l` / `redi p list` / `redi p l` / `redi p` also work)
 redi project view <project_id> # view project
 redi project view <project_id> --include trackers,issue_categories
 redi project create <name> <identifier>
@@ -125,7 +125,7 @@ redi wiki view <page_title>
 redi wiki create # (interactive)
 redi wiki update # (interactive)
 
-# file (プロジェクトファイル)
+# file (project files)
 redi file -p <project_id> # list
 redi file create ./foo.zip -p <project_id> -d "description"
 
@@ -134,16 +134,16 @@ redi attachment view <attachment_id>
 redi attachment update <attachment_id> -f new_name.png -d "desc"
 redi attachment delete <attachment_id> # confirm before delete (-y to skip)
 
-# relation (イシュー関係性詳細)
+# relation (issue relation details)
 redi relation view <relation_id>
 
-# time_entry (作業時間)
+# time_entry
 redi time_entry -p <project_id> -u me
 redi time_entry create 1.5 -i <issue_id> -a <activity_id> -c "comment"
 redi time_entry update <time_entry_id> --hours 2.0
 redi time_entry delete <time_entry_id> # confirm before delete (-y to skip)
 
-# me (自分のアカウント)
+# me (own account)
 redi me
 redi me update -f <firstname> -l <lastname> -m <mail>
 
