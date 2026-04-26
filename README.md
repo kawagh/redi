@@ -1,29 +1,28 @@
 # redi
 
-redi is redmine CLI tool
+`redi` is a Redmine CLI/TUI tool that wraps the Redmine REST API.
 
-## install
+## Install
 
 I recommend installation via [uv](https://github.com/astral-sh/uv).
 
 ```sh
-uv tool install redtile  # package: redtile, command: redi
+uv tool install redtile  # name on PyPI is redtile, NOT redi
 ```
 
+### Install (for development)
 
-## install(for development)
-
-In repository root
+In repository root:
 
 ```sh
 uv tool install -e .
 ```
 
-## setup
+## Setup
 
-### config
+### Config
 
-To use redi, you need to set remdine url and redmine_api_key in one of below ways.
+To use redi, you need to set the Redmine URL and API key in one of the ways below.
 
 #### redi init (interactive, recommended for first time)
 
@@ -60,14 +59,14 @@ export REDMINE_API_KEY=<your_api_key>
 ```
 
 
-### setup completion
+### Shell completion
 
 ```sh
 uv tool install argcomplete
 echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
 ```
 
-## usage(example)
+## Usage (examples)
 
 ```sh
 # init
