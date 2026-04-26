@@ -193,3 +193,553 @@ class En(MessagesProto):
         "Profile already exists ({path}). "
         "Use `redi config create` to add another profile"
     )
+
+    # ---- prompts ----
+    prompt_confirm_delete = "Are you sure you want to delete? (yes/No): "
+    prompt_confirm_delete_with_identifier = (
+        'Type {label} "{expected}" to confirm deletion: '
+    )
+    prompt_subject = "Subject: "
+    prompt_comment = "Comment: "
+    prompt_page_title = "Page title: "
+    prompt_parent_page = "Parent page"
+    prompt_edit_page = "Page to edit"
+    prompt_select_tracker = "Select tracker"
+    prompt_select_status = "Status"
+    prompt_select_priority = "Priority"
+    prompt_select_assignee = "Assignee"
+    prompt_select_assignee_none = "(no assignee)"
+    prompt_select_fixed_version = "Fixed version"
+    prompt_select_activity = "Activity"
+    prompt_select_done_ratio = "Done ratio"
+    prompt_select_sharing = "Sharing"
+    prompt_select_version_to_update = "Select version to update"
+    prompt_select_issue_to_update = "Select issue to update"
+    prompt_start_date = "Start date (YYYY-MM-DD, empty to clear): "
+    prompt_due_date = "Due date (YYYY-MM-DD, empty to clear): "
+    prompt_estimated_hours = "Estimated hours (e.g. 1.5 (h)): "
+    prompt_hours = "Hours (e.g. 1.5 (h)): "
+    prompt_spent_on = "Spent on (YYYY-MM-DD, empty for today): "
+    prompt_update_spent_on = "Spent on (YYYY-MM-DD): "
+    prompt_issue_id_update = "Issue ID: "
+    prompt_time_comments = "Time entry comments: "
+    prompt_select_update_items = (
+        "Select items to update (Space to toggle, Enter to confirm)"
+    )
+    prompt_version_name = "Version name: "
+    prompt_description_optional = "Description (optional): "
+    prompt_due_date_optional = "Due date (YYYY-MM-DD, optional): "
+    prompt_issue_id_or_project = "Issue ID (empty to switch to project selection): "
+    prompt_project_id_or_name = "Project ID or name/identifier: "
+    prompt_redmine_url = "Redmine URL: "
+    prompt_redmine_api_key = "Redmine API key: "
+    prompt_select_default_project = "Select your primary project"
+    prompt_select_wiki_project = "Select the project whose wiki you usually browse"
+    prompt_required_field = "{name} (required)"
+    prompt_field_value = "{name}: {value}"
+    prompt_custom_field_label = "{name}: "
+
+    # ---- prompt validators ----
+    error_input_required = "Required"
+    error_url_format = "Enter a URL starting with http:// or https://"
+    error_date_format = "Use YYYY-MM-DD (empty to clear)"
+    error_date_after_start = "Enter a date on or after start date {date}"
+    error_numeric_required = "Enter a number"
+    error_page_title_required = "Enter a page title"
+    error_page_title_duplicate = "Duplicate page title"
+    error_no_matching_project = "No matching project"
+
+    # ---- field labels ----
+    field_tracker = "tracker"
+    field_subject = "subject"
+    field_description = "description"
+    field_status = "status"
+    field_priority = "priority"
+    field_assignee = "assigned_to"
+    field_fixed_version = "fixed_version"
+    field_start_date = "start_date"
+    field_due_date = "due_date"
+    field_done_ratio = "done_ratio"
+    field_estimated_hours = "estimated_hours"
+    field_notes = "notes"
+    field_time_entry = "time_entry"
+    field_version_name = "name"
+    field_sharing = "sharing"
+    field_hours = "hours"
+    field_activity = "activity"
+    field_spent_on = "spent_on"
+    field_comments = "comments"
+    field_issue_id = "issue_id"
+
+    # ---- sharing options ----
+    sharing_none = "none (not shared)"
+    sharing_descendants = "descendants (shared with sub-projects)"
+    sharing_hierarchy = "hierarchy (shared within hierarchy)"
+    sharing_tree = "tree (shared across the tree)"
+    sharing_system = "system (shared across the system)"
+
+    # ---- delete confirmations ----
+    delete_target_issue = "Issue to delete: #{id} {subject}"
+    delete_target_version = "Version to delete: {id} {name}"
+    delete_target_user = "User to delete: {summary}"
+    delete_target_project = "Project to delete: {id} {name} (identifier: {identifier})"
+    delete_project_warning = (
+        "**This will also delete all issues and related data under the project**"
+    )
+    delete_target_wiki_page = "Wiki page to delete: {title}"
+    delete_target_membership = (
+        "Membership to delete: {id} [{kind}] {principal_id} {principal_name} - {roles}"
+    )
+    delete_target_attachment = "Attachment to delete: {id} {filename}"
+    delete_target_category = "Issue category to delete: {id} {name}"
+    delete_target_group = "Group to delete: {id} {name}"
+    delete_target_time_entry = (
+        "Time entry to delete: {id} {hours}h {activity} ({spent_on})"
+    )
+    delete_confirm_tui = "Delete? {summary} [y/N]"
+
+    # ---- detail labels ----
+    label_assignable = "Assignable: {value}"
+    label_issues_visibility = "Issues visibility: {value}"
+    label_time_entries_visibility = "Time entries visibility: {value}"
+    label_users_visibility = "Users visibility: {value}"
+    label_permissions_header = "Permissions:"
+    label_name = "Name: {value}"
+    label_mail = "Mail: {value}"
+    label_admin = "Admin: {value}"
+    label_admin_yes = "  Admin: yes"
+    label_created_on = "Created on: {value}"
+    label_last_login_on = "Last login: {value}"
+    label_custom_fields_header = "Custom fields:"
+    label_membership_header = "Memberships:"
+    label_groups_header = "Groups:"
+    label_users_header = "Users:"
+    label_project_field = "Project: {id} {name}"
+    label_default_assignee = "Default assignee: {id} {name}"
+    label_size = "Size: {value}"
+    label_kind = "Type: {value}"
+    label_author = "Author: {value}"
+    label_description_field = "Description: {value}"
+    label_url_field = "URL: {value}"
+    label_roles_header = "Roles:"
+    label_inherited_suffix = " (inherited)"
+    label_relations_header = "Relations:"
+    label_attachments_header = "Attachments:"
+    label_children_header = "Child tickets:"
+    label_watchers_header = "Watchers:"
+    label_allowed_statuses_header = "Allowed statuses:"
+    label_revisions_header = "Revisions:"
+    label_journals_header = "Journals/changes:"
+    label_comments_header = "Comments:"
+    label_due_date_field = "Due date: {value}"
+    label_sharing_field = "Sharing: {value}"
+    label_parent_project = "Parent project: {id} {name}"
+    label_trackers_header = "Trackers:"
+    label_issue_categories_header = "Issue categories:"
+    label_enabled_modules_header = "Enabled modules:"
+    label_user_field = "  User: {name} (id={id})"
+    label_issue_field = "  Issue: #{id}"
+    label_comments_field = "  Comments: {value}"
+    label_user_in_te = "  User: {name} (id={id})"
+    label_project_in_te = "  Project: {name} (id={id})"
+
+    # ---- relation labels ----
+    relation_label_relates = "relates to"
+    relation_label_duplicates = "duplicates"
+    relation_label_duplicated = "duplicated by"
+    relation_label_blocks = "blocks"
+    relation_label_blocked = "blocked by"
+    relation_label_precedes = "precedes"
+    relation_label_follows = "follows"
+    relation_label_copied_to = "copied to"
+    relation_label_copied_from = "copied from"
+
+    # ---- TUI ----
+    tui_tab_label_issues = "Issues"
+    tui_tab_label_wiki = "Wiki"
+    tui_tab_label_time_entries = "Time entries"
+    tui_tab_switch_hint = "   (Tab:switch)"
+    tui_filter_status = "Status"
+    tui_filter_assignee = "Assignee"
+    tui_filter_hint = "\nTab/h/l:column jk:move Enter:apply c:clear all Esc/f:close"
+    tui_filter_title = "Filter (Esc/f to close)"
+    tui_help_title = "Help - {label} tab (any key to close)"
+    tui_status_hint_issues = " {page_label}  jk:move /:search f:filter c:create u:update v:web ?:help q:quit "
+    tui_status_hint_wiki = " jk:move /:search c:create u:update v:web ?:help q:quit "
+    tui_status_hint_time_entries = (
+        " jk:move /:search c:create u:update v:web ?:help q:quit "
+    )
+    tui_filter_status_open_default = "open (default)"
+    tui_filter_status_all = "all (open + closed)"
+    tui_filter_status_closed_only = "closed only"
+    tui_filter_assignee_none = "(unspecified)"
+    tui_filter_assignee_me = "me"
+    tui_filter_assignee_unassigned = "unassigned"
+    tui_meta_status = "Status"
+    tui_meta_priority = "Priority"
+    tui_meta_tracker = "Tracker"
+    tui_meta_assignee = "Assignee"
+    tui_meta_author = "Author"
+    tui_meta_start_date = "Start"
+    tui_meta_due_date = "Due"
+    tui_meta_progress = "Progress"
+    tui_meta_estimated_hours = "Est. hours"
+    tui_meta_spent_hours = "Spent hours"
+    tui_meta_created = "Created"
+    tui_meta_updated = "Updated"
+    tui_meta_parent = "Parent"
+    tui_meta_version = "Version"
+    tui_meta_project = "Project"
+    tui_meta_user = "User"
+    tui_meta_activity = "Activity"
+    tui_meta_issue = "Issue"
+    tui_preview_comments_header = "Comments:"
+    tui_wiki_no_pages = "No wiki pages found"
+    tui_wiki_loading = "(loading wiki...)"
+    tui_wiki_load_failed = "Failed to fetch wiki: {error}"
+    tui_wiki_load_text_failed = "(load failed: {error})"
+    tui_wiki_page_missing = "(page not found)"
+    tui_wiki_press_enter_to_load = "(press Enter to load body)"
+    tui_wiki_project_required = "Set wiki_project_id or default_project_id"
+    tui_time_entry_no_entries = "No time entries"
+    tui_time_entry_loading = "(loading time entries...)"
+    tui_time_entry_load_failed = "Failed to fetch time entries: {error}"
+    tui_time_entry_delete_failed = "Failed to delete time entry: {error}"
+    tui_time_entry_delete_prompt = "Delete? {summary} [y/N]"
+
+    # ---- argparse helps (root) ----
+    arg_help_root_description = "Redmine CLI"
+    arg_help_tui = "TUI"
+    arg_help_debug = "Enable debug logging"
+    arg_help_debug_tui = "Dump TUI screen contents to a YAML log"
+    arg_help_profile = (
+        "Profile name to use (overrides default_profile in config.toml temporarily)"
+    )
+
+    # ---- argparse helps (common) ----
+    arg_help_full_json = "Output full JSON"
+    arg_help_skip_confirm = "Skip confirmation prompt"
+    arg_help_open_web = "Open the Redmine page in a browser"
+    arg_help_project_id = "Project ID"
+    arg_help_project_id_filter = "Filter by project ID"
+    arg_help_user_id = "Filter by user ID ('me' allowed)"
+    arg_help_full_profiles = "Show all profiles"
+
+    # ---- argparse helps (subcommand summary) ----
+    arg_help_crud_subcommands = "list(l), view(v), create(c), update(u), delete(d)"
+    arg_help_role_subcommands = "list(l), view(v)"
+    arg_help_file_subcommands = "list(l), create(c) (upload)"
+
+    # ---- argparse helps (project) ----
+    arg_help_project_command = arg_help_crud_subcommands
+    arg_help_project_list = "List projects"
+    arg_help_project_view = "Project details"
+    arg_help_project_view_id = "Project ID"
+    arg_help_project_include = "Additional info (trackers,issue_categories,enabled_modules,time_entry_activities,issue_custom_fields)"
+    arg_help_project_create = "Create project"
+    arg_help_project_name = "Project name"
+    arg_help_project_identifier = "Project identifier (alphanumeric and hyphens)"
+    label_project_identifier = "Project identifier"
+    arg_help_description = "Description"
+    arg_help_project_is_public = "Public visibility"
+    arg_help_parent_id = "Parent project ID"
+    arg_help_tracker_ids = "Tracker IDs (comma separated, e.g. 1,2,3)"
+    arg_help_project_delete = "Delete project"
+    arg_help_project_delete_id = "Project ID"
+    arg_help_project_update = "Update project"
+    arg_help_project_update_id = "Project ID"
+    arg_help_project_archive = "Archive (--no-archive to unarchive)"
+
+    # ---- argparse helps (issue) ----
+    arg_help_issue_command = arg_help_crud_subcommands
+    arg_help_issue_filter_project = "Filter by project ID"
+    arg_help_issue_filter_version = "Filter by fixed version ID"
+    arg_help_issue_filter_assigned_to = "Filter by assignee (user ID or 'me')"
+    arg_help_issue_filter_status = "Filter by status ID ('open'/'closed'/'*' allowed)"
+    arg_help_issue_filter_tracker = "Filter by tracker ID"
+    arg_help_issue_filter_priority = "Filter by priority ID"
+    arg_help_issue_filter_query = "Filter by custom query ID (see `redi query`)"
+    arg_help_limit = "Limit"
+    arg_help_offset = "Offset"
+    arg_help_issue_list = "List issues"
+    arg_help_issue_view = "Issue details"
+    arg_help_issue_view_id = "Issue ID"
+    arg_help_issue_include = "Additional info (children,attachments,relations,changesets,journals,watchers,allowed_statuses)"
+    arg_help_issue_create = "Create issue"
+    arg_help_issue_subject_arg = "Issue subject (omit to enter interactively)"
+    arg_help_issue_tracker_id = "Tracker ID"
+    arg_help_issue_priority_id = "Priority ID"
+    arg_help_issue_assigned_to_id = "Assignee ID"
+    arg_help_issue_description = "Description (no value opens editor)"
+    arg_help_custom_fields = (
+        "Custom fields (id=value, comma separated; e.g. 1=foo,2=bar)"
+    )
+    arg_help_issue_update = "Update issue"
+    arg_help_issue_update_id = "Issue ID (omit to select interactively)"
+    arg_help_issue_subject_opt = "Subject"
+    arg_help_issue_update_description = "Description (no value opens editor)"
+    arg_help_issue_update_tracker_id = "Tracker ID"
+    arg_help_issue_status_id = "Status ID"
+    arg_help_issue_fixed_version_id = "Fixed version ID"
+    arg_help_issue_parent = "Parent issue ID (empty to clear)"
+    arg_help_issue_start_date = "Start date (YYYY-MM-DD, empty to clear)"
+    arg_help_issue_due_date = "Due date (YYYY-MM-DD, empty to clear)"
+    arg_help_issue_done_ratio = "Done ratio (0-100)"
+    arg_help_issue_estimated_hours = "Estimated hours (e.g. 1.5)"
+    arg_help_issue_notes = "Notes"
+    arg_help_issue_relate = (
+        "Relation type (relates, duplicates, blocks, precedes, follows, ...)"
+    )
+    arg_help_issue_relate_to = "Related issue ID"
+    arg_help_issue_delete_relation = "Delete relation (use with --to)"
+    arg_help_issue_attach = "Attachment file path (repeatable)"
+    arg_help_issue_hours = "Hours (e.g. 1.5)"
+    arg_help_issue_activity_id = "Activity ID"
+    arg_help_issue_spent_on = "Spent on (YYYY-MM-DD, empty for today)"
+    arg_help_issue_time_comments = "Time entry comments"
+    arg_help_issue_add_watcher = "User ID to add as watcher (repeatable)"
+    arg_help_issue_remove_watcher = "User ID to remove from watchers (repeatable)"
+    arg_help_issue_comment = "Add a comment to an issue"
+    arg_help_issue_comment_notes = "Comment (omit to open editor)"
+    arg_help_issue_delete = "Delete issue"
+
+    # ---- argparse helps (version) ----
+    arg_help_version_command = arg_help_crud_subcommands
+    arg_help_version_list = "List versions"
+    arg_help_version_view = "Version details"
+    arg_help_version_view_id = "Version ID"
+    arg_help_version_create = "Create version"
+    arg_help_version_name_arg = "Version name"
+    arg_help_version_status = "Status"
+    arg_help_version_due_date = "Due date (YYYY-MM-DD)"
+    arg_help_version_description = "Description"
+    arg_help_version_sharing = "Sharing"
+    arg_help_version_delete = "Delete version"
+    arg_help_version_delete_id = "Version ID"
+    arg_help_version_update = "Update version"
+    arg_help_version_update_id = "Version ID (omit to select interactively)"
+    arg_help_version_name_opt = "Version name"
+
+    # ---- argparse helps (wiki) ----
+    arg_help_wiki_command = arg_help_crud_subcommands
+    arg_help_wiki_list = "List wiki pages"
+    arg_help_wiki_view = "Wiki page details"
+    arg_help_wiki_page_title = "Wiki page title"
+    arg_help_wiki_version = "Fetch a specific version of the page"
+    arg_help_wiki_create = "Create wiki page"
+    arg_help_wiki_create_title = "Wiki page title (omit to enter interactively)"
+    arg_help_wiki_parent_title = "Parent page title"
+    arg_help_wiki_description = "Description (no value opens editor)"
+    arg_help_wiki_delete = "Delete wiki page"
+    arg_help_wiki_update = "Update wiki page"
+    arg_help_wiki_update_title = "Wiki page title (omit to select interactively)"
+
+    # ---- argparse helps (config) ----
+    arg_help_config_command = "Show/update configuration / create profile"
+    arg_help_config_update = "Update configuration"
+    arg_help_config_profile_name_optional = (
+        "Target profile name (default_profile if omitted)"
+    )
+    arg_help_config_set_default_project_id = "Set default project ID"
+    arg_help_config_set_wiki_project_id = "Set wiki project ID"
+    arg_help_config_set_editor = "Set editor"
+    arg_help_config_set_api_key = "Set Redmine API key"
+    arg_help_config_set_url = "Set Redmine URL"
+    arg_help_config_set_default_profile = "Set default profile"
+    arg_help_config_create = "Create profile"
+    arg_help_config_create_profile_name = "Profile name to create"
+    arg_help_config_url = "Redmine URL"
+    arg_help_config_api_key = "Redmine API key"
+    arg_help_config_default_project_id = "Default project ID"
+    arg_help_config_wiki_project_id = "Wiki project ID"
+    arg_help_config_editor = "Editor"
+    arg_help_config_set_default_flag = "Set the created profile as default_profile"
+
+    # ---- argparse helps (init) ----
+    arg_help_init_command = "Initial setup (verify URL/API key then create profile)"
+
+    # ---- argparse helps (user) ----
+    arg_help_user_command = arg_help_crud_subcommands
+    arg_help_user_list = "List users"
+    arg_help_user_create = "Create user (admin required)"
+    arg_help_user_login = "Login name"
+    arg_help_user_firstname = "First name"
+    arg_help_user_lastname = "Last name"
+    arg_help_user_mail = "Mail address"
+    arg_help_user_password = "Password"
+    arg_help_user_generate_password = "Auto-generate password"
+    arg_help_user_auth_source_id = "Auth source ID"
+    arg_help_user_mail_notification = "Mail notification setting"
+    arg_help_user_must_change_passwd = "Require password change at next login"
+    arg_help_user_admin = "Grant admin privileges"
+    arg_help_user_view = "User details"
+    arg_help_user_view_id = "User ID ('current' for the current user)"
+    arg_help_user_update = "Update user (admin required)"
+    arg_help_user_update_id = "User ID"
+    arg_help_user_must_change_passwd_update = (
+        "Require password change at next login (--no-must_change_passwd to clear)"
+    )
+    arg_help_user_admin_update = "Admin privileges (--no-admin to revoke)"
+    arg_help_user_delete = "Delete user (admin required)"
+    arg_help_user_delete_id = "User ID"
+
+    # ---- argparse helps (me) ----
+    arg_help_me_command = "Account details / update"
+    arg_help_me_update = "Update your account"
+
+    # ---- argparse helps (membership) ----
+    arg_help_membership_command = arg_help_crud_subcommands
+    arg_help_membership_list = "List memberships"
+    arg_help_membership_view = "Membership details"
+    arg_help_membership_view_id = "Membership ID"
+    arg_help_membership_create = "Create membership"
+    arg_help_membership_user_id = "User ID"
+    arg_help_membership_group_id = "Group ID"
+    arg_help_membership_role_ids = "Role IDs (comma separated, e.g. 3,4)"
+    arg_help_membership_update = "Update membership (roles only)"
+    arg_help_membership_update_id = "Membership ID"
+    arg_help_membership_delete = "Delete membership"
+    arg_help_membership_delete_id = "Membership ID"
+
+    # ---- argparse helps (group) ----
+    arg_help_group_command = arg_help_crud_subcommands
+    arg_help_group_list = "List groups"
+    arg_help_group_view = "Group details"
+    arg_help_group_view_id = "Group ID"
+    arg_help_group_create = "Create group (admin required)"
+    arg_help_group_name = "Group name"
+    arg_help_group_user_id = "User ID to include in the group (repeatable)"
+    arg_help_group_update = "Update group (admin required)"
+    arg_help_group_update_id = "Group ID"
+    arg_help_group_name_opt = "Group name"
+    arg_help_group_user_id_replace = (
+        "Replace member user IDs (repeatable; replaces existing)"
+    )
+    arg_help_group_add_user = "User ID to add to the group (repeatable)"
+    arg_help_group_remove_user = "User ID to remove from the group (repeatable)"
+    arg_help_group_delete = "Delete group (admin required)"
+    arg_help_group_delete_id = "Group ID"
+
+    # ---- argparse helps (issue category) ----
+    arg_help_issue_category_command = arg_help_crud_subcommands
+    arg_help_issue_category_list = "List issue categories"
+    arg_help_issue_category_view = "Category details"
+    arg_help_issue_category_view_id = "Category ID"
+    arg_help_issue_category_create = "Create category"
+    arg_help_issue_category_name = "Category name"
+    arg_help_issue_category_assigned_to_id = "Default assignee user ID"
+    arg_help_issue_category_update = "Update category"
+    arg_help_issue_category_update_id = "Category ID"
+    arg_help_issue_category_name_opt = "Category name"
+    arg_help_issue_category_delete = "Delete category"
+    arg_help_issue_category_delete_id = "Category ID"
+    arg_help_issue_category_reassign_to_id = (
+        "Category ID to reassign existing tickets to upon deletion"
+    )
+
+    # ---- argparse helps (relation) ----
+    arg_help_relation_command = "Issue relation details"
+    arg_help_relation_view = "Relation details"
+    arg_help_relation_view_id = "Relation ID"
+
+    # ---- argparse helps (attachment) ----
+    arg_help_attachment_command = "Attachment details/update/delete"
+    arg_help_attachment_view = "Attachment details"
+    arg_help_attachment_view_id = "Attachment ID"
+    arg_help_attachment_update = "Update attachment"
+    arg_help_attachment_update_id = "Attachment ID"
+    arg_help_attachment_filename = "Filename"
+    arg_help_attachment_description = "Description"
+    arg_help_attachment_delete = "Delete attachment"
+    arg_help_attachment_delete_id = "Attachment ID"
+
+    # ---- argparse helps (time entry) ----
+    arg_help_time_entry_command = (
+        "list(l), view(v), create(c) (log), update(u), delete(d)"
+    )
+    arg_help_time_entry_user_id = "Filter by user ID ('me' allowed)"
+    arg_help_time_entry_list = "List time entries"
+    arg_help_time_entry_create = "Log time entry"
+    arg_help_time_entry_hours = "Hours (e.g. 1.5; omit to enter interactively)"
+    arg_help_time_entry_issue_id = "Issue ID"
+    arg_help_time_entry_activity_id = "Activity ID"
+    arg_help_time_entry_spent_on = "Date (YYYY-MM-DD, empty for today)"
+    arg_help_time_entry_comments = "Comments"
+    arg_help_time_entry_view = "Time entry details"
+    arg_help_time_entry_view_id = "Time entry ID"
+    arg_help_time_entry_update = "Update time entry"
+    arg_help_time_entry_update_id = "Time entry ID"
+    arg_help_time_entry_update_hours = "Hours (e.g. 1.5)"
+    arg_help_time_entry_update_spent_on = "Date (YYYY-MM-DD)"
+    arg_help_time_entry_delete = "Delete time entry"
+    arg_help_time_entry_delete_id = "Time entry ID"
+
+    # ---- argparse helps (file) ----
+    arg_help_file_command = arg_help_file_subcommands
+    arg_help_file_list = "List project files"
+    arg_help_file_create = "Upload file"
+    arg_help_file_path = "File path to upload"
+    arg_help_file_version_id = "Version ID"
+    arg_help_file_description = "Description"
+
+    # ---- argparse helps (role) ----
+    arg_help_role_command = arg_help_role_subcommands
+    arg_help_role_list = "List roles"
+    arg_help_role_view = "Role details"
+    arg_help_role_view_id = "Role ID"
+
+    # ---- argparse helps (search) ----
+    arg_help_search_command = "Search"
+    arg_help_search_query = "Search query"
+
+    # ---- argparse helps (news) ----
+    arg_help_news_command = "List news"
+
+    # ---- argparse helps (enumerations) ----
+    arg_help_tracker_command = "List trackers"
+    arg_help_issue_status_command = "List issue statuses"
+    arg_help_issue_priority_command = "List issue priorities"
+    arg_help_time_entry_activity_command = "List time entry activities"
+    arg_help_document_category_command = "List document categories"
+    arg_help_query_command = "List custom queries"
+    arg_help_custom_field_command = "List custom fields"
+
+    # ---- config_command suffix ----
+    config_profile_suffix = " (profile: {name})"
+
+    # ---- TUI help labels (sections / common) ----
+    tui_help_section_navigation = "Navigation"
+    tui_help_section_search = "Search"
+    tui_help_section_filter = "Filter"
+    tui_help_section_actions = "Actions"
+    tui_help_section_other = "Other"
+    tui_help_move_up = "Move up"
+    tui_help_move_down = "Move down"
+    tui_help_goto_top_bottom = "First / last"
+    tui_help_jump_to_issue_n = "Jump to issue #N"
+    tui_help_prev_next_page = "Previous / next page"
+    tui_help_switch_tab = "Switch tab (next / prev)"
+    tui_help_start_search = "Start search"
+    tui_help_next_prev_match = "Next / previous match"
+    tui_help_filter_status_assignee = "Filter by status/assignee (floating)"
+    tui_help_show_or_close = "Show / close this help"
+    tui_help_quit = "Quit"
+
+    # ---- TUI help labels (issue tab) ----
+    tui_help_issue_load_comments = "Load comments for the selected issue"
+    tui_help_issue_create_or_update = "Create / update issue"
+    tui_help_issue_add_comment = "Add comment (when no search query)"
+    tui_help_issue_create_time_entry = "Create a time entry"
+    tui_help_issue_open_web_or_n = "Open selected issue in web / open #N in web"
+
+    # ---- TUI help labels (wiki tab) ----
+    tui_help_wiki_load_text = "Load body of the selected page"
+    tui_help_wiki_create_child = "Create child of the selected page"
+    tui_help_wiki_update_page = "Update the selected page"
+    tui_help_wiki_open_web = "Open the selected page in web"
+
+    # ---- TUI help labels (time entry tab) ----
+    tui_help_time_entry_create = "Create a time entry"
+    tui_help_time_entry_update = "Update the selected time entry"
+    tui_help_time_entry_delete = "Delete the selected time entry (confirm with y/Y)"
+    tui_help_time_entry_open_web = "Open the selected row's issue in web"

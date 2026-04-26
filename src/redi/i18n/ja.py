@@ -197,3 +197,557 @@ class Ja(MessagesProto):
         "既にプロファイルが存在します ({path})。"
         "追加するプロファイルは `redi config create` で作成してください"
     )
+
+    # ---- prompts ----
+    prompt_confirm_delete = "削除してもよろしいですか? (yes/No): "
+    prompt_confirm_delete_with_identifier = (
+        '削除するには{label} "{expected}" を入力してください: '
+    )
+    prompt_subject = "題名: "
+    prompt_comment = "コメント: "
+    prompt_page_title = "ページタイトル: "
+    prompt_parent_page = "親ページ"
+    prompt_edit_page = "編集するページ"
+    prompt_select_tracker = "トラッカーを選択"
+    prompt_select_status = "ステータス"
+    prompt_select_priority = "優先度"
+    prompt_select_assignee = "担当者"
+    prompt_select_assignee_none = "（担当者なし）"
+    prompt_select_fixed_version = "対象バージョン"
+    prompt_select_activity = "作業分類"
+    prompt_select_done_ratio = "進捗率"
+    prompt_select_sharing = "共有設定"
+    prompt_select_version_to_update = "更新するバージョンを選択"
+    prompt_select_issue_to_update = "更新するイシューを選択"
+    prompt_start_date = "開始日（YYYY-MM-DD、空文字でクリア）: "
+    prompt_due_date = "期日（YYYY-MM-DD、空文字でクリア）: "
+    prompt_estimated_hours = "予定工数（例: 1.5 (h)）: "
+    prompt_hours = "作業時間（例: 1.5 (h)）: "
+    prompt_spent_on = "作業日（YYYY-MM-DD、省略で今日）: "
+    prompt_update_spent_on = "作業日（YYYY-MM-DD）: "
+    prompt_issue_id_update = "イシューID: "
+    prompt_time_comments = "作業時間のコメント: "
+    prompt_select_update_items = "更新する項目を選択 (Spaceで選択、Enterで確定)"
+    prompt_version_name = "バージョン名: "
+    prompt_description_optional = "説明（省略可）: "
+    prompt_due_date_optional = "期日（YYYY-MM-DD、省略可）: "
+    prompt_issue_id_or_project = "イシューID（省略でプロジェクト指定に切替）: "
+    prompt_project_id_or_name = "プロジェクトID または 名前/identifier: "
+    prompt_redmine_url = "Redmine URL: "
+    prompt_redmine_api_key = "Redmine APIキー: "
+    prompt_select_default_project = "普段使用しているプロジェクトを選択してください"
+    prompt_select_wiki_project = (
+        "普段閲覧しているwikiのあるプロジェクトを選択してください"
+    )
+    prompt_required_field = "{name}（必須）"
+    prompt_field_value = "{name}: {value}"
+    prompt_custom_field_label = "{name}: "
+
+    # ---- prompt validators ----
+    error_input_required = "入力してください"
+    error_url_format = "http:// または https:// で始まるURLを入力してください"
+    error_date_format = "YYYY-MM-DD で入力してください（空文字でクリア）"
+    error_date_after_start = "開始日 {date} 以降の日付を入力してください"
+    error_numeric_required = "数値を入力してください"
+    error_page_title_required = "ページタイトルを入力してください"
+    error_page_title_duplicate = "既存のページタイトルと重複しています"
+    error_no_matching_project = "該当するプロジェクトがありません"
+
+    # ---- field labels ----
+    field_tracker = "トラッカー (tracker)"
+    field_subject = "題名 (subject)"
+    field_description = "説明 (description)"
+    field_status = "ステータス (status)"
+    field_priority = "優先度 (priority)"
+    field_assignee = "担当者 (assigned_to)"
+    field_fixed_version = "対象バージョン (fixed_version)"
+    field_start_date = "開始日 (start_date)"
+    field_due_date = "期日 (due_date)"
+    field_done_ratio = "進捗率 (done_ratio)"
+    field_estimated_hours = "予定工数 (estimated_hours)"
+    field_notes = "コメント (notes)"
+    field_time_entry = "作業時間 (time_entry)"
+    field_version_name = "バージョン名 (name)"
+    field_sharing = "共有設定 (sharing)"
+    field_hours = "作業時間 (hours)"
+    field_activity = "作業分類 (activity)"
+    field_spent_on = "作業日 (spent_on)"
+    field_comments = "コメント (comments)"
+    field_issue_id = "イシュー (issue_id)"
+
+    # ---- sharing options ----
+    sharing_none = "none (共有しない)"
+    sharing_descendants = "descendants (子プロジェクトと共有)"
+    sharing_hierarchy = "hierarchy (階層内で共有)"
+    sharing_tree = "tree (ツリー全体で共有)"
+    sharing_system = "system (システム全体で共有)"
+
+    # ---- delete confirmations ----
+    delete_target_issue = "削除するイシュー: #{id} {subject}"
+    delete_target_version = "削除するバージョン: {id} {name}"
+    delete_target_user = "削除するユーザー: {summary}"
+    delete_target_project = (
+        "削除するプロジェクト: {id} {name} (identifier: {identifier})"
+    )
+    delete_project_warning = "**この操作は配下のイシュー等を含めて削除します**"
+    delete_target_wiki_page = "削除するWikiページ: {title}"
+    delete_target_membership = "削除するメンバーシップ: {id} [{kind}] {principal_id} {principal_name} - {roles}"
+    delete_target_attachment = "削除する添付ファイル: {id} {filename}"
+    delete_target_category = "削除するイシューカテゴリ: {id} {name}"
+    delete_target_group = "削除するグループ: {id} {name}"
+    delete_target_time_entry = "削除する作業時間: {id} {hours}h {activity} ({spent_on})"
+    delete_confirm_tui = "削除しますか? {summary} [y/N]"
+
+    # ---- detail labels ----
+    label_assignable = "割り当て可能: {value}"
+    label_issues_visibility = "チケットの表示: {value}"
+    label_time_entries_visibility = "作業時間の表示: {value}"
+    label_users_visibility = "ユーザーの表示: {value}"
+    label_permissions_header = "権限:"
+    label_name = "名前: {value}"
+    label_mail = "メール: {value}"
+    label_admin = "管理者: {value}"
+    label_admin_yes = "  管理者: yes"
+    label_created_on = "作成日時: {value}"
+    label_last_login_on = "最終ログイン: {value}"
+    label_custom_fields_header = "カスタムフィールド:"
+    label_membership_header = "メンバーシップ:"
+    label_groups_header = "グループ:"
+    label_users_header = "ユーザー:"
+    label_project_field = "プロジェクト: {id} {name}"
+    label_default_assignee = "デフォルト担当者: {id} {name}"
+    label_size = "サイズ: {value}"
+    label_kind = "種別: {value}"
+    label_author = "作成者: {value}"
+    label_description_field = "説明: {value}"
+    label_url_field = "URL: {value}"
+    label_roles_header = "ロール:"
+    label_inherited_suffix = " (継承)"
+    label_relations_header = "関係性:"
+    label_attachments_header = "添付ファイル:"
+    label_children_header = "子チケット:"
+    label_watchers_header = "ウォッチャー:"
+    label_allowed_statuses_header = "遷移可能なステータス:"
+    label_revisions_header = "リビジョン:"
+    label_journals_header = "コメント/変更履歴:"
+    label_comments_header = "コメント:"
+    label_due_date_field = "期日: {value}"
+    label_sharing_field = "共有: {value}"
+    label_parent_project = "親プロジェクト: {id} {name}"
+    label_trackers_header = "トラッカー:"
+    label_issue_categories_header = "イシューカテゴリ:"
+    label_enabled_modules_header = "有効モジュール:"
+    label_user_field = "  ユーザー: {name} (id={id})"
+    label_issue_field = "  イシュー: #{id}"
+    label_comments_field = "  コメント: {value}"
+    label_user_in_te = "  ユーザー: {name} (id={id})"
+    label_project_in_te = "  プロジェクト: {name} (id={id})"
+
+    # ---- relation labels ----
+    relation_label_relates = "関連している"
+    relation_label_duplicates = "重複している"
+    relation_label_duplicated = "重複されている"
+    relation_label_blocks = "ブロック先"
+    relation_label_blocked = "ブロック元"
+    relation_label_precedes = "先行する"
+    relation_label_follows = "後続する"
+    relation_label_copied_to = "コピー先"
+    relation_label_copied_from = "コピー元"
+
+    # ---- TUI ----
+    tui_tab_label_issues = "イシュー"
+    tui_tab_label_wiki = "Wiki"
+    tui_tab_label_time_entries = "作業時間"
+    tui_tab_switch_hint = "   (Tab:切替)"
+    tui_filter_status = "ステータス"
+    tui_filter_assignee = "担当者"
+    tui_filter_hint = "\nTab/h/l:列切替 jk:移動 Enter:適用 c:全クリア Esc/f:閉じる"
+    tui_filter_title = "フィルタ (Esc/f で閉じる)"
+    tui_help_title = "ヘルプ - {label} タブ (任意のキーで閉じる)"
+    tui_status_hint_issues = (
+        " {page_label}  jk:移動 /:検索 f:フィルタ c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+    )
+    tui_status_hint_wiki = " jk:移動 /:検索 c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+    tui_status_hint_time_entries = (
+        " jk:移動 /:検索 c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+    )
+    tui_filter_status_open_default = "open (デフォルト)"
+    tui_filter_status_all = "全て (open + closed)"
+    tui_filter_status_closed_only = "closed のみ"
+    tui_filter_assignee_none = "(指定なし)"
+    tui_filter_assignee_me = "自分"
+    tui_filter_assignee_unassigned = "未割当"
+    tui_meta_status = "ステータス"
+    tui_meta_priority = "優先度"
+    tui_meta_tracker = "トラッカー"
+    tui_meta_assignee = "担当者"
+    tui_meta_author = "作成者"
+    tui_meta_start_date = "開始日"
+    tui_meta_due_date = "期日"
+    tui_meta_progress = "進捗"
+    tui_meta_estimated_hours = "予定工数"
+    tui_meta_spent_hours = "作業時間"
+    tui_meta_created = "作成"
+    tui_meta_updated = "更新"
+    tui_meta_parent = "親"
+    tui_meta_version = "バージョン"
+    tui_meta_project = "プロジェクト"
+    tui_meta_user = "ユーザー"
+    tui_meta_activity = "作業分類"
+    tui_meta_issue = "イシュー"
+    tui_preview_comments_header = "コメント:"
+    tui_wiki_no_pages = "Wikiページが見つかりません"
+    tui_wiki_loading = "(Wikiを読み込み中...)"
+    tui_wiki_load_failed = "Wikiの取得に失敗しました: {error}"
+    tui_wiki_load_text_failed = "(読み込みに失敗しました: {error})"
+    tui_wiki_page_missing = "(ページが見つかりません)"
+    tui_wiki_press_enter_to_load = "(Enter で本文をロード)"
+    tui_wiki_project_required = (
+        "wiki_project_id か default_project_id を設定してください"
+    )
+    tui_time_entry_no_entries = "作業時間が見つかりません"
+    tui_time_entry_loading = "(作業時間を読み込み中...)"
+    tui_time_entry_load_failed = "作業時間の取得に失敗しました: {error}"
+    tui_time_entry_delete_failed = "作業時間の削除に失敗しました: {error}"
+    tui_time_entry_delete_prompt = "削除しますか? {summary} [y/N]"
+
+    # ---- argparse helps (root) ----
+    arg_help_root_description = "Redmine CLI"
+    arg_help_tui = "TUI"
+    arg_help_debug = "デバッグログを有効にする"
+    arg_help_debug_tui = "TUI のスクリーン内容を YAML 形式でログ出力する"
+    arg_help_profile = (
+        "使用するプロファイル名（config.tomlのdefault_profileを一時的に上書き）"
+    )
+
+    # ---- argparse helps (common) ----
+    arg_help_full_json = "JSON形式で全情報を出力"
+    arg_help_skip_confirm = "確認プロンプトをスキップ"
+    arg_help_open_web = "ブラウザでRedmineのページを開く"
+    arg_help_project_id = "プロジェクトID"
+    arg_help_project_id_filter = "プロジェクトIDでフィルタリング"
+    arg_help_user_id = "ユーザーIDでフィルタリング（'me'も可）"
+    arg_help_full_profiles = "全プロファイルを表示"
+
+    # ---- argparse helps (subcommand summary) ----
+    arg_help_crud_subcommands = "list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除"
+    arg_help_role_subcommands = "list(l): 一覧, view(v): 詳細"
+    arg_help_file_subcommands = "list(l): 一覧, create(c): アップロード"
+
+    # ---- argparse helps (project) ----
+    arg_help_project_command = arg_help_crud_subcommands
+    arg_help_project_list = "プロジェクト一覧"
+    arg_help_project_view = "プロジェクト詳細"
+    arg_help_project_view_id = "プロジェクトID"
+    arg_help_project_include = "追加情報（trackers,issue_categories,enabled_modules,time_entry_activities,issue_custom_fields）"
+    arg_help_project_create = "プロジェクト作成"
+    arg_help_project_name = "プロジェクト名"
+    arg_help_project_identifier = "プロジェクト識別子（英数字とハイフン）"
+    label_project_identifier = "プロジェクト識別子"
+    arg_help_description = "説明"
+    arg_help_project_is_public = "公開設定"
+    arg_help_parent_id = "親プロジェクトID"
+    arg_help_tracker_ids = "トラッカーID（カンマ区切り。例: 1,2,3）"
+    arg_help_project_delete = "プロジェクト削除"
+    arg_help_project_delete_id = "プロジェクトID"
+    arg_help_project_update = "プロジェクト更新"
+    arg_help_project_update_id = "プロジェクトID"
+    arg_help_project_archive = "アーカイブ (--no-archive で解除)"
+
+    # ---- argparse helps (issue) ----
+    arg_help_issue_command = arg_help_crud_subcommands
+    arg_help_issue_filter_project = "プロジェクトIDでフィルタリング"
+    arg_help_issue_filter_version = "対象バージョンIDでフィルタリング"
+    arg_help_issue_filter_assigned_to = "担当者でフィルタリング（ユーザーIDまたは'me'）"
+    arg_help_issue_filter_status = (
+        "ステータスIDでフィルタリング（'open'/'closed'/'*' も可）"
+    )
+    arg_help_issue_filter_tracker = "トラッカーIDでフィルタリング"
+    arg_help_issue_filter_priority = "優先度IDでフィルタリング"
+    arg_help_issue_filter_query = (
+        "カスタムクエリIDでフィルタリング（`redi query`で取得可）"
+    )
+    arg_help_limit = "取得件数"
+    arg_help_offset = "オフセット"
+    arg_help_issue_list = "イシュー一覧"
+    arg_help_issue_view = "イシュー詳細"
+    arg_help_issue_view_id = "イシューID"
+    arg_help_issue_include = "追加情報（children,attachments,relations,changesets,journals,watchers,allowed_statuses）"
+    arg_help_issue_create = "イシュー作成"
+    arg_help_issue_subject_arg = "イシューの題名（省略で対話的に入力）"
+    arg_help_issue_tracker_id = "トラッカーID"
+    arg_help_issue_priority_id = "優先度ID"
+    arg_help_issue_assigned_to_id = "担当者ID"
+    arg_help_issue_description = "説明（フラグ未指定でエディタ起動）"
+    arg_help_custom_fields = (
+        "カスタムフィールド（id=value形式、カンマ区切り。例: 1=foo,2=bar）"
+    )
+    arg_help_issue_update = "イシュー更新"
+    arg_help_issue_update_id = "イシューID（省略で対話的に選択）"
+    arg_help_issue_subject_opt = "題名"
+    arg_help_issue_update_description = "説明（値省略でエディタ起動）"
+    arg_help_issue_update_tracker_id = "トラッカーID"
+    arg_help_issue_status_id = "ステータスID"
+    arg_help_issue_fixed_version_id = "対象バージョンID"
+    arg_help_issue_parent = "親チケットID（空文字で解除）"
+    arg_help_issue_start_date = "開始日（YYYY-MM-DD、空文字で解除）"
+    arg_help_issue_due_date = "期日（YYYY-MM-DD、空文字で解除）"
+    arg_help_issue_done_ratio = "進捗率（0-100）"
+    arg_help_issue_estimated_hours = "予定工数（例: 1.5）"
+    arg_help_issue_notes = "コメント"
+    arg_help_issue_relate = (
+        "関係性のタイプ（relates, duplicates, blocks, precedes, follows など）"
+    )
+    arg_help_issue_relate_to = "関係先のイシューID"
+    arg_help_issue_delete_relation = "関係性を削除（--to と併用）"
+    arg_help_issue_attach = "添付ファイルのパス（複数指定可）"
+    arg_help_issue_hours = "作業時間（例: 1.5）"
+    arg_help_issue_activity_id = "作業分類ID"
+    arg_help_issue_spent_on = "作業日（YYYY-MM-DD、省略で今日）"
+    arg_help_issue_time_comments = "作業時間のコメント"
+    arg_help_issue_add_watcher = "ウォッチャーに追加するユーザーID（複数指定可）"
+    arg_help_issue_remove_watcher = "ウォッチャーから削除するユーザーID（複数指定可）"
+    arg_help_issue_comment = "イシューにコメント追加"
+    arg_help_issue_comment_notes = "コメント（省略でエディタ起動）"
+    arg_help_issue_delete = "イシュー削除"
+
+    # ---- argparse helps (version) ----
+    arg_help_version_command = arg_help_crud_subcommands
+    arg_help_version_list = "バージョン一覧"
+    arg_help_version_view = "バージョン詳細"
+    arg_help_version_view_id = "バージョンID"
+    arg_help_version_create = "バージョン作成"
+    arg_help_version_name_arg = "バージョン名"
+    arg_help_version_status = "ステータス"
+    arg_help_version_due_date = "期日（YYYY-MM-DD）"
+    arg_help_version_description = "説明"
+    arg_help_version_sharing = "共有設定"
+    arg_help_version_delete = "バージョン削除"
+    arg_help_version_delete_id = "バージョンID"
+    arg_help_version_update = "バージョン更新"
+    arg_help_version_update_id = "バージョンID（省略で対話的に選択）"
+    arg_help_version_name_opt = "バージョン名"
+
+    # ---- argparse helps (wiki) ----
+    arg_help_wiki_command = arg_help_crud_subcommands
+    arg_help_wiki_list = "Wikiページ一覧"
+    arg_help_wiki_view = "Wikiページ詳細"
+    arg_help_wiki_page_title = "Wikiページタイトル"
+    arg_help_wiki_version = "特定バージョンのページを取得"
+    arg_help_wiki_create = "Wikiページ作成"
+    arg_help_wiki_create_title = "Wikiページタイトル（省略で対話的に入力）"
+    arg_help_wiki_parent_title = "親ページタイトル"
+    arg_help_wiki_description = "説明（値省略でエディタ起動）"
+    arg_help_wiki_delete = "Wikiページ削除"
+    arg_help_wiki_update = "Wikiページ更新"
+    arg_help_wiki_update_title = "Wikiページタイトル（省略で対話的に選択）"
+
+    # ---- argparse helps (config) ----
+    arg_help_config_command = "設定表示/更新/プロファイル作成"
+    arg_help_config_update = "設定更新"
+    arg_help_config_profile_name_optional = (
+        "更新対象のプロファイル名（省略時はdefault_profile）"
+    )
+    arg_help_config_set_default_project_id = "デフォルトプロジェクトIDを設定"
+    arg_help_config_set_wiki_project_id = "Wiki用プロジェクトIDを設定"
+    arg_help_config_set_editor = "エディタを設定"
+    arg_help_config_set_api_key = "Redmine APIキーを設定"
+    arg_help_config_set_url = "Redmine URLを設定"
+    arg_help_config_set_default_profile = "デフォルトプロファイルを設定"
+    arg_help_config_create = "プロファイル作成"
+    arg_help_config_create_profile_name = "作成するプロファイル名"
+    arg_help_config_url = "Redmine URL"
+    arg_help_config_api_key = "Redmine APIキー"
+    arg_help_config_default_project_id = "デフォルトプロジェクトID"
+    arg_help_config_wiki_project_id = "Wiki用プロジェクトID"
+    arg_help_config_editor = "エディタ"
+    arg_help_config_set_default_flag = "作成したプロファイルをdefault_profileに設定"
+
+    # ---- argparse helps (init) ----
+    arg_help_init_command = (
+        "初回セットアップ（URL/APIキーの疎通確認後にプロファイルを作成）"
+    )
+
+    # ---- argparse helps (user) ----
+    arg_help_user_command = arg_help_crud_subcommands
+    arg_help_user_list = "ユーザー一覧"
+    arg_help_user_create = "ユーザー作成（管理者権限が必要）"
+    arg_help_user_login = "ログイン名"
+    arg_help_user_firstname = "名"
+    arg_help_user_lastname = "姓"
+    arg_help_user_mail = "メールアドレス"
+    arg_help_user_password = "パスワード"
+    arg_help_user_generate_password = "パスワードを自動生成"
+    arg_help_user_auth_source_id = "認証ソースID"
+    arg_help_user_mail_notification = "メール通知設定"
+    arg_help_user_must_change_passwd = "次回ログイン時にパスワード変更を要求"
+    arg_help_user_admin = "管理者権限を付与"
+    arg_help_user_view = "ユーザー詳細"
+    arg_help_user_view_id = "ユーザーID（'current'で現在のユーザー）"
+    arg_help_user_update = "ユーザー更新（管理者権限が必要）"
+    arg_help_user_update_id = "ユーザーID"
+    arg_help_user_must_change_passwd_update = (
+        "次回ログイン時にパスワード変更を要求 (--no-must_change_passwd で解除)"
+    )
+    arg_help_user_admin_update = "管理者権限 (--no-admin で解除)"
+    arg_help_user_delete = "ユーザー削除（管理者権限が必要）"
+    arg_help_user_delete_id = "ユーザーID"
+
+    # ---- argparse helps (me) ----
+    arg_help_me_command = "自分のアカウント情報 詳細/更新"
+    arg_help_me_update = "自分のアカウント情報を更新"
+
+    # ---- argparse helps (membership) ----
+    arg_help_membership_command = arg_help_crud_subcommands
+    arg_help_membership_list = "メンバーシップ一覧"
+    arg_help_membership_view = "メンバーシップ詳細"
+    arg_help_membership_view_id = "メンバーシップID"
+    arg_help_membership_create = "メンバーシップ作成"
+    arg_help_membership_user_id = "ユーザーID"
+    arg_help_membership_group_id = "グループID"
+    arg_help_membership_role_ids = "ロールID（カンマ区切り。例: 3,4）"
+    arg_help_membership_update = "メンバーシップ更新（ロールのみ変更可能）"
+    arg_help_membership_update_id = "メンバーシップID"
+    arg_help_membership_delete = "メンバーシップ削除"
+    arg_help_membership_delete_id = "メンバーシップID"
+
+    # ---- argparse helps (group) ----
+    arg_help_group_command = arg_help_crud_subcommands
+    arg_help_group_list = "グループ一覧"
+    arg_help_group_view = "グループ詳細"
+    arg_help_group_view_id = "グループID"
+    arg_help_group_create = "グループ作成（管理者権限が必要）"
+    arg_help_group_name = "グループ名"
+    arg_help_group_user_id = "所属させるユーザーID（複数指定可）"
+    arg_help_group_update = "グループ更新（管理者権限が必要）"
+    arg_help_group_update_id = "グループID"
+    arg_help_group_name_opt = "グループ名"
+    arg_help_group_user_id_replace = (
+        "所属ユーザーIDを指定（複数指定可、既存の所属ユーザーを置き換え）"
+    )
+    arg_help_group_add_user = "グループに追加するユーザーID（複数指定可）"
+    arg_help_group_remove_user = "グループから削除するユーザーID（複数指定可）"
+    arg_help_group_delete = "グループ削除（管理者権限が必要）"
+    arg_help_group_delete_id = "グループID"
+
+    # ---- argparse helps (issue category) ----
+    arg_help_issue_category_command = arg_help_crud_subcommands
+    arg_help_issue_category_list = "イシューカテゴリ一覧"
+    arg_help_issue_category_view = "カテゴリ詳細"
+    arg_help_issue_category_view_id = "カテゴリID"
+    arg_help_issue_category_create = "カテゴリ作成"
+    arg_help_issue_category_name = "カテゴリ名"
+    arg_help_issue_category_assigned_to_id = "デフォルト担当者のユーザーID"
+    arg_help_issue_category_update = "カテゴリ更新"
+    arg_help_issue_category_update_id = "カテゴリID"
+    arg_help_issue_category_name_opt = "カテゴリ名"
+    arg_help_issue_category_delete = "カテゴリ削除"
+    arg_help_issue_category_delete_id = "カテゴリID"
+    arg_help_issue_category_reassign_to_id = (
+        "削除に伴い既存チケットを再割り当てするカテゴリID"
+    )
+
+    # ---- argparse helps (relation) ----
+    arg_help_relation_command = "イシュー関係性 詳細"
+    arg_help_relation_view = "関係性詳細"
+    arg_help_relation_view_id = "関係性ID"
+
+    # ---- argparse helps (attachment) ----
+    arg_help_attachment_command = "添付ファイル詳細/更新/削除"
+    arg_help_attachment_view = "添付ファイル詳細"
+    arg_help_attachment_view_id = "添付ファイルID"
+    arg_help_attachment_update = "添付ファイル更新"
+    arg_help_attachment_update_id = "添付ファイルID"
+    arg_help_attachment_filename = "ファイル名"
+    arg_help_attachment_description = "説明"
+    arg_help_attachment_delete = "添付ファイル削除"
+    arg_help_attachment_delete_id = "添付ファイルID"
+
+    # ---- argparse helps (time entry) ----
+    arg_help_time_entry_command = "list(l): 一覧, view(v): 詳細, create(c): 登録, update(u): 更新, delete(d): 削除"
+    arg_help_time_entry_user_id = "ユーザーIDでフィルタリング（'me'も可）"
+    arg_help_time_entry_list = "作業時間一覧"
+    arg_help_time_entry_create = "作業時間登録"
+    arg_help_time_entry_hours = "時間（例: 1.5、省略で対話的に入力）"
+    arg_help_time_entry_issue_id = "イシューID"
+    arg_help_time_entry_activity_id = "作業分類ID"
+    arg_help_time_entry_spent_on = "日付（YYYY-MM-DD、省略で今日）"
+    arg_help_time_entry_comments = "コメント"
+    arg_help_time_entry_view = "作業時間詳細"
+    arg_help_time_entry_view_id = "作業時間ID"
+    arg_help_time_entry_update = "作業時間更新"
+    arg_help_time_entry_update_id = "作業時間ID"
+    arg_help_time_entry_update_hours = "時間（例: 1.5）"
+    arg_help_time_entry_update_spent_on = "日付（YYYY-MM-DD）"
+    arg_help_time_entry_delete = "作業時間削除"
+    arg_help_time_entry_delete_id = "作業時間ID"
+
+    # ---- argparse helps (file) ----
+    arg_help_file_command = arg_help_file_subcommands
+    arg_help_file_list = "プロジェクトファイル一覧"
+    arg_help_file_create = "ファイルアップロード"
+    arg_help_file_path = "アップロードするファイルのパス"
+    arg_help_file_version_id = "バージョンID"
+    arg_help_file_description = "説明"
+
+    # ---- argparse helps (role) ----
+    arg_help_role_command = arg_help_role_subcommands
+    arg_help_role_list = "ロール一覧"
+    arg_help_role_view = "ロール詳細"
+    arg_help_role_view_id = "ロールID"
+
+    # ---- argparse helps (search) ----
+    arg_help_search_command = "検索"
+    arg_help_search_query = "検索クエリ"
+
+    # ---- argparse helps (news) ----
+    arg_help_news_command = "ニュース一覧"
+
+    # ---- argparse helps (enumerations) ----
+    arg_help_tracker_command = "トラッカー一覧"
+    arg_help_issue_status_command = "ステータス一覧"
+    arg_help_issue_priority_command = "優先度一覧"
+    arg_help_time_entry_activity_command = "作業分類一覧"
+    arg_help_document_category_command = "文書カテゴリ一覧"
+    arg_help_query_command = "カスタムクエリ一覧"
+    arg_help_custom_field_command = "カスタムフィールド一覧"
+
+    # ---- config_command suffix ----
+    config_profile_suffix = "（profile: {name}）"
+
+    # ---- TUI help labels (sections / common) ----
+    tui_help_section_navigation = "移動"
+    tui_help_section_search = "検索"
+    tui_help_section_filter = "フィルタ"
+    tui_help_section_actions = "アクション"
+    tui_help_section_other = "その他"
+    tui_help_move_up = "上へ"
+    tui_help_move_down = "下へ"
+    tui_help_goto_top_bottom = "先頭 / 末尾へ"
+    tui_help_jump_to_issue_n = "#N のイシューへジャンプ"
+    tui_help_prev_next_page = "前ページ / 次ページ"
+    tui_help_switch_tab = "タブ切替 (次 / 前)"
+    tui_help_start_search = "検索開始"
+    tui_help_next_prev_match = "次 / 前の検索結果"
+    tui_help_filter_status_assignee = "ステータス/担当者でフィルタ (フローティング)"
+    tui_help_show_or_close = "このヘルプを表示 / 閉じる"
+    tui_help_quit = "終了"
+
+    # ---- TUI help labels (issue tab) ----
+    tui_help_issue_load_comments = "選択イシューのコメントを読込"
+    tui_help_issue_create_or_update = "イシュー作成 / 更新"
+    tui_help_issue_add_comment = "コメント追加 (検索クエリ未設定時)"
+    tui_help_issue_create_time_entry = "時間記録の作成"
+    tui_help_issue_open_web_or_n = "選択イシューを web で開く / #N を web で開く"
+
+    # ---- TUI help labels (wiki tab) ----
+    tui_help_wiki_load_text = "選択ページの本文を読込"
+    tui_help_wiki_create_child = "選択ページの子ページを作成"
+    tui_help_wiki_update_page = "選択ページを更新"
+    tui_help_wiki_open_web = "選択ページを web で開く"
+
+    # ---- TUI help labels (time entry tab) ----
+    tui_help_time_entry_create = "時間記録を作成"
+    tui_help_time_entry_update = "選択した時間記録を更新"
+    tui_help_time_entry_delete = "選択した時間記録を削除 (y/Y で確定)"
+    tui_help_time_entry_open_web = "選択行のイシューを web で開く"
