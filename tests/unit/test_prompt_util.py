@@ -6,6 +6,8 @@ from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
 from prompt_toolkit.validation import ValidationError
 
+import re
+
 from redi.cli.prompt_util import (
     DueDateValidator,
     HourValidator,
@@ -13,6 +15,7 @@ from redi.cli.prompt_util import (
     digit_and_period_key_bindings,
     digit_only_key_bindings,
 )
+from redi.i18n import messages
 
 
 # prompt_toolkit.key_binding.key_processor.KeyPressEvent の duck-type。
@@ -124,7 +127,9 @@ class TestUrlValidator:
     @pytest.mark.parametrize("text", ["", " "])
     def test_empty_or_whitespace_raises_required(self, text: str):
         """空文字や空白のみは『入力してください』でエラーになる"""
-        with pytest.raises(ValidationError, match="入力してください"):
+        with pytest.raises(
+            ValidationError, match=re.escape(messages.error_input_required)
+        ):
             UrlValidator().validate(Document(text=text))
 
     @pytest.mark.parametrize(
@@ -151,7 +156,9 @@ class TestHourValidator:
     @pytest.mark.parametrize("text", ["", "abc", "1.5h", "1,5", "-1", "1..5", "1.2.3"])
     def test_invalid_inputs_raise(self, text: str):
         """空文字や数値以外（記号・複数小数点・単位付きなど）はエラーになる"""
-        with pytest.raises(ValidationError, match="数値を入力してください"):
+        with pytest.raises(
+            ValidationError, match=re.escape(messages.error_numeric_required)
+        ):
             HourValidator().validate(Document(text=text))
 
 
@@ -188,7 +195,8 @@ class TestDueDateValidator:
 
     def test_date_before_start_date_raises(self):
         """開始日より前の日付は『開始日 ... 以降』エラーになる"""
-        with pytest.raises(ValidationError, match="開始日 2026-04-26 以降"):
+        expected = re.escape(messages.error_date_after_start.format(date="2026-04-26"))
+        with pytest.raises(ValidationError, match=expected):
             DueDateValidator(start_date=date(2026, 4, 26)).validate(
                 Document(text="2026-04-25")
             )

@@ -5,6 +5,7 @@ import requests
 
 from redi.client import client
 from redi.config import redmine_url
+from redi.i18n import messages
 
 
 def list_projects(full: bool = False) -> None:
@@ -30,7 +31,7 @@ def resolve_project_id(value: str) -> str:
     for p in projects:
         if p.get("identifier") == value or p.get("name") == value:
             return str(p["id"])
-    print(f"プロジェクトが見つかりません: {value}")
+    print(messages.project_not_found.format(id=value))
     exit(1)
 
 
@@ -40,7 +41,7 @@ def fetch_project(project_id: str, include: str = "") -> dict:
         params["include"] = include
     response = client.get(f"/projects/{project_id}.json", params=params)
     if response.status_code == 404:
-        print(f"プロジェクトが見つかりません: {project_id}")
+        print(messages.project_not_found.format(id=project_id))
         exit(1)
     response.raise_for_status()
     return response.json()["project"]
@@ -97,7 +98,7 @@ def update_project(
     if tracker_ids is not None:
         data["tracker_ids"] = tracker_ids
     if len(data) == 0:
-        print("更新をキャンセルしました")
+        print(messages.update_canceled)
         exit()
     response = client.put(f"/projects/{project_id}.json", json={"project": data})
     try:
@@ -105,54 +106,54 @@ def update_project(
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("プロジェクトの更新に失敗しました")
+        print(messages.project_update_failed)
         exit(1)
-    print(f"プロジェクトを更新しました: {project_id}")
+    print(messages.project_updated.format(id=project_id))
 
 
 def archive_project(project_id: str) -> None:
     response = client.put(f"/projects/{project_id}/archive.json")
     if response.status_code == 404:
-        print(f"プロジェクトが見つかりません: {project_id}")
+        print(messages.project_not_found.format(id=project_id))
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("プロジェクトのアーカイブに失敗しました")
+        print(messages.project_archive_failed)
         exit(1)
-    print(f"プロジェクトをアーカイブしました: {project_id}")
+    print(messages.project_archived.format(id=project_id))
 
 
 def unarchive_project(project_id: str) -> None:
     response = client.put(f"/projects/{project_id}/unarchive.json")
     if response.status_code == 404:
-        print(f"プロジェクトが見つかりません: {project_id}")
+        print(messages.project_not_found.format(id=project_id))
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("プロジェクトのアーカイブ解除に失敗しました")
+        print(messages.project_unarchive_failed)
         exit(1)
-    print(f"プロジェクトのアーカイブを解除しました: {project_id}")
+    print(messages.project_unarchived.format(id=project_id))
 
 
 def delete_project(project_id: str) -> None:
     response = client.delete(f"/projects/{project_id}.json")
     if response.status_code == 404:
-        print(f"プロジェクトが見つかりません: {project_id}")
+        print(messages.project_not_found.format(id=project_id))
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("プロジェクトの削除に失敗しました")
+        print(messages.project_delete_failed)
         exit(1)
-    print(f"プロジェクトを削除しました: {project_id}")
+    print(messages.project_deleted.format(id=project_id))
 
 
 def read_project(
@@ -168,7 +169,7 @@ def read_project(
         params["include"] = include
     response = client.get(f"/projects/{project_id}.json", params=params)
     if response.status_code == 404:
-        print(f"プロジェクトが見つかりません: {project_id}")
+        print(messages.project_not_found.format(id=project_id))
         exit(1)
     response.raise_for_status()
     project = response.json()["project"]
@@ -184,23 +185,27 @@ def read_project(
     parent = project.get("parent")
     if parent:
         lines.append("")
-        lines.append(f"親プロジェクト: {parent.get('id')} {parent.get('name', '')}")
+        lines.append(
+            messages.label_parent_project.format(
+                id=parent.get("id"), name=parent.get("name", "")
+            )
+        )
     trackers = project.get("trackers") or []
     if trackers:
         lines.append("")
-        lines.append("トラッカー:")
+        lines.append(messages.label_trackers_header)
         for t in trackers:
             lines.append(f"  {t['id']} {t['name']}")
     issue_categories = project.get("issue_categories") or []
     if issue_categories:
         lines.append("")
-        lines.append("イシューカテゴリ:")
+        lines.append(messages.label_issue_categories_header)
         for c in issue_categories:
             lines.append(f"  {c['id']} {c['name']}")
     enabled_modules = project.get("enabled_modules") or []
     if enabled_modules:
         lines.append("")
-        lines.append("有効モジュール:")
+        lines.append(messages.label_enabled_modules_header)
         for m in enabled_modules:
             lines.append(f"  {m.get('name')}")
     print("\n".join(lines))

@@ -4,6 +4,7 @@ import requests
 
 from redi.api.wiki import fetch_wiki, fetch_wikis, flatten_wiki_tree
 from redi.config import default_project_id, redmine_url, wiki_project_id
+from redi.i18n import messages
 from redi.tui.render import highlight_segments, render_meta_table
 from redi.tui.state import (
     Renderable,
@@ -25,14 +26,12 @@ def _load_wikis(state: TuiState) -> None:
     state.wiki_tab.loaded = True
     project = _wiki_project()
     if not project:
-        state.wiki_tab.error = (
-            "wiki_project_id か default_project_id を設定してください"
-        )
+        state.wiki_tab.error = messages.tui_wiki_project_required
         return
     try:
         pages = fetch_wikis(project)
     except requests.exceptions.RequestException as e:
-        state.wiki_tab.error = f"Wikiの取得に失敗しました: {e}"
+        state.wiki_tab.error = messages.tui_wiki_load_failed.format(error=e)
         return
     items = flatten_wiki_tree(pages)
     state.wiki_tab.pages = [page for page, _ in items]
@@ -51,10 +50,10 @@ def _load_wiki_text(state: TuiState, title: str) -> None:
     try:
         wiki = fetch_wiki(project, title)
     except requests.exceptions.RequestException as e:
-        state.wiki_tab.texts[title] = f"(読み込みに失敗しました: {e})"
+        state.wiki_tab.texts[title] = messages.tui_wiki_load_text_failed.format(error=e)
         return
     if wiki is None:
-        state.wiki_tab.texts[title] = "(ページが見つかりません)"
+        state.wiki_tab.texts[title] = messages.tui_wiki_page_missing
         return
     state.wiki_tab.texts[title] = wiki.get("text", "") or ""
 
@@ -64,8 +63,8 @@ def _render_list(state: TuiState) -> Renderable:
         return [("", state.wiki_tab.error)]
     if not state.wiki_tab.labels:
         if state.wiki_tab.loaded:
-            return [("", "Wikiページが見つかりません")]
-        return [("", "(Wikiを読み込み中...)")]
+            return [("", messages.tui_wiki_no_pages)]
+        return [("", messages.tui_wiki_loading)]
     result: Renderable = []
     query = state.search_query
     for i, label in enumerate(state.wiki_tab.labels):
@@ -85,10 +84,13 @@ def _render_preview(state: TuiState) -> Renderable:
     title = page.get("title", "")
     lines = [title, ""]
     meta = [
-        ("親", (page.get("parent") or {}).get("title", "")),
-        ("バージョン", str(page.get("version", "")) if page.get("version") else ""),
-        ("作成", page.get("created_on") or ""),
-        ("更新", page.get("updated_on") or ""),
+        (messages.tui_meta_parent, (page.get("parent") or {}).get("title", "")),
+        (
+            messages.tui_meta_version,
+            str(page.get("version", "")) if page.get("version") else "",
+        ),
+        (messages.tui_meta_created, page.get("created_on") or ""),
+        (messages.tui_meta_updated, page.get("updated_on") or ""),
     ]
     lines.extend(render_meta_table(meta))
 
@@ -96,14 +98,14 @@ def _render_preview(state: TuiState) -> Renderable:
     lines.append("")
     lines.append("----")
     if text is None:
-        lines.append("(Enter で本文をロード)")
+        lines.append(messages.tui_wiki_press_enter_to_load)
     else:
         lines.extend(text.splitlines())
     return [("", "\n".join(lines))]
 
 
 def _status_hint(state: TuiState) -> str:
-    return " jk:移動 /:検索 c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+    return messages.tui_status_hint_wiki
 
 
 def _exit_result(
@@ -195,27 +197,27 @@ def _on_open_web(state: TuiState) -> None:
 
 
 _HELP_LINES: list[tuple[str, str]] = [
-    ("移動", ""),
-    ("  ↑/k/Ctrl+P", "上へ"),
-    ("  ↓/j/Ctrl+N", "下へ"),
-    ("  gg / G", "先頭 / 末尾へ"),
-    ("  Tab / Shift+Tab", "タブ切替 (次 / 前)"),
-    ("検索", ""),
-    ("  /", "検索開始"),
-    ("  n / N", "次 / 前の検索結果"),
-    ("アクション", ""),
-    ("  Enter", "選択ページの本文を読込"),
-    ("  c", "選択ページの子ページを作成"),
-    ("  u", "選択ページを更新"),
-    ("  v", "選択ページを web で開く"),
-    ("その他", ""),
-    ("  ?", "このヘルプを表示 / 閉じる"),
-    ("  q / Esc / Ctrl+C", "終了"),
+    (messages.tui_help_section_navigation, ""),
+    ("  ↑/k/Ctrl+P", messages.tui_help_move_up),
+    ("  ↓/j/Ctrl+N", messages.tui_help_move_down),
+    ("  gg / G", messages.tui_help_goto_top_bottom),
+    ("  Tab / Shift+Tab", messages.tui_help_switch_tab),
+    (messages.tui_help_section_search, ""),
+    ("  /", messages.tui_help_start_search),
+    ("  n / N", messages.tui_help_next_prev_match),
+    (messages.tui_help_section_actions, ""),
+    ("  Enter", messages.tui_help_wiki_load_text),
+    ("  c", messages.tui_help_wiki_create_child),
+    ("  u", messages.tui_help_wiki_update_page),
+    ("  v", messages.tui_help_wiki_open_web),
+    (messages.tui_help_section_other, ""),
+    ("  ?", messages.tui_help_show_or_close),
+    ("  q / Esc / Ctrl+C", messages.tui_help_quit),
 ]
 
 
 WIKI_TAB = TabView(
-    label="Wiki",
+    label=messages.tui_tab_label_wiki,
     render_list=_render_list,
     render_preview=_render_preview,
     status_hint=_status_hint,

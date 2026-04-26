@@ -4,6 +4,7 @@ import requests
 
 from redi.client import client
 from redi.config import redmine_url
+from redi.i18n import messages
 
 
 def create_user(
@@ -38,18 +39,22 @@ def create_user(
         user_data["admin"] = admin
     response = client.post("/users.json", json={"user": user_data})
     if response.status_code == 403:
-        print("ユーザーの作成には管理者権限が必要です")
+        print(messages.user_create_admin_required)
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("ユーザーの作成に失敗しました")
+        print(messages.user_create_failed)
         exit(1)
     created = response.json()["user"]
     print(
-        f"ユーザーを作成しました: {created['id']} {created['login']} {redmine_url}/users/{created['id']}"
+        messages.user_created.format(
+            id=created["id"],
+            login=created["login"],
+            url=f"{redmine_url}/users/{created['id']}",
+        )
     )
 
 
@@ -61,10 +66,8 @@ def pop_apikey(user: dict) -> dict:
 def list_users(full: bool = False) -> None:
     response = client.get("/users.json")
     if response.status_code == 403:
-        print("ユーザー一覧の取得には管理者権限が必要です")
-        print(
-            "プロジェクトメンバーの一覧は `redi membership -p <project_id>` を使ってください"
-        )
+        print(messages.user_list_admin_required)
+        print(messages.user_list_member_hint)
         return
     # 未知のステータスコードに遭遇した際にエラーをraiseする(jsonのdecodeエラーよりは原因がわかりやすい)
     response.raise_for_status()
@@ -82,10 +85,10 @@ def fetch_user(user_id: str, include: list[str] | None = None) -> dict:
         params["include"] = ",".join(include)
     response = client.get(f"/users/{user_id}.json", params=params)
     if response.status_code == 404:
-        print(f"ユーザーが見つかりません: {user_id}")
+        print(messages.user_not_found.format(id=user_id))
         exit(1)
     if response.status_code == 403:
-        print("ユーザー詳細の取得には権限が必要です")
+        print(messages.user_detail_permission_required)
         exit(1)
     response.raise_for_status()
     return pop_apikey(response.json()["user"])
@@ -99,19 +102,19 @@ def read_user(user_id: str, full: bool = False) -> None:
     name = f"{user.get('firstname', '')} {user.get('lastname', '')}".strip()
     lines = [
         f"{user['id']} {user.get('login', '')} {name}".rstrip(),
-        f"  メール: {user.get('mail', '')}",
+        "  " + messages.label_mail.format(value=user.get("mail", "")),
     ]
     if user.get("admin"):
-        lines.append("  管理者: yes")
+        lines.append(messages.label_admin_yes)
     created_on = user.get("created_on")
     if created_on:
-        lines.append(f"  作成日時: {created_on}")
+        lines.append("  " + messages.label_created_on.format(value=created_on))
     last_login_on = user.get("last_login_on")
     if last_login_on:
-        lines.append(f"  最終ログイン: {last_login_on}")
+        lines.append("  " + messages.label_last_login_on.format(value=last_login_on))
     memberships = user.get("memberships") or []
     if memberships:
-        lines.append("  メンバーシップ:")
+        lines.append("  " + messages.label_membership_header)
         for m in memberships:
             project = m.get("project") or {}
             roles = m.get("roles") or []
@@ -121,7 +124,7 @@ def read_user(user_id: str, full: bool = False) -> None:
             )
     groups = user.get("groups") or []
     if groups:
-        lines.append("  グループ:")
+        lines.append("  " + messages.label_groups_header)
         for g in groups:
             lines.append(f"    {g.get('id', '?')} {g.get('name', '')}")
     print("\n".join(lines))
@@ -159,38 +162,38 @@ def update_user(
     if admin is not None:
         data["admin"] = admin
     if not data:
-        print("更新内容がないので更新をキャンセルしました")
+        print(messages.update_canceled_no_changes)
         exit(1)
     response = client.put(f"/users/{user_id}.json", json={"user": data})
     if response.status_code == 404:
-        print(f"ユーザーが見つかりません: {user_id}")
+        print(messages.user_not_found.format(id=user_id))
         exit(1)
     if response.status_code == 403:
-        print("ユーザーの更新には管理者権限が必要です")
+        print(messages.user_update_admin_required)
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("ユーザーの更新に失敗しました")
+        print(messages.user_update_failed)
         exit(1)
-    print(f"ユーザーを更新しました: {user_id}")
+    print(messages.user_updated.format(id=user_id))
 
 
 def delete_user(user_id: str) -> None:
     response = client.delete(f"/users/{user_id}.json")
     if response.status_code == 404:
-        print(f"ユーザーが見つかりません: {user_id}")
+        print(messages.user_not_found.format(id=user_id))
         exit(1)
     if response.status_code == 403:
-        print("ユーザーの削除には管理者権限が必要です")
+        print(messages.user_delete_admin_required)
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("ユーザーの削除に失敗しました")
+        print(messages.user_delete_failed)
         exit(1)
-    print(f"ユーザーを削除しました: {user_id}")
+    print(messages.user_deleted.format(id=user_id))

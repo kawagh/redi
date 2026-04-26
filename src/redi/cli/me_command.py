@@ -1,20 +1,27 @@
 import argparse
 
 from redi.cli._common import resolve_alias
+from redi.i18n import messages
 from redi.api.me import read_my_account, update_my_account
 
 
 def add_me_parser(subparsers: argparse._SubParsersAction) -> None:
-    me_parser = subparsers.add_parser("me", help="自分のアカウント情報 詳細/更新")
-    me_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    me_parser = subparsers.add_parser("me", help=messages.arg_help_me_command)
+    me_parser.add_argument(
+        "--full", action="store_true", help=messages.arg_help_full_json
+    )
     me_subparsers = me_parser.add_subparsers(dest="me_command")
 
     me_update_parser = me_subparsers.add_parser(
-        "update", aliases=["u"], help="自分のアカウント情報を更新"
+        "update", aliases=["u"], help=messages.arg_help_me_update
     )
-    me_update_parser.add_argument("--firstname", "-f", help="名")
-    me_update_parser.add_argument("--lastname", "-l", help="姓")
-    me_update_parser.add_argument("--mail", "-m", help="メールアドレス")
+    me_update_parser.add_argument(
+        "--firstname", "-f", help=messages.arg_help_user_firstname
+    )
+    me_update_parser.add_argument(
+        "--lastname", "-l", help=messages.arg_help_user_lastname
+    )
+    me_update_parser.add_argument("--mail", "-m", help=messages.arg_help_user_mail)
 
 
 def handle_me(args: argparse.Namespace) -> None:

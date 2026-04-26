@@ -5,6 +5,7 @@ import requests
 
 from redi.client import client
 from redi.config import redmine_url
+from redi.i18n import messages
 
 
 def create_version(
@@ -32,11 +33,15 @@ def create_version(
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("バージョンの作成に失敗しました")
+        print(messages.version_create_failed)
         exit(1)
     created = response.json()["version"]
     print(
-        f"バージョンを作成しました: {created['id']} {created['name']} {redmine_url}/versions/{created['id']}"
+        messages.version_created.format(
+            id=created["id"],
+            name=created["name"],
+            url=f"{redmine_url}/versions/{created['id']}",
+        )
     )
 
 
@@ -60,7 +65,7 @@ def update_version(
     if sharing:
         version_data["sharing"] = sharing
     if len(version_data) == 0:
-        print("更新をキャンセルしました")
+        print(messages.update_canceled)
         exit()
     response = client.put(
         f"/versions/{version_id}.json", json={"version": version_data}
@@ -70,15 +75,19 @@ def update_version(
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("バージョンの更新に失敗しました")
+        print(messages.version_update_failed)
         exit(1)
-    print(f"バージョンを更新しました: {version_id} {redmine_url}/versions/{version_id}")
+    print(
+        messages.version_updated.format(
+            id=version_id, url=f"{redmine_url}/versions/{version_id}"
+        )
+    )
 
 
 def fetch_version(version_id: str) -> dict:
     response = client.get(f"/versions/{version_id}.json")
     if response.status_code == 404:
-        print(f"バージョンが見つかりません: {version_id}")
+        print(messages.version_not_found.format(id=version_id))
         exit(1)
     response.raise_for_status()
     return response.json()["version"]
@@ -101,11 +110,15 @@ def read_version(version_id: str, full: bool = False, web: bool = False) -> None
     )
     project = version.get("project")
     if project:
-        lines.append(f"プロジェクト: {project.get('id')} {project.get('name', '')}")
+        lines.append(
+            messages.label_project_field.format(
+                id=project.get("id"), name=project.get("name", "")
+            )
+        )
     if version.get("due_date"):
-        lines.append(f"期日: {version['due_date']}")
+        lines.append(messages.label_due_date_field.format(value=version["due_date"]))
     if version.get("sharing"):
-        lines.append(f"共有: {version['sharing']}")
+        lines.append(messages.label_sharing_field.format(value=version["sharing"]))
     if version.get("description"):
         lines.append("")
         lines.append(version["description"])
@@ -115,16 +128,16 @@ def read_version(version_id: str, full: bool = False, web: bool = False) -> None
 def delete_version(version_id: str) -> None:
     response = client.delete(f"/versions/{version_id}.json")
     if response.status_code == 404:
-        print(f"バージョンが見つかりません: {version_id}")
+        print(messages.version_not_found.format(id=version_id))
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("バージョンの削除に失敗しました")
+        print(messages.version_delete_failed)
         exit(1)
-    print(f"バージョンを削除しました: {version_id}")
+    print(messages.version_deleted.format(id=version_id))
 
 
 def fetch_versions(project_id: str) -> list[dict]:

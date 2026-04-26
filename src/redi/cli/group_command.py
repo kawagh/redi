@@ -1,6 +1,7 @@
 import argparse
 
 from redi.cli._common import confirm_delete, resolve_alias
+from redi.i18n import messages
 from redi.api.group import (
     add_group_user,
     create_group,
@@ -16,63 +17,65 @@ from redi.api.group import (
 def add_group_parser(subparsers: argparse._SubParsersAction) -> None:
     group_parser = subparsers.add_parser(
         "group",
-        help="list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除",
+        help=messages.arg_help_group_command,
     )
     group_parser.add_argument(
-        "--full", action="store_true", help="JSON形式で全情報を出力"
+        "--full", action="store_true", help=messages.arg_help_full_json
     )
     group_subparsers = group_parser.add_subparsers(dest="group_command")
-    group_subparsers.add_parser("list", aliases=["l"], help="グループ一覧")
-    g_view_parser = group_subparsers.add_parser(
-        "view", aliases=["v"], help="グループ詳細"
+    group_subparsers.add_parser(
+        "list", aliases=["l"], help=messages.arg_help_group_list
     )
-    g_view_parser.add_argument("group_id", help="グループID")
+    g_view_parser = group_subparsers.add_parser(
+        "view", aliases=["v"], help=messages.arg_help_group_view
+    )
+    g_view_parser.add_argument("group_id", help=messages.arg_help_group_view_id)
     g_view_parser.add_argument(
-        "--full", action="store_true", help="JSON形式で全情報を出力"
+        "--full", action="store_true", help=messages.arg_help_full_json
     )
     g_create_parser = group_subparsers.add_parser(
-        "create", aliases=["c"], help="グループ作成（管理者権限が必要）"
+        "create", aliases=["c"], help=messages.arg_help_group_create
     )
-    g_create_parser.add_argument("name", help="グループ名")
+    g_create_parser.add_argument("name", help=messages.arg_help_group_name)
     g_create_parser.add_argument(
         "--user_id",
         type=int,
         action="append",
         dest="user_ids",
-        help="所属させるユーザーID（複数指定可）",
+        help=messages.arg_help_group_user_id,
     )
     g_update_parser = group_subparsers.add_parser(
-        "update", aliases=["u"], help="グループ更新（管理者権限が必要）"
+        "update", aliases=["u"], help=messages.arg_help_group_update
     )
-    g_update_parser.add_argument("group_id", help="グループID")
-    g_update_parser.add_argument("--name", "-n", help="グループ名")
+    g_update_parser.add_argument("group_id", help=messages.arg_help_group_update_id)
+    g_update_parser.add_argument("--name", "-n", help=messages.arg_help_group_name_opt)
     g_update_parser.add_argument(
         "--user_id",
         type=int,
         action="append",
         dest="user_ids",
-        help="所属ユーザーIDを指定（複数指定可、既存の所属ユーザーを置き換え）",
+        help=messages.arg_help_group_user_id_replace,
     )
     g_update_parser.add_argument(
         "--add-user",
         type=int,
         action="append",
         dest="add_user_ids",
-        help="グループに追加するユーザーID（複数指定可）",
+        help=messages.arg_help_group_add_user,
     )
     g_update_parser.add_argument(
         "--remove-user",
         type=int,
         action="append",
         dest="remove_user_ids",
-        help="グループから削除するユーザーID（複数指定可）",
+        help=messages.arg_help_group_remove_user,
     )
     g_delete_parser = group_subparsers.add_parser(
-        "delete", aliases=["d"], help="グループ削除（管理者権限が必要）"
+        "delete", aliases=["d"], help=messages.arg_help_group_delete
     )
-    g_delete_parser.add_argument("group_id", help="グループID")
+    g_delete_parser.add_argument("group_id", help=messages.arg_help_group_delete_id)
     g_delete_parser.add_argument(
-        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+        "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
 
 
@@ -97,13 +100,15 @@ def handle_group(args: argparse.Namespace) -> None:
         for user_id in args.remove_user_ids or []:
             remove_group_user(args.group_id, user_id)
         if not should_update and not args.add_user_ids and not args.remove_user_ids:
-            print("更新をキャンセルしました")
+            print(messages.update_canceled)
             exit()
         return
     if cmd == "delete":
         if not args.yes:
             group = fetch_group(args.group_id)
-            confirm_delete(f"削除するグループ: {group['id']} {group['name']}")
+            confirm_delete(
+                messages.delete_target_group.format(id=group["id"], name=group["name"])
+            )
         delete_group(args.group_id)
         return
     if cmd == "list" or cmd is None:

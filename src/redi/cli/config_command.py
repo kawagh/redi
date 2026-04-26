@@ -7,41 +7,56 @@ from redi.config import (
     show_config,
     update_config,
 )
+from redi.i18n import messages
 
 
 def add_config_parser(subparsers: argparse._SubParsersAction) -> None:
     c_parser = subparsers.add_parser(
-        "config", aliases=["c"], help="設定表示/更新/プロファイル作成"
+        "config", aliases=["c"], help=messages.arg_help_config_command
     )
-    c_parser.add_argument("--full", action="store_true", help="全プロファイルを表示")
+    c_parser.add_argument(
+        "--full", action="store_true", help=messages.arg_help_full_profiles
+    )
     c_subparsers = c_parser.add_subparsers(dest="config_command")
-    c_update_parser = c_subparsers.add_parser("update", aliases=["u"], help="設定更新")
+    c_update_parser = c_subparsers.add_parser(
+        "update", aliases=["u"], help=messages.arg_help_config_update
+    )
     c_update_parser.add_argument(
         "profile_name",
         nargs="?",
-        help="更新対象のプロファイル名（省略時はdefault_profile）",
+        help=messages.arg_help_config_profile_name_optional,
     )
-    c_update_parser.add_argument("--project_id", help="デフォルトプロジェクトIDを設定")
-    c_update_parser.add_argument("--wiki_project_id", help="Wiki用プロジェクトIDを設定")
-    c_update_parser.add_argument("--editor", help="エディタを設定")
-    c_update_parser.add_argument("--api_key", help="Redmine APIキーを設定")
-    c_update_parser.add_argument("--url", help="Redmine URLを設定")
     c_update_parser.add_argument(
-        "--default_profile", help="デフォルトプロファイルを設定"
+        "--project_id", help=messages.arg_help_config_set_default_project_id
+    )
+    c_update_parser.add_argument(
+        "--wiki_project_id", help=messages.arg_help_config_set_wiki_project_id
+    )
+    c_update_parser.add_argument("--editor", help=messages.arg_help_config_set_editor)
+    c_update_parser.add_argument("--api_key", help=messages.arg_help_config_set_api_key)
+    c_update_parser.add_argument("--url", help=messages.arg_help_config_set_url)
+    c_update_parser.add_argument(
+        "--default_profile", help=messages.arg_help_config_set_default_profile
     )
     c_create_parser = c_subparsers.add_parser(
-        "create", aliases=["c"], help="プロファイル作成"
+        "create", aliases=["c"], help=messages.arg_help_config_create
     )
-    c_create_parser.add_argument("profile_name", help="作成するプロファイル名")
-    c_create_parser.add_argument("--url", help="Redmine URL")
-    c_create_parser.add_argument("--api_key", help="Redmine APIキー")
-    c_create_parser.add_argument("--project_id", help="デフォルトプロジェクトID")
-    c_create_parser.add_argument("--wiki_project_id", help="Wiki用プロジェクトID")
-    c_create_parser.add_argument("--editor", help="エディタ")
+    c_create_parser.add_argument(
+        "profile_name", help=messages.arg_help_config_create_profile_name
+    )
+    c_create_parser.add_argument("--url", help=messages.arg_help_config_url)
+    c_create_parser.add_argument("--api_key", help=messages.arg_help_config_api_key)
+    c_create_parser.add_argument(
+        "--project_id", help=messages.arg_help_config_default_project_id
+    )
+    c_create_parser.add_argument(
+        "--wiki_project_id", help=messages.arg_help_config_wiki_project_id
+    )
+    c_create_parser.add_argument("--editor", help=messages.arg_help_config_editor)
     c_create_parser.add_argument(
         "--set_default",
         action="store_true",
-        help="作成したプロファイルをdefault_profileに設定",
+        help=messages.arg_help_config_set_default_flag,
     )
 
 
@@ -58,43 +73,51 @@ def handle_config(args: argparse.Namespace) -> None:
         )
         if not result.created:
             exit(1)
-        print(f"profile '{args.profile_name}' を作成しました")
+        print(messages.profile_created.format(name=args.profile_name))
         if result.set_as_default:
-            print(f"default_profileを {args.profile_name} に設定しました")
+            print(messages.default_profile_set.format(name=args.profile_name))
         elif args.set_default and set_default_profile(args.profile_name):
-            print(f"default_profileを {args.profile_name} に設定しました")
+            print(messages.default_profile_set.format(name=args.profile_name))
         return
     if cmd != "update":
         show_config(full=args.full)
         return
     updated = False
     profile = args.profile_name
-    profile_suffix = f"（profile: {profile}）" if profile else ""
+    profile_suffix = (
+        messages.config_profile_suffix.format(name=profile) if profile else ""
+    )
     if args.project_id:
         update_config("default_project_id", args.project_id, profile)
-        print(f"default_project_idを {args.project_id} に設定しました{profile_suffix}")
+        print(
+            messages.default_project_id_set.format(
+                value=args.project_id, suffix=profile_suffix
+            )
+        )
         updated = True
     if args.wiki_project_id:
         update_config("wiki_project_id", args.wiki_project_id, profile)
         print(
-            f"wiki_project_idを {args.wiki_project_id} に設定しました{profile_suffix}"
+            messages.wiki_project_id_set.format(
+                value=args.wiki_project_id, suffix=profile_suffix
+            )
         )
         updated = True
     if args.editor:
         update_config("editor", args.editor, profile)
-        print(f"editorを {args.editor} に設定しました{profile_suffix}")
+        print(messages.editor_set.format(value=args.editor, suffix=profile_suffix))
         updated = True
     if args.api_key:
         update_config("redmine_api_key", args.api_key, profile)
-        print(f"redmine_api_keyを設定しました{profile_suffix}")
+        print(messages.redmine_api_key_set.format(suffix=profile_suffix))
         updated = True
     if args.url:
         update_config("redmine_url", args.url, profile)
-        print(f"redmine_urlを {args.url} に設定しました{profile_suffix}")
+        print(messages.redmine_url_set.format(value=args.url, suffix=profile_suffix))
         updated = True
     if args.default_profile:
         if set_default_profile(args.default_profile):
-            print(f"default_profileを {args.default_profile} に設定しました")
+            print(messages.default_profile_set.format(name=args.default_profile))
         updated = True
     if not updated:
         show_config()

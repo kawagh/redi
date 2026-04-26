@@ -1,6 +1,7 @@
 import argparse
 
 from redi.cli._common import confirm_delete_with_identifier, resolve_alias
+from redi.i18n import messages
 from redi.api.project import (
     archive_project,
     create_project,
@@ -17,69 +18,71 @@ def add_project_parser(subparsers: argparse._SubParsersAction) -> None:
     p_parser = subparsers.add_parser(
         "project",
         aliases=["p"],
-        help="list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除",
+        help=messages.arg_help_project_command,
     )
-    p_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
+    p_parser.add_argument(
+        "--full", action="store_true", help=messages.arg_help_full_json
+    )
     p_subparsers = p_parser.add_subparsers(dest="project_command")
-    p_subparsers.add_parser("list", aliases=["l"], help="プロジェクト一覧")
+    p_subparsers.add_parser("list", aliases=["l"], help=messages.arg_help_project_list)
     p_view_parser = p_subparsers.add_parser(
-        "view", aliases=["v"], help="プロジェクト詳細"
+        "view", aliases=["v"], help=messages.arg_help_project_view
     )
-    p_view_parser.add_argument("project_id", help="プロジェクトID")
+    p_view_parser.add_argument("project_id", help=messages.arg_help_project_view_id)
     p_view_parser.add_argument(
         "--include",
-        help="追加情報（trackers,issue_categories,enabled_modules,time_entry_activities,issue_custom_fields）",
+        help=messages.arg_help_project_include,
     )
     p_view_parser.add_argument(
-        "--full", action="store_true", help="JSON形式で全情報を出力"
+        "--full", action="store_true", help=messages.arg_help_full_json
     )
     p_view_parser.add_argument(
-        "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
+        "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
     p_create_parser = p_subparsers.add_parser(
-        "create", aliases=["c"], help="プロジェクト作成"
+        "create", aliases=["c"], help=messages.arg_help_project_create
     )
-    p_create_parser.add_argument("name", help="プロジェクト名")
+    p_create_parser.add_argument("name", help=messages.arg_help_project_name)
     p_create_parser.add_argument(
-        "identifier", help="プロジェクト識別子（英数字とハイフン）"
+        "identifier", help=messages.arg_help_project_identifier
     )
-    p_create_parser.add_argument("--description", "-d", help="説明")
+    p_create_parser.add_argument(
+        "--description", "-d", help=messages.arg_help_description
+    )
     p_create_parser.add_argument(
         "--is_public",
         choices=["true", "false"],
-        help="公開設定",
+        help=messages.arg_help_project_is_public,
     )
-    p_create_parser.add_argument("--parent_id", help="親プロジェクトID")
-    p_create_parser.add_argument(
-        "--tracker_ids", help="トラッカーID（カンマ区切り。例: 1,2,3）"
-    )
+    p_create_parser.add_argument("--parent_id", help=messages.arg_help_parent_id)
+    p_create_parser.add_argument("--tracker_ids", help=messages.arg_help_tracker_ids)
     p_delete_parser = p_subparsers.add_parser(
-        "delete", aliases=["d"], help="プロジェクト削除"
+        "delete", aliases=["d"], help=messages.arg_help_project_delete
     )
-    p_delete_parser.add_argument("project_id", help="プロジェクトID")
+    p_delete_parser.add_argument("project_id", help=messages.arg_help_project_delete_id)
     p_delete_parser.add_argument(
-        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+        "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
     p_update_parser = p_subparsers.add_parser(
-        "update", aliases=["u"], help="プロジェクト更新"
+        "update", aliases=["u"], help=messages.arg_help_project_update
     )
-    p_update_parser.add_argument("project_id", help="プロジェクトID")
-    p_update_parser.add_argument("--name", "-n", help="プロジェクト名")
-    p_update_parser.add_argument("--description", "-d", help="説明")
+    p_update_parser.add_argument("project_id", help=messages.arg_help_project_update_id)
+    p_update_parser.add_argument("--name", "-n", help=messages.arg_help_project_name)
+    p_update_parser.add_argument(
+        "--description", "-d", help=messages.arg_help_description
+    )
     p_update_parser.add_argument(
         "--is_public",
         choices=["true", "false"],
-        help="公開設定",
+        help=messages.arg_help_project_is_public,
     )
-    p_update_parser.add_argument("--parent_id", help="親プロジェクトID")
-    p_update_parser.add_argument(
-        "--tracker_ids", help="トラッカーID（カンマ区切り。例: 1,2,3）"
-    )
+    p_update_parser.add_argument("--parent_id", help=messages.arg_help_parent_id)
+    p_update_parser.add_argument("--tracker_ids", help=messages.arg_help_tracker_ids)
     p_update_parser.add_argument(
         "--archive",
         action=argparse.BooleanOptionalAction,
         default=None,
-        help="アーカイブ (--no-archive で解除)",
+        help=messages.arg_help_project_archive,
     )
 
 
@@ -111,12 +114,16 @@ def handle_project(args: argparse.Namespace) -> None:
         if not args.yes:
             project = fetch_project(args.project_id)
             summary = (
-                f"削除するプロジェクト: {project['id']} {project['name']} "
-                f"(identifier: {project['identifier']})\n"
-                "**この操作は配下のイシュー等を含めて削除します**"
+                messages.delete_target_project.format(
+                    id=project["id"],
+                    name=project["name"],
+                    identifier=project["identifier"],
+                )
+                + "\n"
+                + messages.delete_project_warning
             )
             confirm_delete_with_identifier(
-                summary, project["identifier"], "プロジェクト識別子"
+                summary, project["identifier"], messages.label_project_identifier
             )
         delete_project(args.project_id)
     elif cmd == "update":
@@ -147,7 +154,7 @@ def handle_project(args: argparse.Namespace) -> None:
         elif args.archive is False:
             unarchive_project(args.project_id)
         elif not should_update:
-            print("更新をキャンセルしました")
+            print(messages.update_canceled)
             exit()
     elif cmd == "list" or cmd is None:
         list_projects(full=args.full)

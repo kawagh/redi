@@ -1,6 +1,7 @@
 import json
 
 from redi.client import client
+from redi.i18n import messages
 
 
 def list_news(project_id: str | None = None, full: bool = False) -> None:
@@ -10,7 +11,7 @@ def list_news(project_id: str | None = None, full: bool = False) -> None:
         path = "/news.json"
     response = client.get(path)
     if response.status_code == 404:
-        print(f"プロジェクトが見つかりません: {project_id}")
+        print(messages.project_not_found.format(id=project_id))
         exit(1)
     response.raise_for_status()
     news_list = response.json()["news"]

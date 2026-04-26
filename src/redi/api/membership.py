@@ -3,6 +3,7 @@ import json
 import requests
 
 from redi.client import client
+from redi.i18n import messages
 
 
 def list_memberships(project_id: str, full: bool = False) -> None:
@@ -27,7 +28,7 @@ def fetch_project_users(project_id: str) -> list[dict]:
 def fetch_membership(membership_id: str) -> dict:
     response = client.get(f"/memberships/{membership_id}.json")
     if response.status_code == 404:
-        print(f"メンバーシップが見つかりません: {membership_id}")
+        print(messages.membership_not_found.format(id=membership_id))
         exit(1)
     response.raise_for_status()
     return response.json()["membership"]
@@ -41,12 +42,16 @@ def read_membership(membership_id: str, full: bool = False) -> None:
     lines = [_format_membership_line(membership)]
     project = membership.get("project")
     if project:
-        lines.append(f"プロジェクト: {project.get('id')} {project.get('name', '')}")
+        lines.append(
+            messages.label_project_field.format(
+                id=project.get("id"), name=project.get("name", "")
+            )
+        )
     roles = membership.get("roles") or []
     if roles:
-        lines.append("ロール:")
+        lines.append(messages.label_roles_header)
         for r in roles:
-            inherited = " (継承)" if r.get("inherited") else ""
+            inherited = messages.label_inherited_suffix if r.get("inherited") else ""
             lines.append(f"  {r.get('id')} {r.get('name', '')}{inherited}")
     print("\n".join(lines))
 
@@ -63,7 +68,7 @@ def create_membership(
     elif group_id is not None:
         data["user_id"] = group_id
     else:
-        print("user_id または group_id を指定してください")
+        print(messages.user_or_group_id_required)
         exit(1)
     response = client.post(
         f"/projects/{project_id}/memberships.json", json={"membership": data}
@@ -73,15 +78,15 @@ def create_membership(
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("メンバーシップの作成に失敗しました")
+        print(messages.membership_create_failed)
         exit(1)
     created = response.json()["membership"]
-    print(f"メンバーシップを作成しました: {_format_membership_line(created)}")
+    print(messages.membership_created.format(line=_format_membership_line(created)))
 
 
 def update_membership(membership_id: str, role_ids: list[int]) -> None:
     if not role_ids:
-        print("更新をキャンセルしました")
+        print(messages.update_canceled)
         exit()
     response = client.put(
         f"/memberships/{membership_id}.json",
@@ -92,24 +97,24 @@ def update_membership(membership_id: str, role_ids: list[int]) -> None:
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("メンバーシップの更新に失敗しました")
+        print(messages.membership_update_failed)
         exit(1)
-    print(f"メンバーシップを更新しました: {membership_id}")
+    print(messages.membership_updated.format(id=membership_id))
 
 
 def delete_membership(membership_id: str) -> None:
     response = client.delete(f"/memberships/{membership_id}.json")
     if response.status_code == 404:
-        print(f"メンバーシップが見つかりません: {membership_id}")
+        print(messages.membership_not_found.format(id=membership_id))
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("メンバーシップの削除に失敗しました")
+        print(messages.membership_delete_failed)
         exit(1)
-    print(f"メンバーシップを削除しました: {membership_id}")
+    print(messages.membership_deleted.format(id=membership_id))
 
 
 def _format_membership_line(membership: dict) -> str:

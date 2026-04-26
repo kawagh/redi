@@ -13,6 +13,7 @@ _default_config = {
     "redmine_url": "",
     "redmine_api_key": "",
     "editor": "vim",
+    "language": "en",
 }
 
 
@@ -73,6 +74,7 @@ redmine_api_key = merged_config["redmine_api_key"]
 default_project_id: str | None = merged_config.get("default_project_id")
 wiki_project_id: str | None = merged_config.get("wiki_project_id")
 editor: str = merged_config["editor"]
+language: str = merged_config["language"]
 
 
 def check_config() -> None:
@@ -135,7 +137,9 @@ def create_profile(
         doc = tomlkit.document()
 
     if profile_name in doc:
-        print(f"profile '{profile_name}' は既に存在します")
+        from redi.i18n import messages
+
+        print(messages.profile_already_exists.format(name=profile_name))
         return CreateProfileResult(created=False, set_as_default=False)
 
     table = tomlkit.table()
@@ -189,6 +193,7 @@ def show_config(full: bool = False, config_path: Path | None = None) -> None:
     doc["default_project_id"] = default_project_id or ""
     doc["wiki_project_id"] = wiki_project_id or ""
     doc["editor"] = editor
+    doc["language"] = language
     print(tomlkit.dumps(doc).rstrip())
 
 

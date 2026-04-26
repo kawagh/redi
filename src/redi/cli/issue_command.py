@@ -33,6 +33,7 @@ from redi.api.membership import fetch_project_users
 from redi.api.time_entry import create_time_entry
 from redi.api.tracker import fetch_trackers
 from redi.api.version import fetch_versions
+from redi.i18n import messages
 
 from redi.api.custom_field import (
     fetch_custom_fields,
@@ -45,204 +46,240 @@ def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_parser = subparsers.add_parser(
         "issue",
         aliases=["i"],
-        help="list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, comment(co): コメント, delete(d): 削除",
+        help=messages.arg_help_issue_command,
     )
-    i_parser.add_argument("--full", action="store_true", help="JSON形式で全情報を出力")
-    i_parser.add_argument("--project_id", "-p", help="プロジェクトIDでフィルタリング")
+    i_parser.add_argument(
+        "--full", action="store_true", help=messages.arg_help_full_json
+    )
+    i_parser.add_argument(
+        "--project_id", "-p", help=messages.arg_help_issue_filter_project
+    )
     i_parser.add_argument(
         "--version",
         "-v",
-        help="対象バージョンIDでフィルタリング",
+        help=messages.arg_help_issue_filter_version,
     )
     i_parser.add_argument(
         "--assigned_to",
         "-a",
-        help="担当者でフィルタリング（ユーザーIDまたは'me'）",
+        help=messages.arg_help_issue_filter_assigned_to,
     )
     i_parser.add_argument(
         "--status_id",
         "-s",
-        help="ステータスIDでフィルタリング（'open'/'closed'/'*' も可）",
+        help=messages.arg_help_issue_filter_status,
     )
-    i_parser.add_argument("--tracker_id", "-t", help="トラッカーIDでフィルタリング")
-    i_parser.add_argument("--priority_id", help="優先度IDでフィルタリング")
+    i_parser.add_argument(
+        "--tracker_id", "-t", help=messages.arg_help_issue_filter_tracker
+    )
+    i_parser.add_argument("--priority_id", help=messages.arg_help_issue_filter_priority)
     i_parser.add_argument(
         "--query_id",
         "-q",
-        help="カスタムクエリIDでフィルタリング（`redi query`で取得可）",
+        help=messages.arg_help_issue_filter_query,
     )
-    i_parser.add_argument("--limit", "-l", type=int, help="取得件数")
-    i_parser.add_argument("--offset", "-o", type=int, help="オフセット")
+    i_parser.add_argument("--limit", "-l", type=int, help=messages.arg_help_limit)
+    i_parser.add_argument("--offset", "-o", type=int, help=messages.arg_help_offset)
     i_subparsers = i_parser.add_subparsers(dest="issue_command")
-    i_subparsers.add_parser("list", aliases=["l"], help="イシュー一覧")
-    i_view_parser = i_subparsers.add_parser("view", aliases=["v"], help="イシュー詳細")
-    i_view_parser.add_argument("issue_id", help="イシューID")
+    i_subparsers.add_parser("list", aliases=["l"], help=messages.arg_help_issue_list)
+    i_view_parser = i_subparsers.add_parser(
+        "view", aliases=["v"], help=messages.arg_help_issue_view
+    )
+    i_view_parser.add_argument("issue_id", help=messages.arg_help_issue_view_id)
     i_view_parser.add_argument(
         "--include",
-        help="追加情報（children,attachments,relations,changesets,journals,watchers,allowed_statuses）",
+        help=messages.arg_help_issue_include,
     )
     i_view_parser.add_argument(
-        "--full", action="store_true", help="JSON形式で全情報を出力"
+        "--full", action="store_true", help=messages.arg_help_full_json
     )
     i_view_parser.add_argument(
-        "--web", "-w", action="store_true", help="ブラウザでRedmineのページを開く"
+        "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
     i_create_parser = i_subparsers.add_parser(
-        "create", aliases=["c"], help="イシュー作成"
+        "create", aliases=["c"], help=messages.arg_help_issue_create
     )
     i_create_parser.add_argument(
-        "subject", nargs="?", help="イシューの題名（省略で対話的に入力）"
+        "subject", nargs="?", help=messages.arg_help_issue_subject_arg
     )
-    i_create_parser.add_argument("--project_id", "-p", help="プロジェクトID")
-    i_create_parser.add_argument("--tracker_id", "-t", help="トラッカーID")
-    i_create_parser.add_argument("--priority_id", help="優先度ID")
-    i_create_parser.add_argument("--assigned_to_id", "-a", help="担当者ID")
+    i_create_parser.add_argument(
+        "--project_id", "-p", help=messages.arg_help_project_id
+    )
+    i_create_parser.add_argument(
+        "--tracker_id", "-t", help=messages.arg_help_issue_tracker_id
+    )
+    i_create_parser.add_argument(
+        "--priority_id", help=messages.arg_help_issue_priority_id
+    )
+    i_create_parser.add_argument(
+        "--assigned_to_id", "-a", help=messages.arg_help_issue_assigned_to_id
+    )
     i_create_parser.add_argument(
         "--description",
         "-d",
         nargs="?",
         const="",
         default=None,
-        help="説明（フラグ未指定でエディタ起動）",
+        help=messages.arg_help_issue_description,
     )
     i_create_parser.add_argument(
         "--custom_fields",
-        help="カスタムフィールド（id=value形式、カンマ区切り。例: 1=foo,2=bar）",
+        help=messages.arg_help_custom_fields,
     )
     i_update_parser = i_subparsers.add_parser(
-        "update", aliases=["u"], help="イシュー更新"
+        "update", aliases=["u"], help=messages.arg_help_issue_update
     )
     i_update_parser.add_argument(
-        "issue_id", nargs="?", help="イシューID（省略で対話的に選択）"
+        "issue_id", nargs="?", help=messages.arg_help_issue_update_id
     )
-    i_update_parser.add_argument("--subject", "-s", help="題名")
+    i_update_parser.add_argument(
+        "--subject", "-s", help=messages.arg_help_issue_subject_opt
+    )
     i_update_parser.add_argument(
         "--description",
         "-d",
         nargs="?",
         const="",
         default=None,
-        help="説明（値省略でエディタ起動）",
-    )
-    i_update_parser.add_argument("--tracker_id", "-t", help="トラッカーID")
-    i_update_parser.add_argument("--status_id", help="ステータスID")
-    i_update_parser.add_argument("--priority_id", help="優先度ID")
-    i_update_parser.add_argument("--assigned_to_id", "-a", help="担当者ID")
-    i_update_parser.add_argument("--fixed_version_id", help="対象バージョンID")
-    i_update_parser.add_argument(
-        "--parent_issue_id", help="親チケットID（空文字で解除）"
+        help=messages.arg_help_issue_update_description,
     )
     i_update_parser.add_argument(
-        "--start_date", help="開始日（YYYY-MM-DD、空文字で解除）"
+        "--tracker_id", "-t", help=messages.arg_help_issue_update_tracker_id
     )
-    i_update_parser.add_argument("--due_date", help="期日（YYYY-MM-DD、空文字で解除）")
-    i_update_parser.add_argument("--done_ratio", type=int, help="進捗率（0-100）")
+    i_update_parser.add_argument("--status_id", help=messages.arg_help_issue_status_id)
     i_update_parser.add_argument(
-        "--estimated_hours", type=float, help="予定工数（例: 1.5）"
+        "--priority_id", help=messages.arg_help_issue_priority_id
     )
-    i_update_parser.add_argument("--notes", "-n", help="コメント")
+    i_update_parser.add_argument(
+        "--assigned_to_id", "-a", help=messages.arg_help_issue_assigned_to_id
+    )
+    i_update_parser.add_argument(
+        "--fixed_version_id", help=messages.arg_help_issue_fixed_version_id
+    )
+    i_update_parser.add_argument(
+        "--parent_issue_id", help=messages.arg_help_issue_parent
+    )
+    i_update_parser.add_argument(
+        "--start_date", help=messages.arg_help_issue_start_date
+    )
+    i_update_parser.add_argument("--due_date", help=messages.arg_help_issue_due_date)
+    i_update_parser.add_argument(
+        "--done_ratio", type=int, help=messages.arg_help_issue_done_ratio
+    )
+    i_update_parser.add_argument(
+        "--estimated_hours", type=float, help=messages.arg_help_issue_estimated_hours
+    )
+    i_update_parser.add_argument("--notes", "-n", help=messages.arg_help_issue_notes)
     i_update_parser.add_argument(
         "--custom_fields",
-        help="カスタムフィールド（id=value形式、カンマ区切り。例: 1=foo,2=bar）",
+        help=messages.arg_help_custom_fields,
     )
     i_update_parser.add_argument(
         "--relate",
-        help="関係性のタイプ（relates, duplicates, blocks, precedes, follows など）",
+        help=messages.arg_help_issue_relate,
     )
-    i_update_parser.add_argument("--to", dest="relate_to", help="関係先のイシューID")
+    i_update_parser.add_argument(
+        "--to", dest="relate_to", help=messages.arg_help_issue_relate_to
+    )
     i_update_parser.add_argument(
         "--delete-relation",
         action="store_true",
-        help="関係性を削除（--to と併用）",
+        help=messages.arg_help_issue_delete_relation,
     )
     i_update_parser.add_argument(
         "--attach",
         action="append",
-        help="添付ファイルのパス（複数指定可）",
+        help=messages.arg_help_issue_attach,
     )
-    i_update_parser.add_argument("--hours", type=float, help="作業時間（例: 1.5）")
-    i_update_parser.add_argument("--activity_id", help="作業分類ID")
-    i_update_parser.add_argument("--spent_on", help="作業日（YYYY-MM-DD、省略で今日）")
-    i_update_parser.add_argument("--time_comments", help="作業時間のコメント")
+    i_update_parser.add_argument(
+        "--hours", type=float, help=messages.arg_help_issue_hours
+    )
+    i_update_parser.add_argument(
+        "--activity_id", help=messages.arg_help_issue_activity_id
+    )
+    i_update_parser.add_argument("--spent_on", help=messages.arg_help_issue_spent_on)
+    i_update_parser.add_argument(
+        "--time_comments", help=messages.arg_help_issue_time_comments
+    )
     i_update_parser.add_argument(
         "--add-watcher",
         type=int,
         action="append",
         dest="add_watcher_ids",
-        help="ウォッチャーに追加するユーザーID（複数指定可）",
+        help=messages.arg_help_issue_add_watcher,
     )
     i_update_parser.add_argument(
         "--remove-watcher",
         type=int,
         action="append",
         dest="remove_watcher_ids",
-        help="ウォッチャーから削除するユーザーID（複数指定可）",
+        help=messages.arg_help_issue_remove_watcher,
     )
     i_comment_parser = i_subparsers.add_parser(
-        "comment", aliases=["co"], help="イシューにコメント追加"
+        "comment", aliases=["co"], help=messages.arg_help_issue_comment
     )
-    i_comment_parser.add_argument("issue_id", help="イシューID")
+    i_comment_parser.add_argument("issue_id", help=messages.arg_help_issue_view_id)
     i_comment_parser.add_argument(
-        "notes", nargs="?", default="", help="コメント（省略でエディタ起動）"
+        "notes", nargs="?", default="", help=messages.arg_help_issue_comment_notes
     )
     i_delete_parser = i_subparsers.add_parser(
-        "delete", aliases=["d"], help="イシュー削除"
+        "delete", aliases=["d"], help=messages.arg_help_issue_delete
     )
-    i_delete_parser.add_argument("issue_id", help="イシューID")
+    i_delete_parser.add_argument("issue_id", help=messages.arg_help_issue_view_id)
     i_delete_parser.add_argument(
-        "-y", "--yes", action="store_true", help="確認プロンプトをスキップ"
+        "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
 
 
 def _interactive_select_issue_id() -> str:
     issues = fetch_issues(project_id=default_project_id)
     if not issues:
-        print("選択可能なイシューがありません")
+        print(messages.no_issues_available)
         exit(1)
     options: list[tuple[str, str]] = [
         (str(i["id"]), f"#{i['id']} {i['subject']}") for i in issues
     ]
     labels = dict(options)
     try:
-        issue_id = inline_choice("更新するイシューを選択", options)
+        issue_id = inline_choice(messages.prompt_select_issue_to_update, options)
     except KeyboardInterrupt:
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
-    print(f"更新するイシュー: {labels[issue_id]}")
+    print(messages.update_target_issue.format(label=labels[issue_id]))
     return issue_id
 
 
 def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
     current = fetch_issue(args.issue_id)
     field_values: list[tuple[str, str]] = [
-        ("tracker", "トラッカー (tracker)"),
-        ("subject", "題名 (subject)"),
-        ("description", "説明 (description)"),
-        ("status", "ステータス (status)"),
-        ("priority", "優先度 (priority)"),
-        ("assigned_to", "担当者 (assigned_to)"),
-        ("fixed_version", "対象バージョン (fixed_version)"),
-        ("start_date", "開始日 (start_date)"),
-        ("due_date", "期日 (due_date)"),
-        ("done_ratio", "進捗率 (done_ratio)"),
-        ("estimated_hours", "予定工数 (estimated_hours)"),
-        ("notes", "コメント (notes)"),
-        ("time_entry", "作業時間 (time_entry)"),
+        ("tracker", messages.field_tracker),
+        ("subject", messages.field_subject),
+        ("description", messages.field_description),
+        ("status", messages.field_status),
+        ("priority", messages.field_priority),
+        ("assigned_to", messages.field_assignee),
+        ("fixed_version", messages.field_fixed_version),
+        ("start_date", messages.field_start_date),
+        ("due_date", messages.field_due_date),
+        ("done_ratio", messages.field_done_ratio),
+        ("estimated_hours", messages.field_estimated_hours),
+        ("notes", messages.field_notes),
+        ("time_entry", messages.field_time_entry),
     ]
     try:
         selected = inline_checkbox(
-            "更新する項目を選択 (Spaceで選択、Enterで確定)",
+            messages.prompt_select_update_items,
             field_values,
             initial_value="description",
         )
     except KeyboardInterrupt:
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
     if not selected:
-        print("更新する項目が選択されていないためキャンセルしました")
+        print(messages.canceled_no_items_selected)
         exit(1)
     labels = dict(field_values)
-    print(f"更新する項目: {', '.join(labels[v] for v in selected)}")
+    print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
     try:
         if "tracker" in selected:
             trackers = fetch_trackers()
@@ -250,11 +287,13 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
                 (str(t["id"]), t["name"]) for t in trackers
             ]
             tracker_labels = dict(tracker_options)
-            args.tracker_id = inline_choice("トラッカー", tracker_options)
-            print(f"トラッカー: {tracker_labels[args.tracker_id]}")
+            args.tracker_id = inline_choice(
+                messages.prompt_select_tracker, tracker_options
+            )
+            print(messages.tracker_label.format(value=tracker_labels[args.tracker_id]))
         if "subject" in selected:
             args.subject = prompt(
-                "題名: ", default=current.get("subject") or ""
+                messages.prompt_subject, default=current.get("subject") or ""
             ).strip()
         if "description" in selected:
             args.description = ""
@@ -264,53 +303,71 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
                 (str(s["id"]), s["name"]) for s in statuses
             ]
             status_labels = dict(status_options)
-            args.status_id = inline_choice("ステータス", status_options)
-            print(f"ステータス: {status_labels[args.status_id]}")
+            args.status_id = inline_choice(
+                messages.prompt_select_status, status_options
+            )
+            print(messages.status_label.format(value=status_labels[args.status_id]))
         if "priority" in selected:
             priorities = fetch_issue_priorities()
             priority_options: list[tuple[str, str]] = [
                 (str(p["id"]), p["name"]) for p in priorities
             ]
             priority_labels = dict(priority_options)
-            args.priority_id = inline_choice("優先度", priority_options)
-            print(f"優先度: {priority_labels[args.priority_id]}")
+            args.priority_id = inline_choice(
+                messages.prompt_select_priority, priority_options
+            )
+            print(
+                messages.priority_label.format(value=priority_labels[args.priority_id])
+            )
         if "assigned_to" in selected:
             project_id = (current.get("project") or {}).get("id")
             if not project_id:
-                print("プロジェクトが特定できないためキャンセルしました")
+                print(messages.canceled_no_project)
                 exit(1)
             users = fetch_project_users(str(project_id))
-            assignee_options: list[tuple[str, str]] = [("", "（担当者なし）")] + [
-                (str(u["id"]), u["name"]) for u in users
-            ]
+            assignee_options: list[tuple[str, str]] = [
+                ("", messages.prompt_select_assignee_none)
+            ] + [(str(u["id"]), u["name"]) for u in users]
             assignee_labels = dict(assignee_options)
             current_assignee_id = (current.get("assigned_to") or {}).get("id")
             default_assignee = (
                 str(current_assignee_id) if current_assignee_id is not None else ""
             )
             args.assigned_to_id = inline_choice(
-                "担当者", assignee_options, default=default_assignee
+                messages.prompt_select_assignee,
+                assignee_options,
+                default=default_assignee,
             )
-            print(f"担当者: {assignee_labels[args.assigned_to_id]}")
+            print(
+                messages.assignee_label.format(
+                    value=assignee_labels[args.assigned_to_id]
+                )
+            )
         if "fixed_version" in selected:
             project_id = (current.get("project") or {}).get("id")
             if not project_id:
-                print("プロジェクトが特定できないためキャンセルしました")
+                print(messages.canceled_no_project)
                 exit(1)
             versions = fetch_versions(str(project_id))
             version_options: list[tuple[str, str]] = [
                 (str(v["id"]), f"{v['name']} ({v['status']})") for v in versions
             ]
             version_labels = dict(version_options)
-            args.fixed_version_id = inline_choice("対象バージョン", version_options)
-            print(f"対象バージョン: {version_labels[args.fixed_version_id]}")
+            args.fixed_version_id = inline_choice(
+                messages.prompt_select_fixed_version, version_options
+            )
+            print(
+                messages.fixed_version_label.format(
+                    value=version_labels[args.fixed_version_id]
+                )
+            )
         date_validator = Validator.from_callable(
             lambda v: v == "" or bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", v)),
-            error_message="YYYY-MM-DD で入力してください（空文字でクリア）",
+            error_message=messages.error_date_format,
         )
         if "start_date" in selected:
             args.start_date = prompt(
-                "開始日（YYYY-MM-DD、空文字でクリア）: ",
+                messages.prompt_start_date,
                 default=current.get("start_date") or date.today().isoformat(),
                 validator=date_validator,
             ).strip()
@@ -327,7 +384,7 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
                 except ValueError:
                     start_date = None
             args.due_date = prompt(
-                "期日（YYYY-MM-DD、空文字でクリア）: ",
+                messages.prompt_due_date,
                 default=current.get("due_date") or date.today().isoformat(),
                 validator=DueDateValidator(start_date),
             ).strip()
@@ -338,9 +395,13 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
             current_ratio = current.get("done_ratio")
             default_ratio = str(current_ratio) if current_ratio is not None else None
             args.done_ratio = int(
-                inline_choice("進捗率", ratio_options, default=default_ratio)
+                inline_choice(
+                    messages.prompt_select_done_ratio,
+                    ratio_options,
+                    default=default_ratio,
+                )
             )
-            print(f"進捗率: {args.done_ratio}%")
+            print(messages.done_ratio_label.format(value=args.done_ratio))
         if "estimated_hours" in selected:
             current_estimated = current.get("estimated_hours")
             default_estimated = (
@@ -348,18 +409,16 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
             )
             args.estimated_hours = float(
                 prompt(
-                    "予定工数（例: 1.5 (h)）: ",
+                    messages.prompt_estimated_hours,
                     default=default_estimated,
                     validator=HourValidator(),
                 ).strip()
             )
-            print(f"予定工数: {args.estimated_hours} h")
+            print(messages.estimated_hours_label.format(value=args.estimated_hours))
         if "notes" in selected:
-            args.notes = prompt("コメント: ").strip()
+            args.notes = prompt(messages.prompt_comment).strip()
         if "time_entry" in selected:
-            hours_str = prompt(
-                "作業時間（例: 1.5 (h)）: ", validator=HourValidator()
-            ).strip()
+            hours_str = prompt(messages.prompt_hours, validator=HourValidator()).strip()
             if hours_str:
                 args.hours = float(hours_str)
             activities = fetch_time_entry_activities()
@@ -367,19 +426,23 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
                 (str(a["id"]), a["name"]) for a in activities
             ]
             activity_labels = dict(activity_options)
-            args.activity_id = inline_choice("作業分類", activity_options)
-            print(f"作業分類: {activity_labels[args.activity_id]}")
-            args.spent_on = prompt("作業日（YYYY-MM-DD、省略で今日）: ").strip() or None
-            args.time_comments = prompt("作業時間のコメント: ").strip() or None
+            args.activity_id = inline_choice(
+                messages.prompt_select_activity, activity_options
+            )
+            print(
+                messages.activity_label.format(value=activity_labels[args.activity_id])
+            )
+            args.spent_on = prompt(messages.prompt_spent_on).strip() or None
+            args.time_comments = prompt(messages.prompt_time_comments).strip() or None
     except (KeyboardInterrupt, EOFError):
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
 
 
 def _prompt_custom_field_value(cf: dict) -> str | None:
     name = cf.get("name", "")
     fmt = cf.get("field_format", "string")
-    label = f"{name}（必須）"
+    label = messages.prompt_required_field.format(name=name)
     # not support All formats
     if fmt == "list":
         possible = cf.get("possible_values") or []
@@ -393,10 +456,13 @@ def _prompt_custom_field_value(cf: dict) -> str | None:
                 value = inline_choice(label, options)
             except KeyboardInterrupt:
                 return None
-            print(f"{name}: {value}")
+            print(messages.prompt_field_value.format(name=name, value=value))
             return value
     try:
-        return prompt(f"{label}: ").strip() or None
+        return (
+            prompt(messages.prompt_custom_field_label.format(name=label)).strip()
+            or None
+        )
     except (KeyboardInterrupt, EOFError):
         return None
 
@@ -427,7 +493,7 @@ def _interactive_fill_required_custom_fields(
             continue
         value = _prompt_custom_field_value(cf)
         if value is None:
-            print("キャンセルしました")
+            print(messages.canceled)
             exit(1)
         added.append(f"{cf['id']}={value}")
     if not added:
@@ -440,7 +506,7 @@ def _interactive_fill_required_custom_fields(
 def handle_issue_create(args: argparse.Namespace) -> None:
     project_id = args.project_id or default_project_id
     if not project_id:
-        print("project_idを指定するか、default_project_idを設定してください")
+        print(messages.project_id_required)
         exit(1)
     subject = args.subject
     tracker_id = args.tracker_id
@@ -453,18 +519,20 @@ def handle_issue_create(args: argparse.Namespace) -> None:
             ]
             labels = dict(tracker_options)
             try:
-                tracker_id = inline_choice("トラッカーを選択", tracker_options)
+                tracker_id = inline_choice(
+                    messages.prompt_select_tracker, tracker_options
+                )
             except KeyboardInterrupt:
-                print("キャンセルしました")
+                print(messages.canceled)
                 exit(1)
-            print(f"トラッカー: {labels[tracker_id]}")
+            print(messages.tracker_label.format(value=labels[tracker_id]))
         try:
-            subject = prompt("題名: ").strip()
+            subject = prompt(messages.prompt_subject).strip()
         except (KeyboardInterrupt, EOFError):
-            print("キャンセルしました")
+            print(messages.canceled)
             exit(1)
         if not subject:
-            print("題名が空のためキャンセルしました")
+            print(messages.canceled_empty_subject)
             exit(1)
         # 必要なカスタムフィールドを対話的に入力
         custom_fields = _interactive_fill_required_custom_fields(
@@ -561,7 +629,7 @@ def handle_issue_update(args: argparse.Namespace) -> None:
         )
     if args.delete_relation:
         if not args.relate_to:
-            print("--delete-relation には --to が必要です")
+            print(messages.delete_relation_requires_to)
             exit(1)
         delete_relation(
             issue_id=args.issue_id,
@@ -574,7 +642,7 @@ def handle_issue_update(args: argparse.Namespace) -> None:
             relation_type=args.relate,
         )
     elif args.relate or args.relate_to:
-        print("--relate と --to は両方指定してください")
+        print(messages.relate_and_to_required)
         exit(1)
     if should_create_time_entry:
         create_time_entry(
@@ -595,7 +663,7 @@ def handle_issue_update(args: argparse.Namespace) -> None:
         and not should_create_time_entry
         and not should_update_watchers
     ):
-        print("更新内容がないので更新をキャンセルしました")
+        print(messages.update_canceled_no_changes)
         exit(1)
 
 
@@ -620,11 +688,15 @@ def handle_issue(args: argparse.Namespace) -> None:
             if notes:
                 add_note(args.issue_id, notes)
             else:
-                print("コメントが空のためキャンセルしました")
+                print(messages.canceled_empty_comment)
     elif cmd == "delete":
         if not args.yes:
             issue = fetch_issue(args.issue_id)
-            confirm_delete(f"削除するイシュー: #{issue['id']} {issue['subject']}")
+            confirm_delete(
+                messages.delete_target_issue.format(
+                    id=issue["id"], subject=issue["subject"]
+                )
+            )
         delete_issue(args.issue_id)
     elif cmd == "list" or cmd is None:
         list_issues(

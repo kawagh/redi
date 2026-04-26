@@ -1,6 +1,7 @@
 import pytest
 
 from redi.cli import _common
+from redi.i18n import messages
 
 
 class TestConfirmDelete:
@@ -24,7 +25,7 @@ class TestConfirmDelete:
         with pytest.raises(SystemExit) as exc:
             _common.confirm_delete("summary")
         assert exc.value.code == 1
-        assert "キャンセルしました" in capsys.readouterr().out
+        assert messages.canceled in capsys.readouterr().out
 
     def test_rejects_empty_input(self, monkeypatch):
         """空入力はキャンセル扱い（デフォルトNoの挙動）"""
@@ -51,7 +52,7 @@ class TestConfirmDelete:
         with pytest.raises(SystemExit) as exc:
             _common.confirm_delete("summary")
         assert exc.value.code == 1
-        assert "キャンセルしました" in capsys.readouterr().out
+        assert messages.canceled in capsys.readouterr().out
 
     def test_eof_error_cancels(self, monkeypatch):
         """EOF(Ctrl-D)もキャンセル扱い"""
@@ -101,8 +102,9 @@ class TestConfirmDeleteWithIdentifier:
             )
         assert exc.value.code == 1
         out = capsys.readouterr().out
-        assert "プロジェクト識別子が一致しません" in out
-        assert "キャンセルしました" in out
+        assert (
+            messages.canceled_field_mismatch.format(field="プロジェクト識別子") in out
+        )
 
     def test_rejects_empty_input(self, monkeypatch):
         """空入力は不一致扱い"""
@@ -125,7 +127,7 @@ class TestConfirmDeleteWithIdentifier:
                 "summary", "my-project", "プロジェクト識別子"
             )
         assert exc.value.code == 1
-        assert "キャンセルしました" in capsys.readouterr().out
+        assert messages.canceled in capsys.readouterr().out
 
     def test_prompt_message_includes_identifier_and_label(self, monkeypatch):
         """プロンプト文字列に識別子とフィールドラベルが含まれる"""

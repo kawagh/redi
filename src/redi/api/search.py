@@ -1,6 +1,7 @@
 import json
 
 from redi.client import client
+from redi.i18n import messages
 
 
 # https://www.redmine.org/projects/redmine/wiki/Rest_Search
@@ -24,7 +25,7 @@ def search(
         print(json.dumps(data, ensure_ascii=False))
         return
     if not results:
-        print("検索結果が見つかりませんでした")
+        print(messages.no_search_results)
         return
     for r in results:
         print(f"[{r.get('type', '')}] {r.get('title', '')} {r.get('url', '')}")

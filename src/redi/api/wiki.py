@@ -6,6 +6,7 @@ import requests
 
 from redi.client import client
 from redi.config import redmine_url
+from redi.i18n import messages
 
 
 # redmineで空白文字を含んでwikiのpageを作成するとURLの都合か`_`に置き換えられている
@@ -99,9 +100,13 @@ def read_wiki(
     wiki = fetch_wiki(project_id, page_title, version=version)
     if wiki is None:
         if version is not None:
-            print(f"Wikiページが見つかりません: {page_title} (version={version})")
+            print(
+                messages.wiki_page_with_version_not_found.format(
+                    title=page_title, version=version
+                )
+            )
         else:
-            print(f"Wikiページが見つかりません: {page_title}")
+            print(messages.wiki_page_not_found.format(title=page_title))
         exit(1)
     if full:
         print(json.dumps(wiki, ensure_ascii=False, indent=2))
@@ -116,22 +121,22 @@ def update_wiki(project_id: str, page_title: str, text: str) -> None:
     )
     response.raise_for_status()
     url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
-    print(f"Wikiページを更新しました: {url}")
+    print(messages.wiki_page_updated.format(url=url))
 
 
 def delete_wiki(project_id: str, page_title: str) -> None:
     response = client.delete(f"/projects/{project_id}/wiki/{page_title}.json")
     if response.status_code == 404:
-        print(f"Wikiページが見つかりません: {page_title}")
+        print(messages.wiki_page_not_found.format(title=page_title))
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("Wikiページの削除に失敗しました")
+        print(messages.wiki_page_delete_failed)
         exit(1)
-    print(f"Wikiページを削除しました: {page_title}")
+    print(messages.wiki_page_deleted.format(title=page_title))
 
 
 def create_wiki(
@@ -146,7 +151,7 @@ def create_wiki(
             == 200
         )
         if not parent_exists:
-            print(f"親ページが見つかりません: {parent_title}")
+            print(messages.parent_page_not_found.format(title=parent_title))
             return
 
     exists = (
@@ -163,6 +168,6 @@ def create_wiki(
     response.raise_for_status()
     url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
     if exists:
-        print(f"Wikiページを更新しました: {url}")
+        print(messages.wiki_page_updated.format(url=url))
     else:
-        print(f"Wikiページを作成しました: {url}")
+        print(messages.wiki_page_created.format(url=url))

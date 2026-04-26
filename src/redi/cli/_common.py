@@ -8,17 +8,18 @@ from prompt_toolkit.layout import HSplit, Layout, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 
 from redi.config import editor
+from redi.i18n import messages
 
 
 def confirm_delete(summary: str) -> None:
     print(summary)
     try:
-        confirm = prompt("削除してもよろしいですか? (yes/No): ").strip().lower()
+        confirm = prompt(messages.prompt_confirm_delete).strip().lower()
     except (KeyboardInterrupt, EOFError):
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
     if confirm != "yes":
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
 
 
@@ -28,13 +29,15 @@ def confirm_delete_with_identifier(
     print(summary)
     try:
         entered = prompt(
-            f'削除するには{field_label} "{expected}" を入力してください: '
+            messages.prompt_confirm_delete_with_identifier.format(
+                label=field_label, expected=expected
+            )
         ).strip()
     except (KeyboardInterrupt, EOFError):
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
     if entered != expected:
-        print(f"{field_label}が一致しません。キャンセルしました")
+        print(messages.canceled_field_mismatch.format(field=field_label))
         exit(1)
 
 

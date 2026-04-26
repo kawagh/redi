@@ -4,6 +4,7 @@ import requests
 
 from redi.client import client
 from redi.config import redmine_url
+from redi.i18n import messages
 
 
 def list_groups(full: bool = False) -> None:
@@ -23,10 +24,10 @@ def fetch_group(group_id: str, include: str = "") -> dict:
         params["include"] = include
     response = client.get(f"/groups/{group_id}.json", params=params)
     if response.status_code == 404:
-        print(f"グループが見つかりません: #{group_id}")
+        print(messages.group_not_found.format(id=group_id))
         exit(1)
     if response.status_code == 403:
-        print("グループの取得には管理者権限が必要です")
+        print(messages.group_get_admin_required)
         exit(1)
     response.raise_for_status()
     return response.json()["group"]
@@ -41,13 +42,13 @@ def read_group(group_id: str, full: bool = False) -> None:
     users = group.get("users") or []
     if users:
         lines.append("")
-        lines.append("ユーザー:")
+        lines.append(messages.label_users_header)
         for u in users:
             lines.append(f"  {u['id']} {u['name']}")
     memberships = group.get("memberships") or []
     if memberships:
         lines.append("")
-        lines.append("メンバーシップ:")
+        lines.append(messages.label_membership_header)
         for m in memberships:
             project = m.get("project") or {}
             roles = m.get("roles") or []
@@ -69,23 +70,23 @@ def update_group(
     if user_ids is not None:
         data["user_ids"] = user_ids
     if len(data) == 0:
-        print("更新をキャンセルしました")
+        print(messages.update_canceled)
         exit()
     response = client.put(f"/groups/{group_id}.json", json={"group": data})
     if response.status_code == 404:
-        print(f"グループが見つかりません: #{group_id}")
+        print(messages.group_not_found.format(id=group_id))
         exit(1)
     if response.status_code == 403:
-        print("グループの更新には管理者権限が必要です")
+        print(messages.group_update_admin_required)
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("グループの更新に失敗しました")
+        print(messages.group_update_failed)
         exit(1)
-    print(f"グループを更新しました: {group_id}")
+    print(messages.group_updated.format(id=group_id))
 
 
 def add_group_user(group_id: str, user_id: int) -> None:
@@ -94,55 +95,57 @@ def add_group_user(group_id: str, user_id: int) -> None:
         json={"user_id": user_id},
     )
     if response.status_code == 404:
-        print(f"グループが見つかりません: #{group_id}")
+        print(messages.group_not_found.format(id=group_id))
         exit(1)
     if response.status_code == 403:
-        print("グループへのユーザー追加には管理者権限が必要です")
+        print(messages.group_add_user_admin_required)
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("グループへのユーザー追加に失敗しました")
+        print(messages.group_add_user_failed)
         exit(1)
-    print(f"グループ {group_id} にユーザー {user_id} を追加しました")
+    print(messages.group_user_added.format(group_id=group_id, user_id=user_id))
 
 
 def remove_group_user(group_id: str, user_id: int) -> None:
     response = client.delete(f"/groups/{group_id}/users/{user_id}.json")
     if response.status_code == 404:
-        print(f"グループまたはユーザーが見つかりません: #{group_id} / #{user_id}")
+        print(
+            messages.group_or_user_not_found.format(group_id=group_id, user_id=user_id)
+        )
         exit(1)
     if response.status_code == 403:
-        print("グループからのユーザー削除には管理者権限が必要です")
+        print(messages.group_remove_user_admin_required)
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("グループからのユーザー削除に失敗しました")
+        print(messages.group_remove_user_failed)
         exit(1)
-    print(f"グループ {group_id} からユーザー {user_id} を削除しました")
+    print(messages.group_user_removed.format(group_id=group_id, user_id=user_id))
 
 
 def delete_group(group_id: str) -> None:
     response = client.delete(f"/groups/{group_id}.json")
     if response.status_code == 404:
-        print(f"グループが見つかりません: #{group_id}")
+        print(messages.group_not_found.format(id=group_id))
         exit(1)
     if response.status_code == 403:
-        print("グループの削除には管理者権限が必要です")
+        print(messages.group_delete_admin_required)
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("グループの削除に失敗しました")
+        print(messages.group_delete_failed)
         exit(1)
-    print(f"グループを削除しました: {group_id}")
+    print(messages.group_deleted.format(id=group_id))
 
 
 def create_group(name: str, user_ids: list[int] | None = None) -> None:
@@ -151,16 +154,20 @@ def create_group(name: str, user_ids: list[int] | None = None) -> None:
         group_data["user_ids"] = user_ids
     response = client.post("/groups.json", json={"group": group_data})
     if response.status_code == 403:
-        print("グループの作成には管理者権限が必要です")
+        print(messages.group_create_admin_required)
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("グループの作成に失敗しました")
+        print(messages.group_create_failed)
         exit(1)
     created = response.json()["group"]
     print(
-        f"グループを作成しました: {created['id']} {created['name']} {redmine_url}/groups/{created['id']}"
+        messages.group_created.format(
+            id=created["id"],
+            name=created["name"],
+            url=f"{redmine_url}/groups/{created['id']}",
+        )
     )

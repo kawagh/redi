@@ -6,9 +6,10 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.validation import ValidationError, Validator
 
+from redi.i18n import messages
+
 _URL_PREFIXES = ("http://", "https://")
 _DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
-_DATE_ERROR_MESSAGE = "YYYY-MM-DD で入力してください（空文字でクリア）"
 
 
 class UrlValidator(Validator):
@@ -21,14 +22,12 @@ class UrlValidator(Validator):
     def validate(self, document: Document) -> None:
         text = document.text.strip()
         if not text:
-            raise ValidationError(message="入力してください")
+            raise ValidationError(message=messages.error_input_required)
         if text.startswith(_URL_PREFIXES):
             return
         if any(p.startswith(text) for p in _URL_PREFIXES):
             return
-        raise ValidationError(
-            message="http:// または https:// で始まるURLを入力してください"
-        )
+        raise ValidationError(message=messages.error_url_format)
 
 
 class HourValidator(Validator):
@@ -37,7 +36,7 @@ class HourValidator(Validator):
     def validate(self, document: Document) -> None:
         text = document.text
         if not text.replace(".", "", 1).isdigit():
-            raise ValidationError(message="数値を入力してください")
+            raise ValidationError(message=messages.error_numeric_required)
 
 
 class DueDateValidator(Validator):
@@ -51,14 +50,16 @@ class DueDateValidator(Validator):
         if text == "":
             return
         if not _DATE_PATTERN.fullmatch(text):
-            raise ValidationError(message=_DATE_ERROR_MESSAGE)
+            raise ValidationError(message=messages.error_date_format)
         try:
             d = date.fromisoformat(text)
         except ValueError:
-            raise ValidationError(message=_DATE_ERROR_MESSAGE)
+            raise ValidationError(message=messages.error_date_format)
         if self.start_date and d < self.start_date:
             raise ValidationError(
-                message=f"開始日 {self.start_date.isoformat()} 以降の日付を入力してください"
+                message=messages.error_date_after_start.format(
+                    date=self.start_date.isoformat()
+                )
             )
 
 

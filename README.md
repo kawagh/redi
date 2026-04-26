@@ -44,6 +44,7 @@ redmine_api_key = "<your_api_key>"
 default_project_id = "1"
 wiki_project_id = "2"
 editor = "nvim"
+language = "en"  # "en" (default) or "ja"
 
 ["sub"]
 redmine_url = "https://redmine.example.com"
