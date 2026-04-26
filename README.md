@@ -7,7 +7,7 @@ redi is redmine CLI tool
 I recommend installation via [uv](https://github.com/astral-sh/uv).
 
 ```sh
-uv tool install redtile
+uv tool install redtile  # package: redtile, command: redi
 ```
 
 
