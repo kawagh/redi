@@ -198,7 +198,7 @@ uv tool install -e .
 
 ### task
 
-Common tasks (managed by [go-task](https://taskfile.dev)):
+Common tasks (managed by task runner [Task](https://taskfile.dev)):
 
 ```sh
 task check       # format → lint → typecheck → test (run before opening a PR)
