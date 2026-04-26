@@ -1,3 +1,5 @@
+import re
+
 from redi import i18n
 from redi.i18n.en import En
 from redi.i18n.ja import Ja
@@ -11,6 +13,23 @@ class TestKeysParity:
         ja_keys = {a for a in dir(Ja) if not a.startswith("_")}
         en_keys = {a for a in dir(En) if not a.startswith("_")}
         assert ja_keys == en_keys
+
+
+class TestPlaceholdersParity:
+    """ja と en は同じ format placeholder 集合を持つ"""
+
+    def test_placeholders_match_per_key(self):
+        """各 key について ja と en の {placeholder} 集合が一致する"""
+        pat = re.compile(r"{(\w+)}")
+        mismatched = []
+        for k in vars(Ja):
+            if k.startswith("_"):
+                continue
+            ja_holders = sorted(pat.findall(getattr(Ja, k)))
+            en_holders = sorted(pat.findall(getattr(En, k)))
+            if ja_holders != en_holders:
+                mismatched.append((k, ja_holders, en_holders))
+        assert not mismatched, mismatched
 
 
 class TestSelect:
