@@ -1,5 +1,6 @@
 import argparse
 import re
+from datetime import date
 
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
@@ -285,13 +286,13 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         if "start_date" in selected:
             args.start_date = prompt(
                 "開始日（YYYY-MM-DD、空文字でクリア）: ",
-                default=current.get("start_date") or "",
+                default=current.get("start_date") or date.today().isoformat(),
                 validator=date_validator,
             ).strip()
         if "due_date" in selected:
             args.due_date = prompt(
                 "期日（YYYY-MM-DD、空文字でクリア）: ",
-                default=current.get("due_date") or "",
+                default=current.get("due_date") or date.today().isoformat(),
                 validator=date_validator,
             ).strip()
         if "done_ratio" in selected:
