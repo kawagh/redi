@@ -70,7 +70,10 @@ echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
 
 ```sh
 # init
-redi init (interactive)
+redi init # interactive
+
+# run TUI
+redi --tui
 
 # config (alias: c)
 redi config
@@ -170,5 +173,4 @@ redi custom_field # list custom fields
 redi query # list custom queries
 redi search "keyword"
 redi --version
-redi --tui
 ```
