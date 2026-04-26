@@ -18,11 +18,19 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Frame
 
-from redi.api.issue import fetch_issues
+from redi.api.issue_status import fetch_issue_statuses
+from redi.api.membership import fetch_project_users
 from redi.config import default_project_id
-from redi.tui.issue_tab import ISSUE_TAB, load_journals
+from redi.tui.issue_tab import (
+    ISSUE_TAB,
+    fetch_issues_with_filter,
+    load_journals,
+    reload_with_filter,
+)
 from redi.tui.state import (
     FIXED_ROWS,
+    FilterField,
+    IssueFilter,
     Renderable,
     TuiPosition,
     TuiResult,
@@ -96,6 +104,88 @@ def _render_preview_current(state: TuiState) -> Renderable:
     return TABS[state.tab].render_preview(state)
 
 
+def _build_status_choices() -> list[tuple[str | None, str]]:
+    """フィルタモーダルのステータス選択肢。先頭の3つは Redmine の特殊指定。"""
+    choices: list[tuple[str | None, str]] = [
+        (None, "open (デフォルト)"),
+        ("*", "全て (open + closed)"),
+        ("closed", "closed のみ"),
+    ]
+    try:
+        statuses = fetch_issue_statuses()
+    except Exception:
+        statuses = []
+    for s in statuses:
+        choices.append((str(s["id"]), s.get("name", "")))
+    return choices
+
+
+def _build_assignee_choices(project_id: str | None) -> list[tuple[str | None, str]]:
+    """フィルタモーダルの担当者選択肢。先頭は特殊指定 (未設定/me/未割当)。"""
+    choices: list[tuple[str | None, str]] = [
+        (None, "(指定なし)"),
+        ("me", "自分"),
+        ("!*", "未割当"),
+    ]
+    if project_id:
+        try:
+            users = fetch_project_users(project_id)
+        except Exception:
+            users = []
+        for u in users:
+            choices.append((str(u["id"]), u.get("name", "")))
+    return choices
+
+
+def _render_filter_section(
+    state: TuiState,
+    section: FilterField,
+    title: str,
+    choices: list[tuple[str | None, str]],
+    cursor: int,
+    active_id: str | None,
+) -> Renderable:
+    focused = state.filter_focus == section
+    header_style = "bold fg:ansicyan" if focused else "bold"
+    parts: Renderable = [(header_style, f"[{title}]\n")]
+    for i, (api_val, label) in enumerate(choices):
+        is_cursor = focused and i == cursor
+        is_active = api_val == active_id
+        cursor_mark = ">" if is_cursor else " "
+        active_mark = "*" if is_active else " "
+        line_style = "reverse" if is_cursor else ("bold" if is_active else "")
+        parts.append((line_style, f" {cursor_mark} {active_mark} {label}\n"))
+    return parts
+
+
+def _render_filter_modal(state: TuiState) -> Renderable:
+    f = state.issue_tab.filter
+    parts: Renderable = []
+    parts.extend(
+        _render_filter_section(
+            state,
+            "status",
+            "ステータス",
+            state.filter_status_choices,
+            state.filter_status_cursor,
+            f.status_id,
+        )
+    )
+    parts.append(("", "\n"))
+    parts.extend(
+        _render_filter_section(
+            state,
+            "assignee",
+            "担当者",
+            state.filter_assignee_choices,
+            state.filter_assignee_cursor,
+            f.assigned_to_id,
+        )
+    )
+    parts.append(("", "\nTab/h/l:列切替 jk:移動 Enter:適用 c:全クリア Esc/f:閉じる"))
+    return parts
+
+
 def _render_help(state: TuiState) -> Renderable:
     lines = TABS[state.tab].help_lines
     width = max(len(key) for key, _ in lines) + 2
@@ -138,11 +228,7 @@ def run_issue_tui(
     position = last.position if last else TuiPosition()
     state.page_size = max(1, shutil.get_terminal_size().lines - FIXED_ROWS)
     state.issue_tab.offset = position.offset if state.tab == "issues" else 0
-    state.issue_tab.issues = fetch_issues(
-        project_id=default_project_id,
-        limit=state.page_size,
-        offset=state.issue_tab.offset,
-    )
+    state.issue_tab.issues = fetch_issues_with_filter(state, state.issue_tab.offset)
     if state.tab == "issues" and not state.issue_tab.issues:
         print("イシューが見つかりません")
         return None
@@ -175,11 +261,13 @@ def run_issue_tui(
             not state.search_mode
             and state.confirm_delete_prompt is None
             and not state.show_help
+            and not state.show_filter
         )
     )
     search_mode = Condition(lambda: state.search_mode)
     confirm_delete_mode = Condition(lambda: state.confirm_delete_prompt is not None)
     help_mode = Condition(lambda: state.show_help)
+    filter_mode = Condition(lambda: state.show_filter)
 
     def _clear_temporary_state() -> None:
         state.number_buffer = ""
@@ -341,6 +429,87 @@ def run_issue_tui(
     def _(event):
         state.show_help = False
 
+    def _open_filter_modal() -> None:
+        state.filter_status_choices = _build_status_choices()
+        state.filter_assignee_choices = _build_assignee_choices(default_project_id)
+        state.filter_status_cursor = 0
+        for idx, (api_val, _label) in enumerate(state.filter_status_choices):
+            if api_val == state.issue_tab.filter.status_id:
+                state.filter_status_cursor = idx
+                break
+        state.filter_assignee_cursor = 0
+        for idx, (api_val, _label) in enumerate(state.filter_assignee_choices):
+            if api_val == state.issue_tab.filter.assigned_to_id:
+                state.filter_assignee_cursor = idx
+                break
+        state.filter_focus = "status"
+        state.show_filter = True
+
+    @kb.add("f", filter=normal_mode)
+    def _(event):
+        if state.tab != "issues":
+            return
+        _clear_temporary_state()
+        _open_filter_modal()
+
+    @kb.add("tab", filter=filter_mode)
+    @kb.add("s-tab", filter=filter_mode)
+    @kb.add("h", filter=filter_mode)
+    @kb.add("l", filter=filter_mode)
+    @kb.add("left", filter=filter_mode)
+    @kb.add("right", filter=filter_mode)
+    def _(event):
+        state.filter_focus = "assignee" if state.filter_focus == "status" else "status"
+
+    @kb.add("j", filter=filter_mode)
+    @kb.add("down", filter=filter_mode)
+    def _(event):
+        if state.filter_focus == "status":
+            state.filter_status_cursor = min(
+                len(state.filter_status_choices) - 1, state.filter_status_cursor + 1
+            )
+        else:
+            state.filter_assignee_cursor = min(
+                len(state.filter_assignee_choices) - 1, state.filter_assignee_cursor + 1
+            )
+
+    @kb.add("k", filter=filter_mode)
+    @kb.add("up", filter=filter_mode)
+    def _(event):
+        if state.filter_focus == "status":
+            state.filter_status_cursor = max(0, state.filter_status_cursor - 1)
+        else:
+            state.filter_assignee_cursor = max(0, state.filter_assignee_cursor - 1)
+
+    @kb.add("enter", filter=filter_mode)
+    def _(event):
+        if state.filter_focus == "status":
+            if not state.filter_status_choices:
+                return
+            api_val, label = state.filter_status_choices[state.filter_status_cursor]
+            state.issue_tab.filter.status_id = api_val
+            state.issue_tab.filter.status_label = label
+        else:
+            if not state.filter_assignee_choices:
+                return
+            api_val, label = state.filter_assignee_choices[state.filter_assignee_cursor]
+            state.issue_tab.filter.assigned_to_id = api_val
+            state.issue_tab.filter.assigned_to_label = label
+        reload_with_filter(state)
+
+    @kb.add("c", filter=filter_mode)
+    def _(event):
+        state.issue_tab.filter = IssueFilter()
+        state.filter_status_cursor = 0
+        state.filter_assignee_cursor = 0
+        reload_with_filter(state)
+
+    @kb.add("escape", filter=filter_mode)
+    @kb.add("f", filter=filter_mode)
+    @kb.add("q", filter=filter_mode)
+    def _(event):
+        state.show_filter = False
+
     @kb.add("enter", filter=search_mode)
     def _(event):
         if state.search_query:
@@ -425,8 +594,32 @@ def run_issue_tui(
         ),
     )
 
+    show_filter_cond = Condition(lambda: state.show_filter)
+    filter_float = Float(
+        content=ConditionalContainer(
+            content=VSplit(
+                [
+                    Window(width=1, char=" "),
+                    Frame(
+                        Window(
+                            FormattedTextControl(
+                                lambda: _render_filter_modal(state), show_cursor=False
+                            ),
+                            wrap_lines=False,
+                        ),
+                        title="フィルタ (Esc/f で閉じる)",
+                    ),
+                    Window(width=1, char=" "),
+                ]
+            ),
+            filter=show_filter_cond,
+        ),
+    )
+
     app = Application(
-        layout=Layout(FloatContainer(content=main_layout, floats=[help_float])),
+        layout=Layout(
+            FloatContainer(content=main_layout, floats=[help_float, filter_float])
+        ),
         key_bindings=kb,
         full_screen=True,
     )

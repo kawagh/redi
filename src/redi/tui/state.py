@@ -3,6 +3,7 @@ from typing import Literal
 
 TuiAction = Literal["update", "create", "comment", "create_time_entry"]
 TuiTab = Literal["issues", "wiki", "time_entries"]
+FilterField = Literal["status", "assignee"]
 
 # prompt_toolkit の FormattedTextControl に渡す `(style, text)` 断片のリスト。
 Renderable = list[tuple[str, str]]
@@ -30,10 +31,36 @@ class TuiResult:
 
 
 @dataclass
+class IssueFilter:
+    """Issue 一覧のサーバーサイドフィルタ条件。
+
+    Redmine API の `status_id` / `assigned_to_id` パラメータに渡す値を保持する。
+    `status_id is None` のときは Redmine デフォルト挙動 (open のみ) になる。
+    """
+
+    status_id: str | None = None
+    status_label: str = "open (デフォルト)"
+    assigned_to_id: str | None = None
+    assigned_to_label: str = "(指定なし)"
+
+    def is_active(self) -> bool:
+        return self.status_id is not None or self.assigned_to_id is not None
+
+    def short_label(self) -> str:
+        parts = []
+        if self.status_id is not None:
+            parts.append(f"status={self.status_label}")
+        if self.assigned_to_id is not None:
+            parts.append(f"assignee={self.assigned_to_label}")
+        return " ".join(parts)
+
+
+@dataclass
 class IssueTabState:
     offset: int = 0
     cursor: int = 0
     issues: list[dict] = field(default_factory=list)
+    filter: IssueFilter = field(default_factory=IssueFilter)
 
 
 @dataclass
@@ -74,3 +101,13 @@ class TuiState:
     flash_message: str | None = None
     # ? でヘルプの floating window を表示しているかどうか。
     show_help: bool = False
+    # f で開く Issue フィルタの floating window を表示中かどうか。
+    show_filter: bool = False
+    # 1ウインドウ式モーダルで現在カーソルがあるセクション (status か assignee)
+    filter_focus: FilterField = "status"
+    # 各セクションの選択肢: (Redmine API に渡す値, 表示ラベル) の組
+    filter_status_choices: list[tuple[str | None, str]] = field(default_factory=list)
+    filter_assignee_choices: list[tuple[str | None, str]] = field(default_factory=list)
+    # 各セクション内のカーソル位置
+    filter_status_cursor: int = 0
+    filter_assignee_cursor: int = 0
