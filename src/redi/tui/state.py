@@ -3,6 +3,7 @@ from typing import Literal
 
 TuiAction = Literal["update", "create", "comment", "create_time_entry"]
 TuiTab = Literal["issues", "wiki", "time_entries"]
+FilterField = Literal["status", "assignee"]
 
 # prompt_toolkit の FormattedTextControl に渡す `(style, text)` 断片のリスト。
 Renderable = list[tuple[str, str]]
@@ -30,10 +31,56 @@ class TuiResult:
 
 
 @dataclass
+class IssueFilter:
+    """Issue 一覧のサーバーサイドフィルタ条件。
+
+    Redmine API の `status_id` / `assigned_to_id` パラメータに渡す値を保持する。
+    `status_id is None` のときは Redmine デフォルト挙動 (open のみ) になる。
+    """
+
+    status_id: str | None = None
+    status_label: str = "open (デフォルト)"
+    assigned_to_id: str | None = None
+    assigned_to_label: str = "(指定なし)"
+
+    def is_active(self) -> bool:
+        return self.status_id is not None or self.assigned_to_id is not None
+
+    def short_label(self) -> str:
+        parts = []
+        if self.status_id is not None:
+            parts.append(f"status={self.status_label}")
+        if self.assigned_to_id is not None:
+            parts.append(f"assignee={self.assigned_to_label}")
+        return " ".join(parts)
+
+
+@dataclass
+class FilterModalState:
+    """f で開くフィルタ modal の表示・選択肢キャッシュ・カーソル状態。
+
+    実際のフィルタ条件 (`IssueFilter`) とは別にして、modal を閉じれば破棄してよい
+    一時的な UI 状態をここにまとめる。
+    """
+
+    show: bool = False
+    # 現在カーソルがあるセクション (status か assignee)
+    focus: FilterField = "status"
+    # 各セクションの選択肢: (Redmine API に渡す値, 表示ラベル) の組
+    status_choices: list[tuple[str | None, str]] = field(default_factory=list)
+    assignee_choices: list[tuple[str | None, str]] = field(default_factory=list)
+    # 各セクション内のカーソル位置
+    status_cursor: int = 0
+    assignee_cursor: int = 0
+
+
+@dataclass
 class IssueTabState:
     offset: int = 0
     cursor: int = 0
     issues: list[dict] = field(default_factory=list)
+    filter: IssueFilter = field(default_factory=IssueFilter)
+    filter_modal: FilterModalState = field(default_factory=FilterModalState)
 
 
 @dataclass

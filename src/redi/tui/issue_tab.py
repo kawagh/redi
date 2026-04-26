@@ -101,10 +101,13 @@ def _render_preview(state: TuiState) -> Renderable:
 
 def _status_hint(state: TuiState) -> str:
     page = state.issue_tab.offset // state.page_size + 1
-    return (
+    hint = (
         f" Page {page} (offset={state.issue_tab.offset})  "
-        "jk:移動 /:検索 c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+        "jk:移動 /:検索 f:フィルタ c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     )
+    if state.issue_tab.filter.is_active():
+        hint = f" [{state.issue_tab.filter.short_label()}]" + hint
+    return hint
 
 
 def _on_up(state: TuiState) -> None:
@@ -143,11 +146,27 @@ def _on_enter(state: TuiState) -> None:
     load_journals(issue)
 
 
-def _on_page_forward(state: TuiState) -> None:
-    next_issues = fetch_issues(
+def fetch_issues_with_filter(state: TuiState, offset: int) -> list[dict]:
+    f = state.issue_tab.filter
+    return fetch_issues(
         project_id=default_project_id,
+        status_id=f.status_id,
+        assigned_to=f.assigned_to_id,
         limit=state.page_size,
-        offset=state.issue_tab.offset + state.page_size,
+        offset=offset,
+    )
+
+
+def reload_with_filter(state: TuiState) -> None:
+    """フィルタ条件で先頭ページから再取得する。filter modal からの適用で呼ぶ。"""
+    state.issue_tab.offset = 0
+    state.issue_tab.issues = fetch_issues_with_filter(state, 0)
+    state.issue_tab.cursor = 0
+
+
+def _on_page_forward(state: TuiState) -> None:
+    next_issues = fetch_issues_with_filter(
+        state, state.issue_tab.offset + state.page_size
     )
     if next_issues:
         state.issue_tab.offset += state.page_size
@@ -159,11 +178,7 @@ def _on_page_backward(state: TuiState) -> None:
     if state.issue_tab.offset <= 0:
         return
     state.issue_tab.offset = max(0, state.issue_tab.offset - state.page_size)
-    state.issue_tab.issues = fetch_issues(
-        project_id=default_project_id,
-        limit=state.page_size,
-        offset=state.issue_tab.offset,
-    )
+    state.issue_tab.issues = fetch_issues_with_filter(state, state.issue_tab.offset)
     state.issue_tab.cursor = 0
 
 
@@ -223,6 +238,8 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("検索", ""),
     ("  /", "検索開始"),
     ("  n / N", "次 / 前の検索結果"),
+    ("フィルタ", ""),
+    ("  f", "ステータス/担当者でフィルタ (フローティング)"),
     ("アクション", ""),
     ("  Enter", "選択イシューのコメントを読込"),
     ("  c / u", "イシュー作成 / 更新"),
