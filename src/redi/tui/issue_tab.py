@@ -214,6 +214,29 @@ def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
     return None
 
 
+_HELP_LINES: list[tuple[str, str]] = [
+    ("移動", ""),
+    ("  ↑/k/Ctrl+P", "上へ"),
+    ("  ↓/j/Ctrl+N", "下へ"),
+    ("  gg / G", "先頭 / 末尾へ"),
+    ("  <N>G", "#N のイシューへジャンプ"),
+    ("  ←/h / →/l", "前ページ / 次ページ"),
+    ("  Tab / Shift+Tab", "タブ切替 (次 / 前)"),
+    ("検索", ""),
+    ("  /", "検索開始"),
+    ("  n / N", "次 / 前の検索結果"),
+    ("アクション", ""),
+    ("  Enter", "選択イシューのコメントを読込"),
+    ("  c / u", "イシュー作成 / 更新"),
+    ("  n", "コメント追加 (検索クエリ未設定時)"),
+    ("  t", "時間記録の作成"),
+    ("  v / <N>V", "選択イシューを web で開く / #N を web で開く"),
+    ("その他", ""),
+    ("  ?", "このヘルプを表示 / 閉じる"),
+    ("  q / Esc / Ctrl+C", "終了"),
+]
+
+
 ISSUE_TAB = TabView(
     label="イシュー",
     render_list=_render_list,
@@ -233,4 +256,5 @@ ISSUE_TAB = TabView(
     on_action_key=_on_action_key,
     on_search=_on_search,
     get_cursor_y=lambda state: state.issue_tab.cursor,
+    help_lines=_HELP_LINES,
 )

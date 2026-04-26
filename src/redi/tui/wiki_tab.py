@@ -197,6 +197,26 @@ def _on_open_web(state: TuiState) -> None:
         webbrowser.open(f"{redmine_url}/projects/{project}/wiki/{title}")
 
 
+_HELP_LINES: list[tuple[str, str]] = [
+    ("移動", ""),
+    ("  ↑/k/Ctrl+P", "上へ"),
+    ("  ↓/j/Ctrl+N", "下へ"),
+    ("  gg / G", "先頭 / 末尾へ"),
+    ("  Tab / Shift+Tab", "タブ切替 (次 / 前)"),
+    ("検索", ""),
+    ("  /", "検索開始"),
+    ("  n / N", "次 / 前の検索結果"),
+    ("アクション", ""),
+    ("  Enter", "選択ページの本文を読込"),
+    ("  c", "選択ページの子ページを作成"),
+    ("  u", "選択ページを更新"),
+    ("  v", "選択ページを web で開く"),
+    ("その他", ""),
+    ("  ?", "このヘルプを表示 / 閉じる"),
+    ("  q / Esc / Ctrl+C", "終了"),
+]
+
+
 WIKI_TAB = TabView(
     label="Wiki",
     render_list=_render_list,
@@ -216,4 +236,5 @@ WIKI_TAB = TabView(
     on_action_key=_on_action_key,
     on_search=_on_search,
     get_cursor_y=lambda state: state.wiki_tab.cursor,
+    help_lines=_HELP_LINES,
 )

@@ -25,6 +25,10 @@ class TabView:
     on_search: Callable[..., None]
     # 一覧内でのカーソル行 (0-indexed)。prompt_toolkit の Window 自動スクロールに使う。
     get_cursor_y: Callable[[TuiState], int]
+    # ? で開くヘルプの行データ。`(キー, 説明)` の組のリストで、説明が空の要素は
+    # セクション見出しとして描画される。タブごとに利用可能なキーが異なるため
+    # 各タブが自前で定義する。
+    help_lines: list[tuple[str, str]]
 
 
 def noop(state: TuiState) -> None:

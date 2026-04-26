@@ -96,34 +96,11 @@ def _render_preview_current(state: TuiState) -> Renderable:
     return TABS[state.tab].render_preview(state)
 
 
-_HELP_LINES: list[tuple[str, str]] = [
-    ("移動", ""),
-    ("  ↑/k/Ctrl+P", "上へ"),
-    ("  ↓/j/Ctrl+N", "下へ"),
-    ("  gg / G", "先頭 / 末尾へ"),
-    ("  <N>G", "#N のイシューへジャンプ"),
-    ("  ←/h / →/l", "前ページ / 次ページ"),
-    ("  Tab / Shift+Tab", "タブ切替 (次 / 前)"),
-    ("検索", ""),
-    ("  /", "検索開始"),
-    ("  n / N", "次 / 前の検索結果"),
-    ("アクション", ""),
-    ("  Enter", "選択 (イシューはコメント読込)"),
-    ("  c / u", "作成 / 更新"),
-    ("  n", "コメント追加 (検索クエリ未設定時)"),
-    ("  t", "時間登録"),
-    ("  v / <N>V", "web で開く / #N を web で開く"),
-    ("  D", "削除 (time_entries タブのみ)"),
-    ("その他", ""),
-    ("  ?", "このヘルプを表示 / 閉じる"),
-    ("  q / Esc / Ctrl+C", "終了 (ヘルプ表示中は閉じる)"),
-]
-
-
 def _render_help(state: TuiState) -> Renderable:
-    width = max(len(key) for key, _ in _HELP_LINES) + 2
+    lines = TABS[state.tab].help_lines
+    width = max(len(key) for key, _ in lines) + 2
     parts: Renderable = []
-    for key, desc in _HELP_LINES:
+    for key, desc in lines:
         if not desc:
             parts.append(("bold", f"{key}\n"))
         else:
@@ -426,7 +403,9 @@ def run_issue_tui(
                     ),
                     wrap_lines=False,
                 ),
-                title="ヘルプ (? / Esc / q で閉じる)",
+                title=lambda: (
+                    f"ヘルプ - {TABS[state.tab].label} タブ (? / Esc / q で閉じる)"
+                ),
             ),
             filter=help_mode,
         ),

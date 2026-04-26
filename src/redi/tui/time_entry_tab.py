@@ -212,6 +212,26 @@ def _on_open_web(state: TuiState) -> None:
         webbrowser.open(f"{redmine_url}/time_entries")
 
 
+_HELP_LINES: list[tuple[str, str]] = [
+    ("移動", ""),
+    ("  ↑/k/Ctrl+P", "上へ"),
+    ("  ↓/j/Ctrl+N", "下へ"),
+    ("  gg / G", "先頭 / 末尾へ"),
+    ("  Tab / Shift+Tab", "タブ切替 (次 / 前)"),
+    ("検索", ""),
+    ("  /", "検索開始"),
+    ("  n / N", "次 / 前の検索結果"),
+    ("アクション", ""),
+    ("  c", "時間記録を作成"),
+    ("  u", "選択した時間記録を更新"),
+    ("  D", "選択した時間記録を削除 (y/Y で確定)"),
+    ("  v", "選択行のイシューを web で開く"),
+    ("その他", ""),
+    ("  ?", "このヘルプを表示 / 閉じる"),
+    ("  q / Esc / Ctrl+C", "終了"),
+]
+
+
 TIME_ENTRY_TAB = TabView(
     label="作業時間",
     render_list=_render_list,
@@ -231,4 +251,5 @@ TIME_ENTRY_TAB = TabView(
     on_action_key=_on_action_key,
     on_search=_on_search,
     get_cursor_y=lambda state: state.time_entry_tab.cursor,
+    help_lines=_HELP_LINES,
 )
