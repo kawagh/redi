@@ -70,6 +70,17 @@ echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
 
 ## Usage (examples)
 
+Most commands follow the form:
+
+```text
+redi <resource> <action> [<resource_id>] [options]
+```
+
+- `<resource>` — `issue`, `project`, `wiki`, ... (most have a short alias such as `i` / `p` / `w`)
+- `<action>` — `list` / `view` / `create` / `update` / `delete` / `comment` (also has aliases: `v` / `c` / `u` / `d` / `co`)
+    - `redi <resource>` alone is shorthand for `redi <resource> list`
+- `<resource_id>` — required for actions that target a specific item (`view`, `update`, `delete`, `comment`)
+
 ```sh
 # init
 redi init # interactive
