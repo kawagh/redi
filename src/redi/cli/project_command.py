@@ -1,6 +1,7 @@
 import argparse
 
 from redi.cli._common import confirm_delete_with_identifier, resolve_alias
+from redi.i18n import messages
 from redi.api.project import (
     archive_project,
     create_project,
@@ -147,7 +148,7 @@ def handle_project(args: argparse.Namespace) -> None:
         elif args.archive is False:
             unarchive_project(args.project_id)
         elif not should_update:
-            print("更新をキャンセルしました")
+            print(messages.update_canceled)
             exit()
     elif cmd == "list" or cmd is None:
         list_projects(full=args.full)

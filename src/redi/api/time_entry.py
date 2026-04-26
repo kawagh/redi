@@ -4,6 +4,7 @@ import requests
 
 from redi.api.project import resolve_project_id
 from redi.client import client
+from redi.i18n import messages
 
 
 def create_time_entry(
@@ -15,7 +16,7 @@ def create_time_entry(
     comments: str | None = None,
 ) -> None:
     if not issue_id and not project_id:
-        print("issue_idまたはproject_idを指定してください")
+        print(messages.issue_or_project_id_required)
         exit(1)
     # time_entries は他の API と異なり project_id に slug を受け付けず整数のみ許容
     # https://www.redmine.org/projects/redmine/wiki/Rest_TimeEntries
@@ -38,11 +39,13 @@ def create_time_entry(
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("作業時間の登録に失敗しました")
+        print(messages.time_entry_create_failed)
         exit(1)
     created = response.json()["time_entry"]
     print(
-        f"作業時間を登録しました: {created['id']} {created['hours']}h ({created['spent_on']})"
+        messages.time_entry_created.format(
+            id=created["id"], hours=created["hours"], spent_on=created["spent_on"]
+        )
     )
 
 
@@ -132,7 +135,7 @@ def list_time_entries(
 def fetch_time_entry(time_entry_id: str) -> dict:
     response = client.get(f"/time_entries/{time_entry_id}.json")
     if response.status_code == 404:
-        print(f"作業時間が見つかりません: {time_entry_id}")
+        print(messages.time_entry_not_found.format(id=time_entry_id))
         exit(1)
     response.raise_for_status()
     return response.json()["time_entry"]
@@ -184,7 +187,7 @@ def update_time_entry(
     if comments is not None:
         data["comments"] = comments
     if not data:
-        print("更新内容がないので更新をキャンセルしました")
+        print(messages.update_canceled_no_changes)
         exit(1)
     response = client.put(
         f"/time_entries/{time_entry_id}.json", json={"time_entry": data}
@@ -194,9 +197,9 @@ def update_time_entry(
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("作業時間の更新に失敗しました")
+        print(messages.time_entry_update_failed)
         exit(1)
-    print(f"作業時間を更新しました: {time_entry_id}")
+    print(messages.time_entry_updated.format(id=time_entry_id))
 
 
 def delete_time_entry(time_entry_id: str) -> None:
@@ -206,6 +209,6 @@ def delete_time_entry(time_entry_id: str) -> None:
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("作業時間の削除に失敗しました")
+        print(messages.time_entry_delete_failed)
         exit(1)
-    print(f"作業時間を削除しました: {time_entry_id}")
+    print(messages.time_entry_deleted.format(id=time_entry_id))

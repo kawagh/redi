@@ -138,7 +138,9 @@ def create_profile(
         doc = tomlkit.document()
 
     if profile_name in doc:
-        print(f"profile '{profile_name}' は既に存在します")
+        from redi.i18n import messages
+
+        print(messages.profile_already_exists.format(name=profile_name))
         return CreateProfileResult(created=False, set_as_default=False)
 
     table = tomlkit.table()

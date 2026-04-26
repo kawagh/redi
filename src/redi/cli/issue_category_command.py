@@ -2,6 +2,7 @@ import argparse
 
 from redi.cli._common import confirm_delete, resolve_alias
 from redi.config import default_project_id
+from redi.i18n import messages
 from redi.api.issue_category import (
     create_issue_category,
     delete_issue_category,
@@ -70,7 +71,7 @@ def handle_issue_category(args: argparse.Namespace) -> None:
     if cmd == "create":
         project_id = args.project_id or default_project_id
         if not project_id:
-            print("project_idを指定するか、default_project_idを設定してください")
+            print(messages.project_id_required)
             exit(1)
         create_issue_category(
             project_id=project_id,
@@ -99,6 +100,6 @@ def handle_issue_category(args: argparse.Namespace) -> None:
     if cmd == "list" or cmd is None:
         project_id = args.project_id or default_project_id
         if not project_id:
-            print("project_idを指定するか、default_project_idを設定してください")
+            print(messages.project_id_required)
             exit(1)
         list_issue_categories(project_id, full=args.full)

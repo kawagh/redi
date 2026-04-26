@@ -6,6 +6,7 @@ import requests
 from redi.api.attachment import upload_file
 from redi.client import client
 from redi.config import redmine_url
+from redi.i18n import messages
 
 
 def fetch_issues_page(
@@ -105,7 +106,7 @@ def fetch_issue(issue_id: str, include: str = "") -> dict:
         params["include"] = include
     response = client.get(f"/issues/{issue_id}.json", params=params)
     if response.status_code == 404:
-        print(f"イシューが見つかりません: #{issue_id}")
+        print(messages.issue_not_found.format(id=issue_id))
         exit(1)
     response.raise_for_status()
     return response.json()["issue"]
@@ -269,11 +270,11 @@ def create_issue(
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("イシューの作成に失敗しました")
+        print(messages.issue_create_failed)
         exit(1)
     created = response.json()["issue"]
     url = f"{redmine_url}/issues/{created['id']}"
-    print(f"イシューを作成しました: {url}")
+    print(messages.issue_created.format(url=url))
 
 
 def update_issue(
@@ -326,7 +327,7 @@ def update_issue(
     if attachments:
         issue_data["uploads"] = [upload_file(file_path) for file_path in attachments]
     if len(issue_data) == 0:
-        print("更新をキャンセルしました")
+        print(messages.update_canceled)
         exit()
     response = client.put(f"/issues/{issue_id}.json", json={"issue": issue_data})
     try:
@@ -334,10 +335,10 @@ def update_issue(
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("イシューの更新に失敗しました")
+        print(messages.issue_update_failed)
         exit(1)
     url = f"{redmine_url}/issues/{issue_id}"
-    print(f"イシューを更新しました: {url}")
+    print(messages.issue_updated.format(url=url))
 
 
 def add_watcher(issue_id: str, user_id: int) -> None:
@@ -346,46 +347,48 @@ def add_watcher(issue_id: str, user_id: int) -> None:
         json={"user_id": user_id},
     )
     if response.status_code == 404:
-        print(f"イシューが見つかりません: #{issue_id}")
+        print(messages.issue_not_found.format(id=issue_id))
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("ウォッチャーの追加に失敗しました")
+        print(messages.watcher_add_failed)
         exit(1)
-    print(f"#{issue_id} にウォッチャー {user_id} を追加しました")
+    print(messages.watcher_added.format(issue_id=issue_id, user_id=user_id))
 
 
 def remove_watcher(issue_id: str, user_id: int) -> None:
     response = client.delete(f"/issues/{issue_id}/watchers/{user_id}.json")
     if response.status_code == 404:
-        print(f"イシューまたはユーザーが見つかりません: #{issue_id} / #{user_id}")
+        print(
+            messages.issue_or_user_not_found.format(issue_id=issue_id, user_id=user_id)
+        )
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("ウォッチャーの削除に失敗しました")
+        print(messages.watcher_remove_failed)
         exit(1)
-    print(f"#{issue_id} からウォッチャー {user_id} を削除しました")
+    print(messages.watcher_removed.format(issue_id=issue_id, user_id=user_id))
 
 
 def delete_issue(issue_id: str) -> None:
     response = client.delete(f"/issues/{issue_id}.json")
     if response.status_code == 404:
-        print(f"イシューが見つかりません: #{issue_id}")
+        print(messages.issue_not_found.format(id=issue_id))
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("イシューの削除に失敗しました")
+        print(messages.issue_delete_failed)
         exit(1)
-    print(f"イシューを削除しました: #{issue_id}")
+    print(messages.issue_deleted.format(id=issue_id))
 
 
 def add_note(issue_id: str, notes: str) -> None:
@@ -400,4 +403,4 @@ def add_note(issue_id: str, notes: str) -> None:
         url = f"{redmine_url}/issues/{issue_id}#note-{note_number}"
     else:
         url = f"{redmine_url}/issues/{issue_id}"
-    print(f"コメントを追加しました: {url}")
+    print(messages.comment_added.format(url=url))

@@ -21,6 +21,7 @@ from prompt_toolkit.widgets import Frame
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.membership import fetch_project_users
 from redi.config import default_project_id
+from redi.i18n import messages
 from redi.tui.issue_tab import (
     ISSUE_TAB,
     fetch_issues_with_filter,
@@ -229,7 +230,7 @@ def run_issue_tui(
         "total_count", len(state.issue_tab.issues)
     )
     if state.tab == "issues" and not state.issue_tab.issues:
-        print("イシューが見つかりません")
+        print(messages.issue_not_found_simple)
         return None
     if state.issue_tab.issues:
         state.issue_tab.cursor = max(

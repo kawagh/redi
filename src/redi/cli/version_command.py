@@ -14,6 +14,7 @@ from redi.cli._common import (
     resolve_alias,
 )
 from redi.config import default_project_id
+from redi.i18n import messages
 from redi.api.version import (
     create_version,
     delete_version,
@@ -89,7 +90,7 @@ def add_version_parser(subparsers: argparse._SubParsersAction) -> None:
 def _interactive_select_version_id(project_id: str) -> str:
     versions = fetch_versions(project_id)
     if not versions:
-        print("選択可能なバージョンがありません")
+        print(messages.no_versions_available)
         exit(1)
     options: list[tuple[str, str]] = [
         (str(v["id"]), f"{v['id']} {v['name']} ({v['status']})") for v in versions
@@ -98,9 +99,9 @@ def _interactive_select_version_id(project_id: str) -> str:
     try:
         selected = inline_choice("更新するバージョンを選択", options)
     except KeyboardInterrupt:
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
-    print(f"更新するバージョン: {labels[selected]}")
+    print(messages.update_target_version.format(label=labels[selected]))
     return selected
 
 
@@ -118,13 +119,13 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
             "更新する項目を選択 (Spaceで選択、Enterで確定)", field_values
         )
     except KeyboardInterrupt:
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
     if not selected:
-        print("更新する項目が選択されていないためキャンセルしました")
+        print(messages.canceled_no_items_selected)
         exit(1)
     labels = dict(field_values)
-    print(f"更新する項目: {', '.join(labels[v] for v in selected)}")
+    print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
     try:
         if "name" in selected:
             args.name = prompt(
@@ -140,7 +141,7 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
             args.status = inline_choice(
                 "ステータス", status_options, default=current.get("status", "open")
             )
-            print(f"ステータス: {args.status}")
+            print(messages.status_label.format(value=args.status))
 
         if "due_date" in selected:
             args.due_date = prompt(
@@ -165,9 +166,9 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
                 sharing_options,
                 default=current.get("sharing", "none"),
             )
-            print(f"共有設定: {args.sharing}")
+            print(messages.sharing_label.format(value=args.sharing))
     except (KeyboardInterrupt, EOFError):
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
 
 
@@ -179,19 +180,19 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
     try:
         name = prompt("バージョン名: ", validator=non_empty_validator).strip()
     except (KeyboardInterrupt, EOFError):
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
 
     try:
         due_date = prompt("期日（YYYY-MM-DD、省略可）: ").strip() or None
     except (KeyboardInterrupt, EOFError):
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
 
     try:
         description = prompt("説明（省略可）: ").strip() or None
     except (KeyboardInterrupt, EOFError):
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
 
     sharing_options: list[tuple[str, str]] = [
@@ -219,7 +220,7 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
             key_bindings=choice_kb,
         )
     except KeyboardInterrupt:
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
     sharing = sharing_input if sharing_input != "none" else None
 
@@ -239,7 +240,7 @@ def handle_version(args: argparse.Namespace) -> None:
     elif cmd == "create":
         project_id = args.project_id or default_project_id
         if not project_id:
-            print("project_idを指定するか、default_project_idを設定してください")
+            print(messages.project_id_required)
             exit(1)
         if args.name is None:
             _interactive_create_version(project_id, args)
@@ -261,7 +262,7 @@ def handle_version(args: argparse.Namespace) -> None:
         if not args.version_id:
             project_id = args.project_id or default_project_id
             if not project_id:
-                print("project_idを指定するか、default_project_idを設定してください")
+                print(messages.project_id_required)
                 exit(1)
             args.version_id = _interactive_select_version_id(project_id)
         no_args_provided = not (
@@ -284,6 +285,6 @@ def handle_version(args: argparse.Namespace) -> None:
     elif cmd == "list" or cmd is None:
         project_id = args.project_id or default_project_id
         if not project_id:
-            print("project_idを指定するか、default_project_idを設定してください")
+            print(messages.project_id_required)
             exit(1)
         list_versions(project_id, full=args.full)

@@ -1,6 +1,7 @@
 import argparse
 
 from redi.cli._common import confirm_delete, resolve_alias
+from redi.i18n import messages
 from redi.api.group import (
     add_group_user,
     create_group,
@@ -97,7 +98,7 @@ def handle_group(args: argparse.Namespace) -> None:
         for user_id in args.remove_user_ids or []:
             remove_group_user(args.group_id, user_id)
         if not should_update and not args.add_user_ids and not args.remove_user_ids:
-            print("更新をキャンセルしました")
+            print(messages.update_canceled)
             exit()
         return
     if cmd == "delete":

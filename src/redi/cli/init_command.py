@@ -8,6 +8,7 @@ from prompt_toolkit.validation import Validator
 from redi.cli._common import inline_choice
 from redi.cli.prompt_util import UrlValidator
 from redi.config import CONFIG_PATH, create_profile
+from redi.i18n import messages
 
 PROFILE_NAME = "default"
 
@@ -29,9 +30,13 @@ def _verify_connection(url: str, api_key: str) -> dict | None:
         response.raise_for_status()
         return response.json().get("user")
     except requests.exceptions.HTTPError as e:
-        print(f"接続失敗: {e.response.status_code} {e.response.reason}")
+        print(
+            messages.connection_failed_http.format(
+                status=e.response.status_code, reason=e.response.reason
+            )
+        )
     except requests.exceptions.RequestException as e:
-        print(f"接続失敗: {e}")
+        print(messages.connection_failed_other.format(error=e))
     return None
 
 
@@ -46,7 +51,7 @@ def _fetch_projects(url: str, api_key: str) -> list[dict]:
         response.raise_for_status()
         return response.json().get("projects", [])
     except requests.exceptions.RequestException as e:
-        print(f"プロジェクト一覧の取得に失敗しました: {e}")
+        print(messages.project_list_fetch_failed.format(error=e))
         return []
 
 
@@ -57,7 +62,7 @@ def _select_project_id(message: str, projects: list[dict]) -> str:
     try:
         return inline_choice(message, options)
     except (KeyboardInterrupt, EOFError):
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
 
 
@@ -71,10 +76,7 @@ def _has_existing_profile() -> bool:
 
 def handle_init(_args: argparse.Namespace) -> None:
     if _has_existing_profile():
-        print(
-            f"既にプロファイルが存在します ({CONFIG_PATH})。"
-            "追加するプロファイルは `redi config create` で作成してください"
-        )
+        print(messages.init_profile_already_exists.format(path=CONFIG_PATH))
         exit(1)
 
     non_empty_validator = Validator.from_callable(
@@ -83,22 +85,22 @@ def handle_init(_args: argparse.Namespace) -> None:
     )
     try:
         url = prompt("Redmine URL: ", validator=UrlValidator()).strip()
-        print(f"APIキーは {url.rstrip('/')}/my/account で確認できます")
+        print(messages.api_key_url_hint.format(url=url.rstrip("/")))
         api_key = prompt(
             "Redmine APIキー: ",
             validator=non_empty_validator,
             is_password=True,
         ).strip()
     except (KeyboardInterrupt, EOFError):
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
 
-    print("接続を確認しています...")
+    print(messages.checking_connection)
     user = _verify_connection(url, api_key)
     if user is None:
         exit(1)
     name = " ".join(filter(None, [user.get("firstname"), user.get("lastname")]))
-    print(f"\033[32m✓\033[0m 接続成功: {user.get('login', '')} ({name})")
+    print(messages.connection_success.format(login=user.get("login", ""), name=name))
 
     projects = _fetch_projects(url, api_key)
     default_project_id: str | None = None
@@ -108,13 +110,21 @@ def handle_init(_args: argparse.Namespace) -> None:
         default_project_id = _select_project_id(
             "普段使用しているプロジェクトを選択してください", projects
         )
-        print(f"デフォルトプロジェクト: {projects_by_id[default_project_id]['name']}")
+        print(
+            messages.default_project_label.format(
+                name=projects_by_id[default_project_id]["name"]
+            )
+        )
         wiki_project_id = _select_project_id(
             "普段閲覧しているwikiのあるプロジェクトを選択してください", projects
         )
-        print(f"wikiプロジェクト: {projects_by_id[wiki_project_id]['name']}")
+        print(
+            messages.wiki_project_label.format(
+                name=projects_by_id[wiki_project_id]["name"]
+            )
+        )
     else:
-        print("プロジェクトが存在しないため project_id の設定をスキップします")
+        print(messages.no_project_skip_project_id)
 
     result = create_profile(
         profile_name=PROFILE_NAME,
@@ -125,4 +135,4 @@ def handle_init(_args: argparse.Namespace) -> None:
     )
     if not result.created:
         exit(1)
-    print(f"\033[32m✓\033[0m {CONFIG_PATH}に設定が作成されました")
+    print(messages.config_created.format(path=CONFIG_PATH))

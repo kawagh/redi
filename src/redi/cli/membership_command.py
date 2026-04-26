@@ -2,6 +2,7 @@ import argparse
 
 from redi.cli._common import confirm_delete, resolve_alias
 from redi.config import default_project_id
+from redi.i18n import messages
 from redi.api.membership import (
     create_membership,
     delete_membership,
@@ -76,10 +77,10 @@ def handle_membership(args: argparse.Namespace) -> None:
     if cmd == "create":
         project_id = args.project_id or default_project_id
         if not project_id:
-            print("project_idを指定するか、default_project_idを設定してください")
+            print(messages.project_id_required)
             exit(1)
         if args.user_id is None and args.group_id is None:
-            print("--user_id または --group_id を指定してください")
+            print(messages.user_or_group_flag_required)
             exit(1)
         create_membership(
             project_id=project_id,
@@ -110,6 +111,6 @@ def handle_membership(args: argparse.Namespace) -> None:
     if cmd == "list" or cmd is None:
         project_id = args.project_id or default_project_id
         if not project_id:
-            print("project_idを指定するか、default_project_idを設定してください")
+            print(messages.project_id_required)
             exit(1)
         list_memberships(project_id, full=args.full)

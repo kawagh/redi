@@ -2,6 +2,7 @@ import json
 
 from redi import cache
 from redi.client import client
+from redi.i18n import messages
 
 CACHE_KEY = "custom_fields"
 
@@ -24,7 +25,7 @@ def fetch_custom_fields() -> list[dict] | None:
 def list_custom_fields(full: bool = False) -> None:
     custom_fields = fetch_custom_fields()
     if custom_fields is None:
-        print("カスタムフィールドの取得には管理者権限が必要です")
+        print(messages.custom_field_admin_required)
         exit(1)
     if full:
         print(json.dumps(custom_fields, ensure_ascii=False))

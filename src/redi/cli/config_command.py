@@ -61,9 +61,9 @@ def handle_config(args: argparse.Namespace) -> None:
             exit(1)
         print(messages.profile_created.format(name=args.profile_name))
         if result.set_as_default:
-            print(f"default_profileを {args.profile_name} に設定しました")
+            print(messages.default_profile_set.format(name=args.profile_name))
         elif args.set_default and set_default_profile(args.profile_name):
-            print(f"default_profileを {args.profile_name} に設定しました")
+            print(messages.default_profile_set.format(name=args.profile_name))
         return
     if cmd != "update":
         show_config(full=args.full)
@@ -73,29 +73,35 @@ def handle_config(args: argparse.Namespace) -> None:
     profile_suffix = f"（profile: {profile}）" if profile else ""
     if args.project_id:
         update_config("default_project_id", args.project_id, profile)
-        print(f"default_project_idを {args.project_id} に設定しました{profile_suffix}")
+        print(
+            messages.default_project_id_set.format(
+                value=args.project_id, suffix=profile_suffix
+            )
+        )
         updated = True
     if args.wiki_project_id:
         update_config("wiki_project_id", args.wiki_project_id, profile)
         print(
-            f"wiki_project_idを {args.wiki_project_id} に設定しました{profile_suffix}"
+            messages.wiki_project_id_set.format(
+                value=args.wiki_project_id, suffix=profile_suffix
+            )
         )
         updated = True
     if args.editor:
         update_config("editor", args.editor, profile)
-        print(f"editorを {args.editor} に設定しました{profile_suffix}")
+        print(messages.editor_set.format(value=args.editor, suffix=profile_suffix))
         updated = True
     if args.api_key:
         update_config("redmine_api_key", args.api_key, profile)
-        print(f"redmine_api_keyを設定しました{profile_suffix}")
+        print(messages.redmine_api_key_set.format(suffix=profile_suffix))
         updated = True
     if args.url:
         update_config("redmine_url", args.url, profile)
-        print(f"redmine_urlを {args.url} に設定しました{profile_suffix}")
+        print(messages.redmine_url_set.format(value=args.url, suffix=profile_suffix))
         updated = True
     if args.default_profile:
         if set_default_profile(args.default_profile):
-            print(f"default_profileを {args.default_profile} に設定しました")
+            print(messages.default_profile_set.format(name=args.default_profile))
         updated = True
     if not updated:
         show_config()

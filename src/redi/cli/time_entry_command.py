@@ -16,6 +16,7 @@ from redi.cli.prompt_util import (
     digit_only_key_bindings,
 )
 from redi.config import default_project_id
+from redi.i18n import messages
 from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.issue import fetch_issue
 from redi.api.project import fetch_projects
@@ -90,7 +91,11 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
             if issue_id:
                 args.issue_id = issue_id
                 issue = fetch_issue(issue_id)
-                print(f"イシュー: #{issue['id']} {issue['subject']}")
+                print(
+                    messages.issue_label.format(
+                        id=issue["id"], subject=issue["subject"]
+                    )
+                )
             else:
                 projects = fetch_projects()
                 valid_values: set[str] = set()
@@ -127,13 +132,15 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
             ]
             activity_labels = dict(activity_options)
             args.activity_id = inline_choice("作業分類", activity_options)
-            print(f"作業分類: {activity_labels[args.activity_id]}")
+            print(
+                messages.activity_label.format(value=activity_labels[args.activity_id])
+            )
         if not args.spent_on:
             args.spent_on = prompt("作業日（YYYY-MM-DD、省略で今日）: ").strip() or None
         if not args.comments:
             args.comments = prompt("コメント: ").strip() or None
     except (KeyboardInterrupt, EOFError):
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
 
 
@@ -151,13 +158,13 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
             "更新する項目を選択 (Spaceで選択、Enterで確定)", field_values
         )
     except KeyboardInterrupt:
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
     if not selected:
-        print("更新する項目が選択されていないためキャンセルしました")
+        print(messages.canceled_no_items_selected)
         exit(1)
     labels = dict(field_values)
-    print(f"更新する項目: {', '.join(labels[v] for v in selected)}")
+    print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
     try:
         if "hours" in selected:
             hours_str = prompt(
@@ -179,7 +186,9 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
                 activity_options,
                 default=current_activity_id or None,
             )
-            print(f"作業分類: {activity_labels[args.activity_id]}")
+            print(
+                messages.activity_label.format(value=activity_labels[args.activity_id])
+            )
         if "spent_on" in selected:
             args.spent_on = (
                 prompt(
@@ -200,10 +209,14 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
             ).strip()
             if issue_id:
                 issue = fetch_issue(issue_id)
-                print(f"イシュー: #{issue['id']} {issue['subject']}")
+                print(
+                    messages.issue_label.format(
+                        id=issue["id"], subject=issue["subject"]
+                    )
+                )
                 args.issue_id = issue_id
     except (KeyboardInterrupt, EOFError):
-        print("キャンセルしました")
+        print(messages.canceled)
         exit(1)
 
 

@@ -4,12 +4,13 @@ import requests
 
 from redi.api.attachment import upload_file
 from redi.client import client
+from redi.i18n import messages
 
 
 def list_files(project_id: str, full: bool = False) -> None:
     response = client.get(f"/projects/{project_id}/files.json")
     if response.status_code == 404:
-        print(f"プロジェクトが見つかりません: {project_id}")
+        print(messages.project_not_found.format(id=project_id))
         exit(1)
     response.raise_for_status()
     files = response.json()["files"]
@@ -43,13 +44,13 @@ def create_file(
         f"/projects/{project_id}/files.json", json={"file": file_data}
     )
     if response.status_code == 404:
-        print(f"プロジェクトが見つかりません: {project_id}")
+        print(messages.project_not_found.format(id=project_id))
         exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print(e.response.text)
-        print("ファイルのアップロードに失敗しました")
+        print(messages.file_upload_failed)
         exit(1)
-    print(f"ファイルをアップロードしました: {upload['filename']}")
+    print(messages.file_uploaded.format(filename=upload["filename"]))

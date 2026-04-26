@@ -5,6 +5,7 @@ from prompt_toolkit.validation import ValidationError, Validator
 
 from redi.cli._common import confirm_delete, inline_choice, open_editor, resolve_alias
 from redi.config import default_project_id, wiki_project_id
+from redi.i18n import messages
 from redi.api.wiki import (
     build_children_map,
     create_wiki,
@@ -95,9 +96,7 @@ def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
 def handle_wiki(args: argparse.Namespace) -> None:
     project_id = args.project_id or wiki_project_id or default_project_id
     if not project_id:
-        print(
-            "project_idを指定するか、wiki_project_idまたはdefault_project_idを設定してください"
-        )
+        print(messages.wiki_project_id_required)
         exit(1)
     cmd = resolve_alias(args.wiki_command)
     if cmd == "view":
@@ -132,10 +131,10 @@ def handle_wiki(args: argparse.Namespace) -> None:
                     "ページタイトル: ", validator=_PageTitleValidator()
                 ).strip()
             except (KeyboardInterrupt, EOFError):
-                print("キャンセルしました")
+                print(messages.canceled)
                 exit(1)
             if not page_title:
-                print("ページタイトルが空のためキャンセルしました")
+                print(messages.canceled_empty_title)
                 exit(1)
             if parent_title is None:
                 parent_options = build_wiki_tree_choices(pages)
@@ -144,9 +143,13 @@ def handle_wiki(args: argparse.Namespace) -> None:
                     try:
                         parent_title = inline_choice("親ページ", parent_options)
                     except KeyboardInterrupt:
-                        print("キャンセルしました")
+                        print(messages.canceled)
                         exit(1)
-                    print(f"親ページ: {parent_labels[parent_title].strip()}")
+                    print(
+                        messages.parent_page_label.format(
+                            label=parent_labels[parent_title].strip()
+                        )
+                    )
         if args.description and args.description != "":
             text = args.description
         else:
@@ -157,13 +160,13 @@ def handle_wiki(args: argparse.Namespace) -> None:
                 parent_title = normalize_title(parent_title)
             create_wiki(project_id, page_title, text, parent_title=parent_title)
         else:
-            print("テキストが空のためキャンセルしました")
+            print(messages.canceled_empty_text)
     elif cmd == "delete":
         title = normalize_title(args.page_title)
         if not args.yes:
             page = fetch_wiki(project_id, title)
             if page is None:
-                print(f"Wikiページが見つかりません: {title}")
+                print(messages.wiki_page_not_found.format(title=title))
                 exit(1)
             confirm_delete(f"削除するWikiページ: {page.get('title', title)}")
         delete_wiki(project_id, title)
@@ -172,27 +175,29 @@ def handle_wiki(args: argparse.Namespace) -> None:
         if page_title is None:
             pages = fetch_wikis(project_id)
             if not pages:
-                print("Wikiページが存在しません")
+                print(messages.wiki_page_does_not_exist)
                 exit(1)
             page_options = build_wiki_tree_choices(pages)
             page_labels = dict(page_options)
             try:
                 page_title = inline_choice("編集するページ", page_options)
             except KeyboardInterrupt:
-                print("キャンセルしました")
+                print(messages.canceled)
                 exit(1)
-            print(f"編集するページ: {page_labels[page_title].strip()}")
+            print(
+                messages.edit_target_page.format(label=page_labels[page_title].strip())
+            )
         if args.description and args.description != "":
             text = args.description
         else:
             current = fetch_wiki(project_id, page_title)
             if current is None:
-                print(f"Wikiページが見つかりません: {page_title}")
+                print(messages.wiki_page_not_found.format(title=page_title))
                 exit(1)
             text = open_editor(current.get("text") or "")
         if text:
             update_wiki(project_id, page_title, text)
         else:
-            print("テキストが空のためキャンセルしました")
+            print(messages.canceled_empty_text)
     elif cmd == "list" or cmd is None:
         list_wikis(project_id, full=args.full)

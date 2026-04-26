@@ -3,6 +3,7 @@ import argparse
 from redi.api.file import create_file, list_files
 from redi.cli._common import resolve_alias
 from redi.config import default_project_id
+from redi.i18n import messages
 
 
 def add_file_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -25,7 +26,7 @@ def add_file_parser(subparsers: argparse._SubParsersAction) -> None:
 def handle_file(args: argparse.Namespace) -> None:
     project_id = args.project_id or default_project_id
     if not project_id:
-        print("project_idを指定するか、default_project_idを設定してください")
+        print(messages.project_id_required)
         exit(1)
     cmd = resolve_alias(args.file_command)
     if cmd == "create":
