@@ -158,6 +158,7 @@ def main() -> None:
                     start_date=None,
                     due_date=None,
                     done_ratio=None,
+                    estimated_hours=None,
                     notes=None,
                     custom_fields=None,
                     relate=None,

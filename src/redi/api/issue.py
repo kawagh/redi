@@ -265,6 +265,7 @@ def update_issue(
     start_date: str | None = None,
     due_date: str | None = None,
     done_ratio: int | None = None,
+    estimated_hours: float | None = None,
     notes: str = "",
     custom_fields: str | None = None,
     attachments: list[str] = [],
@@ -292,6 +293,8 @@ def update_issue(
         issue_data["due_date"] = due_date
     if done_ratio is not None:
         issue_data["done_ratio"] = done_ratio
+    if estimated_hours is not None:
+        issue_data["estimated_hours"] = estimated_hours
     if notes:
         issue_data["notes"] = notes
     if custom_fields:

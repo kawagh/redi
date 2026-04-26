@@ -136,6 +136,9 @@ def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     )
     i_update_parser.add_argument("--due_date", help="期日（YYYY-MM-DD、空文字で解除）")
     i_update_parser.add_argument("--done_ratio", type=int, help="進捗率（0-100）")
+    i_update_parser.add_argument(
+        "--estimated_hours", type=float, help="予定工数（例: 1.5）"
+    )
     i_update_parser.add_argument("--notes", "-n", help="コメント")
     i_update_parser.add_argument(
         "--custom_fields",
@@ -220,6 +223,7 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         ("start_date", "開始日 (start_date)"),
         ("due_date", "期日 (due_date)"),
         ("done_ratio", "進捗率 (done_ratio)"),
+        ("estimated_hours", "予定工数 (estimated_hours)"),
         ("notes", "コメント (notes)"),
         ("time_entry", "作業時間 (time_entry)"),
     ]
@@ -317,6 +321,23 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
                 inline_choice("進捗率", ratio_options, default=default_ratio)
             )
             print(f"進捗率: {args.done_ratio}%")
+        if "estimated_hours" in selected:
+            estimated_validator = Validator.from_callable(
+                lambda v: v.replace(".", "", 1).isdigit(),
+                error_message="数値を入力してください",
+            )
+            current_estimated = current.get("estimated_hours")
+            default_estimated = (
+                str(current_estimated) if current_estimated is not None else ""
+            )
+            args.estimated_hours = float(
+                prompt(
+                    "予定工数（例: 1.5 (h)）: ",
+                    default=default_estimated,
+                    validator=estimated_validator,
+                ).strip()
+            )
+            print(f"予定工数: {args.estimated_hours} h")
         if "notes" in selected:
             args.notes = prompt("コメント: ").strip()
         if "time_entry" in selected:
@@ -469,6 +490,7 @@ def handle_issue_update(args: argparse.Namespace) -> None:
         or args.start_date is not None
         or args.due_date is not None
         or args.done_ratio is not None
+        or args.estimated_hours is not None
         or args.notes
         or args.custom_fields
         or args.relate
@@ -497,6 +519,7 @@ def handle_issue_update(args: argparse.Namespace) -> None:
         or args.start_date is not None
         or args.due_date is not None
         or args.done_ratio is not None
+        or args.estimated_hours is not None
         or args.notes
         or args.custom_fields
         or args.attach
@@ -519,6 +542,7 @@ def handle_issue_update(args: argparse.Namespace) -> None:
             start_date=args.start_date,
             due_date=args.due_date,
             done_ratio=args.done_ratio,
+            estimated_hours=args.estimated_hours,
             notes=args.notes or "",
             custom_fields=args.custom_fields,
             attachments=args.attach,
