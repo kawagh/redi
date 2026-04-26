@@ -333,10 +333,7 @@ def run_issue_tui(
         _clear_temporary_state()
         state.show_help = True
 
-    @kb.add("?", filter=help_mode)
-    @kb.add("q", filter=help_mode)
-    @kb.add("escape", filter=help_mode)
-    @kb.add("c-c", filter=help_mode)
+    @kb.add("<any>", filter=help_mode)
     def _(event):
         state.show_help = False
 
@@ -404,7 +401,7 @@ def run_issue_tui(
                     wrap_lines=False,
                 ),
                 title=lambda: (
-                    f"ヘルプ - {TABS[state.tab].label} タブ (? / Esc / q で閉じる)"
+                    f"ヘルプ - {TABS[state.tab].label} タブ (任意のキーで閉じる)"
                 ),
             ),
             filter=help_mode,
