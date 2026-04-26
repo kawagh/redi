@@ -391,18 +391,31 @@ def run_issue_tui(
         ]
     )
 
+    # Frame を VSplit で挟んで左右に幅1の空白パディングを置く。
+    # Float の真下の行が CJK 文字 (display width=2) で終わると、その2セル目と
+    # Frame の左ボーダーが同じ列に重なり、prompt_toolkit のレンダラが wide
+    # char の幅ぶんカーソルを進めて Frame ボーダーのセルをスキップしてしまう
+    # (= 縁が表示されない)。1セルの空白を挟むとスキップ先がボーダーではなく
+    # 空白セルに変わるので、ボーダーは常に描画される。
     help_float = Float(
         content=ConditionalContainer(
-            content=Frame(
-                Window(
-                    FormattedTextControl(
-                        lambda: _render_help(state), show_cursor=False
+            content=VSplit(
+                [
+                    Window(width=1, char=" "),
+                    Frame(
+                        Window(
+                            FormattedTextControl(
+                                lambda: _render_help(state), show_cursor=False
+                            ),
+                            wrap_lines=False,
+                        ),
+                        title=lambda: (
+                            f"ヘルプ - {TABS[state.tab].label} タブ "
+                            "(任意のキーで閉じる)"
+                        ),
                     ),
-                    wrap_lines=False,
-                ),
-                title=lambda: (
-                    f"ヘルプ - {TABS[state.tab].label} タブ (任意のキーで閉じる)"
-                ),
+                    Window(width=1, char=" "),
+                ]
             ),
             filter=help_mode,
         ),
