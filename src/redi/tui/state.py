@@ -72,3 +72,5 @@ class TuiState:
     confirm_delete_prompt: str | None = None
     # 直前のアクション結果をステータスバーに出す一時メッセージ。次のキー入力で消える。
     flash_message: str | None = None
+    # ? でヘルプの floating window を表示しているかどうか。
+    show_help: bool = False

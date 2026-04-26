@@ -7,8 +7,16 @@ from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import Layout
-from prompt_toolkit.layout.containers import HSplit, VSplit, Window
+from prompt_toolkit.layout.containers import (
+    ConditionalContainer,
+    Float,
+    FloatContainer,
+    HSplit,
+    VSplit,
+    Window,
+)
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.widgets import Frame
 
 from redi.api.issue import fetch_issues
 from redi.config import default_project_id
@@ -88,6 +96,42 @@ def _render_preview_current(state: TuiState) -> Renderable:
     return TABS[state.tab].render_preview(state)
 
 
+_HELP_LINES: list[tuple[str, str]] = [
+    ("移動", ""),
+    ("  ↑/k/Ctrl+P", "上へ"),
+    ("  ↓/j/Ctrl+N", "下へ"),
+    ("  gg / G", "先頭 / 末尾へ"),
+    ("  <N>G", "#N のイシューへジャンプ"),
+    ("  ←/h / →/l", "前ページ / 次ページ"),
+    ("  Tab / Shift+Tab", "タブ切替 (次 / 前)"),
+    ("検索", ""),
+    ("  /", "検索開始"),
+    ("  n / N", "次 / 前の検索結果"),
+    ("アクション", ""),
+    ("  Enter", "選択 (イシューはコメント読込)"),
+    ("  c / u", "作成 / 更新"),
+    ("  n", "コメント追加 (検索クエリ未設定時)"),
+    ("  t", "時間登録"),
+    ("  v / <N>V", "web で開く / #N を web で開く"),
+    ("  D", "削除 (time_entries タブのみ)"),
+    ("その他", ""),
+    ("  ?", "このヘルプを表示 / 閉じる"),
+    ("  q / Esc / Ctrl+C", "終了 (ヘルプ表示中は閉じる)"),
+]
+
+
+def _render_help(state: TuiState) -> Renderable:
+    width = max(len(key) for key, _ in _HELP_LINES) + 2
+    parts: Renderable = []
+    for key, desc in _HELP_LINES:
+        if not desc:
+            parts.append(("bold", f"{key}\n"))
+        else:
+            parts.append(("bold fg:ansicyan", key.ljust(width)))
+            parts.append(("", f"  {desc}\n"))
+    return parts
+
+
 def _render_status(state: TuiState) -> Renderable:
     if state.confirm_delete_prompt is not None:
         return [("reverse", f" {state.confirm_delete_prompt} ")]
@@ -146,10 +190,15 @@ def run_issue_tui(
 
     kb = KeyBindings()
     normal_mode = Condition(
-        lambda: not state.search_mode and state.confirm_delete_prompt is None
+        lambda: (
+            not state.search_mode
+            and state.confirm_delete_prompt is None
+            and not state.show_help
+        )
     )
     search_mode = Condition(lambda: state.search_mode)
     confirm_delete_mode = Condition(lambda: state.confirm_delete_prompt is not None)
+    help_mode = Condition(lambda: state.show_help)
 
     def _clear_temporary_state() -> None:
         state.number_buffer = ""
@@ -302,6 +351,18 @@ def run_issue_tui(
     def _(event):
         event.app.exit(result=None)
 
+    @kb.add("?", filter=normal_mode)
+    def _(event):
+        _clear_temporary_state()
+        state.show_help = True
+
+    @kb.add("?", filter=help_mode)
+    @kb.add("q", filter=help_mode)
+    @kb.add("escape", filter=help_mode)
+    @kb.add("c-c", filter=help_mode)
+    def _(event):
+        state.show_help = False
+
     @kb.add("enter", filter=search_mode)
     def _(event):
         if state.search_query:
@@ -327,43 +388,52 @@ def run_issue_tui(
         if data and len(data) == 1 and data.isprintable():
             state.search_query += data
 
-    app = Application(
-        layout=Layout(
-            HSplit(
+    main_layout = HSplit(
+        [
+            Window(
+                FormattedTextControl(lambda: _render_tabs(state), show_cursor=False),
+                height=1,
+            ),
+            Window(height=1, char="─"),
+            VSplit(
                 [
                     Window(
                         FormattedTextControl(
-                            lambda: _render_tabs(state), show_cursor=False
-                        ),
-                        height=1,
-                    ),
-                    Window(height=1, char="─"),
-                    VSplit(
-                        [
-                            Window(
-                                FormattedTextControl(
-                                    lambda: _render_list_current(state),
-                                    show_cursor=False,
-                                    get_cursor_position=lambda: Point(
-                                        0, TABS[state.tab].get_cursor_y(state)
-                                    ),
-                                )
+                            lambda: _render_list_current(state),
+                            show_cursor=False,
+                            get_cursor_position=lambda: Point(
+                                0, TABS[state.tab].get_cursor_y(state)
                             ),
-                            Window(width=1, char="│"),
-                            Window(
-                                FormattedTextControl(
-                                    lambda: _render_preview_current(state)
-                                ),
-                                wrap_lines=True,
-                            ),
-                        ]
+                        )
                     ),
+                    Window(width=1, char="│"),
                     Window(
-                        FormattedTextControl(lambda: _render_status(state)), height=1
+                        FormattedTextControl(lambda: _render_preview_current(state)),
+                        wrap_lines=True,
                     ),
                 ]
-            )
+            ),
+            Window(FormattedTextControl(lambda: _render_status(state)), height=1),
+        ]
+    )
+
+    help_float = Float(
+        content=ConditionalContainer(
+            content=Frame(
+                Window(
+                    FormattedTextControl(
+                        lambda: _render_help(state), show_cursor=False
+                    ),
+                    wrap_lines=False,
+                ),
+                title="ヘルプ (? / Esc / q で閉じる)",
+            ),
+            filter=help_mode,
         ),
+    )
+
+    app = Application(
+        layout=Layout(FloatContainer(content=main_layout, floats=[help_float])),
         key_bindings=kb,
         full_screen=True,
     )

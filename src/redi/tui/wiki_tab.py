@@ -105,7 +105,7 @@ def _render_preview(state: TuiState) -> Renderable:
 def _status_hint(state: TuiState) -> str:
     return (
         " ↑↓/jk:移動 gg/G:先頭末尾 /:検索 n/N:次前 Enter:本文ロード "
-        "c:作成 u:更新 v:web Tab:タブ切替 q:終了 "
+        "c:作成 u:更新 v:web Tab:タブ切替 ?:ヘルプ q:終了 "
     )
 
 
