@@ -16,6 +16,14 @@ def list_memberships(project_id: str, full: bool = False) -> None:
         print(_format_membership_line(m))
 
 
+def fetch_project_users(project_id: str) -> list[dict]:
+    """プロジェクトのメンバー（user）を返す。"""
+    response = client.get(f"/projects/{project_id}/memberships.json")
+    response.raise_for_status()
+    memberships = response.json()["memberships"]
+    return [m["user"] for m in memberships if m.get("user")]
+
+
 def fetch_membership(membership_id: str) -> dict:
     response = client.get(f"/memberships/{membership_id}.json")
     if response.status_code == 404:

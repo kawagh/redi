@@ -281,7 +281,7 @@ def update_issue(
         issue_data["status_id"] = status_id
     if priority_id:
         issue_data["priority_id"] = priority_id
-    if assigned_to_id:
+    if assigned_to_id is not None:
         issue_data["assigned_to_id"] = assigned_to_id
     if fixed_version_id:
         issue_data["fixed_version_id"] = fixed_version_id

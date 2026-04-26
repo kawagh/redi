@@ -29,6 +29,7 @@ from redi.api.issue import (
 )
 from redi.api.issue_relation import create_relation, delete_relation
 from redi.api.issue_status import fetch_issue_statuses
+from redi.api.membership import fetch_project_users
 from redi.api.time_entry import create_time_entry
 from redi.api.tracker import fetch_trackers
 from redi.api.version import fetch_versions
@@ -219,6 +220,7 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         ("description", "説明 (description)"),
         ("status", "ステータス (status)"),
         ("priority", "優先度 (priority)"),
+        ("assigned_to", "担当者 (assigned_to)"),
         ("fixed_version", "対象バージョン (fixed_version)"),
         ("start_date", "開始日 (start_date)"),
         ("due_date", "期日 (due_date)"),
@@ -272,6 +274,24 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
             priority_labels = dict(priority_options)
             args.priority_id = inline_choice("優先度", priority_options)
             print(f"優先度: {priority_labels[args.priority_id]}")
+        if "assigned_to" in selected:
+            project_id = (current.get("project") or {}).get("id")
+            if not project_id:
+                print("プロジェクトが特定できないためキャンセルしました")
+                exit(1)
+            users = fetch_project_users(str(project_id))
+            assignee_options: list[tuple[str, str]] = [("", "（担当者なし）")] + [
+                (str(u["id"]), u["name"]) for u in users
+            ]
+            assignee_labels = dict(assignee_options)
+            current_assignee_id = (current.get("assigned_to") or {}).get("id")
+            default_assignee = (
+                str(current_assignee_id) if current_assignee_id is not None else ""
+            )
+            args.assigned_to_id = inline_choice(
+                "担当者", assignee_options, default=default_assignee
+            )
+            print(f"担当者: {assignee_labels[args.assigned_to_id]}")
         if "fixed_version" in selected:
             project_id = (current.get("project") or {}).get("id")
             if not project_id:
@@ -476,7 +496,7 @@ def handle_issue_update(args: argparse.Namespace) -> None:
         or args.tracker_id
         or args.status_id
         or args.priority_id
-        or args.assigned_to_id
+        or args.assigned_to_id is not None
         or args.fixed_version_id
         or args.parent_issue_id is not None
         or args.start_date is not None
@@ -505,7 +525,7 @@ def handle_issue_update(args: argparse.Namespace) -> None:
         or args.tracker_id
         or args.status_id
         or args.priority_id
-        or args.assigned_to_id
+        or args.assigned_to_id is not None
         or args.fixed_version_id
         or args.parent_issue_id is not None
         or args.start_date is not None
