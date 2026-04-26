@@ -2,6 +2,16 @@
 
 `redi` is a Redmine CLI/TUI tool that wraps the Redmine REST API.
 
+## Quickstart
+
+```sh
+redi init                # interactive: enter Redmine URL and API key
+redi --tui               # launch the TUI
+redi issue               # or list issues
+```
+
+See [Setup](#setup) for profile / environment variable details and [Usage (examples)](#usage-examples) for the full command reference.
+
 ## Install
 
 I recommend installation via [uv](https://github.com/astral-sh/uv).
