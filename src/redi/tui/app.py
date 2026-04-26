@@ -7,8 +7,16 @@ from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import Layout
-from prompt_toolkit.layout.containers import HSplit, VSplit, Window
+from prompt_toolkit.layout.containers import (
+    ConditionalContainer,
+    Float,
+    FloatContainer,
+    HSplit,
+    VSplit,
+    Window,
+)
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.widgets import Frame
 
 from redi.api.issue import fetch_issues
 from redi.config import default_project_id
@@ -88,6 +96,23 @@ def _render_preview_current(state: TuiState) -> Renderable:
     return TABS[state.tab].render_preview(state)
 
 
+def _render_help(state: TuiState) -> Renderable:
+    lines = TABS[state.tab].help_lines
+    width = max(len(key) for key, _ in lines) + 2
+    parts: Renderable = []
+    seen_section = False
+    for key, desc in lines:
+        if not desc:
+            if seen_section:
+                parts.append(("", "\n"))
+            parts.append(("bold", f"{key}\n"))
+            seen_section = True
+        else:
+            parts.append(("bold fg:ansicyan", key.ljust(width)))
+            parts.append(("", f"  {desc}\n"))
+    return parts
+
+
 def _render_status(state: TuiState) -> Renderable:
     if state.confirm_delete_prompt is not None:
         return [("reverse", f" {state.confirm_delete_prompt} ")]
@@ -146,10 +171,15 @@ def run_issue_tui(
 
     kb = KeyBindings()
     normal_mode = Condition(
-        lambda: not state.search_mode and state.confirm_delete_prompt is None
+        lambda: (
+            not state.search_mode
+            and state.confirm_delete_prompt is None
+            and not state.show_help
+        )
     )
     search_mode = Condition(lambda: state.search_mode)
     confirm_delete_mode = Condition(lambda: state.confirm_delete_prompt is not None)
+    help_mode = Condition(lambda: state.show_help)
 
     def _clear_temporary_state() -> None:
         state.number_buffer = ""
@@ -302,6 +332,15 @@ def run_issue_tui(
     def _(event):
         event.app.exit(result=None)
 
+    @kb.add("?", filter=normal_mode)
+    def _(event):
+        _clear_temporary_state()
+        state.show_help = True
+
+    @kb.add("<any>", filter=help_mode)
+    def _(event):
+        state.show_help = False
+
     @kb.add("enter", filter=search_mode)
     def _(event):
         if state.search_query:
@@ -327,43 +366,67 @@ def run_issue_tui(
         if data and len(data) == 1 and data.isprintable():
             state.search_query += data
 
-    app = Application(
-        layout=Layout(
-            HSplit(
+    main_layout = HSplit(
+        [
+            Window(
+                FormattedTextControl(lambda: _render_tabs(state), show_cursor=False),
+                height=1,
+            ),
+            Window(height=1, char="─"),
+            VSplit(
                 [
                     Window(
                         FormattedTextControl(
-                            lambda: _render_tabs(state), show_cursor=False
-                        ),
-                        height=1,
-                    ),
-                    Window(height=1, char="─"),
-                    VSplit(
-                        [
-                            Window(
-                                FormattedTextControl(
-                                    lambda: _render_list_current(state),
-                                    show_cursor=False,
-                                    get_cursor_position=lambda: Point(
-                                        0, TABS[state.tab].get_cursor_y(state)
-                                    ),
-                                )
+                            lambda: _render_list_current(state),
+                            show_cursor=False,
+                            get_cursor_position=lambda: Point(
+                                0, TABS[state.tab].get_cursor_y(state)
                             ),
-                            Window(width=1, char="│"),
-                            Window(
-                                FormattedTextControl(
-                                    lambda: _render_preview_current(state)
-                                ),
-                                wrap_lines=True,
-                            ),
-                        ]
+                        )
                     ),
+                    Window(width=1, char="│"),
                     Window(
-                        FormattedTextControl(lambda: _render_status(state)), height=1
+                        FormattedTextControl(lambda: _render_preview_current(state)),
+                        wrap_lines=True,
                     ),
                 ]
-            )
+            ),
+            Window(FormattedTextControl(lambda: _render_status(state)), height=1),
+        ]
+    )
+
+    # Frame を VSplit で挟んで左右に幅1の空白パディングを置く。
+    # Float の真下の行が CJK 文字 (display width=2) で終わると、その2セル目と
+    # Frame の左ボーダーが同じ列に重なり、prompt_toolkit のレンダラが wide
+    # char の幅ぶんカーソルを進めて Frame ボーダーのセルをスキップしてしまう
+    # (= 縁が表示されない)。1セルの空白を挟むとスキップ先がボーダーではなく
+    # 空白セルに変わるので、ボーダーは常に描画される。
+    help_float = Float(
+        content=ConditionalContainer(
+            content=VSplit(
+                [
+                    Window(width=1, char=" "),
+                    Frame(
+                        Window(
+                            FormattedTextControl(
+                                lambda: _render_help(state), show_cursor=False
+                            ),
+                            wrap_lines=False,
+                        ),
+                        title=lambda: (
+                            f"ヘルプ - {TABS[state.tab].label} タブ "
+                            "(任意のキーで閉じる)"
+                        ),
+                    ),
+                    Window(width=1, char=" "),
+                ]
+            ),
+            filter=help_mode,
         ),
+    )
+
+    app = Application(
+        layout=Layout(FloatContainer(content=main_layout, floats=[help_float])),
         key_bindings=kb,
         full_screen=True,
     )
