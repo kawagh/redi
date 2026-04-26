@@ -68,6 +68,10 @@ def _render_preview(state: TuiState) -> Renderable:
             if issue.get("estimated_hours") is not None
             else "",
         ),
+        (
+            "作業時間",
+            f"{issue['spent_hours']} h" if issue.get("spent_hours") is not None else "",
+        ),
         ("作成", issue.get("created_on") or ""),
         ("更新", issue.get("updated_on") or ""),
     ]
