@@ -20,6 +20,7 @@ class TestCreateProfile:
             default_project_id="1",
             wiki_project_id="2",
             editor="nvim",
+            language="ja",
             config_path=config_path,
         )
 
@@ -32,6 +33,7 @@ class TestCreateProfile:
             "default_project_id": "1",
             "wiki_project_id": "2",
             "editor": "nvim",
+            "language": "ja",
         }
 
     def test_skips_unspecified_keys(self, tmp_path):
@@ -186,6 +188,25 @@ class TestUpdateConfig:
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
         assert doc["main"]["redmine_url"] == "https://redmine.example.com/new"
+
+    def test_updates_language(self, tmp_path):
+        """language キーを更新できる"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://redmine.example.com"
+            language = "en"
+        """)
+        )
+
+        config.update_config("language", "ja", config_path=config_path)
+
+        with open(config_path, "rb") as f:
+            doc = tomllib.load(f)
+        assert doc["main"]["language"] == "ja"
 
     def test_updates_specified_profile(self, tmp_path):
         """profile引数で指定したプロファイルを更新する"""

@@ -95,6 +95,7 @@ redi config create <profile_name> --url <url> --api_key <key> # create new profi
 redi config create <profile_name> --url <url> --api_key <key> --set_default
 redi config update --default_profile <profile_name> # switch profile
 redi config update <profile_name> --editor nvim # update profile
+redi config update --language ja # switch language ("en" or "ja")
 redi --profile <profile_name> issue # temporarily switch profile for this command
 
 # project (alias: p)

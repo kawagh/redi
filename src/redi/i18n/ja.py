@@ -10,6 +10,7 @@ class Ja(MessagesProto):
     default_profile_set = "default_profileを {name} に設定しました"
     default_project_id_set = "default_project_idを {value} に設定しました{suffix}"
     editor_set = "editorを {value} に設定しました{suffix}"
+    language_set = "languageを {value} に設定しました{suffix}"
     redmine_api_key_set = "redmine_api_keyを設定しました{suffix}"
     redmine_url_set = "redmine_urlを {value} に設定しました{suffix}"
     wiki_project_id_set = "wiki_project_idを {value} に設定しました{suffix}"
@@ -551,6 +552,7 @@ class Ja(MessagesProto):
     arg_help_config_set_default_project_id = "デフォルトプロジェクトIDを設定"
     arg_help_config_set_wiki_project_id = "Wiki用プロジェクトIDを設定"
     arg_help_config_set_editor = "エディタを設定"
+    arg_help_config_set_language = "言語を設定 (en または ja)"
     arg_help_config_set_api_key = "Redmine APIキーを設定"
     arg_help_config_set_url = "Redmine URLを設定"
     arg_help_config_set_default_profile = "デフォルトプロファイルを設定"
@@ -561,6 +563,7 @@ class Ja(MessagesProto):
     arg_help_config_default_project_id = "デフォルトプロジェクトID"
     arg_help_config_wiki_project_id = "Wiki用プロジェクトID"
     arg_help_config_editor = "エディタ"
+    arg_help_config_language = "言語 (en または ja)"
     arg_help_config_set_default_flag = "作成したプロファイルをdefault_profileに設定"
 
     # ---- argparse helps (init) ----

@@ -8,6 +8,7 @@ class En(MessagesProto):
     default_profile_set = "Set default_profile to {name}"
     default_project_id_set = "Set default_project_id to {value}{suffix}"
     editor_set = "Set editor to {value}{suffix}"
+    language_set = "Set language to {value}{suffix}"
     redmine_api_key_set = "Set redmine_api_key{suffix}"
     redmine_url_set = "Set redmine_url to {value}{suffix}"
     wiki_project_id_set = "Set wiki_project_id to {value}{suffix}"
@@ -543,6 +544,7 @@ class En(MessagesProto):
     arg_help_config_set_default_project_id = "Set default project ID"
     arg_help_config_set_wiki_project_id = "Set wiki project ID"
     arg_help_config_set_editor = "Set editor"
+    arg_help_config_set_language = "Set language (en or ja)"
     arg_help_config_set_api_key = "Set Redmine API key"
     arg_help_config_set_url = "Set Redmine URL"
     arg_help_config_set_default_profile = "Set default profile"
@@ -553,6 +555,7 @@ class En(MessagesProto):
     arg_help_config_default_project_id = "Default project ID"
     arg_help_config_wiki_project_id = "Wiki project ID"
     arg_help_config_editor = "Editor"
+    arg_help_config_language = "Language (en or ja)"
     arg_help_config_set_default_flag = "Set the created profile as default_profile"
 
     # ---- argparse helps (init) ----
