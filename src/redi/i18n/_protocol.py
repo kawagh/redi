@@ -19,6 +19,8 @@ class MessagesProto(Protocol):
     """default_project_id を設定。{value}, {suffix}"""
     editor_set: str
     """editor を設定。{value}, {suffix}"""
+    language_set: str
+    """language を設定。{value}, {suffix}"""
     redmine_api_key_set: str
     """redmine_api_key を設定。{suffix}"""
     redmine_url_set: str
@@ -675,6 +677,7 @@ class MessagesProto(Protocol):
     arg_help_config_set_default_project_id: str
     arg_help_config_set_wiki_project_id: str
     arg_help_config_set_editor: str
+    arg_help_config_set_language: str
     arg_help_config_set_api_key: str
     arg_help_config_set_url: str
     arg_help_config_set_default_profile: str
@@ -685,6 +688,7 @@ class MessagesProto(Protocol):
     arg_help_config_default_project_id: str
     arg_help_config_wiki_project_id: str
     arg_help_config_editor: str
+    arg_help_config_language: str
     arg_help_config_set_default_flag: str
 
     # ---- argparse helps (init) ----

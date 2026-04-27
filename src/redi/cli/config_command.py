@@ -2,6 +2,7 @@ import argparse
 
 from redi.cli._common import resolve_alias
 from redi.config import (
+    SUPPORTED_LANGUAGES,
     create_profile,
     set_default_profile,
     show_config,
@@ -33,6 +34,11 @@ def add_config_parser(subparsers: argparse._SubParsersAction) -> None:
         "--wiki_project_id", help=messages.arg_help_config_set_wiki_project_id
     )
     c_update_parser.add_argument("--editor", help=messages.arg_help_config_set_editor)
+    c_update_parser.add_argument(
+        "--language",
+        choices=SUPPORTED_LANGUAGES,
+        help=messages.arg_help_config_set_language,
+    )
     c_update_parser.add_argument("--api_key", help=messages.arg_help_config_set_api_key)
     c_update_parser.add_argument("--url", help=messages.arg_help_config_set_url)
     c_update_parser.add_argument(
@@ -54,6 +60,11 @@ def add_config_parser(subparsers: argparse._SubParsersAction) -> None:
     )
     c_create_parser.add_argument("--editor", help=messages.arg_help_config_editor)
     c_create_parser.add_argument(
+        "--language",
+        choices=SUPPORTED_LANGUAGES,
+        help=messages.arg_help_config_language,
+    )
+    c_create_parser.add_argument(
         "--set_default",
         action="store_true",
         help=messages.arg_help_config_set_default_flag,
@@ -70,6 +81,7 @@ def handle_config(args: argparse.Namespace) -> None:
             default_project_id=args.project_id,
             wiki_project_id=args.wiki_project_id,
             editor=args.editor,
+            language=args.language,
         )
         if not result.created:
             exit(1)
@@ -106,6 +118,10 @@ def handle_config(args: argparse.Namespace) -> None:
     if args.editor:
         update_config("editor", args.editor, profile)
         print(messages.editor_set.format(value=args.editor, suffix=profile_suffix))
+        updated = True
+    if args.language:
+        update_config("language", args.language, profile)
+        print(messages.language_set.format(value=args.language, suffix=profile_suffix))
         updated = True
     if args.api_key:
         update_config("redmine_api_key", args.api_key, profile)

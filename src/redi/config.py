@@ -9,6 +9,8 @@ from tomlkit.items import Table
 
 CONFIG_PATH = Path.home() / ".config" / "redi" / "config.toml"
 
+SUPPORTED_LANGUAGES = ("en", "ja")
+
 _default_config = {
     "redmine_url": "",
     "redmine_api_key": "",
@@ -126,6 +128,7 @@ def create_profile(
     default_project_id: str | None = None,
     wiki_project_id: str | None = None,
     editor: str | None = None,
+    language: str | None = None,
     config_path: Path | None = None,
 ) -> CreateProfileResult:
     path = config_path or CONFIG_PATH
@@ -153,6 +156,8 @@ def create_profile(
         table["wiki_project_id"] = wiki_project_id
     if editor is not None:
         table["editor"] = editor
+    if language is not None:
+        table["language"] = language
     doc[profile_name] = table
 
     profile_names = [k for k, v in doc.items() if isinstance(v, Table)]
