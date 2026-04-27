@@ -44,3 +44,20 @@ jobs:
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release-notes:
+    name: create GitHub Release Notes
+    # PyPIへのpublishが失敗した場合にリリースノートだけ作成されるのを防ぐ
+    needs: pypi-publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create Release Note
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # リリースノート以外はアップロードせずインストール先はPyPIだけに限る
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --generate-notes
