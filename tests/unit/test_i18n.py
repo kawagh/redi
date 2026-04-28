@@ -32,20 +32,20 @@ class TestPlaceholdersParity:
         assert not mismatched, mismatched
 
 
-class TestSelect:
-    """_select() は config.language に応じて Ja / En を返す"""
+class TestSelectMessages:
+    """select_messages() は config.language に応じて Ja / En を返す"""
 
     def test_returns_ja_for_ja(self):
         """language='ja' のとき Ja を返す"""
-        assert isinstance(i18n._select("ja"), Ja)
+        assert isinstance(i18n.select_messages("ja"), Ja)
 
     def test_returns_en_for_en(self):
         """language='en' のとき En を返す"""
-        assert isinstance(i18n._select("en"), En)
+        assert isinstance(i18n.select_messages("en"), En)
 
     def test_falls_back_to_en_for_unknown(self):
         """未知の言語コードは default(en) にフォールバックする"""
-        assert isinstance(i18n._select("zz"), En)
+        assert isinstance(i18n.select_messages("zz"), En)
 
 
 class TestFormat:

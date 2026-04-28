@@ -5,10 +5,10 @@ from .en import En
 from .ja import Ja
 
 
-def _select(lang: str) -> MessagesProto:
+def select_messages(lang: str) -> MessagesProto:
     if lang == "ja":
         return Ja()
     return En()
 
 
-messages: MessagesProto = _select(config.language)
+messages: MessagesProto = select_messages(config.language)
