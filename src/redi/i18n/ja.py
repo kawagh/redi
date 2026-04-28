@@ -730,6 +730,8 @@ class Ja(MessagesProto):
     tui_help_jump_to_issue_n = "#N のイシューへジャンプ"
     tui_help_prev_next_page = "前ページ / 次ページ"
     tui_help_switch_tab = "タブ切替 (次 / 前)"
+    tui_help_preview_scroll_line = "プレビューを 1 行スクロール (上 / 下)"
+    tui_help_preview_scroll_half_page = "プレビューを半ページスクロール (上 / 下)"
     tui_help_start_search = "検索開始"
     tui_help_next_prev_match = "次 / 前の検索結果"
     tui_help_filter_status_assignee = "ステータス/担当者でフィルタ (フローティング)"

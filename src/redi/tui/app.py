@@ -102,8 +102,48 @@ def _render_list_current(state: TuiState) -> Renderable:
     return TABS[state.tab].render_list(state)
 
 
+def _skip_lines(parts: Renderable, n: int) -> Renderable:
+    """`parts` の先頭から論理行 (newline 区切り) を `n` 個分捨てて残りを返す。
+
+    prompt_toolkit の `Window` は `wrap_lines=True` 時に `get_vertical_scroll`
+    を参照しないため、レンダー結果側で先頭をスライスしてプレビューのスクロール
+    を実現する。
+    """
+    if n <= 0:
+        return list(parts)
+    result: Renderable = []
+    seen = 0
+    started = False
+    for style, text in parts:
+        if started:
+            result.append((style, text))
+            continue
+        nl_in_text = text.count("\n")
+        if seen + nl_in_text < n:
+            seen += nl_in_text
+            continue
+        need = n - seen
+        idx = -1
+        for _ in range(need):
+            idx = text.find("\n", idx + 1)
+        rest = text[idx + 1 :]
+        if rest:
+            result.append((style, rest))
+        started = True
+    return result
+
+
+def _count_logical_lines(parts: Renderable) -> int:
+    if not parts:
+        return 0
+    return sum(text.count("\n") for _, text in parts) + 1
+
+
 def _render_preview_current(state: TuiState) -> Renderable:
-    return TABS[state.tab].render_preview(state)
+    parts = TABS[state.tab].render_preview(state)
+    if state.preview_scroll <= 0:
+        return parts
+    return _skip_lines(parts, state.preview_scroll)
 
 
 def _build_status_choices() -> list[tuple[str | None, str]]:
@@ -273,9 +313,21 @@ def run_issue_tui(
         state.number_buffer = ""
         state.flash_message = None
 
+    def _reset_preview_scroll() -> None:
+        state.preview_scroll = 0
+
+    def _scroll_preview(delta: int) -> None:
+        new_scroll = max(0, state.preview_scroll + delta)
+        # 最低 1 行は表示が残るように、クランプは「論理行数 - 1」まで。
+        # wrap_lines=True で実視覚行は logical を超え得るが、簡易クランプとして許容。
+        total = _count_logical_lines(TABS[state.tab].render_preview(state))
+        new_scroll = min(new_scroll, max(0, total - 1))
+        state.preview_scroll = new_scroll
+
     @kb.add("tab", filter=normal_mode)
     def _(event):
         _clear_temporary_state()
+        _reset_preview_scroll()
         tab_keys = list(TABS.keys())
         idx = tab_keys.index(state.tab)
         state.tab = tab_keys[(idx + 1) % len(tab_keys)]
@@ -284,6 +336,7 @@ def run_issue_tui(
     @kb.add("s-tab", filter=normal_mode)
     def _(event):
         _clear_temporary_state()
+        _reset_preview_scroll()
         tab_keys = list(TABS.keys())
         idx = tab_keys.index(state.tab)
         state.tab = tab_keys[(idx - 1) % len(tab_keys)]
@@ -294,6 +347,7 @@ def run_issue_tui(
     @kb.add("c-p", filter=normal_mode)
     def _(event):
         _clear_temporary_state()
+        _reset_preview_scroll()
         TABS[state.tab].on_up(state)
 
     @kb.add("down", filter=normal_mode)
@@ -301,11 +355,13 @@ def run_issue_tui(
     @kb.add("c-n", filter=normal_mode)
     def _(event):
         _clear_temporary_state()
+        _reset_preview_scroll()
         TABS[state.tab].on_down(state)
 
     @kb.add("g", "g", filter=normal_mode)
     def _(event):
         _clear_temporary_state()
+        _reset_preview_scroll()
         TABS[state.tab].on_goto_top(state)
 
     @kb.add("G", filter=normal_mode)
@@ -316,9 +372,11 @@ def run_issue_tui(
             except ValueError:
                 target_id = None
             _clear_temporary_state()
+            _reset_preview_scroll()
             if target_id is not None:
                 TABS[state.tab].on_jump_to_id(state, target_id)
         else:
+            _reset_preview_scroll()
             TABS[state.tab].on_goto_bottom(state)
 
     for digit in "0123456789":
@@ -334,13 +392,31 @@ def run_issue_tui(
     @kb.add("l", filter=normal_mode)
     def _(event):
         _clear_temporary_state()
+        _reset_preview_scroll()
         TABS[state.tab].on_page_forward(state)
 
     @kb.add("left", filter=normal_mode)
     @kb.add("h", filter=normal_mode)
     def _(event):
         _clear_temporary_state()
+        _reset_preview_scroll()
         TABS[state.tab].on_page_backward(state)
+
+    @kb.add("c-e", filter=normal_mode)
+    def _(event):
+        _scroll_preview(1)
+
+    @kb.add("c-y", filter=normal_mode)
+    def _(event):
+        _scroll_preview(-1)
+
+    @kb.add("c-d", filter=normal_mode)
+    def _(event):
+        _scroll_preview(max(1, state.page_size // 2))
+
+    @kb.add("c-u", filter=normal_mode)
+    def _(event):
+        _scroll_preview(-max(1, state.page_size // 2))
 
     @kb.add("enter", filter=normal_mode)
     def _(event):
@@ -376,6 +452,7 @@ def run_issue_tui(
     def _(event):
         _clear_temporary_state()
         if state.search_query:
+            _reset_preview_scroll()
             TABS[state.tab].on_search(state, state.search_query, forward=True)
             return
         result = TABS[state.tab].on_action_key(state, "n")
@@ -386,6 +463,7 @@ def run_issue_tui(
     def _(event):
         _clear_temporary_state()
         if state.search_query:
+            _reset_preview_scroll()
             TABS[state.tab].on_search(state, state.search_query, forward=False)
 
     @kb.add("/", filter=normal_mode)
@@ -500,6 +578,7 @@ def run_issue_tui(
             api_val, label = modal.assignee_choices[modal.assignee_cursor]
             state.issue_tab.filter.assigned_to_id = api_val
             state.issue_tab.filter.assigned_to_label = label
+        _reset_preview_scroll()
         reload_with_filter(state)
 
     @kb.add("c", filter=filter_mode)
@@ -508,6 +587,7 @@ def run_issue_tui(
         modal = state.issue_tab.filter_modal
         modal.status_cursor = 0
         modal.assignee_cursor = 0
+        _reset_preview_scroll()
         reload_with_filter(state)
 
     @kb.add("escape", filter=filter_mode)
@@ -519,6 +599,7 @@ def run_issue_tui(
     @kb.add("enter", filter=search_mode)
     def _(event):
         if state.search_query:
+            _reset_preview_scroll()
             TABS[state.tab].on_search(state, state.search_query)
         state.search_mode = False
 
@@ -541,6 +622,11 @@ def run_issue_tui(
         if data and len(data) == 1 and data.isprintable():
             state.search_query += data
 
+    preview_window = Window(
+        FormattedTextControl(lambda: _render_preview_current(state)),
+        wrap_lines=True,
+    )
+
     main_layout = HSplit(
         [
             Window(
@@ -560,10 +646,7 @@ def run_issue_tui(
                         )
                     ),
                     Window(width=1, char="│"),
-                    Window(
-                        FormattedTextControl(lambda: _render_preview_current(state)),
-                        wrap_lines=True,
-                    ),
+                    preview_window,
                 ]
             ),
             Window(FormattedTextControl(lambda: _render_status(state)), height=1),
