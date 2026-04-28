@@ -112,9 +112,17 @@ def _status_hint(state: TuiState) -> str:
 
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
     if key == "c":
+        entries = state.time_entry_tab.entries
+        issue_id: str | None = None
+        if entries:
+            te = entries[state.time_entry_tab.cursor]
+            cursor_issue_id = (te.get("issue") or {}).get("id")
+            if cursor_issue_id is not None:
+                issue_id = str(cursor_issue_id)
         return TuiResult(
             action="create",
             tab="time_entries",
+            issue_id=issue_id,
             position=TuiPosition(cursor=state.time_entry_tab.cursor),
         )
     if key == "u":

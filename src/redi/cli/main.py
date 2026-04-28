@@ -236,7 +236,7 @@ def main() -> None:
                         user_id=None,
                         full=False,
                         hours=None,
-                        issue_id=None,
+                        issue_id=tui_result.issue_id,
                         activity_id=None,
                         spent_on=None,
                         comments=None,
