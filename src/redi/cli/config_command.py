@@ -8,7 +8,7 @@ from redi.config import (
     show_config,
     update_config,
 )
-from redi.i18n import messages
+from redi.i18n import messages, select_messages
 
 
 def add_config_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -121,7 +121,12 @@ def handle_config(args: argparse.Namespace) -> None:
         updated = True
     if args.language:
         update_config("language", args.language, profile)
-        print(messages.language_set.format(value=args.language, suffix=profile_suffix))
+        new_lang_messages = select_messages(args.language)
+        print(
+            new_lang_messages.language_set.format(
+                value=args.language, suffix=profile_suffix
+            )
+        )
         updated = True
     if args.api_key:
         update_config("redmine_api_key", args.api_key, profile)
