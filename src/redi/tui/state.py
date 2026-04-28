@@ -124,3 +124,6 @@ class TuiState:
     flash_message: str | None = None
     # ? でヘルプの floating window を表示しているかどうか。
     show_help: bool = False
+    # 右ペイン (preview) のスクロール位置 (先頭からの行数)。
+    # カーソル移動・タブ切り替え時に 0 に戻す。
+    preview_scroll: int = 0
