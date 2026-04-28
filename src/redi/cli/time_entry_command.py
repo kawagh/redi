@@ -116,8 +116,10 @@ def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
 def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
     try:
         if not args.issue_id and not args.project_id:
+            default_issue_id = getattr(args, "default_issue_id", None) or ""
             issue_id = prompt(
                 messages.prompt_issue_id_or_project,
+                default=default_issue_id,
                 key_bindings=digit_only_key_bindings(),
             ).strip()
             if issue_id:
