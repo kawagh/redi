@@ -102,8 +102,48 @@ def _render_list_current(state: TuiState) -> Renderable:
     return TABS[state.tab].render_list(state)
 
 
+def _skip_lines(parts: Renderable, n: int) -> Renderable:
+    """`parts` の先頭から論理行 (newline 区切り) を `n` 個分捨てて残りを返す。
+
+    prompt_toolkit の `Window` は `wrap_lines=True` 時に `get_vertical_scroll`
+    を参照しないため、レンダー結果側で先頭をスライスしてプレビューのスクロール
+    を実現する。
+    """
+    if n <= 0:
+        return list(parts)
+    result: Renderable = []
+    seen = 0
+    started = False
+    for style, text in parts:
+        if started:
+            result.append((style, text))
+            continue
+        nl_in_text = text.count("\n")
+        if seen + nl_in_text < n:
+            seen += nl_in_text
+            continue
+        need = n - seen
+        idx = -1
+        for _ in range(need):
+            idx = text.find("\n", idx + 1)
+        rest = text[idx + 1 :]
+        if rest:
+            result.append((style, rest))
+        started = True
+    return result
+
+
+def _count_logical_lines(parts: Renderable) -> int:
+    if not parts:
+        return 0
+    return sum(text.count("\n") for _, text in parts) + 1
+
+
 def _render_preview_current(state: TuiState) -> Renderable:
-    return TABS[state.tab].render_preview(state)
+    parts = TABS[state.tab].render_preview(state)
+    if state.preview_scroll <= 0:
+        return parts
+    return _skip_lines(parts, state.preview_scroll)
 
 
 def _build_status_choices() -> list[tuple[str | None, str]]:
