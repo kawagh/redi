@@ -722,6 +722,8 @@ class En(MessagesProto):
     tui_help_jump_to_issue_n = "Jump to issue #N"
     tui_help_prev_next_page = "Previous / next page"
     tui_help_switch_tab = "Switch tab (next / prev)"
+    tui_help_preview_scroll_line = "Scroll preview up / down by 1 line"
+    tui_help_preview_scroll_half_page = "Scroll preview up / down by half page"
     tui_help_start_search = "Start search"
     tui_help_next_prev_match = "Next / previous match"
     tui_help_filter_status_assignee = "Filter by status/assignee (floating)"

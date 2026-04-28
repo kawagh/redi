@@ -246,6 +246,8 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  <N>G", messages.tui_help_jump_to_issue_n),
     ("  ←/h / →/l", messages.tui_help_prev_next_page),
     ("  Tab / Shift+Tab", messages.tui_help_switch_tab),
+    ("  Ctrl+E / Ctrl+Y", messages.tui_help_preview_scroll_line),
+    ("  Ctrl+D / Ctrl+U", messages.tui_help_preview_scroll_half_page),
     (messages.tui_help_section_search, ""),
     ("  /", messages.tui_help_start_search),
     ("  n / N", messages.tui_help_next_prev_match),

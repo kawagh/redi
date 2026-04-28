@@ -848,6 +848,8 @@ class MessagesProto(Protocol):
     tui_help_jump_to_issue_n: str
     tui_help_prev_next_page: str
     tui_help_switch_tab: str
+    tui_help_preview_scroll_line: str
+    tui_help_preview_scroll_half_page: str
     tui_help_start_search: str
     tui_help_next_prev_match: str
     tui_help_filter_status_assignee: str
