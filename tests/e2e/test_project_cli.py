@@ -1,6 +1,6 @@
 import pytest
 
-from tests.e2e._helpers import run_redi, unique_identifier
+from tests.e2e.utils import run_redi, unique_identifier
 
 
 @pytest.mark.e2e
