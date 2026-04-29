@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-docker compose down redmine-for-test
-docker compose up -d redmine-for-test
+docker compose --profile dogfooding up -d redmine-for-dogfooding
 sleep 5
-API_KEYS_OUTPUT=$(docker exec -i redi-redmine-for-test-1 rails runner - <<RUBY
+
+API_KEYS_OUTPUT=$(docker exec -i redi-redmine-for-dogfooding-1 rails runner - <<RUBY
     # 初期生成される管理者のパスワードを変更
     admin = User.find_by(login: 'admin')
     admin.password = 'adminadmin'
@@ -12,15 +12,15 @@ API_KEYS_OUTPUT=$(docker exec -i redi-redmine-for-test-1 rails runner - <<RUBY
     admin.must_change_passwd = false
     admin.save!
 
-    # 初期設定を読み込み
-    Redmine::DefaultData::Loader.load('ja')
+    # 初期設定を読み込み（未ロードの場合のみ）
+    Redmine::DefaultData::Loader.load('ja') if Redmine::DefaultData::Loader.no_data?
 
     Setting.rest_api_enabled = '1'
 
-    # テスト用プロジェクトを作成
-    project = Project.find_or_initialize_by(identifier: 'reditest')
-    project.name = 'reditestプロジェクト'
-    project.description = 'rediのtest用に作成されたプロジェクト'
+    # dogfooding用プロジェクト(redi_df)を作成
+    project = Project.find_or_initialize_by(identifier: 'redi_df')
+    project.name = 'redi_dfプロジェクト'
+    project.description = 'rediのdogfooding用に作成されたプロジェクト'
     project.is_public = true
     project.enabled_module_names = %w[issue_tracking time_tracking news wiki]
     project.save!
@@ -54,7 +54,7 @@ API_KEYS_OUTPUT=$(docker exec -i redi-redmine-for-test-1 rails runner - <<RUBY
     developer.status = User::STATUS_ACTIVE
     developer.save!
 
-    # sandbox_developer を reditest プロジェクトのメンバーに追加（開発者ロール）
+    # sandbox_developer を redi_df プロジェクトのメンバーに追加（開発者ロール）
     developer_role = Role.find_by(name: '開発者')
     if developer_role
       member = Member.find_or_initialize_by(user_id: developer.id, project_id: project.id)
@@ -69,16 +69,15 @@ RUBY
 ADMIN_API_KEY=$(echo "$API_KEYS_OUTPUT" | grep '^ADMIN_KEY=' | tail -1 | cut -d= -f2)
 DEVELOPER_API_KEY=$(echo "$API_KEYS_OUTPUT" | grep '^DEVELOPER_KEY=' | tail -1 | cut -d= -f2)
 
-redi config create sandbox_admin || true # profile作成がべき等でないので失敗するのを当座で防ぐ
-redi config update --default_profile sandbox_admin
-redi config update sandbox_admin \
-    --url "http://localhost:3000" \
+redi config create dogfooding_admin || true # profile作成がべき等でないので失敗するのを当座で防ぐ
+redi config update --default_profile dogfooding_admin
+redi config update dogfooding_admin \
+    --url "http://localhost:3001" \
     --api_key "$ADMIN_API_KEY" \
-    --project_id "reditest"
+    --project_id "redi_df"
 
-redi config create sandbox_developer || true
-redi config update sandbox_developer \
-    --url "http://localhost:3000" \
+redi config create dogfooding_developer || true
+redi config update dogfooding_developer \
+    --url "http://localhost:3001" \
     --api_key "$DEVELOPER_API_KEY" \
-    --project_id "reditest"
-
+    --project_id "redi_df"
