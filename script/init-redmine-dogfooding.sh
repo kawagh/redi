@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+docker compose --profile dogfooding up -d redmine-for-dogfooding
+sleep 5
+
 API_KEYS_OUTPUT=$(docker exec -i redi-redmine-for-dogfooding-1 rails runner - <<RUBY
     # 初期生成される管理者のパスワードを変更
     admin = User.find_by(login: 'admin')
