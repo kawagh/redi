@@ -1,6 +1,32 @@
 import subprocess
+import uuid
 
 import pytest
+
+
+def _run(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["redi", "project", *args],
+        capture_output=True,
+        text=True,
+    )
+
+
+def _unique_identifier(prefix: str) -> str:
+    return f"{prefix}-{uuid.uuid4().hex[:8]}"
+
+
+@pytest.mark.e2e
+class TestProjectList:
+    """`redi project list` はプロジェクト一覧を表示する"""
+
+    def test_lists_initial_project(self):
+        """init-redmine.sh で作成された reditest が一覧に含まれ exit 0 で成功する"""
+        result = _run("list")
+        assert result.returncode == 0, (
+            f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        )
+        assert "reditest" in result.stdout
 
 
 @pytest.mark.e2e
@@ -9,12 +35,83 @@ class TestProjectView:
 
     def test_succeeds_for_existing_project_id(self):
         """init-redmine.sh で作成された id=1 のプロジェクト(reditest)を表示すると exit 0 で成功する"""
-        result = subprocess.run(
-            ["redi", "project", "view", "1"],
-            capture_output=True,
-            text=True,
-        )
+        result = _run("view", "1")
         assert result.returncode == 0, (
             f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
         )
         assert "reditest" in result.stdout
+
+
+@pytest.mark.e2e
+class TestProjectCreate:
+    """`redi project create` は新しいプロジェクトを作成する"""
+
+    def test_creates_then_view_shows_it(self):
+        """create したプロジェクトが view で取得できる (view は正しい前提)"""
+        identifier = _unique_identifier("e2e-create")
+        name = f"e2e create {identifier}"
+
+        create_result = _run("create", name, identifier)
+        assert create_result.returncode == 0, (
+            f"stdout:\n{create_result.stdout}\nstderr:\n{create_result.stderr}"
+        )
+
+        view_result = _run("view", identifier)
+        assert view_result.returncode == 0, (
+            f"stdout:\n{view_result.stdout}\nstderr:\n{view_result.stderr}"
+        )
+        assert name in view_result.stdout
+        assert identifier in view_result.stdout
+
+
+@pytest.mark.e2e
+class TestProjectUpdate:
+    """`redi project update` は既存のプロジェクトを更新する"""
+
+    def test_updates_then_view_shows_new_name(self):
+        """create→update した後 view で更新後の name が確認できる (create/view は正しい前提)"""
+        identifier = _unique_identifier("e2e-update")
+        original_name = f"e2e update original {identifier}"
+        updated_name = f"e2e update updated {identifier}"
+
+        create_result = _run("create", original_name, identifier)
+        assert create_result.returncode == 0, (
+            f"stdout:\n{create_result.stdout}\nstderr:\n{create_result.stderr}"
+        )
+
+        update_result = _run("update", identifier, "--name", updated_name)
+        assert update_result.returncode == 0, (
+            f"stdout:\n{update_result.stdout}\nstderr:\n{update_result.stderr}"
+        )
+
+        view_result = _run("view", identifier)
+        assert view_result.returncode == 0, (
+            f"stdout:\n{view_result.stdout}\nstderr:\n{view_result.stderr}"
+        )
+        assert updated_name in view_result.stdout
+        assert original_name not in view_result.stdout
+
+
+@pytest.mark.e2e
+class TestProjectDelete:
+    """`redi project delete` は指定したプロジェクトを削除する"""
+
+    def test_deletes_then_view_fails(self):
+        """create→delete した後 view が失敗する (create/view は正しい前提)"""
+        identifier = _unique_identifier("e2e-delete")
+        name = f"e2e delete {identifier}"
+
+        create_result = _run("create", name, identifier)
+        assert create_result.returncode == 0, (
+            f"stdout:\n{create_result.stdout}\nstderr:\n{create_result.stderr}"
+        )
+
+        delete_result = _run("delete", identifier, "-y")
+        assert delete_result.returncode == 0, (
+            f"stdout:\n{delete_result.stdout}\nstderr:\n{delete_result.stderr}"
+        )
+
+        view_result = _run("view", identifier)
+        assert view_result.returncode != 0, (
+            f"削除後 view が成功してしまった\nstdout:\n{view_result.stdout}\nstderr:\n{view_result.stderr}"
+        )
