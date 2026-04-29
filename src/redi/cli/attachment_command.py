@@ -10,13 +10,12 @@ from redi.cli._common import confirm_delete, resolve_alias
 from redi.i18n import messages
 
 
-def add_attachment_parser(
-    subparsers: argparse._SubParsersAction,
-) -> argparse.ArgumentParser:
+def add_attachment_parser(subparsers: argparse._SubParsersAction) -> None:
     a_parser = subparsers.add_parser(
         "attachment", help=messages.arg_help_attachment_command
     )
     a_subparsers = a_parser.add_subparsers(dest="attachment_command")
+    a_parser.set_defaults(_print_help=a_parser.print_help)
     a_view_parser = a_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_attachment_view
     )
@@ -47,12 +46,9 @@ def add_attachment_parser(
     a_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
-    return a_parser
 
 
-def handle_attachment(
-    args: argparse.Namespace, a_parser: argparse.ArgumentParser
-) -> None:
+def handle_attachment(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.attachment_command)
     if cmd == "view":
         read_attachment(args.attachment_id, full=args.full)
@@ -72,4 +68,4 @@ def handle_attachment(
             )
         delete_attachment(args.attachment_id)
     else:
-        a_parser.print_help()
+        args._print_help()

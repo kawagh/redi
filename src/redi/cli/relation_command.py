@@ -5,9 +5,7 @@ from redi.cli._common import resolve_alias
 from redi.i18n import messages
 
 
-def add_relation_parser(
-    subparsers: argparse._SubParsersAction,
-) -> argparse.ArgumentParser:
+def add_relation_parser(subparsers: argparse._SubParsersAction) -> None:
     r_parser = subparsers.add_parser(
         "relation", help=messages.arg_help_relation_command
     )
@@ -15,6 +13,7 @@ def add_relation_parser(
         "--full", action="store_true", help=messages.arg_help_full_json
     )
     r_subparsers = r_parser.add_subparsers(dest="relation_command")
+    r_parser.set_defaults(_print_help=r_parser.print_help)
     r_view_parser = r_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_relation_view
     )
@@ -22,14 +21,11 @@ def add_relation_parser(
     r_view_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
     )
-    return r_parser
 
 
-def handle_relation(
-    args: argparse.Namespace, r_parser: argparse.ArgumentParser
-) -> None:
+def handle_relation(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.relation_command)
     if cmd == "view":
         read_relation(args.relation_id, full=args.full)
         return
-    r_parser.print_help()
+    args._print_help()

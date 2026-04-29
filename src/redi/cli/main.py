@@ -57,9 +57,7 @@ from redi.i18n import messages
 from redi.tui import TuiState, run_issue_tui
 
 
-def _build_parser() -> tuple[
-    argparse.ArgumentParser, argparse.ArgumentParser, argparse.ArgumentParser
-]:
+def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=messages.arg_help_root_description)
     parser.add_argument(
         "-V", "--version", action="version", version=f"redi {version('redtile')}"
@@ -97,15 +95,15 @@ def _build_parser() -> tuple[
     add_custom_field_parser(subparsers)
     add_issue_category_parser(subparsers)
     add_search_parser(subparsers)
-    a_parser = add_attachment_parser(subparsers)
-    r_parser = add_relation_parser(subparsers)
+    add_attachment_parser(subparsers)
+    add_relation_parser(subparsers)
     add_time_entry_parser(subparsers)
     add_file_parser(subparsers)
-    return parser, a_parser, r_parser
+    return parser
 
 
 def main() -> None:
-    parser, a_parser, r_parser = _build_parser()
+    parser = _build_parser()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
@@ -300,9 +298,9 @@ def main() -> None:
     elif args.command == "search":
         handle_search(args)
     elif args.command == "attachment":
-        handle_attachment(args, a_parser)
+        handle_attachment(args)
     elif args.command == "relation":
-        handle_relation(args, r_parser)
+        handle_relation(args)
     elif args.command == "time_entry":
         handle_time_entry(args)
     elif args.command == "file":
