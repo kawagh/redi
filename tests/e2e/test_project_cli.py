@@ -112,3 +112,6 @@ class TestProjectDelete:
         assert view_result.returncode != 0, (
             f"削除後 view が成功してしまった\nstdout:\n{view_result.stdout}\nstderr:\n{view_result.stderr}"
         )
+        assert "Project not found" in view_result.stdout, (
+            f"想定外のエラーで view が失敗\nstdout:\n{view_result.stdout}\nstderr:\n{view_result.stderr}"
+        )
