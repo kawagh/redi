@@ -30,9 +30,14 @@ tasks:
       - uv run ty check
 
   test:
-    desc: run tests
+    desc: run tests (except E2E)
     cmds:
       - uv run pytest -v
+
+  test:e2e:
+    desc: run E2E tests
+    cmds:
+      - uv run pytest -m e2e
 
   release:
     desc: release next version

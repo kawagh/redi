@@ -42,3 +42,9 @@ dev = [
 
 [tool.uv.build-backend]
 module-name = "redi"
+
+[tool.pytest.ini_options]
+markers = [
+  "e2e: E2E test (needs Redmine initialized by script/init-redmine.sh)",
+]
+addopts = "-m 'not e2e'"
