@@ -3,3 +3,17 @@ services:
     image: redmine
     ports:
       - 3000:3000
+
+  redmine-for-dogfooding:
+    image: redmine
+    profiles:
+      - dogfooding
+    ports:
+      - 3001:3000
+    volumes:
+      - redmine-dogfooding-files:/usr/src/redmine/files
+      - redmine-dogfooding-sqlite:/usr/src/redmine/sqlite
+
+volumes:
+  redmine-dogfooding-files:
+  redmine-dogfooding-sqlite:
