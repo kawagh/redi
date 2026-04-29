@@ -6,9 +6,7 @@ from tests.e2e.utils import run_redi, unique_identifier
 def _create_version(name: str) -> str:
     """version を作成し version_id を返す。"""
     result = run_redi("version", "create", name)
-    assert result.returncode == 0, (
-        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-    )
+    assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
     # 出力例: "Created version: 1 v-test-1 http://localhost:3000/versions/1"
     parts = result.stdout.strip().split()
     version_id = parts[2]

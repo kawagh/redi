@@ -6,9 +6,7 @@ from tests.e2e.utils import run_redi, unique_identifier
 def _create_category(name: str) -> str:
     """issue category を作成し category_id を返す。"""
     result = run_redi("issue_category", "create", name)
-    assert result.returncode == 0, (
-        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-    )
+    assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
     # 出力例: "Created category: 1 test-cat-1"
     category_id = result.stdout.strip().split()[2]
     assert category_id.isdigit(), f"想定外の create 出力:\n{result.stdout}"

@@ -14,17 +14,13 @@ def _create_project_for_file_test() -> str:
     identifier = unique_identifier("e2e-file")
     name = f"e2e file {identifier}"
     result = run_redi("project", "create", name, identifier)
-    assert result.returncode == 0, (
-        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-    )
+    assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
     return identifier
 
 
 def _upload_file(project_identifier: str, file_path: Path) -> None:
     result = run_redi("file", "create", str(file_path), "-p", project_identifier)
-    assert result.returncode == 0, (
-        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-    )
+    assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
 @pytest.mark.e2e

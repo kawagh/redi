@@ -12,9 +12,7 @@ def _create_issue(subject: str) -> str:
     result = run_redi(
         "issue", "create", subject, "--tracker_id", "2", "--description", "e2e desc"
     )
-    assert result.returncode == 0, (
-        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-    )
+    assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
     # 出力例: "Created issue: http://localhost:3000/issues/123"
     issue_id = result.stdout.strip().rsplit("/", 1)[-1]
     assert issue_id.isdigit(), f"想定外の create 出力:\n{result.stdout}"

@@ -22,9 +22,7 @@ def _create_user(login: str) -> str:
         "--password",
         "abcdABCD12",
     )
-    assert result.returncode == 0, (
-        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-    )
+    assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
     user_id = result.stdout.strip().split()[2]
     assert user_id.isdigit(), f"想定外の create 出力:\n{result.stdout}"
     return user_id
@@ -36,9 +34,7 @@ def _create_membership(user_id: str, role_ids: str = "4") -> str:
     role_ids 4=開発者 (init-redmine.sh で生成済み)。
     """
     result = run_redi("membership", "create", "-u", user_id, "-r", role_ids)
-    assert result.returncode == 0, (
-        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-    )
+    assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
     # 出力例: "Created membership: 2 [user] 12 F L - 開発者"
     membership_id = result.stdout.strip().split()[2]
     assert membership_id.isdigit(), f"想定外の create 出力:\n{result.stdout}"

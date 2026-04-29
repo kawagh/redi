@@ -6,6 +6,9 @@ from tests.e2e.utils import run_redi, unique_identifier
 def _create_time_entry(hours: str = "1.5", comments: str | None = None) -> str:
     """time entry を作成し time_entry_id を返す。
 
+    project_id=1 は init-redmine.sh で作成される reditest プロジェクト。
+    redi の time_entry API は identifier を内部で解決する際にプロジェクト一覧の
+    既定 limit(25) でしか引かないので、ここでは数値 id を直接指定する。
     activity_id 9 = 開発作業 (init-redmine.sh で読み込まれた既定値)。
     """
     args = [
@@ -13,16 +16,14 @@ def _create_time_entry(hours: str = "1.5", comments: str | None = None) -> str:
         "create",
         hours,
         "-p",
-        "reditest",
+        "1",
         "--activity_id",
         "9",
     ]
     if comments is not None:
         args += ["--comments", comments]
     result = run_redi(*args)
-    assert result.returncode == 0, (
-        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-    )
+    assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
     # 出力例: "Logged time entry: 1 1.5h (2026-04-29)"
     time_entry_id = result.stdout.strip().split()[3]
     assert time_entry_id.isdigit(), f"想定外の create 出力:\n{result.stdout}"
@@ -44,8 +45,7 @@ class TestTimeEntryList:
         )
         assert comment in result.stdout
         assert any(
-            line.startswith(f"{time_entry_id} ")
-            for line in result.stdout.splitlines()
+            line.startswith(f"{time_entry_id} ") for line in result.stdout.splitlines()
         ), f"time_entry_id={time_entry_id} が list に見当たらない\n{result.stdout}"
 
 

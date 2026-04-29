@@ -14,9 +14,7 @@ def _unique_wiki_title(prefix: str) -> str:
 
 def _create_wiki(title: str, description: str) -> None:
     result = run_redi("wiki", "create", title, "--description", description)
-    assert result.returncode == 0, (
-        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-    )
+    assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
 @pytest.mark.e2e

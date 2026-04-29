@@ -24,9 +24,7 @@ def _create_user(login: str, firstname: str = "First", lastname: str = "Last") -
         "--password",
         "abcdABCD12",
     )
-    assert result.returncode == 0, (
-        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-    )
+    assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
     # 出力例: "Created user: 6 e2etest1 http://localhost:3000/users/6"
     parts = result.stdout.strip().split()
     user_id = parts[2]

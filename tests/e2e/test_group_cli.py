@@ -6,9 +6,7 @@ from tests.e2e.utils import run_redi, unique_identifier
 def _create_group(name: str) -> str:
     """group を作成し group_id を返す。"""
     result = run_redi("group", "create", name)
-    assert result.returncode == 0, (
-        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-    )
+    assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
     # 出力例: "Created group: 18 test-group-1 http://localhost:3000/groups/18"
     group_id = result.stdout.strip().split()[2]
     assert group_id.isdigit(), f"想定外の create 出力:\n{result.stdout}"

@@ -61,7 +61,9 @@ class TestAttachmentUpdate:
 
     def test_updates_then_view_shows_new_description(self, tmp_path):
         """update 後に view すると更新後の description が含まれる"""
-        _, attachment_id = _create_issue_with_attachment(tmp_path, "update test content")
+        _, attachment_id = _create_issue_with_attachment(
+            tmp_path, "update test content"
+        )
         new_description = f"e2e desc {unique_identifier('attdesc')}"
 
         update_result = run_redi(
@@ -84,7 +86,9 @@ class TestAttachmentDelete:
 
     def test_deletes_then_view_fails(self, tmp_path):
         """delete 後に view が失敗する"""
-        _, attachment_id = _create_issue_with_attachment(tmp_path, "delete test content")
+        _, attachment_id = _create_issue_with_attachment(
+            tmp_path, "delete test content"
+        )
 
         delete_result = run_redi("attachment", "delete", attachment_id, "-y")
         assert delete_result.returncode == 0, (

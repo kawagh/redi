@@ -14,7 +14,13 @@ class TestSearch:
 
         # bug トラッカー(id=1) は必須カスタムフィールドが設定されているので id=2 (機能) を使う
         create_result = run_redi(
-            "issue", "create", subject, "--tracker_id", "2", "--description", "search test"
+            "issue",
+            "create",
+            subject,
+            "--tracker_id",
+            "2",
+            "--description",
+            "search test",
         )
         assert create_result.returncode == 0, (
             f"stdout:\n{create_result.stdout}\nstderr:\n{create_result.stderr}"
