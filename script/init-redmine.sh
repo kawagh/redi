@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-docker compose down
-docker compose up -d
+docker compose down redmine-for-test
+docker compose up -d redmine-for-test
 sleep 5
 API_KEYS_OUTPUT=$(docker exec -i redi-redmine-for-test-1 rails runner - <<RUBY
     # 初期生成される管理者のパスワードを変更
