@@ -44,6 +44,7 @@ dev = [
 module-name = "redi"
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 markers = [
   "e2e: E2E test (needs Redmine initialized by script/init-redmine.sh)",
 ]
