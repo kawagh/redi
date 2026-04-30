@@ -12,7 +12,7 @@ from redi.i18n import messages
 
 def add_attachment_parser(subparsers: argparse._SubParsersAction) -> None:
     a_parser = subparsers.add_parser(
-        "attachment", help=messages.arg_help_attachment_command
+        "attachment", aliases=["a"], help=messages.arg_help_attachment_command
     )
     a_subparsers = a_parser.add_subparsers(dest="attachment_command")
     a_parser.set_defaults(_print_help=a_parser.print_help)

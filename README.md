@@ -77,7 +77,7 @@ Most commands follow the form:
 redi <resource> <action> [<resource_id>] [options]
 ```
 
-- `<resource>` — `issue`, `project`, `wiki`, ... (most have a short alias such as `i` / `p` / `w`)
+- `<resource>` — `issue`, `project`, `time_entry`, ... (almost every resource has a short alias such as `i` / `p` / `te`; `init` / `me` / `relation` have no alias)
 - `<action>` — `list` / `view` / `create` / `update` / `delete` / `comment` (also has aliases: `v` / `c` / `u` / `d` / `co`)
     - `redi <resource>` alone is shorthand for `redi <resource> list`
 - `<resource_id>` — required for actions that target a specific item (`view`, `update`, `delete`, `comment`)
@@ -142,11 +142,11 @@ redi wiki view <page_title>
 redi wiki create # (interactive)
 redi wiki update # (interactive)
 
-# file (project files)
+# file (alias: f, project files)
 redi file -p <project_id> # list
 redi file create ./foo.zip -p <project_id> -d "description"
 
-# attachment
+# attachment (alias: a)
 redi attachment view <attachment_id>
 redi attachment update <attachment_id> -f new_name.png -d "desc"
 redi attachment delete <attachment_id> # confirm before delete (-y to skip)
@@ -154,7 +154,7 @@ redi attachment delete <attachment_id> # confirm before delete (-y to skip)
 # relation (issue relation details)
 redi relation view <relation_id>
 
-# time_entry
+# time_entry (alias: te)
 redi time_entry -p <project_id> -u me
 redi time_entry create 1.5 -i <issue_id> -a <activity_id> -c "comment"
 redi time_entry update <time_entry_id> --hours 2.0
@@ -168,25 +168,25 @@ redi me update -f <firstname> -l <lastname> -m <mail>
 redi membership -p <project_id>
 redi membership view <membership_id>
 
-# news
+# news (alias: n)
 redi news -p <project_id>
 
-# issue_category
+# issue_category (alias: ic)
 redi issue_category -p <project_id>
 redi issue_category create "category" -p <project_id>
 
 # others
 redi user # list users (alias: u)
-redi tracker # list trackers
-redi issue_status # list issue statuses
-redi issue_priority # list priorities
-redi time_entry_activity # list activities
-redi document_category # list document categories
-redi role # list roles
-redi group # list groups
-redi custom_field # list custom fields
-redi query # list custom queries
-redi search "keyword"
+redi tracker # list trackers (alias: t)
+redi issue_status # list issue statuses (alias: is)
+redi issue_priority # list priorities (alias: ip)
+redi time_entry_activity # list activities (alias: tea)
+redi document_category # list document categories (alias: dc)
+redi role # list roles (alias: r)
+redi group # list groups (alias: g)
+redi custom_field # list custom fields (alias: cf)
+redi query # list custom queries (alias: q)
+redi search "keyword" # (alias: s)
 redi --version
 ```
 

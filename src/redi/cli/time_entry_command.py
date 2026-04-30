@@ -33,6 +33,7 @@ from redi.api.time_entry import (
 def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
     time_entry_parser = subparsers.add_parser(
         "time_entry",
+        aliases=["te"],
         help=messages.arg_help_time_entry_command,
     )
     time_entry_parser.add_argument(
