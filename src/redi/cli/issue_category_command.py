@@ -16,6 +16,7 @@ from redi.api.issue_category import (
 def add_issue_category_parser(subparsers: argparse._SubParsersAction) -> None:
     ic_parser = subparsers.add_parser(
         "issue_category",
+        aliases=["ic"],
         help=messages.arg_help_issue_category_command,
     )
     ic_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)

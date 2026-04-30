@@ -17,6 +17,7 @@ from redi.api.group import (
 def add_group_parser(subparsers: argparse._SubParsersAction) -> None:
     group_parser = subparsers.add_parser(
         "group",
+        aliases=["g"],
         help=messages.arg_help_group_command,
     )
     group_parser.add_argument(

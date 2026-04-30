@@ -6,7 +6,9 @@ from redi.api.role import list_roles, read_role
 
 
 def add_role_parser(subparsers: argparse._SubParsersAction) -> None:
-    role_parser = subparsers.add_parser("role", help=messages.arg_help_role_command)
+    role_parser = subparsers.add_parser(
+        "role", aliases=["r"], help=messages.arg_help_role_command
+    )
     role_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
     )

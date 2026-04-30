@@ -273,37 +273,37 @@ def main() -> None:
         handle_me(args)
     elif args.command in ("membership", "m"):
         handle_membership(args)
-    elif args.command == "news":
+    elif args.command in ("news", "n"):
         handle_news(args)
-    elif args.command == "tracker":
+    elif args.command in ("tracker", "t"):
         list_trackers(full=args.full)
-    elif args.command == "issue_status":
+    elif args.command in ("issue_status", "is"):
         list_issue_statuses(full=args.full)
-    elif args.command == "issue_priority":
+    elif args.command in ("issue_priority", "ip"):
         list_issue_priorities(full=args.full)
-    elif args.command == "time_entry_activity":
+    elif args.command in ("time_entry_activity", "tea"):
         list_time_entry_activities(full=args.full)
-    elif args.command == "document_category":
+    elif args.command in ("document_category", "dc"):
         list_document_categories(full=args.full)
-    elif args.command == "role":
+    elif args.command in ("role", "r"):
         handle_role(args)
-    elif args.command == "group":
+    elif args.command in ("group", "g"):
         handle_group(args)
-    elif args.command == "query":
+    elif args.command in ("query", "q"):
         list_queries(full=args.full)
-    elif args.command == "custom_field":
+    elif args.command in ("custom_field", "cf"):
         list_custom_fields(full=args.full)
-    elif args.command == "issue_category":
+    elif args.command in ("issue_category", "ic"):
         handle_issue_category(args)
-    elif args.command == "search":
+    elif args.command in ("search", "s"):
         handle_search(args)
-    elif args.command == "attachment":
+    elif args.command in ("attachment", "a"):
         handle_attachment(args)
     elif args.command == "relation":
         handle_relation(args)
-    elif args.command == "time_entry":
+    elif args.command in ("time_entry", "te"):
         handle_time_entry(args)
-    elif args.command == "file":
+    elif args.command in ("file", "f"):
         handle_file(args)
     else:
         parser.print_help()

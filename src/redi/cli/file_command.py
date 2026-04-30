@@ -7,7 +7,9 @@ from redi.i18n import messages
 
 
 def add_file_parser(subparsers: argparse._SubParsersAction) -> None:
-    f_parser = subparsers.add_parser("file", help=messages.arg_help_file_command)
+    f_parser = subparsers.add_parser(
+        "file", aliases=["f"], help=messages.arg_help_file_command
+    )
     f_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
     f_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
