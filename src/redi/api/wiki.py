@@ -1,12 +1,24 @@
 import json
 import webbrowser
 from collections import defaultdict
+from typing import NotRequired, TypedDict
 
 import requests
 
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
+
+
+class WikiPageUpdateBody(TypedDict):
+    text: str
+    version: NotRequired[int]
+
+
+class WikiUpdateConflictException(Exception):
+    def __init__(self, title: str) -> None:
+        super().__init__(title)
+        self.title = title
 
 
 # redmineで空白文字を含んでwikiのpageを作成するとURLの都合か`_`に置き換えられている
@@ -114,11 +126,29 @@ def read_wiki(
         print(wiki.get("text", ""))
 
 
-def update_wiki(project_id: str, page_title: str, text: str) -> None:
+def update_wiki(
+    project_id: str, page_title: str, text: str, version: int | None = None
+) -> None:
+    """Wikiページを更新する
+
+    Args:
+        version: 更新対象の期待バージョン。
+                 指定するとRedmine 側のバージョンと一致しない場合に409 が返る。
+                 Noneの場合はバージョンチェックを行わない
+
+    Raises:
+        WikiUpdateConflictException: version がRedmine側の最新バージョンと一致せず、更新が競合した場合（HTTP 409）。
+        requests.exceptions.HTTPError: 409 以外の HTTP エラーが返った場合
+    """
+    body: WikiPageUpdateBody = {"text": text}
+    if version is not None:
+        body["version"] = version
     response = client.put(
         f"/projects/{project_id}/wiki/{page_title}.json",
-        json={"wiki_page": {"text": text}},
+        json={"wiki_page": body},
     )
+    if response.status_code == 409:
+        raise WikiUpdateConflictException(page_title)
     response.raise_for_status()
     url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
     print(messages.wiki_page_updated.format(url=url))

@@ -53,6 +53,7 @@ from redi.api.issue import add_note
 from redi.api.issue_status import list_issue_statuses
 from redi.api.query import list_queries
 from redi.api.tracker import list_trackers
+from redi.api.wiki import WikiUpdateConflictException
 from redi.i18n import messages
 from redi.tui import TuiState, run_issue_tui
 
@@ -201,15 +202,19 @@ def main() -> None:
                     )
                 )
             elif tui_result.action == "update" and tui_result.tab == "wiki":
-                handle_wiki(
-                    argparse.Namespace(
-                        wiki_command="update",
-                        project_id=None,
-                        full=False,
-                        page_title=tui_result.wiki_title,
-                        description=None,
+                try:
+                    handle_wiki(
+                        argparse.Namespace(
+                            wiki_command="update",
+                            project_id=None,
+                            full=False,
+                            page_title=tui_result.wiki_title,
+                            description=None,
+                        )
                     )
-                )
+                except WikiUpdateConflictException as e:
+                    print(messages.wiki_page_update_conflict.format(title=e.title))
+                    # TUI側にフィードバックをかける
             elif tui_result.action == "create_time_entry":
                 if not tui_result.issue_id:
                     continue
@@ -266,7 +271,11 @@ def main() -> None:
     elif args.command in ("version", "v"):
         handle_version(args)
     elif args.command in ("wiki", "w"):
-        handle_wiki(args)
+        try:
+            handle_wiki(args)
+        except WikiUpdateConflictException as e:
+            print(messages.wiki_page_update_conflict.format(title=e.title))
+            exit(1)
     elif args.command in ("user", "u"):
         handle_user(args)
     elif args.command == "me":

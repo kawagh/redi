@@ -142,6 +142,7 @@ class Ja(MessagesProto):
     watcher_add_failed = "ウォッチャーの追加に失敗しました"
     watcher_remove_failed = "ウォッチャーの削除に失敗しました"
     wiki_page_delete_failed = "Wikiページの削除に失敗しました"
+    wiki_page_update_conflict = "Wikiページが他のユーザーによって更新されているため更新できませんでした: {title}"
     membership_create_failed = "メンバーシップの作成に失敗しました"
     membership_update_failed = "メンバーシップの更新に失敗しました"
     membership_delete_failed = "メンバーシップの削除に失敗しました"
