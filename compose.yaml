@@ -15,6 +15,13 @@ services:
       - redmine-dogfooding-files:/usr/src/redmine/files
       - redmine-dogfooding-sqlite:/usr/src/redmine/sqlite
 
+  redmine-for-demo:
+    profiles:
+      - demo
+    image: redmine
+    ports:
+      - 3002:3000
+
 volumes:
   redmine-dogfooding-files:
   redmine-dogfooding-sqlite:
