@@ -1,5 +1,7 @@
 # redi
 
+[![PyPI](https://img.shields.io/pypi/v/redtile.svg)](https://pypi.org/project/redtile/)
+
 `redi` is a Redmine CLI/TUI tool that wraps the Redmine REST API.
 
 ## Demo
