@@ -232,6 +232,7 @@ class En(MessagesProto):
     )
     prompt_version_name = "Version name: "
     prompt_description_optional = "Description (optional): "
+    prompt_wiki_comments = "Comment (optional): "
     prompt_due_date_optional = "Due date (YYYY-MM-DD, optional): "
     prompt_issue_id_or_project = "Issue ID (empty to switch to project selection): "
     prompt_project_id_or_name = "Project ID or name/identifier: "
@@ -534,6 +535,7 @@ class En(MessagesProto):
     arg_help_wiki_create_title = "Wiki page title (omit to enter interactively)"
     arg_help_wiki_parent_title = "Parent page title"
     arg_help_wiki_description = "Description (no value opens editor)"
+    arg_help_wiki_comments = "Update comment (recorded in the change log)"
     arg_help_wiki_delete = "Delete wiki page"
     arg_help_wiki_update = "Update wiki page"
     arg_help_wiki_update_title = "Wiki page title (omit to select interactively)"

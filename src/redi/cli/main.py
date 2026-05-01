@@ -199,6 +199,7 @@ def main() -> None:
                         page_title=None,
                         parent_title=tui_result.parent_wiki_title,
                         description=None,
+                        comments="",
                     )
                 )
             elif tui_result.action == "update" and tui_result.tab == "wiki":
@@ -210,6 +211,7 @@ def main() -> None:
                             full=False,
                             page_title=tui_result.wiki_title,
                             description=None,
+                            comments="",
                         )
                     )
                 except WikiUpdateConflictException as e:

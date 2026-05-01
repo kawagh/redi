@@ -334,6 +334,7 @@ class MessagesProto(Protocol):
     prompt_select_update_items: str
     prompt_version_name: str
     prompt_description_optional: str
+    prompt_wiki_comments: str
     prompt_due_date_optional: str
     prompt_issue_id_or_project: str
     prompt_project_id_or_name: str
@@ -668,6 +669,7 @@ class MessagesProto(Protocol):
     arg_help_wiki_create_title: str
     arg_help_wiki_parent_title: str
     arg_help_wiki_description: str
+    arg_help_wiki_comments: str
     arg_help_wiki_delete: str
     arg_help_wiki_update: str
     arg_help_wiki_update_title: str

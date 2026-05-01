@@ -12,6 +12,7 @@ from redi.i18n import messages
 
 class WikiPageUpdateBody(TypedDict):
     text: str
+    comments: str
     version: NotRequired[int]
 
 
@@ -127,7 +128,11 @@ def read_wiki(
 
 
 def update_wiki(
-    project_id: str, page_title: str, text: str, version: int | None = None
+    project_id: str,
+    page_title: str,
+    text: str,
+    version: int | None = None,
+    comments: str = "",
 ) -> None:
     """Wikiページを更新する
 
@@ -135,12 +140,13 @@ def update_wiki(
         version: 更新対象の期待バージョン。
                  指定するとRedmine 側のバージョンと一致しない場合に409 が返る。
                  Noneの場合はバージョンチェックを行わない
+        comments: 更新時のコメント（変更履歴に記録される）
 
     Raises:
         WikiUpdateConflictException: version がRedmine側の最新バージョンと一致せず、更新が競合した場合（HTTP 409）。
         requests.exceptions.HTTPError: 409 以外の HTTP エラーが返った場合
     """
-    body: WikiPageUpdateBody = {"text": text}
+    body: WikiPageUpdateBody = {"text": text, "comments": comments}
     if version is not None:
         body["version"] = version
     response = client.put(
@@ -174,6 +180,7 @@ def create_wiki(
     page_title: str,
     text: str,
     parent_title: str | None = None,
+    comments: str = "",
 ) -> None:
     if parent_title:
         parent_exists = (
@@ -188,7 +195,7 @@ def create_wiki(
         client.get(f"/projects/{project_id}/wiki/{page_title}.json").status_code == 200
     )
 
-    body: dict = {"text": text}
+    body: dict = {"text": text, "comments": comments}
     if parent_title:
         body["parent_title"] = parent_title
     response = client.put(

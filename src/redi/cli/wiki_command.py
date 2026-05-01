@@ -19,6 +19,15 @@ from redi.api.wiki import (
 )
 
 
+def _prompt_wiki_comments() -> str:
+    """commentsを対話的に入力してもらう。空文字は省略扱い。"""
+    try:
+        return prompt(messages.prompt_wiki_comments).strip()
+    except (KeyboardInterrupt, EOFError):
+        print(messages.canceled)
+        exit(1)
+
+
 def build_wiki_tree_choices(pages: list[dict]) -> list[tuple[str, str]]:
     children_map = build_children_map(pages)
     options: list[tuple[str, str]] = []
@@ -74,6 +83,11 @@ def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
         default=None,
         help=messages.arg_help_wiki_description,
     )
+    w_create_parser.add_argument(
+        "--comments",
+        default="",
+        help=messages.arg_help_wiki_comments,
+    )
     w_delete_parser = w_subparsers.add_parser(
         "delete", aliases=["d"], help=messages.arg_help_wiki_delete
     )
@@ -94,6 +108,11 @@ def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
         const="",
         default=None,
         help=messages.arg_help_wiki_description,
+    )
+    w_update_parser.add_argument(
+        "--comments",
+        default="",
+        help=messages.arg_help_wiki_comments,
     )
 
 
@@ -158,13 +177,21 @@ def handle_wiki(args: argparse.Namespace) -> None:
                     )
         if args.description and args.description != "":
             text = args.description
+            comments = args.comments
         else:
             text = open_editor()
+            comments = args.comments or _prompt_wiki_comments()
         if text:
             page_title = normalize_title(page_title)
             if parent_title:
                 parent_title = normalize_title(parent_title)
-            create_wiki(project_id, page_title, text, parent_title=parent_title)
+            create_wiki(
+                project_id,
+                page_title,
+                text,
+                parent_title=parent_title,
+                comments=comments,
+            )
         else:
             print(messages.canceled_empty_text)
     elif cmd == "delete":
@@ -198,6 +225,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
         version: int | None = None
         if args.description and args.description != "":
             text = args.description
+            comments = args.comments
         else:
             current = fetch_wiki(project_id, page_title)
             if current is None:
@@ -205,8 +233,15 @@ def handle_wiki(args: argparse.Namespace) -> None:
                 exit(1)
             version = current.get("version")
             text = open_editor(current.get("text") or "")
+            comments = args.comments or _prompt_wiki_comments()
         if text:
-            update_wiki(project_id, page_title, text, version=version)
+            update_wiki(
+                project_id,
+                page_title,
+                text,
+                version=version,
+                comments=comments,
+            )
         else:
             print(messages.canceled_empty_text)
     elif cmd == "list" or cmd is None:
