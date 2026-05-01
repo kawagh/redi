@@ -38,6 +38,10 @@ redi config update demo_admin \
     --project_id "redidemo"
 
 # create sample data for demo
-redi issue create SampleIssue --description ""
-redi issue create SampleIssue2 --description ""
-redi issue create SampleIssue3 --description ""
+redi issue create SampleBug --description ""
+redi issue create SampleIssue --description "" --tracker_id 2
+redi issue create "[doc] add demo GIF" --tracker_id 2 --description "
+- add demo.gif to README.md
+- define task to update demo.gif
+- prepare new redmine service and use it
+"
