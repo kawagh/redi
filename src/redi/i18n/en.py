@@ -138,6 +138,9 @@ class En(MessagesProto):
     watcher_add_failed = "Failed to add watcher"
     watcher_remove_failed = "Failed to remove watcher"
     wiki_page_delete_failed = "Failed to delete wiki page"
+    wiki_page_update_conflict = (
+        "Failed to update wiki page because it was updated by another user: {title}"
+    )
     membership_create_failed = "Failed to create membership"
     membership_update_failed = "Failed to update membership"
     membership_delete_failed = "Failed to delete membership"

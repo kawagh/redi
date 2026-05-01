@@ -114,11 +114,19 @@ def read_wiki(
         print(wiki.get("text", ""))
 
 
-def update_wiki(project_id: str, page_title: str, text: str) -> None:
+def update_wiki(
+    project_id: str, page_title: str, text: str, version: int | None = None
+) -> None:
+    body: dict = {"text": text}
+    if version is not None:
+        body["version"] = version
     response = client.put(
         f"/projects/{project_id}/wiki/{page_title}.json",
-        json={"wiki_page": {"text": text}},
+        json={"wiki_page": body},
     )
+    if response.status_code == 409:
+        print(messages.wiki_page_update_conflict.format(title=page_title))
+        return
     response.raise_for_status()
     url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
     print(messages.wiki_page_updated.format(url=url))

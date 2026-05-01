@@ -195,6 +195,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
             print(
                 messages.edit_target_page.format(label=page_labels[page_title].strip())
             )
+        version: int | None = None
         if args.description and args.description != "":
             text = args.description
         else:
@@ -202,9 +203,10 @@ def handle_wiki(args: argparse.Namespace) -> None:
             if current is None:
                 print(messages.wiki_page_not_found.format(title=page_title))
                 exit(1)
+            version = current.get("version")
             text = open_editor(current.get("text") or "")
         if text:
-            update_wiki(project_id, page_title, text)
+            update_wiki(project_id, page_title, text, version=version)
         else:
             print(messages.canceled_empty_text)
     elif cmd == "list" or cmd is None:

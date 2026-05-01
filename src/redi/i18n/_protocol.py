@@ -221,6 +221,8 @@ class MessagesProto(Protocol):
     watcher_add_failed: str
     watcher_remove_failed: str
     wiki_page_delete_failed: str
+    wiki_page_update_conflict: str
+    """{title}"""
     membership_create_failed: str
     membership_update_failed: str
     membership_delete_failed: str
