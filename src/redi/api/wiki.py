@@ -15,6 +15,12 @@ class WikiPageUpdateBody(TypedDict):
     version: NotRequired[int]
 
 
+class WikiUpdateConflictException(Exception):
+    def __init__(self, title: str) -> None:
+        super().__init__(title)
+        self.title = title
+
+
 # redmineで空白文字を含んでwikiのpageを作成するとURLの都合か`_`に置き換えられている
 # 既存のwikiのタイトルの先頭文字が大文字になっている
 def normalize_title(t: str) -> str:
@@ -131,8 +137,7 @@ def update_wiki(
         json={"wiki_page": body},
     )
     if response.status_code == 409:
-        print(messages.wiki_page_update_conflict.format(title=page_title))
-        return
+        raise WikiUpdateConflictException(page_title)
     response.raise_for_status()
     url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
     print(messages.wiki_page_updated.format(url=url))
