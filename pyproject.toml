@@ -22,9 +22,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/kawagh/redi"
 Repository = "https://github.com/kawagh/redi"
-Issues = "https://github.com/kawagh/redi/issues"
 
 [project.scripts]
 redi = "redi.cli:main"
