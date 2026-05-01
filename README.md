@@ -2,6 +2,10 @@
 
 `redi` is a Redmine CLI/TUI tool that wraps the Redmine REST API.
 
+## Demo
+
+![TUI demo](doc/demo.gif)
+
 ## Quickstart
 
 ```sh
