@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.13"
 license = "MIT"
 license-files = ["LICENSE"]
+keywords = ["redmine"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
