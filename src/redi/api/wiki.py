@@ -129,6 +129,17 @@ def read_wiki(
 def update_wiki(
     project_id: str, page_title: str, text: str, version: int | None = None
 ) -> None:
+    """Wikiページを更新する
+
+    Args:
+        version: 更新対象の期待バージョン。
+                 指定するとRedmine 側のバージョンと一致しない場合に409 が返る。
+                 Noneの場合はバージョンチェックを行わない
+
+    Raises:
+        WikiUpdateConflictException: version がRedmine側の最新バージョンと一致せず、更新が競合した場合（HTTP 409）。
+        requests.exceptions.HTTPError: 409 以外の HTTP エラーが返った場合
+    """
     body: WikiPageUpdateBody = {"text": text}
     if version is not None:
         body["version"] = version
