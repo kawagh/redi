@@ -52,3 +52,12 @@ tasks:
       - git tag "$(uv version --short)"
       - git push
       - git push --tags
+
+  demo:
+    desc: generate demo
+    summary: |
+      vhs(https://github.com/charmbracelet/vhs)を使って デモ用のgifを生成する
+      ./doc/demo.tape ->  ./doc/demo.gif
+    cmds:
+      - bash ./script/init-redmine-demo.sh
+      - vhs ./doc/demo.tape
