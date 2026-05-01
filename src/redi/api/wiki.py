@@ -1,12 +1,18 @@
 import json
 import webbrowser
 from collections import defaultdict
+from typing import NotRequired, TypedDict
 
 import requests
 
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
+
+
+class WikiPageUpdateBody(TypedDict):
+    text: str
+    version: NotRequired[int]
 
 
 # redmineで空白文字を含んでwikiのpageを作成するとURLの都合か`_`に置き換えられている
@@ -117,7 +123,7 @@ def read_wiki(
 def update_wiki(
     project_id: str, page_title: str, text: str, version: int | None = None
 ) -> None:
-    body: dict = {"text": text}
+    body: WikiPageUpdateBody = {"text": text}
     if version is not None:
         body["version"] = version
     response = client.put(
