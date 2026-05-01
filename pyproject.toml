@@ -1,7 +1,7 @@
 [project]
 name = "redtile"
 version = "0.0.25"
-description = "Redmine CLI tool"
+description = "Redmine CLI/TUI tool that wraps the Redmine REST API"
 readme = "README.md"
 authors = [
     { name = "kawagh", email = "kawagh.dev@gmail.com" }
