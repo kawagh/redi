@@ -6,7 +6,7 @@
 
 ## Demo
 
-![TUI demo](doc/demo.gif)
+![TUI demo](https://raw.githubusercontent.com/kawagh/redi/main/doc/demo.gif)
 
 ## Quickstart
 
