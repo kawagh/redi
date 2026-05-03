@@ -155,6 +155,12 @@ class En(MessagesProto):
     time_entry_create_failed = "Failed to create time entry"
     time_entry_update_failed = "Failed to update time entry"
     time_entry_delete_failed = "Failed to delete time entry"
+    time_entry_create_validation_failed = (
+        "Failed to create time entry (validation error):\n{errors}"
+    )
+    time_entry_update_validation_failed = (
+        "Failed to update time entry (validation error):\n{errors}"
+    )
     attachment_delete_failed = "Failed to delete attachment"
     attachment_update_failed = "Failed to update attachment"
     group_create_failed = "Failed to create group"

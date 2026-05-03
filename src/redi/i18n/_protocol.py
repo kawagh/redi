@@ -239,6 +239,10 @@ class MessagesProto(Protocol):
     time_entry_create_failed: str
     time_entry_update_failed: str
     time_entry_delete_failed: str
+    time_entry_create_validation_failed: str
+    """{errors}"""
+    time_entry_update_validation_failed: str
+    """{errors}"""
     attachment_delete_failed: str
     attachment_update_failed: str
     group_create_failed: str

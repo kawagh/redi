@@ -49,6 +49,7 @@ from redi.api.enumeration import (
     list_issue_priorities,
     list_time_entry_activities,
 )
+from redi.api.exceptions import RedmineValidationException
 from redi.api.issue import add_note
 from redi.api.issue_status import list_issue_statuses
 from redi.api.query import list_queries
@@ -221,51 +222,72 @@ def main() -> None:
             elif tui_result.action == "create_time_entry":
                 if not tui_result.issue_id:
                     continue
-                handle_time_entry(
-                    argparse.Namespace(
-                        time_entry_command="create",
-                        project_id=None,
-                        user_id=None,
-                        full=False,
-                        hours=None,
-                        issue_id=tui_result.issue_id,
-                        activity_id=None,
-                        spent_on=None,
-                        comments=None,
+                try:
+                    handle_time_entry(
+                        argparse.Namespace(
+                            time_entry_command="create",
+                            project_id=None,
+                            user_id=None,
+                            full=False,
+                            hours=None,
+                            issue_id=tui_result.issue_id,
+                            activity_id=None,
+                            spent_on=None,
+                            comments=None,
+                        )
                     )
-                )
+                except RedmineValidationException as e:
+                    tui_state.error_modal = (
+                        messages.time_entry_create_validation_failed.format(
+                            errors="\n".join(f"- {err}" for err in e.errors)
+                        )
+                    )
             elif tui_result.action == "create" and tui_result.tab == "time_entries":
-                handle_time_entry(
-                    argparse.Namespace(
-                        time_entry_command="create",
-                        project_id=None,
-                        user_id=None,
-                        full=False,
-                        hours=None,
-                        issue_id=None,
-                        default_issue_id=tui_result.issue_id,
-                        activity_id=None,
-                        spent_on=None,
-                        comments=None,
+                try:
+                    handle_time_entry(
+                        argparse.Namespace(
+                            time_entry_command="create",
+                            project_id=None,
+                            user_id=None,
+                            full=False,
+                            hours=None,
+                            issue_id=None,
+                            default_issue_id=tui_result.issue_id,
+                            activity_id=None,
+                            spent_on=None,
+                            comments=None,
+                        )
                     )
-                )
+                except RedmineValidationException as e:
+                    tui_state.error_modal = (
+                        messages.time_entry_create_validation_failed.format(
+                            errors="\n".join(f"- {err}" for err in e.errors)
+                        )
+                    )
             elif tui_result.action == "update" and tui_result.tab == "time_entries":
                 if tui_result.time_entry_id is None:
                     continue
-                handle_time_entry(
-                    argparse.Namespace(
-                        time_entry_command="update",
-                        time_entry_id=tui_result.time_entry_id,
-                        project_id=None,
-                        user_id=None,
-                        full=False,
-                        hours=None,
-                        issue_id=None,
-                        activity_id=None,
-                        spent_on=None,
-                        comments=None,
+                try:
+                    handle_time_entry(
+                        argparse.Namespace(
+                            time_entry_command="update",
+                            time_entry_id=tui_result.time_entry_id,
+                            project_id=None,
+                            user_id=None,
+                            full=False,
+                            hours=None,
+                            issue_id=None,
+                            activity_id=None,
+                            spent_on=None,
+                            comments=None,
+                        )
                     )
-                )
+                except RedmineValidationException as e:
+                    tui_state.error_modal = (
+                        messages.time_entry_update_validation_failed.format(
+                            errors="\n".join(f"- {err}" for err in e.errors)
+                        )
+                    )
 
     if args.command in ("project", "p"):
         handle_project(args)
@@ -314,7 +336,18 @@ def main() -> None:
     elif args.command == "relation":
         handle_relation(args)
     elif args.command in ("time_entry", "te"):
-        handle_time_entry(args)
+        try:
+            handle_time_entry(args)
+        except RedmineValidationException as e:
+            operation = getattr(args, "time_entry_command", None)
+            if operation in ("create", "c"):
+                template = messages.time_entry_create_validation_failed
+            elif operation in ("update", "u"):
+                template = messages.time_entry_update_validation_failed
+            else:
+                raise AssertionError("unreachable")
+            print(template.format(errors="\n".join(f"- {err}" for err in e.errors)))
+            exit(1)
     elif args.command in ("file", "f"):
         handle_file(args)
     else:

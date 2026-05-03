@@ -2,6 +2,7 @@ import json
 
 import requests
 
+from redi.api.exceptions import RedmineValidationException
 from redi.api.project import resolve_project_id
 from redi.client import client
 from redi.i18n import messages
@@ -15,6 +16,11 @@ def create_time_entry(
     spent_on: str | None = None,
     comments: str | None = None,
 ) -> None:
+    """作業時間を作成する
+
+    Raises:
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+    """
     if not issue_id and not project_id:
         print(messages.issue_or_project_id_required)
         exit(1)
@@ -34,6 +40,8 @@ def create_time_entry(
     if comments:
         data["comments"] = comments
     response = client.post("/time_entries.json", json={"time_entry": data})
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("time_entry", response)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -171,6 +179,11 @@ def update_time_entry(
     spent_on: str | None = None,
     comments: str | None = None,
 ) -> None:
+    """作業時間を更新する
+
+    Raises:
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+    """
     # time_entries は他の API と異なり project_id に slug を受け付けず整数のみ許容
     # https://www.redmine.org/projects/redmine/wiki/Rest_TimeEntries
     if project_id is not None:
@@ -194,6 +207,8 @@ def update_time_entry(
     response = client.put(
         f"/time_entries/{time_entry_id}.json", json={"time_entry": data}
     )
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("time_entry", response)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
