@@ -215,8 +215,9 @@ def main() -> None:
                         )
                     )
                 except WikiUpdateConflictException as e:
-                    print(messages.wiki_page_update_conflict.format(title=e.title))
-                    # TUI側にフィードバックをかける
+                    tui_state.error_modal = messages.wiki_page_update_conflict.format(
+                        title=e.title
+                    )
             elif tui_result.action == "create_time_entry":
                 if not tui_result.issue_id:
                     continue

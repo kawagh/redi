@@ -505,6 +505,7 @@ class MessagesProto(Protocol):
     tui_filter_title: str
     tui_help_title: str
     """{label}"""
+    tui_error_modal_title: str
     tui_status_hint_issues: str
     """{page_label}"""
     tui_status_hint_wiki: str
