@@ -312,9 +312,9 @@ def run_issue_tui(
     )
     search_mode = Condition(lambda: state.search_mode)
     confirm_delete_mode = Condition(lambda: state.confirm_delete_prompt is not None)
-    help_mode = Condition(lambda: state.show_help)
-    filter_mode = Condition(lambda: state.issue_tab.filter_modal.show)
-    error_modal_mode = Condition(lambda: state.error_modal is not None)
+    show_help_modal = Condition(lambda: state.show_help)
+    show_filter_modal = Condition(lambda: state.issue_tab.filter_modal.show)
+    show_error_modal = Condition(lambda: state.error_modal is not None)
 
     def _clear_temporary_state() -> None:
         state.number_buffer = ""
@@ -510,11 +510,11 @@ def run_issue_tui(
         _clear_temporary_state()
         state.show_help = True
 
-    @kb.add("<any>", filter=help_mode)
+    @kb.add("<any>", filter=show_help_modal)
     def _(event):
         state.show_help = False
 
-    @kb.add("q", filter=error_modal_mode)
+    @kb.add("q", filter=show_error_modal)
     def _(event):
         state.error_modal = None
 
@@ -542,18 +542,18 @@ def run_issue_tui(
         _clear_temporary_state()
         _open_filter_modal()
 
-    @kb.add("tab", filter=filter_mode)
-    @kb.add("s-tab", filter=filter_mode)
-    @kb.add("h", filter=filter_mode)
-    @kb.add("l", filter=filter_mode)
-    @kb.add("left", filter=filter_mode)
-    @kb.add("right", filter=filter_mode)
+    @kb.add("tab", filter=show_filter_modal)
+    @kb.add("s-tab", filter=show_filter_modal)
+    @kb.add("h", filter=show_filter_modal)
+    @kb.add("l", filter=show_filter_modal)
+    @kb.add("left", filter=show_filter_modal)
+    @kb.add("right", filter=show_filter_modal)
     def _(event):
         modal = state.issue_tab.filter_modal
         modal.focus = "assignee" if modal.focus == "status" else "status"
 
-    @kb.add("j", filter=filter_mode)
-    @kb.add("down", filter=filter_mode)
+    @kb.add("j", filter=show_filter_modal)
+    @kb.add("down", filter=show_filter_modal)
     def _(event):
         modal = state.issue_tab.filter_modal
         if modal.focus == "status":
@@ -565,8 +565,8 @@ def run_issue_tui(
                 len(modal.assignee_choices) - 1, modal.assignee_cursor + 1
             )
 
-    @kb.add("k", filter=filter_mode)
-    @kb.add("up", filter=filter_mode)
+    @kb.add("k", filter=show_filter_modal)
+    @kb.add("up", filter=show_filter_modal)
     def _(event):
         modal = state.issue_tab.filter_modal
         if modal.focus == "status":
@@ -574,7 +574,7 @@ def run_issue_tui(
         else:
             modal.assignee_cursor = max(0, modal.assignee_cursor - 1)
 
-    @kb.add("enter", filter=filter_mode)
+    @kb.add("enter", filter=show_filter_modal)
     def _(event):
         modal = state.issue_tab.filter_modal
         if modal.focus == "status":
@@ -592,7 +592,7 @@ def run_issue_tui(
         _reset_preview_scroll()
         reload_with_filter(state)
 
-    @kb.add("c", filter=filter_mode)
+    @kb.add("c", filter=show_filter_modal)
     def _(event):
         state.issue_tab.filter = IssueFilter()
         modal = state.issue_tab.filter_modal
@@ -601,9 +601,9 @@ def run_issue_tui(
         _reset_preview_scroll()
         reload_with_filter(state)
 
-    @kb.add("escape", filter=filter_mode)
-    @kb.add("f", filter=filter_mode)
-    @kb.add("q", filter=filter_mode)
+    @kb.add("escape", filter=show_filter_modal)
+    @kb.add("f", filter=show_filter_modal)
+    @kb.add("q", filter=show_filter_modal)
     def _(event):
         state.issue_tab.filter_modal.show = False
 
@@ -689,11 +689,10 @@ def run_issue_tui(
                     Window(width=1, char=" "),
                 ]
             ),
-            filter=help_mode,
+            filter=show_help_modal,
         ),
     )
 
-    show_filter_cond = Condition(lambda: state.issue_tab.filter_modal.show)
     filter_float = Float(
         content=ConditionalContainer(
             content=VSplit(
@@ -711,7 +710,7 @@ def run_issue_tui(
                     Window(width=1, char=" "),
                 ]
             ),
-            filter=show_filter_cond,
+            filter=show_filter_modal,
         ),
     )
 
@@ -732,7 +731,7 @@ def run_issue_tui(
                     Window(width=1, char=" "),
                 ]
             ),
-            filter=error_modal_mode,
+            filter=show_error_modal,
         ),
     )
 
