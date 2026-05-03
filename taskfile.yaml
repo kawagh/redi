@@ -43,6 +43,8 @@ tasks:
     desc: release next version
     prompt: リリースしますか?
     cmds:
+      - git switch develop
+      - git pull
       - task: check
       - git diff --quiet # 未ステージ
       - git diff --cached --quiet # 未コミット
