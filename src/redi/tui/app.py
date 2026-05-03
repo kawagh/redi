@@ -274,9 +274,6 @@ def run_issue_tui(
     state.issue_tab.total_count = initial_page.get(
         "total_count", len(state.issue_tab.issues)
     )
-    if state.tab == "issues" and not state.issue_tab.issues:
-        print(messages.issue_not_found_simple)
-        return None
     if state.issue_tab.issues:
         state.issue_tab.cursor = max(
             0, min(position.cursor, len(state.issue_tab.issues) - 1)
