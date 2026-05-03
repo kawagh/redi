@@ -60,9 +60,13 @@ from redi.tui import TuiState, run_issue_tui
 
 
 def _format_validation_error(e: RedmineValidationException) -> str:
+    action_label = {
+        "create": messages.action_create,
+        "update": messages.action_update,
+    }[e.action]
     return messages.validation_failed.format(
         resource=e.resource,
-        action=e.action,
+        action=action_label,
         errors="\n".join(f"- {err}" for err in e.errors),
     )
 

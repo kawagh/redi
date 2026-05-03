@@ -142,6 +142,8 @@ class En(MessagesProto):
         "Failed to update wiki page because it was updated by another user: {title}"
     )
     validation_failed = "Failed to {action} {resource} (validation error):\n{errors}"
+    action_create = "create"
+    action_update = "update"
     membership_create_failed = "Failed to create membership"
     membership_update_failed = "Failed to update membership"
     membership_delete_failed = "Failed to delete membership"
