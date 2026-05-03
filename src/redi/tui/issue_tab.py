@@ -29,6 +29,8 @@ def _exit_result(
 
 
 def _render_list(state: TuiState) -> Renderable:
+    if not state.issue_tab.issues:
+        return [("", messages.issue_not_found_simple)]
     result: Renderable = []
     query = state.search_query
     for i, issue in enumerate(state.issue_tab.issues):
@@ -125,6 +127,8 @@ def _on_up(state: TuiState) -> None:
 
 
 def _on_down(state: TuiState) -> None:
+    if not state.issue_tab.issues:
+        return
     state.issue_tab.cursor = min(
         len(state.issue_tab.issues) - 1, state.issue_tab.cursor + 1
     )
@@ -226,10 +230,14 @@ def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
 
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
     if key == "u":
+        if not state.issue_tab.issues:
+            return None
         return _exit_result(state, "update")
     if key == "c":
         return _exit_result(state, "create", issue_id="")
     if key == "n":
+        if not state.issue_tab.issues:
+            return None
         return _exit_result(state, "comment")
     if key == "t":
         if not state.issue_tab.issues:
