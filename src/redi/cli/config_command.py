@@ -11,16 +11,18 @@ from redi.config import (
 from redi.i18n import messages, select_messages
 
 
-def add_config_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_config_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     c_parser = subparsers.add_parser(
-        "config", aliases=["c"], help=messages.arg_help_config_command
+        "config", aliases=["c"], help=messages.arg_help_config_command, parents=parents
     )
     c_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_profiles
     )
     c_subparsers = c_parser.add_subparsers(dest="config_command")
     c_update_parser = c_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_config_update
+        "update", aliases=["u"], help=messages.arg_help_config_update, parents=parents
     )
     c_update_parser.add_argument(
         "profile_name",
@@ -45,7 +47,7 @@ def add_config_parser(subparsers: argparse._SubParsersAction) -> None:
         "--default_profile", help=messages.arg_help_config_set_default_profile
     )
     c_create_parser = c_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_config_create
+        "create", aliases=["c"], help=messages.arg_help_config_create, parents=parents
     )
     c_create_parser.add_argument(
         "profile_name", help=messages.arg_help_config_create_profile_name

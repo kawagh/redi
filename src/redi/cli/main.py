@@ -71,7 +71,22 @@ def _format_validation_error(e: RedmineValidationException) -> str:
     )
 
 
-def _build_parser() -> argparse.ArgumentParser:
+def _profile_parser() -> argparse.ArgumentParser:
+    """--profile を後置するためのパーサ"""
+    parser = argparse.ArgumentParser(
+        # 親子でヘルプを衝突させない
+        add_help=False,
+    )
+    parser.add_argument(
+        "--profile",
+        # 下流のパーサでprofileが未指定の場合に上流パーサの値を上書きするのを防ぐ
+        default=argparse.SUPPRESS,
+        help=messages.arg_help_profile,
+    )
+    return parser
+
+
+def build_redi_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=messages.arg_help_root_description)
     parser.add_argument(
         "-V", "--version", action="version", version=f"redi {version('redtile')}"
@@ -87,37 +102,38 @@ def _build_parser() -> argparse.ArgumentParser:
         "--profile",
         help=messages.arg_help_profile,
     )
+    parents = [_profile_parser()]
     subparsers = parser.add_subparsers(dest="command")
-    add_project_parser(subparsers)
-    add_issue_parser(subparsers)
-    add_version_parser(subparsers)
-    add_wiki_parser(subparsers)
-    add_config_parser(subparsers)
+    add_project_parser(subparsers, parents)
+    add_issue_parser(subparsers, parents)
+    add_version_parser(subparsers, parents)
+    add_wiki_parser(subparsers, parents)
+    add_config_parser(subparsers, parents)
     add_init_parser(subparsers)
-    add_user_parser(subparsers)
-    add_me_parser(subparsers)
-    add_membership_parser(subparsers)
-    add_news_parser(subparsers)
-    add_tracker_parser(subparsers)
-    add_issue_status_parser(subparsers)
-    add_issue_priority_parser(subparsers)
-    add_time_entry_activity_parser(subparsers)
-    add_document_category_parser(subparsers)
-    add_role_parser(subparsers)
-    add_group_parser(subparsers)
-    add_query_parser(subparsers)
-    add_custom_field_parser(subparsers)
-    add_issue_category_parser(subparsers)
-    add_search_parser(subparsers)
-    add_attachment_parser(subparsers)
-    add_relation_parser(subparsers)
-    add_time_entry_parser(subparsers)
-    add_file_parser(subparsers)
+    add_user_parser(subparsers, parents)
+    add_me_parser(subparsers, parents)
+    add_membership_parser(subparsers, parents)
+    add_news_parser(subparsers, parents)
+    add_tracker_parser(subparsers, parents)
+    add_issue_status_parser(subparsers, parents)
+    add_issue_priority_parser(subparsers, parents)
+    add_time_entry_activity_parser(subparsers, parents)
+    add_document_category_parser(subparsers, parents)
+    add_role_parser(subparsers, parents)
+    add_group_parser(subparsers, parents)
+    add_query_parser(subparsers, parents)
+    add_custom_field_parser(subparsers, parents)
+    add_issue_category_parser(subparsers, parents)
+    add_search_parser(subparsers, parents)
+    add_attachment_parser(subparsers, parents)
+    add_relation_parser(subparsers, parents)
+    add_time_entry_parser(subparsers, parents)
+    add_file_parser(subparsers, parents)
     return parser
 
 
 def main() -> None:
-    parser = _build_parser()
+    parser = build_redi_parser()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 

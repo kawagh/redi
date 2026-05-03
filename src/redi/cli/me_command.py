@@ -5,15 +5,19 @@ from redi.i18n import messages
 from redi.api.me import read_my_account, update_my_account
 
 
-def add_me_parser(subparsers: argparse._SubParsersAction) -> None:
-    me_parser = subparsers.add_parser("me", help=messages.arg_help_me_command)
+def add_me_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
+    me_parser = subparsers.add_parser(
+        "me", help=messages.arg_help_me_command, parents=parents
+    )
     me_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
     )
     me_subparsers = me_parser.add_subparsers(dest="me_command")
 
     me_update_parser = me_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_me_update
+        "update", aliases=["u"], help=messages.arg_help_me_update, parents=parents
     )
     me_update_parser.add_argument(
         "--firstname", "-f", help=messages.arg_help_user_firstname

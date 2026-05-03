@@ -41,20 +41,25 @@ def build_wiki_tree_choices(pages: list[dict]) -> list[tuple[str, str]]:
     return options
 
 
-def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_wiki_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     w_parser = subparsers.add_parser(
         "wiki",
         aliases=["w"],
         help=messages.arg_help_wiki_command,
+        parents=parents,
     )
     w_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
     w_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
     )
     w_subparsers = w_parser.add_subparsers(dest="wiki_command")
-    w_subparsers.add_parser("list", aliases=["l"], help=messages.arg_help_wiki_list)
+    w_subparsers.add_parser(
+        "list", aliases=["l"], help=messages.arg_help_wiki_list, parents=parents
+    )
     w_view_parser = w_subparsers.add_parser(
-        "view", aliases=["v"], help=messages.arg_help_wiki_view
+        "view", aliases=["v"], help=messages.arg_help_wiki_view, parents=parents
     )
     w_view_parser.add_argument("page_title", help=messages.arg_help_wiki_page_title)
     w_view_parser.add_argument(
@@ -67,7 +72,7 @@ def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
         "--version", type=int, help=messages.arg_help_wiki_version
     )
     w_create_parser = w_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_wiki_create
+        "create", aliases=["c"], help=messages.arg_help_wiki_create, parents=parents
     )
     w_create_parser.add_argument(
         "page_title", nargs="?", help=messages.arg_help_wiki_create_title
@@ -89,14 +94,14 @@ def add_wiki_parser(subparsers: argparse._SubParsersAction) -> None:
         help=messages.arg_help_wiki_comments,
     )
     w_delete_parser = w_subparsers.add_parser(
-        "delete", aliases=["d"], help=messages.arg_help_wiki_delete
+        "delete", aliases=["d"], help=messages.arg_help_wiki_delete, parents=parents
     )
     w_delete_parser.add_argument("page_title", help=messages.arg_help_wiki_page_title)
     w_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
     w_update_parser = w_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_wiki_update
+        "update", aliases=["u"], help=messages.arg_help_wiki_update, parents=parents
     )
     w_update_parser.add_argument(
         "page_title", nargs="?", help=messages.arg_help_wiki_update_title

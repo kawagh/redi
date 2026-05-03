@@ -14,19 +14,24 @@ from redi.api.project import (
 )
 
 
-def add_project_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_project_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     p_parser = subparsers.add_parser(
         "project",
         aliases=["p"],
         help=messages.arg_help_project_command,
+        parents=parents,
     )
     p_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
     )
     p_subparsers = p_parser.add_subparsers(dest="project_command")
-    p_subparsers.add_parser("list", aliases=["l"], help=messages.arg_help_project_list)
+    p_subparsers.add_parser(
+        "list", aliases=["l"], help=messages.arg_help_project_list, parents=parents
+    )
     p_view_parser = p_subparsers.add_parser(
-        "view", aliases=["v"], help=messages.arg_help_project_view
+        "view", aliases=["v"], help=messages.arg_help_project_view, parents=parents
     )
     p_view_parser.add_argument("project_id", help=messages.arg_help_project_view_id)
     p_view_parser.add_argument(
@@ -40,7 +45,7 @@ def add_project_parser(subparsers: argparse._SubParsersAction) -> None:
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
     p_create_parser = p_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_project_create
+        "create", aliases=["c"], help=messages.arg_help_project_create, parents=parents
     )
     p_create_parser.add_argument("name", help=messages.arg_help_project_name)
     p_create_parser.add_argument(
@@ -57,14 +62,14 @@ def add_project_parser(subparsers: argparse._SubParsersAction) -> None:
     p_create_parser.add_argument("--parent_id", help=messages.arg_help_parent_id)
     p_create_parser.add_argument("--tracker_ids", help=messages.arg_help_tracker_ids)
     p_delete_parser = p_subparsers.add_parser(
-        "delete", aliases=["d"], help=messages.arg_help_project_delete
+        "delete", aliases=["d"], help=messages.arg_help_project_delete, parents=parents
     )
     p_delete_parser.add_argument("project_id", help=messages.arg_help_project_delete_id)
     p_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
     p_update_parser = p_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_project_update
+        "update", aliases=["u"], help=messages.arg_help_project_update, parents=parents
     )
     p_update_parser.add_argument("project_id", help=messages.arg_help_project_update_id)
     p_update_parser.add_argument("--name", "-n", help=messages.arg_help_project_name)

@@ -22,19 +22,24 @@ MAIL_NOTIFICATION_CHOICES = [
 ]
 
 
-def add_user_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_user_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     u_parser = subparsers.add_parser(
         "user",
         aliases=["u"],
         help=messages.arg_help_user_command,
+        parents=parents,
     )
     u_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
     )
     u_subparsers = u_parser.add_subparsers(dest="user_command")
-    u_subparsers.add_parser("list", aliases=["l"], help=messages.arg_help_user_list)
+    u_subparsers.add_parser(
+        "list", aliases=["l"], help=messages.arg_help_user_list, parents=parents
+    )
     u_create_parser = u_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_user_create
+        "create", aliases=["c"], help=messages.arg_help_user_create, parents=parents
     )
     u_create_parser.add_argument("login", help=messages.arg_help_user_login)
     u_create_parser.add_argument(
@@ -70,7 +75,7 @@ def add_user_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     u_view_parser = u_subparsers.add_parser(
-        "view", aliases=["v"], help=messages.arg_help_user_view
+        "view", aliases=["v"], help=messages.arg_help_user_view, parents=parents
     )
     u_view_parser.add_argument("user_id", help=messages.arg_help_user_view_id)
     u_view_parser.add_argument(
@@ -78,7 +83,7 @@ def add_user_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     u_update_parser = u_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_user_update
+        "update", aliases=["u"], help=messages.arg_help_user_update, parents=parents
     )
     u_update_parser.add_argument("user_id", help=messages.arg_help_user_update_id)
     u_update_parser.add_argument("--login", help=messages.arg_help_user_login)
@@ -112,7 +117,7 @@ def add_user_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     u_delete_parser = u_subparsers.add_parser(
-        "delete", aliases=["d"], help=messages.arg_help_user_delete
+        "delete", aliases=["d"], help=messages.arg_help_user_delete, parents=parents
     )
     u_delete_parser.add_argument("user_id", help=messages.arg_help_user_delete_id)
     u_delete_parser.add_argument(

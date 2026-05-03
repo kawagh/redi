@@ -10,14 +10,19 @@ from redi.cli._common import confirm_delete, resolve_alias
 from redi.i18n import messages
 
 
-def add_attachment_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_attachment_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     a_parser = subparsers.add_parser(
-        "attachment", aliases=["a"], help=messages.arg_help_attachment_command
+        "attachment",
+        aliases=["a"],
+        help=messages.arg_help_attachment_command,
+        parents=parents,
     )
     a_subparsers = a_parser.add_subparsers(dest="attachment_command")
     a_parser.set_defaults(_print_help=a_parser.print_help)
     a_view_parser = a_subparsers.add_parser(
-        "view", aliases=["v"], help=messages.arg_help_attachment_view
+        "view", aliases=["v"], help=messages.arg_help_attachment_view, parents=parents
     )
     a_view_parser.add_argument(
         "attachment_id", help=messages.arg_help_attachment_view_id
@@ -26,7 +31,10 @@ def add_attachment_parser(subparsers: argparse._SubParsersAction) -> None:
         "--full", action="store_true", help=messages.arg_help_full_json
     )
     a_update_parser = a_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_attachment_update
+        "update",
+        aliases=["u"],
+        help=messages.arg_help_attachment_update,
+        parents=parents,
     )
     a_update_parser.add_argument(
         "attachment_id", help=messages.arg_help_attachment_update_id
@@ -38,7 +46,10 @@ def add_attachment_parser(subparsers: argparse._SubParsersAction) -> None:
         "--description", "-d", help=messages.arg_help_attachment_description
     )
     a_delete_parser = a_subparsers.add_parser(
-        "delete", aliases=["d"], help=messages.arg_help_attachment_delete
+        "delete",
+        aliases=["d"],
+        help=messages.arg_help_attachment_delete,
+        parents=parents,
     )
     a_delete_parser.add_argument(
         "attachment_id", help=messages.arg_help_attachment_delete_id

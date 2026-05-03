@@ -4,9 +4,11 @@ from redi.api.search import search
 from redi.i18n import messages
 
 
-def add_search_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_search_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     search_parser = subparsers.add_parser(
-        "search", aliases=["s"], help=messages.arg_help_search_command
+        "search", aliases=["s"], help=messages.arg_help_search_command, parents=parents
     )
     search_parser.add_argument("query", help=messages.arg_help_search_query)
     search_parser.add_argument("--limit", "-l", type=int, help=messages.arg_help_limit)
