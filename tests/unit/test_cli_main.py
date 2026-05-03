@@ -50,3 +50,11 @@ class TestProfileFlagPlacement:
 
         assert args.command == "me"
         assert args.profile == "foo"
+
+    def test_with_tui_flag(self, parser):
+        """サブコマンド無しで `--tui --profile foo` の組み合わせも受け付ける"""
+        args = parser.parse_args(["--tui", "--profile", "foo"])
+
+        assert args.tui is True
+        assert args.profile == "foo"
+        assert args.command is None
