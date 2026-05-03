@@ -141,12 +141,7 @@ class En(MessagesProto):
     wiki_page_update_conflict = (
         "Failed to update wiki page because it was updated by another user: {title}"
     )
-    wiki_create_validation_failed = (
-        "Failed to create wiki page (validation error):\n{errors}"
-    )
-    wiki_update_validation_failed = (
-        "Failed to update wiki page (validation error):\n{errors}"
-    )
+    validation_failed = "Failed to {action} {resource} (validation error):\n{errors}"
     membership_create_failed = "Failed to create membership"
     membership_update_failed = "Failed to update membership"
     membership_delete_failed = "Failed to delete membership"
@@ -161,12 +156,6 @@ class En(MessagesProto):
     time_entry_create_failed = "Failed to create time entry"
     time_entry_update_failed = "Failed to update time entry"
     time_entry_delete_failed = "Failed to delete time entry"
-    time_entry_create_validation_failed = (
-        "Failed to create time entry (validation error):\n{errors}"
-    )
-    time_entry_update_validation_failed = (
-        "Failed to update time entry (validation error):\n{errors}"
-    )
     attachment_delete_failed = "Failed to delete attachment"
     attachment_update_failed = "Failed to update attachment"
     group_create_failed = "Failed to create group"

@@ -59,18 +59,12 @@ from redi.i18n import messages
 from redi.tui import TuiState, run_issue_tui
 
 
-# (resource, action) → 表示テンプレート。新しいリソースで 422 を扱うときはここに 1 行足す。
-_VALIDATION_TEMPLATES = {
-    ("wiki", "create"): messages.wiki_create_validation_failed,
-    ("wiki", "update"): messages.wiki_update_validation_failed,
-    ("time_entry", "create"): messages.time_entry_create_validation_failed,
-    ("time_entry", "update"): messages.time_entry_update_validation_failed,
-}
-
-
 def _format_validation_error(e: RedmineValidationException) -> str:
-    template = _VALIDATION_TEMPLATES[(e.resource, e.action)]
-    return template.format(errors="\n".join(f"- {err}" for err in e.errors))
+    return messages.validation_failed.format(
+        resource=e.resource,
+        action=e.action,
+        errors="\n".join(f"- {err}" for err in e.errors),
+    )
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -289,7 +283,11 @@ def main() -> None:
     if args.command in ("project", "p"):
         handle_project(args)
     elif args.command in ("issue", "i"):
-        handle_issue(args)
+        try:
+            handle_issue(args)
+        except RedmineValidationException as e:
+            print(_format_validation_error(e))
+            exit(1)
     elif args.command in ("version", "v"):
         handle_version(args)
     elif args.command in ("wiki", "w"):

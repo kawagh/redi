@@ -143,12 +143,7 @@ class Ja(MessagesProto):
     watcher_remove_failed = "ウォッチャーの削除に失敗しました"
     wiki_page_delete_failed = "Wikiページの削除に失敗しました"
     wiki_page_update_conflict = "Wikiページが他のユーザーによって更新されているため更新できませんでした: {title}"
-    wiki_create_validation_failed = (
-        "Wikiページの作成に失敗しました (入力エラー):\n{errors}"
-    )
-    wiki_update_validation_failed = (
-        "Wikiページの更新に失敗しました (入力エラー):\n{errors}"
-    )
+    validation_failed = "{resource}の{action}に失敗しました(入力エラー):\n{errors}"
     membership_create_failed = "メンバーシップの作成に失敗しました"
     membership_update_failed = "メンバーシップの更新に失敗しました"
     membership_delete_failed = "メンバーシップの削除に失敗しました"
@@ -163,12 +158,6 @@ class Ja(MessagesProto):
     time_entry_create_failed = "作業時間の登録に失敗しました"
     time_entry_update_failed = "作業時間の更新に失敗しました"
     time_entry_delete_failed = "作業時間の削除に失敗しました"
-    time_entry_create_validation_failed = (
-        "作業時間の登録に失敗しました (入力エラー):\n{errors}"
-    )
-    time_entry_update_validation_failed = (
-        "作業時間の更新に失敗しました (入力エラー):\n{errors}"
-    )
     attachment_delete_failed = "添付ファイルの削除に失敗しました"
     attachment_update_failed = "添付ファイルの更新に失敗しました"
     group_create_failed = "グループの作成に失敗しました"
