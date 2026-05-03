@@ -223,6 +223,10 @@ class MessagesProto(Protocol):
     wiki_page_delete_failed: str
     wiki_page_update_conflict: str
     """{title}"""
+    wiki_create_validation_failed: str
+    """{errors}"""
+    wiki_update_validation_failed: str
+    """{errors}"""
     membership_create_failed: str
     membership_update_failed: str
     membership_delete_failed: str

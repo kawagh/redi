@@ -141,6 +141,12 @@ class En(MessagesProto):
     wiki_page_update_conflict = (
         "Failed to update wiki page because it was updated by another user: {title}"
     )
+    wiki_create_validation_failed = (
+        "Failed to create wiki page (validation error):\n{errors}"
+    )
+    wiki_update_validation_failed = (
+        "Failed to update wiki page (validation error):\n{errors}"
+    )
     membership_create_failed = "Failed to create membership"
     membership_update_failed = "Failed to update membership"
     membership_delete_failed = "Failed to delete membership"

@@ -18,7 +18,7 @@ from redi.cli.enumerations_command import (
     add_time_entry_activity_parser,
     add_tracker_parser,
 )
-from redi.cli._common import open_editor
+from redi.cli._common import open_editor, resolve_alias
 from redi.cli.group_command import add_group_parser, handle_group
 from redi.cli.init_command import add_init_parser, handle_init
 from redi.cli.issue_category_command import (
@@ -192,17 +192,24 @@ def main() -> None:
                 if notes:
                     add_note(tui_result.issue_id, notes)
             elif tui_result.action == "create" and tui_result.tab == "wiki":
-                handle_wiki(
-                    argparse.Namespace(
-                        wiki_command="create",
-                        project_id=None,
-                        full=False,
-                        page_title=None,
-                        parent_title=tui_result.parent_wiki_title,
-                        description=None,
-                        comments="",
+                try:
+                    handle_wiki(
+                        argparse.Namespace(
+                            wiki_command="create",
+                            project_id=None,
+                            full=False,
+                            page_title=None,
+                            parent_title=tui_result.parent_wiki_title,
+                            description=None,
+                            comments="",
+                        )
                     )
-                )
+                except RedmineValidationException as e:
+                    tui_state.error_modal = (
+                        messages.wiki_create_validation_failed.format(
+                            errors="\n".join(f"- {err}" for err in e.errors)
+                        )
+                    )
             elif tui_result.action == "update" and tui_result.tab == "wiki":
                 try:
                     handle_wiki(
@@ -218,6 +225,12 @@ def main() -> None:
                 except WikiUpdateConflictException as e:
                     tui_state.error_modal = messages.wiki_page_update_conflict.format(
                         title=e.title
+                    )
+                except RedmineValidationException as e:
+                    tui_state.error_modal = (
+                        messages.wiki_update_validation_failed.format(
+                            errors="\n".join(f"- {err}" for err in e.errors)
+                        )
                     )
             elif tui_result.action == "create_time_entry":
                 if not tui_result.issue_id:
@@ -300,6 +313,16 @@ def main() -> None:
             handle_wiki(args)
         except WikiUpdateConflictException as e:
             print(messages.wiki_page_update_conflict.format(title=e.title))
+            exit(1)
+        except RedmineValidationException as e:
+            operation = resolve_alias(getattr(args, "wiki_command", None))
+            if operation == "create":
+                template = messages.wiki_create_validation_failed
+            elif operation == "update":
+                template = messages.wiki_update_validation_failed
+            else:
+                raise AssertionError("unreachable")
+            print(template.format(errors="\n".join(f"- {err}" for err in e.errors)))
             exit(1)
     elif args.command in ("user", "u"):
         handle_user(args)
