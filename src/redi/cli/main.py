@@ -86,7 +86,7 @@ def _profile_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _build_parser() -> argparse.ArgumentParser:
+def build_redi_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=messages.arg_help_root_description)
     parser.add_argument(
         "-V", "--version", action="version", version=f"redi {version('redtile')}"
@@ -133,7 +133,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    parser = _build_parser()
+    parser = build_redi_parser()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 

@@ -2,7 +2,7 @@ import argparse
 
 import pytest
 
-from redi.cli.main import _build_parser
+from redi.cli.main import build_redi_parser
 
 
 class TestProfileFlagPlacement:
@@ -10,7 +10,7 @@ class TestProfileFlagPlacement:
 
     @pytest.fixture
     def parser(self) -> argparse.ArgumentParser:
-        return _build_parser()
+        return build_redi_parser()
 
     def test_before_subcommand(self, parser):
         """ルート直後の `--profile foo issue list` を受け付ける"""
