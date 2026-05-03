@@ -16,6 +16,7 @@ class TestProfileFlagPlacement:
         """ルート直後の `--profile foo issue list` を受け付ける"""
         args = parser.parse_args(["--profile", "foo", "issue", "list"])
 
+        assert args.profile == "foo"
         assert args.command == "issue"
         assert args.issue_command == "list"
 
@@ -44,8 +45,8 @@ class TestProfileFlagPlacement:
         assert args.profile == "foo"
 
     def test_after_resource_only_subcommand(self, parser):
-        """ネストの無い `tracker --profile foo` のような呼び出しも受け付ける"""
-        args = parser.parse_args(["tracker", "--profile", "foo"])
+        """ネストの無い `me --profile foo` のような呼び出しも受け付ける"""
+        args = parser.parse_args(["me", "--profile", "foo"])
 
-        assert args.command == "tracker"
+        assert args.command == "me"
         assert args.profile == "foo"
