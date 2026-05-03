@@ -18,7 +18,7 @@ from redi.cli.enumerations_command import (
     add_time_entry_activity_parser,
     add_tracker_parser,
 )
-from redi.cli._common import open_editor, resolve_alias
+from redi.cli._common import open_editor
 from redi.cli.group_command import add_group_parser, handle_group
 from redi.cli.init_command import add_init_parser, handle_init
 from redi.cli.issue_category_command import (
@@ -57,6 +57,20 @@ from redi.api.tracker import list_trackers
 from redi.api.wiki import WikiUpdateConflictException
 from redi.i18n import messages
 from redi.tui import TuiState, run_issue_tui
+
+
+# (resource, action) → 表示テンプレート。新しいリソースで 422 を扱うときはここに 1 行足す。
+_VALIDATION_TEMPLATES = {
+    ("wiki", "create"): messages.wiki_create_validation_failed,
+    ("wiki", "update"): messages.wiki_update_validation_failed,
+    ("time_entry", "create"): messages.time_entry_create_validation_failed,
+    ("time_entry", "update"): messages.time_entry_update_validation_failed,
+}
+
+
+def _format_validation_error(e: RedmineValidationException) -> str:
+    template = _VALIDATION_TEMPLATES[(e.resource, e.action)]
+    return template.format(errors="\n".join(f"- {err}" for err in e.errors))
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -145,54 +159,56 @@ def main() -> None:
             if tui_result is None:
                 return
             tui_state = TuiState(last_result=tui_result)
-            if tui_result.action == "update" and tui_result.tab == "issues":
-                update_args = argparse.Namespace(
-                    issue_id=tui_result.issue_id,
-                    subject=None,
-                    description=None,
-                    tracker_id=None,
-                    status_id=None,
-                    priority_id=None,
-                    assigned_to_id=None,
-                    fixed_version_id=None,
-                    parent_issue_id=None,
-                    start_date=None,
-                    due_date=None,
-                    done_ratio=None,
-                    estimated_hours=None,
-                    notes=None,
-                    custom_fields=None,
-                    relate=None,
-                    relate_to=None,
-                    delete_relation=False,
-                    attach=None,
-                    hours=None,
-                    activity_id=None,
-                    spent_on=None,
-                    time_comments=None,
-                    add_watcher_ids=None,
-                    remove_watcher_ids=None,
-                )
-                handle_issue_update(update_args)
-            elif tui_result.action == "create" and tui_result.tab == "issues":
-                create_args = argparse.Namespace(
-                    subject=None,
-                    project_id=None,
-                    tracker_id=None,
-                    priority_id=None,
-                    assigned_to_id=None,
-                    description=None,
-                    custom_fields=None,
-                )
-                handle_issue_create(create_args)
-            elif tui_result.action == "comment":
-                if tui_result.issue_id is None:
-                    continue
-                notes = open_editor()
-                if notes:
-                    add_note(tui_result.issue_id, notes)
-            elif tui_result.action == "create" and tui_result.tab == "wiki":
-                try:
+            try:
+                if tui_result.action == "update" and tui_result.tab == "issues":
+                    handle_issue_update(
+                        argparse.Namespace(
+                            issue_id=tui_result.issue_id,
+                            subject=None,
+                            description=None,
+                            tracker_id=None,
+                            status_id=None,
+                            priority_id=None,
+                            assigned_to_id=None,
+                            fixed_version_id=None,
+                            parent_issue_id=None,
+                            start_date=None,
+                            due_date=None,
+                            done_ratio=None,
+                            estimated_hours=None,
+                            notes=None,
+                            custom_fields=None,
+                            relate=None,
+                            relate_to=None,
+                            delete_relation=False,
+                            attach=None,
+                            hours=None,
+                            activity_id=None,
+                            spent_on=None,
+                            time_comments=None,
+                            add_watcher_ids=None,
+                            remove_watcher_ids=None,
+                        )
+                    )
+                elif tui_result.action == "create" and tui_result.tab == "issues":
+                    handle_issue_create(
+                        argparse.Namespace(
+                            subject=None,
+                            project_id=None,
+                            tracker_id=None,
+                            priority_id=None,
+                            assigned_to_id=None,
+                            description=None,
+                            custom_fields=None,
+                        )
+                    )
+                elif tui_result.action == "comment":
+                    if tui_result.issue_id is None:
+                        continue
+                    notes = open_editor()
+                    if notes:
+                        add_note(tui_result.issue_id, notes)
+                elif tui_result.action == "create" and tui_result.tab == "wiki":
                     handle_wiki(
                         argparse.Namespace(
                             wiki_command="create",
@@ -204,14 +220,7 @@ def main() -> None:
                             comments="",
                         )
                     )
-                except RedmineValidationException as e:
-                    tui_state.error_modal = (
-                        messages.wiki_create_validation_failed.format(
-                            errors="\n".join(f"- {err}" for err in e.errors)
-                        )
-                    )
-            elif tui_result.action == "update" and tui_result.tab == "wiki":
-                try:
+                elif tui_result.action == "update" and tui_result.tab == "wiki":
                     handle_wiki(
                         argparse.Namespace(
                             wiki_command="update",
@@ -222,20 +231,9 @@ def main() -> None:
                             comments="",
                         )
                     )
-                except WikiUpdateConflictException as e:
-                    tui_state.error_modal = messages.wiki_page_update_conflict.format(
-                        title=e.title
-                    )
-                except RedmineValidationException as e:
-                    tui_state.error_modal = (
-                        messages.wiki_update_validation_failed.format(
-                            errors="\n".join(f"- {err}" for err in e.errors)
-                        )
-                    )
-            elif tui_result.action == "create_time_entry":
-                if not tui_result.issue_id:
-                    continue
-                try:
+                elif tui_result.action == "create_time_entry":
+                    if not tui_result.issue_id:
+                        continue
                     handle_time_entry(
                         argparse.Namespace(
                             time_entry_command="create",
@@ -249,14 +247,7 @@ def main() -> None:
                             comments=None,
                         )
                     )
-                except RedmineValidationException as e:
-                    tui_state.error_modal = (
-                        messages.time_entry_create_validation_failed.format(
-                            errors="\n".join(f"- {err}" for err in e.errors)
-                        )
-                    )
-            elif tui_result.action == "create" and tui_result.tab == "time_entries":
-                try:
+                elif tui_result.action == "create" and tui_result.tab == "time_entries":
                     handle_time_entry(
                         argparse.Namespace(
                             time_entry_command="create",
@@ -271,16 +262,9 @@ def main() -> None:
                             comments=None,
                         )
                     )
-                except RedmineValidationException as e:
-                    tui_state.error_modal = (
-                        messages.time_entry_create_validation_failed.format(
-                            errors="\n".join(f"- {err}" for err in e.errors)
-                        )
-                    )
-            elif tui_result.action == "update" and tui_result.tab == "time_entries":
-                if tui_result.time_entry_id is None:
-                    continue
-                try:
+                elif tui_result.action == "update" and tui_result.tab == "time_entries":
+                    if tui_result.time_entry_id is None:
+                        continue
                     handle_time_entry(
                         argparse.Namespace(
                             time_entry_command="update",
@@ -295,12 +279,12 @@ def main() -> None:
                             comments=None,
                         )
                     )
-                except RedmineValidationException as e:
-                    tui_state.error_modal = (
-                        messages.time_entry_update_validation_failed.format(
-                            errors="\n".join(f"- {err}" for err in e.errors)
-                        )
-                    )
+            except RedmineValidationException as e:
+                tui_state.error_modal = _format_validation_error(e)
+            except WikiUpdateConflictException as e:
+                tui_state.error_modal = messages.wiki_page_update_conflict.format(
+                    title=e.title
+                )
 
     if args.command in ("project", "p"):
         handle_project(args)
@@ -315,14 +299,7 @@ def main() -> None:
             print(messages.wiki_page_update_conflict.format(title=e.title))
             exit(1)
         except RedmineValidationException as e:
-            operation = resolve_alias(getattr(args, "wiki_command", None))
-            if operation == "create":
-                template = messages.wiki_create_validation_failed
-            elif operation == "update":
-                template = messages.wiki_update_validation_failed
-            else:
-                raise AssertionError("unreachable")
-            print(template.format(errors="\n".join(f"- {err}" for err in e.errors)))
+            print(_format_validation_error(e))
             exit(1)
     elif args.command in ("user", "u"):
         handle_user(args)
@@ -362,14 +339,7 @@ def main() -> None:
         try:
             handle_time_entry(args)
         except RedmineValidationException as e:
-            operation = getattr(args, "time_entry_command", None)
-            if operation in ("create", "c"):
-                template = messages.time_entry_create_validation_failed
-            elif operation in ("update", "u"):
-                template = messages.time_entry_update_validation_failed
-            else:
-                raise AssertionError("unreachable")
-            print(template.format(errors="\n".join(f"- {err}" for err in e.errors)))
+            print(_format_validation_error(e))
             exit(1)
     elif args.command in ("file", "f"):
         handle_file(args)

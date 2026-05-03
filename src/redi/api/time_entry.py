@@ -41,7 +41,7 @@ def create_time_entry(
         data["comments"] = comments
     response = client.post("/time_entries.json", json={"time_entry": data})
     if response.status_code == 422:
-        raise RedmineValidationException.from_response("time_entry", response)
+        raise RedmineValidationException.from_response("time_entry", "create", response)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -208,7 +208,7 @@ def update_time_entry(
         f"/time_entries/{time_entry_id}.json", json={"time_entry": data}
     )
     if response.status_code == 422:
-        raise RedmineValidationException.from_response("time_entry", response)
+        raise RedmineValidationException.from_response("time_entry", "update", response)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:

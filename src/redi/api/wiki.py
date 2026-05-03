@@ -158,7 +158,7 @@ def update_wiki(
     if response.status_code == 409:
         raise WikiUpdateConflictException(page_title)
     if response.status_code == 422:
-        raise RedmineValidationException.from_response("wiki", response)
+        raise RedmineValidationException.from_response("wiki", "update", response)
     response.raise_for_status()
     url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
     print(messages.wiki_page_updated.format(url=url))
@@ -212,7 +212,7 @@ def create_wiki(
         json={"wiki_page": body},
     )
     if response.status_code == 422:
-        raise RedmineValidationException.from_response("wiki", response)
+        raise RedmineValidationException.from_response("wiki", "create", response)
     response.raise_for_status()
     url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
     if exists:
