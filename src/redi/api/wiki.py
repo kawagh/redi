@@ -5,6 +5,7 @@ from typing import NotRequired, TypedDict
 
 import requests
 
+from redi.api.exceptions import RedmineValidationException
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
@@ -144,7 +145,8 @@ def update_wiki(
 
     Raises:
         WikiUpdateConflictException: version がRedmine側の最新バージョンと一致せず、更新が競合した場合（HTTP 409）。
-        requests.exceptions.HTTPError: 409 以外の HTTP エラーが返った場合
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+        requests.exceptions.HTTPError: 409 / 422 以外の HTTP エラーが返った場合
     """
     body: WikiPageUpdateBody = {"text": text, "comments": comments}
     if version is not None:
@@ -155,6 +157,8 @@ def update_wiki(
     )
     if response.status_code == 409:
         raise WikiUpdateConflictException(page_title)
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("wiki", "update", response)
     response.raise_for_status()
     url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
     print(messages.wiki_page_updated.format(url=url))
@@ -182,6 +186,11 @@ def create_wiki(
     parent_title: str | None = None,
     comments: str = "",
 ) -> None:
+    """Wikiページを作成する
+
+    Raises:
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+    """
     if parent_title:
         parent_exists = (
             client.get(f"/projects/{project_id}/wiki/{parent_title}.json").status_code
@@ -202,6 +211,8 @@ def create_wiki(
         f"/projects/{project_id}/wiki/{page_title}.json",
         json={"wiki_page": body},
     )
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("wiki", "create", response)
     response.raise_for_status()
     url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
     if exists:

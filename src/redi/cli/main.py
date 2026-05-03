@@ -49,6 +49,7 @@ from redi.api.enumeration import (
     list_issue_priorities,
     list_time_entry_activities,
 )
+from redi.api.exceptions import RedmineValidationException
 from redi.api.issue import add_note
 from redi.api.issue_status import list_issue_statuses
 from redi.api.query import list_queries
@@ -56,6 +57,18 @@ from redi.api.tracker import list_trackers
 from redi.api.wiki import WikiUpdateConflictException
 from redi.i18n import messages
 from redi.tui import TuiState, run_issue_tui
+
+
+def _format_validation_error(e: RedmineValidationException) -> str:
+    action_label = {
+        "create": messages.action_create,
+        "update": messages.action_update,
+    }[e.action]
+    return messages.validation_failed.format(
+        resource=e.resource,
+        action=action_label,
+        errors="\n".join(f"- {err}" for err in e.errors),
+    )
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -144,66 +157,68 @@ def main() -> None:
             if tui_result is None:
                 return
             tui_state = TuiState(last_result=tui_result)
-            if tui_result.action == "update" and tui_result.tab == "issues":
-                update_args = argparse.Namespace(
-                    issue_id=tui_result.issue_id,
-                    subject=None,
-                    description=None,
-                    tracker_id=None,
-                    status_id=None,
-                    priority_id=None,
-                    assigned_to_id=None,
-                    fixed_version_id=None,
-                    parent_issue_id=None,
-                    start_date=None,
-                    due_date=None,
-                    done_ratio=None,
-                    estimated_hours=None,
-                    notes=None,
-                    custom_fields=None,
-                    relate=None,
-                    relate_to=None,
-                    delete_relation=False,
-                    attach=None,
-                    hours=None,
-                    activity_id=None,
-                    spent_on=None,
-                    time_comments=None,
-                    add_watcher_ids=None,
-                    remove_watcher_ids=None,
-                )
-                handle_issue_update(update_args)
-            elif tui_result.action == "create" and tui_result.tab == "issues":
-                create_args = argparse.Namespace(
-                    subject=None,
-                    project_id=None,
-                    tracker_id=None,
-                    priority_id=None,
-                    assigned_to_id=None,
-                    description=None,
-                    custom_fields=None,
-                )
-                handle_issue_create(create_args)
-            elif tui_result.action == "comment":
-                if tui_result.issue_id is None:
-                    continue
-                notes = open_editor()
-                if notes:
-                    add_note(tui_result.issue_id, notes)
-            elif tui_result.action == "create" and tui_result.tab == "wiki":
-                handle_wiki(
-                    argparse.Namespace(
-                        wiki_command="create",
-                        project_id=None,
-                        full=False,
-                        page_title=None,
-                        parent_title=tui_result.parent_wiki_title,
-                        description=None,
-                        comments="",
+            try:
+                if tui_result.action == "update" and tui_result.tab == "issues":
+                    handle_issue_update(
+                        argparse.Namespace(
+                            issue_id=tui_result.issue_id,
+                            subject=None,
+                            description=None,
+                            tracker_id=None,
+                            status_id=None,
+                            priority_id=None,
+                            assigned_to_id=None,
+                            fixed_version_id=None,
+                            parent_issue_id=None,
+                            start_date=None,
+                            due_date=None,
+                            done_ratio=None,
+                            estimated_hours=None,
+                            notes=None,
+                            custom_fields=None,
+                            relate=None,
+                            relate_to=None,
+                            delete_relation=False,
+                            attach=None,
+                            hours=None,
+                            activity_id=None,
+                            spent_on=None,
+                            time_comments=None,
+                            add_watcher_ids=None,
+                            remove_watcher_ids=None,
+                        )
                     )
-                )
-            elif tui_result.action == "update" and tui_result.tab == "wiki":
-                try:
+                elif tui_result.action == "create" and tui_result.tab == "issues":
+                    handle_issue_create(
+                        argparse.Namespace(
+                            subject=None,
+                            project_id=None,
+                            tracker_id=None,
+                            priority_id=None,
+                            assigned_to_id=None,
+                            description=None,
+                            custom_fields=None,
+                        )
+                    )
+                elif tui_result.action == "comment":
+                    if tui_result.issue_id is None:
+                        continue
+                    notes = open_editor()
+                    if notes:
+                        add_note(tui_result.issue_id, notes)
+                elif tui_result.action == "create" and tui_result.tab == "wiki":
+                    handle_wiki(
+                        argparse.Namespace(
+                            wiki_command="create",
+                            project_id=None,
+                            full=False,
+                            page_title=None,
+                            parent_title=tui_result.parent_wiki_title,
+                            description=None,
+                            comments="",
+                        )
+                    )
+                elif tui_result.action == "update" and tui_result.tab == "wiki":
                     handle_wiki(
                         argparse.Namespace(
                             wiki_command="update",
@@ -214,63 +229,69 @@ def main() -> None:
                             comments="",
                         )
                     )
-                except WikiUpdateConflictException as e:
-                    tui_state.error_modal = messages.wiki_page_update_conflict.format(
-                        title=e.title
+                elif tui_result.action == "create_time_entry":
+                    if not tui_result.issue_id:
+                        continue
+                    handle_time_entry(
+                        argparse.Namespace(
+                            time_entry_command="create",
+                            project_id=None,
+                            user_id=None,
+                            full=False,
+                            hours=None,
+                            issue_id=tui_result.issue_id,
+                            activity_id=None,
+                            spent_on=None,
+                            comments=None,
+                        )
                     )
-            elif tui_result.action == "create_time_entry":
-                if not tui_result.issue_id:
-                    continue
-                handle_time_entry(
-                    argparse.Namespace(
-                        time_entry_command="create",
-                        project_id=None,
-                        user_id=None,
-                        full=False,
-                        hours=None,
-                        issue_id=tui_result.issue_id,
-                        activity_id=None,
-                        spent_on=None,
-                        comments=None,
+                elif tui_result.action == "create" and tui_result.tab == "time_entries":
+                    handle_time_entry(
+                        argparse.Namespace(
+                            time_entry_command="create",
+                            project_id=None,
+                            user_id=None,
+                            full=False,
+                            hours=None,
+                            issue_id=None,
+                            default_issue_id=tui_result.issue_id,
+                            activity_id=None,
+                            spent_on=None,
+                            comments=None,
+                        )
                     )
-                )
-            elif tui_result.action == "create" and tui_result.tab == "time_entries":
-                handle_time_entry(
-                    argparse.Namespace(
-                        time_entry_command="create",
-                        project_id=None,
-                        user_id=None,
-                        full=False,
-                        hours=None,
-                        issue_id=None,
-                        default_issue_id=tui_result.issue_id,
-                        activity_id=None,
-                        spent_on=None,
-                        comments=None,
+                elif tui_result.action == "update" and tui_result.tab == "time_entries":
+                    if tui_result.time_entry_id is None:
+                        continue
+                    handle_time_entry(
+                        argparse.Namespace(
+                            time_entry_command="update",
+                            time_entry_id=tui_result.time_entry_id,
+                            project_id=None,
+                            user_id=None,
+                            full=False,
+                            hours=None,
+                            issue_id=None,
+                            activity_id=None,
+                            spent_on=None,
+                            comments=None,
+                        )
                     )
-                )
-            elif tui_result.action == "update" and tui_result.tab == "time_entries":
-                if tui_result.time_entry_id is None:
-                    continue
-                handle_time_entry(
-                    argparse.Namespace(
-                        time_entry_command="update",
-                        time_entry_id=tui_result.time_entry_id,
-                        project_id=None,
-                        user_id=None,
-                        full=False,
-                        hours=None,
-                        issue_id=None,
-                        activity_id=None,
-                        spent_on=None,
-                        comments=None,
-                    )
+            except RedmineValidationException as e:
+                tui_state.error_modal = _format_validation_error(e)
+            except WikiUpdateConflictException as e:
+                tui_state.error_modal = messages.wiki_page_update_conflict.format(
+                    title=e.title
                 )
 
     if args.command in ("project", "p"):
         handle_project(args)
     elif args.command in ("issue", "i"):
-        handle_issue(args)
+        try:
+            handle_issue(args)
+        except RedmineValidationException as e:
+            print(_format_validation_error(e))
+            exit(1)
     elif args.command in ("version", "v"):
         handle_version(args)
     elif args.command in ("wiki", "w"):
@@ -278,6 +299,9 @@ def main() -> None:
             handle_wiki(args)
         except WikiUpdateConflictException as e:
             print(messages.wiki_page_update_conflict.format(title=e.title))
+            exit(1)
+        except RedmineValidationException as e:
+            print(_format_validation_error(e))
             exit(1)
     elif args.command in ("user", "u"):
         handle_user(args)
@@ -314,7 +338,11 @@ def main() -> None:
     elif args.command == "relation":
         handle_relation(args)
     elif args.command in ("time_entry", "te"):
-        handle_time_entry(args)
+        try:
+            handle_time_entry(args)
+        except RedmineValidationException as e:
+            print(_format_validation_error(e))
+            exit(1)
     elif args.command in ("file", "f"):
         handle_file(args)
     else:

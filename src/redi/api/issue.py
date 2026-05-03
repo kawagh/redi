@@ -4,6 +4,7 @@ import webbrowser
 import requests
 
 from redi.api.attachment import upload_file
+from redi.api.exceptions import RedmineValidationException
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
@@ -250,6 +251,11 @@ def create_issue(
     assigned_to_id: str | None = None,
     custom_fields: str | None = None,
 ) -> None:
+    """イシューを作成する
+
+    Raises:
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+    """
     issue_data: dict = {
         "project_id": project_id,
         "subject": subject,
@@ -265,6 +271,8 @@ def create_issue(
     if custom_fields:
         issue_data["custom_fields"] = parse_custom_fields(custom_fields)
     response = client.post("/issues.json", json={"issue": issue_data})
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("issue", "create", response)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -295,6 +303,11 @@ def update_issue(
     custom_fields: str | None = None,
     attachments: list[str] = [],
 ) -> None:
+    """イシューを更新する
+
+    Raises:
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+    """
     issue_data: dict = {}
     if subject:
         issue_data["subject"] = subject
@@ -330,6 +343,8 @@ def update_issue(
         print(messages.update_canceled)
         exit()
     response = client.put(f"/issues/{issue_id}.json", json={"issue": issue_data})
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("issue", "update", response)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
