@@ -238,6 +238,11 @@ def _render_help(state: TuiState) -> Renderable:
     return parts
 
 
+def _render_error_modal(state: TuiState) -> Renderable:
+    body = state.error_modal or ""
+    return [("fg:ansired", body)]
+
+
 def _render_status(state: TuiState) -> Renderable:
     if state.confirm_delete_prompt is not None:
         return [("reverse", f" {state.confirm_delete_prompt} ")]
@@ -302,12 +307,14 @@ def run_issue_tui(
             and state.confirm_delete_prompt is None
             and not state.show_help
             and not state.issue_tab.filter_modal.show
+            and state.error_modal is None
         )
     )
     search_mode = Condition(lambda: state.search_mode)
     confirm_delete_mode = Condition(lambda: state.confirm_delete_prompt is not None)
     help_mode = Condition(lambda: state.show_help)
     filter_mode = Condition(lambda: state.issue_tab.filter_modal.show)
+    error_modal_mode = Condition(lambda: state.error_modal is not None)
 
     def _clear_temporary_state() -> None:
         state.number_buffer = ""
@@ -507,6 +514,10 @@ def run_issue_tui(
     def _(event):
         state.show_help = False
 
+    @kb.add("q", filter=error_modal_mode)
+    def _(event):
+        state.error_modal = None
+
     def _open_filter_modal() -> None:
         modal = state.issue_tab.filter_modal
         modal.status_choices = _build_status_choices()
@@ -704,9 +715,32 @@ def run_issue_tui(
         ),
     )
 
+    error_float = Float(
+        content=ConditionalContainer(
+            content=VSplit(
+                [
+                    Window(width=1, char=" "),
+                    Frame(
+                        Window(
+                            FormattedTextControl(
+                                lambda: _render_error_modal(state), show_cursor=False
+                            ),
+                            wrap_lines=True,
+                        ),
+                        title=lambda: messages.tui_error_modal_title,
+                    ),
+                    Window(width=1, char=" "),
+                ]
+            ),
+            filter=error_modal_mode,
+        ),
+    )
+
     app = Application(
         layout=Layout(
-            FloatContainer(content=main_layout, floats=[help_float, filter_float])
+            FloatContainer(
+                content=main_layout, floats=[help_float, filter_float, error_float]
+            )
         ),
         key_bindings=kb,
         full_screen=True,

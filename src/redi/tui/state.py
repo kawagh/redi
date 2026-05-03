@@ -127,3 +127,5 @@ class TuiState:
     # 右ペイン (preview) のスクロール位置 (先頭からの行数)。
     # カーソル移動・タブ切り替え時に 0 に戻す。
     preview_scroll: int = 0
+    # API エラー等を Float で出すための本文
+    error_modal: str | None = None

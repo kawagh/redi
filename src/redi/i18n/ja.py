@@ -367,6 +367,7 @@ class Ja(MessagesProto):
     tui_filter_hint = "\nTab/h/l:列切替 jk:移動 Enter:適用 c:全クリア Esc/f:閉じる"
     tui_filter_title = "フィルタ (Esc/f で閉じる)"
     tui_help_title = "ヘルプ - {label} タブ (任意のキーで閉じる)"
+    tui_error_modal_title = "エラー (q で閉じる)"
     tui_status_hint_issues = (
         " {page_label}  jk:移動 /:検索 f:フィルタ c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     )

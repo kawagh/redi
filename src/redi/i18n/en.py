@@ -369,6 +369,7 @@ class En(MessagesProto):
     tui_filter_hint = "\nTab/h/l:column jk:move Enter:apply c:clear all Esc/f:close"
     tui_filter_title = "Filter (Esc/f to close)"
     tui_help_title = "Help - {label} tab (any key to close)"
+    tui_error_modal_title = "Error (q to close)"
     tui_status_hint_issues = " {page_label}  jk:move /:search f:filter c:create u:update v:web ?:help q:quit "
     tui_status_hint_wiki = " jk:move /:search c:create u:update v:web ?:help q:quit "
     tui_status_hint_time_entries = (
