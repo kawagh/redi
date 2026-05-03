@@ -42,11 +42,14 @@ from redi.api.custom_field import (
 )
 
 
-def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_issue_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     i_parser = subparsers.add_parser(
         "issue",
         aliases=["i"],
         help=messages.arg_help_issue_command,
+        parents=parents,
     )
     i_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
@@ -81,9 +84,11 @@ def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
     i_parser.add_argument("--limit", "-l", type=int, help=messages.arg_help_limit)
     i_parser.add_argument("--offset", "-o", type=int, help=messages.arg_help_offset)
     i_subparsers = i_parser.add_subparsers(dest="issue_command")
-    i_subparsers.add_parser("list", aliases=["l"], help=messages.arg_help_issue_list)
+    i_subparsers.add_parser(
+        "list", aliases=["l"], help=messages.arg_help_issue_list, parents=parents
+    )
     i_view_parser = i_subparsers.add_parser(
-        "view", aliases=["v"], help=messages.arg_help_issue_view
+        "view", aliases=["v"], help=messages.arg_help_issue_view, parents=parents
     )
     i_view_parser.add_argument("issue_id", help=messages.arg_help_issue_view_id)
     i_view_parser.add_argument(
@@ -97,7 +102,7 @@ def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
     i_create_parser = i_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_issue_create
+        "create", aliases=["c"], help=messages.arg_help_issue_create, parents=parents
     )
     i_create_parser.add_argument(
         "subject", nargs="?", help=messages.arg_help_issue_subject_arg
@@ -127,7 +132,7 @@ def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
         help=messages.arg_help_custom_fields,
     )
     i_update_parser = i_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_issue_update
+        "update", aliases=["u"], help=messages.arg_help_issue_update, parents=parents
     )
     i_update_parser.add_argument(
         "issue_id", nargs="?", help=messages.arg_help_issue_update_id
@@ -216,14 +221,14 @@ def add_issue_parser(subparsers: argparse._SubParsersAction) -> None:
         help=messages.arg_help_issue_remove_watcher,
     )
     i_comment_parser = i_subparsers.add_parser(
-        "comment", aliases=["co"], help=messages.arg_help_issue_comment
+        "comment", aliases=["co"], help=messages.arg_help_issue_comment, parents=parents
     )
     i_comment_parser.add_argument("issue_id", help=messages.arg_help_issue_view_id)
     i_comment_parser.add_argument(
         "notes", nargs="?", default="", help=messages.arg_help_issue_comment_notes
     )
     i_delete_parser = i_subparsers.add_parser(
-        "delete", aliases=["d"], help=messages.arg_help_issue_delete
+        "delete", aliases=["d"], help=messages.arg_help_issue_delete, parents=parents
     )
     i_delete_parser.add_argument("issue_id", help=messages.arg_help_issue_view_id)
     i_delete_parser.add_argument(

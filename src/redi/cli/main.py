@@ -71,6 +71,20 @@ def _format_validation_error(e: RedmineValidationException) -> str:
     )
 
 
+def _make_profile_parent() -> argparse.ArgumentParser:
+    """各サブパーサが parents=[] で継承するための --profile 専用パーサ。
+
+    add_help=False にしないと子パーサと -h/--help が衝突する。default=SUPPRESS は、
+    --profile を指定しなかったネストされたサブパーサが args.profile を None で
+    上書きしてしまうのを避けるため（親で設定された値を子パーサが潰さないように）。
+    """
+    p = argparse.ArgumentParser(add_help=False)
+    p.add_argument(
+        "--profile", default=argparse.SUPPRESS, help=messages.arg_help_profile
+    )
+    return p
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=messages.arg_help_root_description)
     parser.add_argument(
@@ -85,34 +99,36 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--profile",
+        default=argparse.SUPPRESS,
         help=messages.arg_help_profile,
     )
+    parents = [_make_profile_parent()]
     subparsers = parser.add_subparsers(dest="command")
-    add_project_parser(subparsers)
-    add_issue_parser(subparsers)
-    add_version_parser(subparsers)
-    add_wiki_parser(subparsers)
-    add_config_parser(subparsers)
-    add_init_parser(subparsers)
-    add_user_parser(subparsers)
-    add_me_parser(subparsers)
-    add_membership_parser(subparsers)
-    add_news_parser(subparsers)
-    add_tracker_parser(subparsers)
-    add_issue_status_parser(subparsers)
-    add_issue_priority_parser(subparsers)
-    add_time_entry_activity_parser(subparsers)
-    add_document_category_parser(subparsers)
-    add_role_parser(subparsers)
-    add_group_parser(subparsers)
-    add_query_parser(subparsers)
-    add_custom_field_parser(subparsers)
-    add_issue_category_parser(subparsers)
-    add_search_parser(subparsers)
-    add_attachment_parser(subparsers)
-    add_relation_parser(subparsers)
-    add_time_entry_parser(subparsers)
-    add_file_parser(subparsers)
+    add_project_parser(subparsers, parents)
+    add_issue_parser(subparsers, parents)
+    add_version_parser(subparsers, parents)
+    add_wiki_parser(subparsers, parents)
+    add_config_parser(subparsers, parents)
+    add_init_parser(subparsers, parents)
+    add_user_parser(subparsers, parents)
+    add_me_parser(subparsers, parents)
+    add_membership_parser(subparsers, parents)
+    add_news_parser(subparsers, parents)
+    add_tracker_parser(subparsers, parents)
+    add_issue_status_parser(subparsers, parents)
+    add_issue_priority_parser(subparsers, parents)
+    add_time_entry_activity_parser(subparsers, parents)
+    add_document_category_parser(subparsers, parents)
+    add_role_parser(subparsers, parents)
+    add_group_parser(subparsers, parents)
+    add_query_parser(subparsers, parents)
+    add_custom_field_parser(subparsers, parents)
+    add_issue_category_parser(subparsers, parents)
+    add_search_parser(subparsers, parents)
+    add_attachment_parser(subparsers, parents)
+    add_relation_parser(subparsers, parents)
+    add_time_entry_parser(subparsers, parents)
+    add_file_parser(subparsers, parents)
     return parser
 
 

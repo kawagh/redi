@@ -14,28 +14,31 @@ from redi.api.group import (
 )
 
 
-def add_group_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_group_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     group_parser = subparsers.add_parser(
         "group",
         aliases=["g"],
         help=messages.arg_help_group_command,
+        parents=parents,
     )
     group_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
     )
     group_subparsers = group_parser.add_subparsers(dest="group_command")
     group_subparsers.add_parser(
-        "list", aliases=["l"], help=messages.arg_help_group_list
+        "list", aliases=["l"], help=messages.arg_help_group_list, parents=parents
     )
     g_view_parser = group_subparsers.add_parser(
-        "view", aliases=["v"], help=messages.arg_help_group_view
+        "view", aliases=["v"], help=messages.arg_help_group_view, parents=parents
     )
     g_view_parser.add_argument("group_id", help=messages.arg_help_group_view_id)
     g_view_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
     )
     g_create_parser = group_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_group_create
+        "create", aliases=["c"], help=messages.arg_help_group_create, parents=parents
     )
     g_create_parser.add_argument("name", help=messages.arg_help_group_name)
     g_create_parser.add_argument(
@@ -46,7 +49,7 @@ def add_group_parser(subparsers: argparse._SubParsersAction) -> None:
         help=messages.arg_help_group_user_id,
     )
     g_update_parser = group_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_group_update
+        "update", aliases=["u"], help=messages.arg_help_group_update, parents=parents
     )
     g_update_parser.add_argument("group_id", help=messages.arg_help_group_update_id)
     g_update_parser.add_argument("--name", "-n", help=messages.arg_help_group_name_opt)
@@ -72,7 +75,7 @@ def add_group_parser(subparsers: argparse._SubParsersAction) -> None:
         help=messages.arg_help_group_remove_user,
     )
     g_delete_parser = group_subparsers.add_parser(
-        "delete", aliases=["d"], help=messages.arg_help_group_delete
+        "delete", aliases=["d"], help=messages.arg_help_group_delete, parents=parents
     )
     g_delete_parser.add_argument("group_id", help=messages.arg_help_group_delete_id)
     g_delete_parser.add_argument(

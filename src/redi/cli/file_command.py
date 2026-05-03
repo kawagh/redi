@@ -6,18 +6,22 @@ from redi.config import default_project_id
 from redi.i18n import messages
 
 
-def add_file_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_file_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     f_parser = subparsers.add_parser(
-        "file", aliases=["f"], help=messages.arg_help_file_command
+        "file", aliases=["f"], help=messages.arg_help_file_command, parents=parents
     )
     f_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
     f_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
     )
     f_subparsers = f_parser.add_subparsers(dest="file_command")
-    f_subparsers.add_parser("list", aliases=["l"], help=messages.arg_help_file_list)
+    f_subparsers.add_parser(
+        "list", aliases=["l"], help=messages.arg_help_file_list, parents=parents
+    )
     f_create_parser = f_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_file_create
+        "create", aliases=["c"], help=messages.arg_help_file_create, parents=parents
     )
     f_create_parser.add_argument("file_path", help=messages.arg_help_file_path)
     f_create_parser.add_argument(

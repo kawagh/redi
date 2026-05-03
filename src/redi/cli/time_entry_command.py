@@ -30,11 +30,14 @@ from redi.api.time_entry import (
 )
 
 
-def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_time_entry_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     time_entry_parser = subparsers.add_parser(
         "time_entry",
         aliases=["te"],
         help=messages.arg_help_time_entry_command,
+        parents=parents,
     )
     time_entry_parser.add_argument(
         "--project_id", "-p", help=messages.arg_help_project_id
@@ -47,10 +50,13 @@ def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
     )
     te_subparsers = time_entry_parser.add_subparsers(dest="time_entry_command")
     te_subparsers.add_parser(
-        "list", aliases=["l"], help=messages.arg_help_time_entry_list
+        "list", aliases=["l"], help=messages.arg_help_time_entry_list, parents=parents
     )
     te_create_parser = te_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_time_entry_create
+        "create",
+        aliases=["c"],
+        help=messages.arg_help_time_entry_create,
+        parents=parents,
     )
     te_create_parser.add_argument(
         "hours", type=float, nargs="?", help=messages.arg_help_time_entry_hours
@@ -71,7 +77,7 @@ def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
         "--comments", "-c", help=messages.arg_help_time_entry_comments
     )
     te_view_parser = te_subparsers.add_parser(
-        "view", aliases=["v"], help=messages.arg_help_time_entry_view
+        "view", aliases=["v"], help=messages.arg_help_time_entry_view, parents=parents
     )
     te_view_parser.add_argument(
         "time_entry_id", help=messages.arg_help_time_entry_view_id
@@ -80,7 +86,10 @@ def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
         "--full", action="store_true", help=messages.arg_help_full_json
     )
     te_update_parser = te_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_time_entry_update
+        "update",
+        aliases=["u"],
+        help=messages.arg_help_time_entry_update,
+        parents=parents,
     )
     te_update_parser.add_argument(
         "time_entry_id", help=messages.arg_help_time_entry_update_id
@@ -104,7 +113,10 @@ def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
         "--comments", "-c", help=messages.arg_help_time_entry_comments
     )
     te_delete_parser = te_subparsers.add_parser(
-        "delete", aliases=["d"], help=messages.arg_help_time_entry_delete
+        "delete",
+        aliases=["d"],
+        help=messages.arg_help_time_entry_delete,
+        parents=parents,
     )
     te_delete_parser.add_argument(
         "time_entry_id", help=messages.arg_help_time_entry_delete_id

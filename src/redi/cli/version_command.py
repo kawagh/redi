@@ -26,20 +26,25 @@ from redi.api.version import (
 )
 
 
-def add_version_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_version_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     v_parser = subparsers.add_parser(
         "version",
         aliases=["v"],
         help=messages.arg_help_version_command,
+        parents=parents,
     )
     v_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
     v_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
     )
     v_subparsers = v_parser.add_subparsers(dest="version_command")
-    v_subparsers.add_parser("list", aliases=["l"], help=messages.arg_help_version_list)
+    v_subparsers.add_parser(
+        "list", aliases=["l"], help=messages.arg_help_version_list, parents=parents
+    )
     v_view_parser = v_subparsers.add_parser(
-        "view", aliases=["v"], help=messages.arg_help_version_view
+        "view", aliases=["v"], help=messages.arg_help_version_view, parents=parents
     )
     v_view_parser.add_argument("version_id", help=messages.arg_help_version_view_id)
     v_view_parser.add_argument(
@@ -49,7 +54,7 @@ def add_version_parser(subparsers: argparse._SubParsersAction) -> None:
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
     v_create_parser = v_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_version_create
+        "create", aliases=["c"], help=messages.arg_help_version_create, parents=parents
     )
     v_create_parser.add_argument(
         "name", nargs="?", default=None, help=messages.arg_help_version_name_arg
@@ -72,14 +77,14 @@ def add_version_parser(subparsers: argparse._SubParsersAction) -> None:
         help=messages.arg_help_version_sharing,
     )
     v_delete_parser = v_subparsers.add_parser(
-        "delete", aliases=["d"], help=messages.arg_help_version_delete
+        "delete", aliases=["d"], help=messages.arg_help_version_delete, parents=parents
     )
     v_delete_parser.add_argument("version_id", help=messages.arg_help_version_delete_id)
     v_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
     v_update_parser = v_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_version_update
+        "update", aliases=["u"], help=messages.arg_help_version_update, parents=parents
     )
     v_update_parser.add_argument(
         "version_id", nargs="?", help=messages.arg_help_version_update_id

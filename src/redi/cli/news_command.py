@@ -5,9 +5,11 @@ from redi.i18n import messages
 from redi.api.news import list_news
 
 
-def add_news_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_news_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     n_parser = subparsers.add_parser(
-        "news", aliases=["n"], help=messages.arg_help_news_command
+        "news", aliases=["n"], help=messages.arg_help_news_command, parents=parents
     )
     n_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
     n_parser.add_argument(

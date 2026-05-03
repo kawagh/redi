@@ -17,11 +17,14 @@ def _parse_role_ids(value: str) -> list[int]:
     return [int(v) for v in value.split(",") if v.strip()]
 
 
-def add_membership_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_membership_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     m_parser = subparsers.add_parser(
         "membership",
         aliases=["m"],
         help=messages.arg_help_membership_command,
+        parents=parents,
     )
     m_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
     m_parser.add_argument(
@@ -29,11 +32,11 @@ def add_membership_parser(subparsers: argparse._SubParsersAction) -> None:
     )
     m_subparsers = m_parser.add_subparsers(dest="membership_command")
     m_subparsers.add_parser(
-        "list", aliases=["l"], help=messages.arg_help_membership_list
+        "list", aliases=["l"], help=messages.arg_help_membership_list, parents=parents
     )
 
     m_view_parser = m_subparsers.add_parser(
-        "view", aliases=["v"], help=messages.arg_help_membership_view
+        "view", aliases=["v"], help=messages.arg_help_membership_view, parents=parents
     )
     m_view_parser.add_argument(
         "membership_id", help=messages.arg_help_membership_view_id
@@ -43,7 +46,10 @@ def add_membership_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     m_create_parser = m_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_membership_create
+        "create",
+        aliases=["c"],
+        help=messages.arg_help_membership_create,
+        parents=parents,
     )
     m_create_parser.add_argument(
         "--project_id", "-p", help=messages.arg_help_project_id
@@ -62,7 +68,10 @@ def add_membership_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     m_update_parser = m_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_membership_update
+        "update",
+        aliases=["u"],
+        help=messages.arg_help_membership_update,
+        parents=parents,
     )
     m_update_parser.add_argument(
         "membership_id", help=messages.arg_help_membership_update_id
@@ -75,7 +84,10 @@ def add_membership_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     m_delete_parser = m_subparsers.add_parser(
-        "delete", aliases=["d"], help=messages.arg_help_membership_delete
+        "delete",
+        aliases=["d"],
+        help=messages.arg_help_membership_delete,
+        parents=parents,
     )
     m_delete_parser.add_argument(
         "membership_id", help=messages.arg_help_membership_delete_id

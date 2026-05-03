@@ -13,11 +13,14 @@ from redi.api.issue_category import (
 )
 
 
-def add_issue_category_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_issue_category_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     ic_parser = subparsers.add_parser(
         "issue_category",
         aliases=["ic"],
         help=messages.arg_help_issue_category_command,
+        parents=parents,
     )
     ic_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
     ic_parser.add_argument(
@@ -25,11 +28,17 @@ def add_issue_category_parser(subparsers: argparse._SubParsersAction) -> None:
     )
     ic_subparsers = ic_parser.add_subparsers(dest="issue_category_command")
     ic_subparsers.add_parser(
-        "list", aliases=["l"], help=messages.arg_help_issue_category_list
+        "list",
+        aliases=["l"],
+        help=messages.arg_help_issue_category_list,
+        parents=parents,
     )
 
     ic_view_parser = ic_subparsers.add_parser(
-        "view", aliases=["v"], help=messages.arg_help_issue_category_view
+        "view",
+        aliases=["v"],
+        help=messages.arg_help_issue_category_view,
+        parents=parents,
     )
     ic_view_parser.add_argument(
         "category_id", help=messages.arg_help_issue_category_view_id
@@ -39,7 +48,10 @@ def add_issue_category_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     ic_create_parser = ic_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_issue_category_create
+        "create",
+        aliases=["c"],
+        help=messages.arg_help_issue_category_create,
+        parents=parents,
     )
     ic_create_parser.add_argument("name", help=messages.arg_help_issue_category_name)
     ic_create_parser.add_argument(
@@ -52,7 +64,10 @@ def add_issue_category_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     ic_update_parser = ic_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_issue_category_update
+        "update",
+        aliases=["u"],
+        help=messages.arg_help_issue_category_update,
+        parents=parents,
     )
     ic_update_parser.add_argument(
         "category_id", help=messages.arg_help_issue_category_update_id
@@ -67,7 +82,10 @@ def add_issue_category_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     ic_delete_parser = ic_subparsers.add_parser(
-        "delete", aliases=["d"], help=messages.arg_help_issue_category_delete
+        "delete",
+        aliases=["d"],
+        help=messages.arg_help_issue_category_delete,
+        parents=parents,
     )
     ic_delete_parser.add_argument(
         "category_id", help=messages.arg_help_issue_category_delete_id
