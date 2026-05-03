@@ -109,7 +109,7 @@ def build_redi_parser() -> argparse.ArgumentParser:
     add_version_parser(subparsers, parents)
     add_wiki_parser(subparsers, parents)
     add_config_parser(subparsers, parents)
-    add_init_parser(subparsers, parents)
+    add_init_parser(subparsers)
     add_user_parser(subparsers, parents)
     add_me_parser(subparsers, parents)
     add_membership_parser(subparsers, parents)

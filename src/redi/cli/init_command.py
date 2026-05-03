@@ -13,13 +13,11 @@ from redi.i18n import messages
 PROFILE_NAME = "default"
 
 
-def add_init_parser(
-    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
-) -> None:
+def add_init_parser(subparsers: argparse._SubParsersAction) -> None:
+    # init は新規プロファイル作成専用で --profile は意味を持たないため parents を受けない
     subparsers.add_parser(
         "init",
         help=messages.arg_help_init_command,
-        parents=parents,
     )
 
 
