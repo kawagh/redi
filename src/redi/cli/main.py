@@ -71,18 +71,19 @@ def _format_validation_error(e: RedmineValidationException) -> str:
     )
 
 
-def _make_profile_parent() -> argparse.ArgumentParser:
-    """各サブパーサが parents=[] で継承するための --profile 専用パーサ。
-
-    add_help=False にしないと子パーサと -h/--help が衝突する。default=SUPPRESS は、
-    --profile を指定しなかったネストされたサブパーサが args.profile を None で
-    上書きしてしまうのを避けるため（親で設定された値を子パーサが潰さないように）。
-    """
-    p = argparse.ArgumentParser(add_help=False)
-    p.add_argument(
-        "--profile", default=argparse.SUPPRESS, help=messages.arg_help_profile
+def _profile_parser() -> argparse.ArgumentParser:
+    """--profile を後置するためのパーサ"""
+    parser = argparse.ArgumentParser(
+        # 親子でヘルプを衝突させない
+        add_help=False,
     )
-    return p
+    parser.add_argument(
+        "--profile",
+        # 下流のパーサでprofileが未指定の場合に上流パーサの値を上書きするのを防ぐ
+        default=argparse.SUPPRESS,
+        help=messages.arg_help_profile,
+    )
+    return parser
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -99,10 +100,9 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--profile",
-        default=argparse.SUPPRESS,
         help=messages.arg_help_profile,
     )
-    parents = [_make_profile_parent()]
+    parents = [_profile_parser()]
     subparsers = parser.add_subparsers(dest="command")
     add_project_parser(subparsers, parents)
     add_issue_parser(subparsers, parents)
