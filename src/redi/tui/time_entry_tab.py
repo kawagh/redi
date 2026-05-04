@@ -111,7 +111,7 @@ def _status_hint(state: TuiState) -> str:
 
 
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
-    if key == "c":
+    if key == "C":
         entries = state.time_entry_tab.entries
         issue_id: str | None = None
         if entries:
@@ -125,7 +125,7 @@ def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
             issue_id=issue_id,
             position=TuiPosition(cursor=state.time_entry_tab.cursor),
         )
-    if key == "u":
+    if key == "U":
         entries = state.time_entry_tab.entries
         if not entries:
             return None
@@ -236,8 +236,8 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  /", messages.tui_help_start_search),
     ("  n / N", messages.tui_help_next_prev_match),
     (messages.tui_help_section_actions, ""),
-    ("  c", messages.tui_help_time_entry_create),
-    ("  u", messages.tui_help_time_entry_update),
+    ("  C", messages.tui_help_time_entry_create),
+    ("  U", messages.tui_help_time_entry_update),
     ("  D", messages.tui_help_time_entry_delete),
     ("  v", messages.tui_help_time_entry_open_web),
     (messages.tui_help_section_other, ""),

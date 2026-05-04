@@ -155,12 +155,12 @@ def _on_enter(state: TuiState) -> None:
 
 
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
-    if key == "c":
+    if key == "C":
         parent = None
         if state.wiki_tab.pages:
             parent = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
         return _exit_result(state, "create", parent_wiki_title=parent)
-    if key == "u":
+    if key == "U":
         if not state.wiki_tab.pages:
             return None
         return _exit_result(state, "update")
@@ -209,8 +209,8 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  n / N", messages.tui_help_next_prev_match),
     (messages.tui_help_section_actions, ""),
     ("  Enter", messages.tui_help_wiki_load_text),
-    ("  c", messages.tui_help_wiki_create_child),
-    ("  u", messages.tui_help_wiki_update_page),
+    ("  C", messages.tui_help_wiki_create_child),
+    ("  U", messages.tui_help_wiki_update_page),
     ("  v", messages.tui_help_wiki_open_web),
     (messages.tui_help_section_other, ""),
     ("  ?", messages.tui_help_show_or_close),

@@ -229,17 +229,17 @@ def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
 
 
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
-    if key == "u":
+    if key == "U":
         if not state.issue_tab.issues:
             return None
         return _exit_result(state, "update")
-    if key == "c":
+    if key == "C":
         return _exit_result(state, "create", issue_id="")
-    if key == "n":
+    if key == "N":
         if not state.issue_tab.issues:
             return None
         return _exit_result(state, "comment")
-    if key == "t":
+    if key == "T":
         if not state.issue_tab.issues:
             return None
         return _exit_result(state, "create_time_entry")
@@ -263,9 +263,9 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  f", messages.tui_help_filter_status_assignee),
     (messages.tui_help_section_actions, ""),
     ("  Enter", messages.tui_help_issue_load_comments),
-    ("  c / u", messages.tui_help_issue_create_or_update),
-    ("  n", messages.tui_help_issue_add_comment),
-    ("  t", messages.tui_help_issue_create_time_entry),
+    ("  C / U", messages.tui_help_issue_create_or_update),
+    ("  N", messages.tui_help_issue_add_comment),
+    ("  T", messages.tui_help_issue_create_time_entry),
     ("  v / <N>V", messages.tui_help_issue_open_web_or_n),
     (messages.tui_help_section_other, ""),
     ("  ?", messages.tui_help_show_or_close),

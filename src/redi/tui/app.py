@@ -443,7 +443,7 @@ def run_issue_tui(
             if target_id is not None:
                 TABS[state.tab].on_open_web_by_id(state, target_id)
 
-    for action_key in ("u", "c", "t"):
+    for action_key in ("U", "C", "T"):
 
         @kb.add(action_key, filter=normal_mode)
         def _(event, action_key=action_key):
@@ -458,10 +458,6 @@ def run_issue_tui(
         if state.search_query:
             _reset_preview_scroll()
             TABS[state.tab].on_search(state, state.search_query, forward=True)
-            return
-        result = TABS[state.tab].on_action_key(state, "n")
-        if result is not None:
-            event.app.exit(result=result)
 
     @kb.add("N", filter=normal_mode)
     def _(event):
@@ -469,6 +465,10 @@ def run_issue_tui(
         if state.search_query:
             _reset_preview_scroll()
             TABS[state.tab].on_search(state, state.search_query, forward=False)
+            return
+        result = TABS[state.tab].on_action_key(state, "N")
+        if result is not None:
+            event.app.exit(result=result)
 
     @kb.add("/", filter=normal_mode)
     def _(event):
