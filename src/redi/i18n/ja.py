@@ -381,6 +381,7 @@ class Ja(MessagesProto):
     tui_status_hint_time_entries = (
         " jk:移動 /:検索 c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     )
+    tui_flash_reloaded = "再読込しました"
     tui_filter_status_open_default = "open (デフォルト)"
     tui_filter_status_all = "全て (open + closed)"
     tui_filter_status_closed_only = "closed のみ"
@@ -745,6 +746,7 @@ class Ja(MessagesProto):
     tui_help_start_search = "検索開始"
     tui_help_next_prev_match = "次 / 前の検索結果"
     tui_help_filter_status_assignee = "ステータス/担当者でフィルタ (フローティング)"
+    tui_help_reload = "現在のタブを再読込"
     tui_help_show_or_close = "このヘルプを表示 / 閉じる"
     tui_help_quit = "終了"
 

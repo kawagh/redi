@@ -381,6 +381,7 @@ class En(MessagesProto):
     tui_status_hint_time_entries = (
         " jk:move /:search c:create u:update v:web ?:help q:quit "
     )
+    tui_flash_reloaded = "Reloaded"
     tui_filter_status_open_default = "open (default)"
     tui_filter_status_all = "all (open + closed)"
     tui_filter_status_closed_only = "closed only"
@@ -739,6 +740,7 @@ class En(MessagesProto):
     tui_help_start_search = "Start search"
     tui_help_next_prev_match = "Next / previous match"
     tui_help_filter_status_assignee = "Filter by status/assignee (floating)"
+    tui_help_reload = "Reload the current tab"
     tui_help_show_or_close = "Show / close this help"
     tui_help_quit = "Quit"
 

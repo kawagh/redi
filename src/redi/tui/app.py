@@ -485,6 +485,13 @@ def run_issue_tui(
         if prompt is not None:
             state.confirm_delete_prompt = prompt
 
+    @kb.add("R", filter=normal_mode)
+    def _(event):
+        _clear_temporary_state()
+        _reset_preview_scroll()
+        TABS[state.tab].on_reload(state)
+        state.flash_message = messages.tui_flash_reloaded
+
     @kb.add("y", filter=confirm_delete_mode)
     @kb.add("Y", filter=confirm_delete_mode)
     def _(event):

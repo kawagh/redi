@@ -212,6 +212,28 @@ def confirm_delete(state: TuiState) -> None:
         state.time_entry_tab.cursor = max(0, len(entries) - 1)
 
 
+def _on_reload(state: TuiState) -> None:
+    """time_entry 一覧を取り直す。
+
+    `loaded` を立てたままだと `_load_time_entries` が早期 return するので
+    一度倒す。既存のカーソル位置は entry id 一致で復元を試み、無ければ先頭に戻る。
+    """
+    prev_id: int | None = None
+    if state.time_entry_tab.entries:
+        prev_id = state.time_entry_tab.entries[state.time_entry_tab.cursor].get("id")
+    state.time_entry_tab.loaded = False
+    state.time_entry_tab.error = None
+    state.time_entry_tab.entries = []
+    state.time_entry_tab.issue_subjects = {}
+    state.time_entry_tab.cursor = 0
+    _load_time_entries(state)
+    if prev_id is not None:
+        for i, te in enumerate(state.time_entry_tab.entries):
+            if te.get("id") == prev_id:
+                state.time_entry_tab.cursor = i
+                return
+
+
 def _on_open_web(state: TuiState) -> None:
     entries = state.time_entry_tab.entries
     if not entries:
@@ -240,6 +262,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  u", messages.tui_help_time_entry_update),
     ("  D", messages.tui_help_time_entry_delete),
     ("  v", messages.tui_help_time_entry_open_web),
+    ("  R", messages.tui_help_reload),
     (messages.tui_help_section_other, ""),
     ("  ?", messages.tui_help_show_or_close),
     ("  q / Esc / Ctrl+C", messages.tui_help_quit),
@@ -262,6 +285,7 @@ TIME_ENTRY_TAB = TabView(
     on_open_web=_on_open_web,
     on_open_web_by_id=noop_jump,
     on_activate=_load_time_entries,
+    on_reload=_on_reload,
     on_action_key=_on_action_key,
     on_search=_on_search,
     get_cursor_y=lambda state: state.time_entry_tab.cursor,
