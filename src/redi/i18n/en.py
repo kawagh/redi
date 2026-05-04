@@ -62,6 +62,7 @@ class En(MessagesProto):
     issue_not_found_simple = "Issue not found"
     no_versions_available = "No versions available"
     no_issues_available = "No issues available"
+    no_profiles_available = "No profiles available"
     no_project_skip_project_id = "No projects exist; skipping project_id setup"
 
     # ---- admin / permission required ----
@@ -222,6 +223,7 @@ class En(MessagesProto):
     prompt_select_sharing = "Sharing"
     prompt_select_version_to_update = "Select version to update"
     prompt_select_issue_to_update = "Select issue to update"
+    prompt_select_default_profile_to_set = "Select profile to set as default"
     prompt_start_date = "Start date (YYYY-MM-DD, empty to clear): "
     prompt_due_date = "Due date (YYYY-MM-DD, empty to clear): "
     prompt_estimated_hours = "Estimated hours (e.g. 1.5 (h)): "

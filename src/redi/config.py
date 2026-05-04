@@ -189,6 +189,25 @@ def set_default_profile(profile_name: str, config_path: Path | None = None) -> b
     return True
 
 
+def list_profile_names(config_path: Path | None = None) -> list[str]:
+    path = config_path or CONFIG_PATH
+    if not path.exists():
+        return []
+    with open(path) as f:
+        doc = tomlkit.load(f)
+    return [k for k, v in doc.items() if isinstance(v, Table)]
+
+
+def get_default_profile(config_path: Path | None = None) -> str | None:
+    path = config_path or CONFIG_PATH
+    if not path.exists():
+        return None
+    with open(path) as f:
+        doc = tomlkit.load(f)
+    value = doc.get("default_profile")
+    return str(value) if value is not None else None
+
+
 def show_config(full: bool = False, config_path: Path | None = None) -> None:
     if full:
         show_all_profiles(config_path=config_path)

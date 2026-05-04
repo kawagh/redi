@@ -360,6 +360,65 @@ class TestResolveProfileName:
         assert explicit is False
 
 
+class TestListProfileNames:
+    """list_profile_names()はconfig.tomlの[section]名一覧を返す"""
+
+    def test_returns_profile_names_in_file_order(self, tmp_path):
+        """テーブルセクションの名前のみをファイル記載順で返す"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+
+            [sub]
+            redmine_url = "https://redmine.example.com/sub"
+        """)
+        )
+
+        assert config.list_profile_names(config_path=config_path) == ["main", "sub"]
+
+    def test_returns_empty_list_when_missing(self, tmp_path):
+        """ファイルが存在しない場合は空リストを返す"""
+        assert config.list_profile_names(config_path=tmp_path / "missing.toml") == []
+
+
+class TestGetDefaultProfile:
+    """get_default_profile()はconfig.tomlのdefault_profileを返す"""
+
+    def test_returns_default_profile_value(self, tmp_path):
+        """default_profileの値を文字列で返す"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://redmine.example.com"
+        """)
+        )
+
+        assert config.get_default_profile(config_path=config_path) == "main"
+
+    def test_returns_none_when_unset(self, tmp_path):
+        """default_profileが設定されていない場合はNoneを返す"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://redmine.example.com"
+        """)
+        )
+
+        assert config.get_default_profile(config_path=config_path) is None
+
+    def test_returns_none_when_file_missing(self, tmp_path):
+        """ファイルが存在しない場合はNoneを返す"""
+        assert config.get_default_profile(config_path=tmp_path / "missing.toml") is None
+
+
 class TestShowAllProfiles:
     """show_all_profiles()はconfig_path指定時にそのファイルの全プロファイルを表示する"""
 
