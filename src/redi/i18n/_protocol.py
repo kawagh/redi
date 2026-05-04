@@ -354,6 +354,12 @@ class MessagesProto(Protocol):
     """{name}, {value}"""
     prompt_custom_field_label: str
     """{name}"""
+    prompt_what_next: str
+    """イシュー作成時に次のアクションを選ばせるメニューのタイトル"""
+    action_submit: str
+    """prompt_what_next の選択肢: そのまま送信"""
+    action_continue_in_browser: str
+    """prompt_what_next の選択肢: ブラウザで続きを編集"""
 
     # ---- prompt validators ----
     error_input_required: str
