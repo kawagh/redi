@@ -1,7 +1,5 @@
 """TUI タブの再読込 (R キー) 挙動の単体テスト。"""
 
-import pytest
-
 from redi.tui import issue_tab, time_entry_tab, wiki_tab
 from redi.tui.state import TuiState
 
@@ -177,7 +175,3 @@ class TestTimeEntryReload:
         time_entry_tab._on_reload(state)
 
         assert state.time_entry_tab.cursor == 0
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
