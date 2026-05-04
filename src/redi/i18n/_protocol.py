@@ -516,6 +516,7 @@ class MessagesProto(Protocol):
     """{page_label}"""
     tui_status_hint_wiki: str
     tui_status_hint_time_entries: str
+    tui_flash_reloaded: str
     tui_filter_status_open_default: str
     tui_filter_status_all: str
     tui_filter_status_closed_only: str
@@ -864,6 +865,7 @@ class MessagesProto(Protocol):
     tui_help_start_search: str
     tui_help_next_prev_match: str
     tui_help_filter_status_assignee: str
+    tui_help_reload: str
     tui_help_show_or_close: str
     tui_help_quit: str
 

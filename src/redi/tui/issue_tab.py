@@ -183,6 +183,20 @@ def reload_with_filter(state: TuiState) -> None:
     _apply_page(state, fetch_issues_with_filter(state, 0), 0)
 
 
+def _on_reload(state: TuiState) -> None:
+    """現在のフィルタ・ページのまま再取得する。カーソル位置はクランプして保持する。"""
+    prev_cursor = state.issue_tab.cursor
+    page = fetch_issues_with_filter(state, state.issue_tab.offset)
+    state.issue_tab.issues = page["issues"]
+    state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
+    if state.issue_tab.issues:
+        state.issue_tab.cursor = max(
+            0, min(prev_cursor, len(state.issue_tab.issues) - 1)
+        )
+    else:
+        state.issue_tab.cursor = 0
+
+
 def _on_page_forward(state: TuiState) -> None:
     next_offset = state.issue_tab.offset + state.page_size
     page = fetch_issues_with_filter(state, next_offset)
@@ -267,6 +281,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  n", messages.tui_help_issue_add_comment),
     ("  t", messages.tui_help_issue_create_time_entry),
     ("  v / <N>V", messages.tui_help_issue_open_web_or_n),
+    ("  R", messages.tui_help_reload),
     (messages.tui_help_section_other, ""),
     ("  ?", messages.tui_help_show_or_close),
     ("  q / Esc / Ctrl+C", messages.tui_help_quit),
@@ -289,6 +304,7 @@ ISSUE_TAB = TabView(
     on_open_web=_on_open_web,
     on_open_web_by_id=_on_open_web_by_id,
     on_activate=noop,
+    on_reload=_on_reload,
     on_action_key=_on_action_key,
     on_search=_on_search,
     get_cursor_y=lambda state: state.issue_tab.cursor,

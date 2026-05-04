@@ -185,6 +185,29 @@ def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
             return
 
 
+def _on_reload(state: TuiState) -> None:
+    """Wiki ページ一覧と読込済み本文をクリアして取り直す。
+
+    `loaded` を立てたままだと `_load_wikis` が早期 return するので一度倒す。
+    既存のカーソル位置はタイトル一致で復元を試み、無ければ先頭に戻る。
+    """
+    prev_title: str | None = None
+    if state.wiki_tab.pages:
+        prev_title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
+    state.wiki_tab.loaded = False
+    state.wiki_tab.error = None
+    state.wiki_tab.pages = []
+    state.wiki_tab.labels = []
+    state.wiki_tab.texts = {}
+    state.wiki_tab.cursor = 0
+    _load_wikis(state)
+    if prev_title is not None:
+        for i, page in enumerate(state.wiki_tab.pages):
+            if page.get("title") == prev_title:
+                state.wiki_tab.cursor = i
+                return
+
+
 def _on_open_web(state: TuiState) -> None:
     if not state.wiki_tab.pages:
         return
@@ -212,6 +235,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  c", messages.tui_help_wiki_create_child),
     ("  u", messages.tui_help_wiki_update_page),
     ("  v", messages.tui_help_wiki_open_web),
+    ("  R", messages.tui_help_reload),
     (messages.tui_help_section_other, ""),
     ("  ?", messages.tui_help_show_or_close),
     ("  q / Esc / Ctrl+C", messages.tui_help_quit),
@@ -234,6 +258,7 @@ WIKI_TAB = TabView(
     on_open_web=_on_open_web,
     on_open_web_by_id=noop_jump,
     on_activate=_load_wikis,
+    on_reload=_on_reload,
     on_action_key=_on_action_key,
     on_search=_on_search,
     get_cursor_y=lambda state: state.wiki_tab.cursor,
