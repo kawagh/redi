@@ -1,5 +1,7 @@
 import argparse
 import re
+import urllib.parse
+import webbrowser
 from datetime import date
 
 from prompt_toolkit import prompt
@@ -13,7 +15,7 @@ from redi.cli._common import (
     resolve_alias,
 )
 from redi.cli.prompt_util import DueDateValidator, HourValidator
-from redi.config import default_project_id
+from redi.config import default_project_id, redmine_url
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
 from redi.api.issue import (
     add_note,
@@ -23,6 +25,7 @@ from redi.api.issue import (
     fetch_issue,
     fetch_issues,
     list_issues,
+    parse_custom_fields,
     read_issue,
     remove_watcher,
     update_issue,
@@ -234,6 +237,35 @@ def add_issue_parser(
     i_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
+
+
+def _build_create_issue_url(
+    project_id: str,
+    subject: str = "",
+    description: str = "",
+    tracker_id: str | None = None,
+    priority_id: str | None = None,
+    assigned_to_id: str | None = None,
+    custom_fields: str | None = None,
+) -> str:
+    params: list[tuple[str, str]] = []
+    if subject:
+        params.append(("issue[subject]", subject))
+    if description:
+        params.append(("issue[description]", description))
+    if tracker_id:
+        params.append(("issue[tracker_id]", tracker_id))
+    if priority_id:
+        params.append(("issue[priority_id]", priority_id))
+    if assigned_to_id:
+        params.append(("issue[assigned_to_id]", assigned_to_id))
+    if custom_fields:
+        for cf in parse_custom_fields(custom_fields):
+            params.append((f"issue[custom_field_values][{cf['id']}]", str(cf["value"])))
+    base = f"{redmine_url}/projects/{project_id}/issues/new"
+    if not params:
+        return base
+    return f"{base}?{urllib.parse.urlencode(params)}"
 
 
 def _interactive_select_issue_id() -> str:
@@ -516,6 +548,7 @@ def handle_issue_create(args: argparse.Namespace) -> None:
     subject = args.subject
     tracker_id = args.tracker_id
     custom_fields = args.custom_fields
+    interactive = subject is None or args.description is None
     if subject is None:
         if tracker_id is None:
             trackers = fetch_trackers()
@@ -549,6 +582,28 @@ def handle_issue_create(args: argparse.Namespace) -> None:
         description = open_editor()
     else:
         description = args.description
+    if interactive:
+        action_options: list[tuple[str, str]] = [
+            ("submit", messages.action_submit),
+            ("browser", messages.action_continue_in_browser),
+        ]
+        try:
+            action = inline_choice(messages.prompt_what_next, action_options)
+        except KeyboardInterrupt:
+            print(messages.canceled)
+            exit(1)
+        if action == "browser":
+            url = _build_create_issue_url(
+                project_id=project_id,
+                subject=subject,
+                description=description,
+                tracker_id=tracker_id,
+                priority_id=args.priority_id,
+                assigned_to_id=args.assigned_to_id,
+                custom_fields=custom_fields,
+            )
+            webbrowser.open(url)
+            return
     create_issue(
         project_id=project_id,
         subject=subject,

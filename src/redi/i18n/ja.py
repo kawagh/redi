@@ -248,6 +248,9 @@ class Ja(MessagesProto):
     prompt_required_field = "{name}（必須）"
     prompt_field_value = "{name}: {value}"
     prompt_custom_field_label = "{name}: "
+    prompt_what_next = "次のアクションを選択してください"
+    action_submit = "送信する"
+    action_continue_in_browser = "ブラウザで編集する"
 
     # ---- prompt validators ----
     error_input_required = "入力してください"
