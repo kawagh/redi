@@ -517,6 +517,27 @@ def _prompt_custom_field_value(
         print(messages.prompt_field_value.format(name=name, value=label_map[key]))
         return key
 
+    # ユーザー
+    if field_format == "user":
+        users = fetch_project_users(project_id)
+        options = [(str(u["id"]), u.get("name", "")) for u in users]
+        if not options:
+            return None
+        label_map = dict(options)
+        try:
+            if multiple:
+                checked = inline_checkbox(label, options)
+                if not checked:
+                    return None
+                display = ", ".join(label_map[k] for k in checked)
+                print(messages.prompt_field_value.format(name=name, value=display))
+                return checked
+            key = inline_choice(label, options)
+        except KeyboardInterrupt:
+            return None
+        print(messages.prompt_field_value.format(name=name, value=label_map[key]))
+        return key
+
     # バージョン
     if field_format == "version":
         versions = fetch_versions(project_id)
