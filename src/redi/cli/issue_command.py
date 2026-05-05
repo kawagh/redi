@@ -39,6 +39,7 @@ from redi.api.version import fetch_versions
 from redi.i18n import messages
 
 from redi.api.custom_field import (
+    CustomField,
     fetch_custom_fields,
     fetch_project_issue_custom_field_ids,
     filter_required_issue_custom_fields,
@@ -476,9 +477,9 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         exit(1)
 
 
-def _prompt_custom_field_value(custom_field: dict) -> str | None:
-    name = custom_field.get("name", "")
-    field_format = custom_field.get("field_format", "string")
+def _prompt_custom_field_value(custom_field: CustomField) -> str | None:
+    name = custom_field["name"]
+    field_format = custom_field["field_format"]
     label = messages.prompt_required_field.format(name=name)
 
     # not support All formats
