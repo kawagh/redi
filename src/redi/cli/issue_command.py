@@ -579,6 +579,16 @@ def _prompt_custom_field_value(
         print(messages.prompt_field_value.format(name=name, value=bool_label_map[key]))
         return key
 
+    # 長いテキスト
+    if field_format == "text":
+        try:
+            value = open_editor()
+        except (KeyboardInterrupt, EOFError):
+            return None
+        if not value:
+            return None
+        return value
+
     # 日付
     if field_format == "date":
         try:
