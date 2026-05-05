@@ -79,7 +79,10 @@ def _interactive_select_default_profile() -> None:
         print(messages.no_profiles_available)
         exit(1)
     current_default = get_default_profile()
-    options: list[tuple[str, str]] = [(name, name) for name in profile_names]
+    options: list[tuple[str, str]] = [
+        (name, f"{name} (default)" if name == current_default else name)
+        for name in profile_names
+    ]
     try:
         selected = inline_choice(
             messages.prompt_select_default_profile_to_set,
