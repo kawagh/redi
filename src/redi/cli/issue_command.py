@@ -14,7 +14,12 @@ from redi.cli._common import (
     open_editor,
     resolve_alias,
 )
-from redi.cli.prompt_util import DueDateValidator, FloatValidator, HourValidator
+from redi.cli.prompt_util import (
+    DueDateValidator,
+    FloatValidator,
+    HourValidator,
+    IntValidator,
+)
 from redi.config import default_project_id, redmine_url
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
 from redi.api.issue import (
@@ -572,6 +577,20 @@ def _prompt_custom_field_value(
             return None
         print(messages.prompt_field_value.format(name=name, value=bool_label_map[key]))
         return key
+
+    # 整数
+    if field_format == "int":
+        try:
+            value = prompt(
+                messages.prompt_custom_field_label.format(name=label),
+                validator=IntValidator(),
+            ).strip()
+        except (KeyboardInterrupt, EOFError):
+            return None
+        if not value:
+            return None
+        print(messages.prompt_field_value.format(name=name, value=value))
+        return value
 
     # 小数
     if field_format == "float":

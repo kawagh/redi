@@ -12,6 +12,7 @@ from redi.cli.prompt_util import (
     DueDateValidator,
     FloatValidator,
     HourValidator,
+    IntValidator,
     UrlValidator,
     digit_and_period_key_bindings,
     digit_only_key_bindings,
@@ -161,6 +162,30 @@ class TestHourValidator:
             ValidationError, match=re.escape(messages.error_numeric_required)
         ):
             HourValidator().validate(Document(text=text))
+
+
+class TestIntValidator:
+    """IntValidator()は符号付き整数を許容する"""
+
+    @pytest.mark.parametrize("text", ["0", "1", "100", "-1", "-100"])
+    def test_valid_numbers_pass(self, text: str):
+        """正負の整数は通る"""
+        IntValidator().validate(Document(text=text))
+
+    def test_surrounding_whitespace_is_stripped(self):
+        """前後の空白は無視して評価される"""
+        IntValidator().validate(Document(text="  -1  "))
+
+    @pytest.mark.parametrize(
+        "text",
+        ["", " ", "abc", "1.5", "1,5", "+1", "--1", "1-"],
+    )
+    def test_invalid_inputs_raise(self, text: str):
+        """空文字や数値以外、小数や不正な符号位置はエラーになる"""
+        with pytest.raises(
+            ValidationError, match=re.escape(messages.error_numeric_required)
+        ):
+            IntValidator().validate(Document(text=text))
 
 
 class TestFloatValidator:
