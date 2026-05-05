@@ -484,6 +484,7 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
 
 def _prompt_custom_field_value(
     custom_field: CustomField,
+    project_id: str,
 ) -> str | list[str] | None:
     name = custom_field["name"]
     field_format = custom_field["field_format"]
@@ -499,6 +500,27 @@ def _prompt_custom_field_value(
             for pv in possible_values
             if pv.get("value", "") != ""
         ]
+        if not options:
+            return None
+        label_map = dict(options)
+        try:
+            if multiple:
+                checked = inline_checkbox(label, options)
+                if not checked:
+                    return None
+                display = ", ".join(label_map[k] for k in checked)
+                print(messages.prompt_field_value.format(name=name, value=display))
+                return checked
+            key = inline_choice(label, options)
+        except KeyboardInterrupt:
+            return None
+        print(messages.prompt_field_value.format(name=name, value=label_map[key]))
+        return key
+
+    # バージョン
+    if field_format == "version":
+        versions = fetch_versions(project_id)
+        options = [(str(v["id"]), v["name"]) for v in versions]
         if not options:
             return None
         label_map = dict(options)
@@ -575,7 +597,7 @@ def _interactive_fill_required_custom_fields(
     for cf in required:
         if cf["id"] in existing_ids:
             continue
-        value = _prompt_custom_field_value(cf)
+        value = _prompt_custom_field_value(cf, project_id)
         if value is None:
             print(messages.canceled)
             exit(1)
