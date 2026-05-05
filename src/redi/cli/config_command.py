@@ -1,9 +1,11 @@
 import argparse
 
-from redi.cli._common import resolve_alias
+from redi.cli._common import inline_choice, resolve_alias
 from redi.config import (
     SUPPORTED_LANGUAGES,
     create_profile,
+    get_default_profile,
+    list_profile_names,
     set_default_profile,
     show_config,
     update_config,
@@ -73,6 +75,29 @@ def add_config_parser(
     )
 
 
+def _interactive_select_default_profile() -> None:
+    profile_names = list_profile_names()
+    if not profile_names:
+        print(messages.no_profiles_available)
+        exit(1)
+    current_default = get_default_profile()
+    options: list[tuple[str, str]] = [
+        (name, f"{name} (default)" if name == current_default else name)
+        for name in profile_names
+    ]
+    try:
+        selected = inline_choice(
+            messages.prompt_select_default_profile_to_set,
+            options,
+            default=current_default,
+        )
+    except KeyboardInterrupt:
+        print(messages.canceled)
+        exit(1)
+    if set_default_profile(selected):
+        print(messages.default_profile_set.format(name=selected))
+
+
 def handle_config(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.config_command)
     if cmd == "create":
@@ -95,6 +120,19 @@ def handle_config(args: argparse.Namespace) -> None:
         return
     if cmd != "update":
         show_config(full=args.full)
+        return
+    no_args_provided = not (
+        args.profile_name
+        or args.project_id
+        or args.wiki_project_id
+        or args.editor
+        or args.language
+        or args.api_key
+        or args.url
+        or args.default_profile
+    )
+    if no_args_provided:
+        _interactive_select_default_profile()
         return
     updated = False
     profile = args.profile_name

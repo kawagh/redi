@@ -113,6 +113,8 @@ class MessagesProto(Protocol):
     """選択可能なバージョンがない"""
     no_issues_available: str
     """選択可能なイシューがない"""
+    no_profiles_available: str
+    """選択可能なプロファイルがない"""
     no_project_skip_project_id: str
     """プロジェクトが存在しないため設定スキップ"""
 
@@ -329,6 +331,8 @@ class MessagesProto(Protocol):
     prompt_select_sharing: str
     prompt_select_version_to_update: str
     prompt_select_issue_to_update: str
+    prompt_select_default_profile_to_set: str
+    """デフォルトプロファイルとして設定するプロファイルを選択"""
     prompt_start_date: str
     prompt_due_date: str
     prompt_estimated_hours: str

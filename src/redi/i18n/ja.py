@@ -66,6 +66,9 @@ class Ja(MessagesProto):
     issue_not_found_simple = "イシューが見つかりません"
     no_versions_available = "選択可能なバージョンがありません"
     no_issues_available = "選択可能なイシューがありません"
+    no_profiles_available = (
+        "選択可能なプロファイルがありません。redi init を実行してください"
+    )
     no_project_skip_project_id = (
         "プロジェクトが存在しないため project_id の設定をスキップします"
     )
@@ -224,6 +227,9 @@ class Ja(MessagesProto):
     prompt_select_sharing = "共有設定"
     prompt_select_version_to_update = "更新するバージョンを選択"
     prompt_select_issue_to_update = "更新するイシューを選択"
+    prompt_select_default_profile_to_set = (
+        "デフォルトプロファイルとして設定するプロファイルを選択"
+    )
     prompt_start_date = "開始日（YYYY-MM-DD、空文字でクリア）: "
     prompt_due_date = "期日（YYYY-MM-DD、空文字でクリア）: "
     prompt_estimated_hours = "予定工数（例: 1.5 (h)）: "
