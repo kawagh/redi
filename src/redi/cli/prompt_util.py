@@ -10,6 +10,7 @@ from redi.i18n import messages
 
 _URL_PREFIXES = ("http://", "https://")
 _DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
+_FLOAT_PATTERN = re.compile(r"-?\d+(\.\d+)?")
 
 
 class UrlValidator(Validator):
@@ -36,6 +37,18 @@ class HourValidator(Validator):
     def validate(self, document: Document) -> None:
         text = document.text
         if not text.replace(".", "", 1).isdigit():
+            raise ValidationError(message=messages.error_numeric_required)
+
+
+class FloatValidator(Validator):
+    """カスタムフィールド float 形式用の Validator。
+
+    符号付き整数または小数（負の値も許容）を受け付ける。
+    """
+
+    def validate(self, document: Document) -> None:
+        text = document.text.strip()
+        if not _FLOAT_PATTERN.fullmatch(text):
             raise ValidationError(message=messages.error_numeric_required)
 
 
