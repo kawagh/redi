@@ -262,7 +262,12 @@ def _build_create_issue_url(
         params.append(("issue[assigned_to_id]", assigned_to_id))
     if custom_fields:
         for cf in parse_custom_fields(custom_fields):
-            params.append((f"issue[custom_field_values][{cf['id']}]", str(cf["value"])))
+            value = cf["value"]
+            if isinstance(value, list):
+                for v in value:
+                    params.append((f"issue[custom_field_values][{cf['id']}][]", str(v)))
+            else:
+                params.append((f"issue[custom_field_values][{cf['id']}]", str(value)))
     base = f"{redmine_url}/projects/{project_id}/issues/new"
     if not params:
         return base
@@ -477,9 +482,12 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         exit(1)
 
 
-def _prompt_custom_field_value(custom_field: CustomField) -> str | None:
+def _prompt_custom_field_value(
+    custom_field: CustomField,
+) -> str | list[str] | None:
     name = custom_field["name"]
     field_format = custom_field["field_format"]
+    multiple = custom_field["multiple"]
     label = messages.prompt_required_field.format(name=name)
 
     # not support All formats
@@ -493,12 +501,19 @@ def _prompt_custom_field_value(custom_field: CustomField) -> str | None:
         ]
         if not options:
             return None
+        label_map = dict(options)
         try:
+            if multiple:
+                checked = inline_checkbox(label, options)
+                if not checked:
+                    return None
+                display = ", ".join(label_map[k] for k in checked)
+                print(messages.prompt_field_value.format(name=name, value=display))
+                return checked
             key = inline_choice(label, options)
         except KeyboardInterrupt:
             return None
-        display = dict(options)[key]
-        print(messages.prompt_field_value.format(name=name, value=display))
+        print(messages.prompt_field_value.format(name=name, value=label_map[key]))
         return key
 
     # リスト
@@ -511,6 +526,16 @@ def _prompt_custom_field_value(custom_field: CustomField) -> str | None:
         ]
         if options:
             try:
+                if multiple:
+                    checked = inline_checkbox(label, options)
+                    if not checked:
+                        return None
+                    print(
+                        messages.prompt_field_value.format(
+                            name=name, value=", ".join(checked)
+                        )
+                    )
+                    return checked
                 value = inline_choice(label, options)
             except KeyboardInterrupt:
                 return None
@@ -554,7 +579,11 @@ def _interactive_fill_required_custom_fields(
         if value is None:
             print(messages.canceled)
             exit(1)
-        added.append(f"{cf['id']}={value}")
+        if isinstance(value, list):
+            for v in value:
+                added.append(f"{cf['id']}={v}")
+        else:
+            added.append(f"{cf['id']}={value}")
     if not added:
         return existing
     if existing:
