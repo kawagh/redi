@@ -62,7 +62,9 @@ class En(MessagesProto):
     issue_not_found_simple = "Issue not found"
     no_versions_available = "No versions available"
     no_issues_available = "No issues available"
-    no_profiles_available = "No profiles available"
+    no_profiles_available = (
+        "No profiles available. To create first profile, run `redi init`"
+    )
     no_project_skip_project_id = "No projects exist; skipping project_id setup"
 
     # ---- admin / permission required ----

@@ -66,7 +66,9 @@ class Ja(MessagesProto):
     issue_not_found_simple = "イシューが見つかりません"
     no_versions_available = "選択可能なバージョンがありません"
     no_issues_available = "選択可能なイシューがありません"
-    no_profiles_available = "選択可能なプロファイルがありません"
+    no_profiles_available = (
+        "選択可能なプロファイルがありません。redi init を実行してください"
+    )
     no_project_skip_project_id = (
         "プロジェクトが存在しないため project_id の設定をスキップします"
     )
