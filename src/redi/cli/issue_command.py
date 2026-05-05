@@ -559,6 +559,20 @@ def _prompt_custom_field_value(
         print(messages.prompt_field_value.format(name=name, value=label_map[key]))
         return key
 
+    # 真偽値
+    if field_format == "bool":
+        bool_options: list[tuple[str, str]] = [
+            ("1", messages.label_bool_true),
+            ("0", messages.label_bool_false),
+        ]
+        bool_label_map = dict(bool_options)
+        try:
+            key = inline_choice(label, bool_options)
+        except KeyboardInterrupt:
+            return None
+        print(messages.prompt_field_value.format(name=name, value=bool_label_map[key]))
+        return key
+
     # リスト
     if field_format == "list":
         possible = custom_field.get("possible_values") or []

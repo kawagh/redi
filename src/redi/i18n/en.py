@@ -250,6 +250,8 @@ class En(MessagesProto):
     prompt_required_field = "{name} (required)"
     prompt_field_value = "{name}: {value}"
     prompt_custom_field_label = "{name}: "
+    label_bool_true = "Yes"
+    label_bool_false = "No"
     prompt_what_next = "What's next?"
     action_submit = "Submit"
     action_continue_in_browser = "Continue in browser"

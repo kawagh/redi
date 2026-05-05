@@ -358,6 +358,10 @@ class MessagesProto(Protocol):
     """{name}, {value}"""
     prompt_custom_field_label: str
     """{name}"""
+    label_bool_true: str
+    """カスタムフィールド bool 形式の真の表示ラベル"""
+    label_bool_false: str
+    """カスタムフィールド bool 形式の偽の表示ラベル"""
     prompt_what_next: str
     """イシュー作成時に次のアクションを選ばせるメニューのタイトル"""
     action_submit: str
