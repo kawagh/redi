@@ -578,6 +578,18 @@ def _prompt_custom_field_value(
         print(messages.prompt_field_value.format(name=name, value=bool_label_map[key]))
         return key
 
+    # 進捗 (0-100% の 10% 刻み)
+    if field_format == "progressbar":
+        progress_options: list[tuple[str, str]] = [
+            (str(r), f"{r}%") for r in range(0, 101, 10)
+        ]
+        try:
+            value = inline_choice(label, progress_options)
+        except KeyboardInterrupt:
+            return None
+        print(messages.prompt_field_value.format(name=name, value=f"{value}%"))
+        return value
+
     # 整数
     if field_format == "int":
         try:
