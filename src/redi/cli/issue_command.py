@@ -476,13 +476,33 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         exit(1)
 
 
-def _prompt_custom_field_value(cf: dict) -> str | None:
-    name = cf.get("name", "")
-    fmt = cf.get("field_format", "string")
+def _prompt_custom_field_value(custom_field: dict) -> str | None:
+    name = custom_field.get("name", "")
+    field_format = custom_field.get("field_format", "string")
     label = messages.prompt_required_field.format(name=name)
+
     # not support All formats
-    if fmt == "list":
-        possible = cf.get("possible_values") or []
+    # キーバリューリスト
+    if field_format == "enumeration":
+        possible_values = custom_field.get("possible_values") or []
+        options: list[tuple[str, str]] = [
+            (str(pv.get("value", "")), str(pv.get("label", "")))
+            for pv in possible_values
+            if pv.get("value", "") != ""
+        ]
+        if not options:
+            return None
+        try:
+            key = inline_choice(label, options)
+        except KeyboardInterrupt:
+            return None
+        display = dict(options)[key]
+        print(messages.prompt_field_value.format(name=name, value=display))
+        return key
+
+    # リスト
+    if field_format == "list":
+        possible = custom_field.get("possible_values") or []
         options: list[tuple[str, str]] = [
             (str(pv.get("value", "")), str(pv.get("value", "")))
             for pv in possible
@@ -495,6 +515,7 @@ def _prompt_custom_field_value(cf: dict) -> str | None:
                 return None
             print(messages.prompt_field_value.format(name=name, value=value))
             return value
+    # 自由入力
     try:
         return (
             prompt(messages.prompt_custom_field_label.format(name=label)).strip()
