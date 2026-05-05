@@ -1,4 +1,5 @@
 import json
+from typing import NotRequired, TypedDict, cast
 
 from redi import cache
 from redi.client import client
@@ -7,10 +8,31 @@ from redi.i18n import messages
 CACHE_KEY = "custom_fields"
 
 
-def fetch_custom_fields() -> list[dict] | None:
+class CustomField(TypedDict):
+    id: int
+    name: str
+    description: str
+    customized_type: str  # ex. issue
+    field_format: str  # ex. enumeration, list, etc...
+    regexp: str
+    min_length: int | None
+    max_length: int | None
+    is_required: bool
+    is_filter: bool
+    searchable: bool
+    multiple: bool
+    default_value: str | None
+    visible: bool
+    editable: bool
+    possible_values: NotRequired[list[dict]]
+    trackers: list[dict]
+    roles: list[dict]
+
+
+def fetch_custom_fields() -> list[CustomField] | None:
     cached = cache.load(CACHE_KEY)
     if cached is not None:
-        return cached
+        return cast(list[CustomField], cached)
     response = client.get("/custom_fields.json")
     if response.status_code == 403:
         # https://www.redmine.org/projects/redmine/wiki/Rest_CustomFields
@@ -19,7 +41,7 @@ def fetch_custom_fields() -> list[dict] | None:
     response.raise_for_status()
     data = response.json()["custom_fields"]
     cache.save(CACHE_KEY, data)
-    return data
+    return cast(list[CustomField], data)
 
 
 def list_custom_fields(full: bool = False) -> None:
@@ -46,10 +68,10 @@ def fetch_project_issue_custom_field_ids(project_id: str) -> set[int]:
 
 
 def filter_required_issue_custom_fields(
-    custom_fields: list[dict],
+    custom_fields: list[CustomField],
     project_cf_ids: set[int],
     tracker_id: str | None,
-) -> list[dict]:
+) -> list[CustomField]:
     """
     入力必須・初期値なし・プロジェクト/トラッカーに該当する
     イシュー用カスタムフィールドを抽出する。

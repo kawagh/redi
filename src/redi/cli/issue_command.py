@@ -39,6 +39,7 @@ from redi.api.version import fetch_versions
 from redi.i18n import messages
 
 from redi.api.custom_field import (
+    CustomField,
     fetch_custom_fields,
     fetch_project_issue_custom_field_ids,
     filter_required_issue_custom_fields,
@@ -261,7 +262,12 @@ def _build_create_issue_url(
         params.append(("issue[assigned_to_id]", assigned_to_id))
     if custom_fields:
         for cf in parse_custom_fields(custom_fields):
-            params.append((f"issue[custom_field_values][{cf['id']}]", str(cf["value"])))
+            value = cf["value"]
+            if isinstance(value, list):
+                for v in value:
+                    params.append((f"issue[custom_field_values][{cf['id']}][]", str(v)))
+            else:
+                params.append((f"issue[custom_field_values][{cf['id']}]", str(value)))
     base = f"{redmine_url}/projects/{project_id}/issues/new"
     if not params:
         return base
@@ -476,13 +482,86 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         exit(1)
 
 
-def _prompt_custom_field_value(cf: dict) -> str | None:
-    name = cf.get("name", "")
-    fmt = cf.get("field_format", "string")
+def _prompt_custom_field_value(
+    custom_field: CustomField,
+    project_id: str,
+) -> str | list[str] | None:
+    name = custom_field["name"]
+    field_format = custom_field["field_format"]
+    multiple = custom_field["multiple"]
     label = messages.prompt_required_field.format(name=name)
+
     # not support All formats
-    if fmt == "list":
-        possible = cf.get("possible_values") or []
+    # キーバリューリスト
+    if field_format == "enumeration":
+        possible_values = custom_field.get("possible_values") or []
+        options: list[tuple[str, str]] = [
+            (str(pv.get("value", "")), str(pv.get("label", "")))
+            for pv in possible_values
+            if pv.get("value", "") != ""
+        ]
+        if not options:
+            return None
+        label_map = dict(options)
+        try:
+            if multiple:
+                checked = inline_checkbox(label, options)
+                if not checked:
+                    return None
+                display = ", ".join(label_map[k] for k in checked)
+                print(messages.prompt_field_value.format(name=name, value=display))
+                return checked
+            key = inline_choice(label, options)
+        except KeyboardInterrupt:
+            return None
+        print(messages.prompt_field_value.format(name=name, value=label_map[key]))
+        return key
+
+    # ユーザー
+    if field_format == "user":
+        users = fetch_project_users(project_id)
+        options = [(str(u["id"]), u.get("name", "")) for u in users]
+        if not options:
+            return None
+        label_map = dict(options)
+        try:
+            if multiple:
+                checked = inline_checkbox(label, options)
+                if not checked:
+                    return None
+                display = ", ".join(label_map[k] for k in checked)
+                print(messages.prompt_field_value.format(name=name, value=display))
+                return checked
+            key = inline_choice(label, options)
+        except KeyboardInterrupt:
+            return None
+        print(messages.prompt_field_value.format(name=name, value=label_map[key]))
+        return key
+
+    # バージョン
+    if field_format == "version":
+        versions = fetch_versions(project_id)
+        options = [(str(v["id"]), v["name"]) for v in versions]
+        if not options:
+            return None
+        label_map = dict(options)
+        try:
+            if multiple:
+                checked = inline_checkbox(label, options)
+                if not checked:
+                    return None
+                display = ", ".join(label_map[k] for k in checked)
+                print(messages.prompt_field_value.format(name=name, value=display))
+                return checked
+            key = inline_choice(label, options)
+        except KeyboardInterrupt:
+            return None
+        print(messages.prompt_field_value.format(name=name, value=label_map[key]))
+        return key
+
+    # リスト
+    if field_format == "list":
+        possible = custom_field.get("possible_values") or []
         options: list[tuple[str, str]] = [
             (str(pv.get("value", "")), str(pv.get("value", "")))
             for pv in possible
@@ -490,11 +569,22 @@ def _prompt_custom_field_value(cf: dict) -> str | None:
         ]
         if options:
             try:
+                if multiple:
+                    checked = inline_checkbox(label, options)
+                    if not checked:
+                        return None
+                    print(
+                        messages.prompt_field_value.format(
+                            name=name, value=", ".join(checked)
+                        )
+                    )
+                    return checked
                 value = inline_choice(label, options)
             except KeyboardInterrupt:
                 return None
             print(messages.prompt_field_value.format(name=name, value=value))
             return value
+    # 自由入力
     try:
         return (
             prompt(messages.prompt_custom_field_label.format(name=label)).strip()
@@ -528,11 +618,15 @@ def _interactive_fill_required_custom_fields(
     for cf in required:
         if cf["id"] in existing_ids:
             continue
-        value = _prompt_custom_field_value(cf)
+        value = _prompt_custom_field_value(cf, project_id)
         if value is None:
             print(messages.canceled)
             exit(1)
-        added.append(f"{cf['id']}={value}")
+        if isinstance(value, list):
+            for v in value:
+                added.append(f"{cf['id']}={v}")
+        else:
+            added.append(f"{cf['id']}={value}")
     if not added:
         return existing
     if existing:
