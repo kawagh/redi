@@ -9,6 +9,7 @@ from prompt_toolkit.validation import ValidationError
 import re
 
 from redi.cli.prompt_util import (
+    DateValidator,
     DueDateValidator,
     FloatValidator,
     HourValidator,
@@ -212,6 +213,42 @@ class TestFloatValidator:
             ValidationError, match=re.escape(messages.error_numeric_required)
         ):
             FloatValidator().validate(Document(text=text))
+
+
+class TestDateValidator:
+    """DateValidator()は YYYY-MM-DD 形式の日付を許容する"""
+
+    def test_empty_string_raises(self):
+        """空文字は入力必須エラーになる"""
+        with pytest.raises(ValidationError):
+            DateValidator().validate(Document(text=""))
+
+    def test_surrounding_whitespace_is_stripped(self):
+        """前後の空白は無視して評価される"""
+        DateValidator().validate(Document(text="  2026-04-26  "))
+
+    @pytest.mark.parametrize("text", ["2026-04-26", "2026-12-31", "1999-01-01"])
+    def test_valid_date_passes(self, text: str):
+        """任意の YYYY-MM-DD は通る"""
+        DateValidator().validate(Document(text=text))
+
+    @pytest.mark.parametrize(
+        "text",
+        ["2026/04/26", "26-04-26", "2026-4-26", "abc", "2026-04"],
+    )
+    def test_invalid_format_raises(self, text: str):
+        """YYYY-MM-DD 形式に合わない入力は形式エラーになる"""
+        with pytest.raises(ValidationError, match="YYYY-MM-DD"):
+            DateValidator().validate(Document(text=text))
+
+    @pytest.mark.parametrize(
+        "text",
+        ["2026-13-01", "2026-02-30", "2026-00-10"],
+    )
+    def test_calendar_invalid_date_raises(self, text: str):
+        """形式は合っていてもカレンダー上不正な日付は形式エラーになる"""
+        with pytest.raises(ValidationError, match="YYYY-MM-DD"):
+            DateValidator().validate(Document(text=text))
 
 
 class TestDueDateValidator:

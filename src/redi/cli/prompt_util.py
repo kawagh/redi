@@ -65,6 +65,21 @@ class IntValidator(Validator):
             raise ValidationError(message=messages.error_numeric_required)
 
 
+class DateValidator(Validator):
+    """YYYY-MM-DD 形式の日付のみを許容する Validator。"""
+
+    def validate(self, document: Document) -> None:
+        text = document.text.strip()
+        if text == "":
+            raise ValidationError(message=messages.error_input_required)
+        if not _DATE_PATTERN.fullmatch(text):
+            raise ValidationError(message=messages.error_date_format)
+        try:
+            date.fromisoformat(text)
+        except ValueError:
+            raise ValidationError(message=messages.error_date_format)
+
+
 class DueDateValidator(Validator):
     """期日入力用の Validator。空文字または開始日以降の YYYY-MM-DD のみ許容する。"""
 

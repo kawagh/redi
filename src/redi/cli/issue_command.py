@@ -15,6 +15,7 @@ from redi.cli._common import (
     resolve_alias,
 )
 from redi.cli.prompt_util import (
+    DateValidator,
     DueDateValidator,
     FloatValidator,
     HourValidator,
@@ -577,6 +578,20 @@ def _prompt_custom_field_value(
             return None
         print(messages.prompt_field_value.format(name=name, value=bool_label_map[key]))
         return key
+
+    # 日付
+    if field_format == "date":
+        try:
+            value = prompt(
+                messages.prompt_custom_field_label.format(name=label),
+                validator=DateValidator(),
+            ).strip()
+        except (KeyboardInterrupt, EOFError):
+            return None
+        if not value:
+            return None
+        print(messages.prompt_field_value.format(name=name, value=value))
+        return value
 
     # 進捗 (0-100% の 10% 刻み)
     if field_format == "progressbar":
