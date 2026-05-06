@@ -668,7 +668,12 @@ def _prompt_custom_field_value(
                 return None
             print(messages.prompt_field_value.format(name=name, value=value))
             return value
-    # 自由入力
+
+    # ファイル is not supported
+    if field_format == "attachment":
+        return
+
+    # 自由入力(string,link)
     try:
         return (
             prompt(messages.prompt_custom_field_label.format(name=label)).strip()
