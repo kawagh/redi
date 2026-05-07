@@ -509,6 +509,7 @@ def _prompt_custom_field_value(
     field_format = custom_field["field_format"]
     multiple = custom_field["multiple"]
     label = messages.prompt_required_field.format(name=name)
+    default_value = custom_field.get("default_value") or ""
 
     # attachment はブラウザに委ねる
     # キーバリューリスト
@@ -525,13 +526,17 @@ def _prompt_custom_field_value(
         if multiple:
             # 空選択は受け付けず、最低 1 つチェックされるまで再表示する
             while True:
-                checked = inline_checkbox(label, options)
+                checked = inline_checkbox(
+                    label,
+                    options,
+                    initial_checked=[default_value] if default_value else None,
+                )
                 if checked:
                     break
             display = ", ".join(label_map[k] for k in checked)
             print(messages.prompt_field_value.format(name=name, value=display))
             return checked
-        key = inline_choice(label, options)
+        key = inline_choice(label, options, default=default_value or None)
         print(messages.prompt_field_value.format(name=name, value=label_map[key]))
         return key
 
@@ -580,7 +585,7 @@ def _prompt_custom_field_value(
             ("0", messages.label_bool_false),
         ]
         bool_label_map = dict(bool_options)
-        key = inline_choice(label, bool_options)
+        key = inline_choice(label, bool_options, default=default_value or None)
         print(messages.prompt_field_value.format(name=name, value=bool_label_map[key]))
         return key
 
@@ -588,7 +593,7 @@ def _prompt_custom_field_value(
     if field_format == "text":
         # 空のまま閉じられたらエディタを開き直す
         while True:
-            value = open_editor()
+            value = open_editor(initial_text=default_value)
             if value:
                 print(
                     messages.prompt_field_value.format(
@@ -602,6 +607,7 @@ def _prompt_custom_field_value(
         return prompt(
             messages.prompt_custom_field_label.format(name=label),
             validator=DateValidator(),
+            default=default_value,
         ).strip()
 
     # 進捗 (0-100% の 10% 刻み)
@@ -618,6 +624,7 @@ def _prompt_custom_field_value(
         return prompt(
             messages.prompt_custom_field_label.format(name=label),
             validator=IntValidator(),
+            default=default_value,
         ).strip()
 
     # 小数
@@ -625,6 +632,7 @@ def _prompt_custom_field_value(
         return prompt(
             messages.prompt_custom_field_label.format(name=label),
             validator=FloatValidator(),
+            default=default_value,
         ).strip()
 
     # リスト
@@ -638,7 +646,11 @@ def _prompt_custom_field_value(
         if options:
             if multiple:
                 while True:
-                    checked = inline_checkbox(label, options)
+                    checked = inline_checkbox(
+                        label,
+                        options,
+                        initial_checked=[default_value] if default_value else None,
+                    )
                     if checked:
                         break
                 print(
@@ -647,7 +659,7 @@ def _prompt_custom_field_value(
                     )
                 )
                 return checked
-            value = inline_choice(label, options)
+            value = inline_choice(label, options, default=default_value or None)
             print(messages.prompt_field_value.format(name=name, value=value))
             return value
 
@@ -660,6 +672,7 @@ def _prompt_custom_field_value(
     return prompt(
         messages.prompt_custom_field_label.format(name=label),
         validator=RequiredValidator(),
+        default=default_value,
     ).strip()
 
 
