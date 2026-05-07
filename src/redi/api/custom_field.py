@@ -25,6 +25,7 @@ class CustomField(TypedDict):
         "link",
         "float",
         "int",
+        "bool",
         "date",
         "progressbar",
         # 長いテキスト
