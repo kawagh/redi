@@ -493,6 +493,14 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
 _SKIP_UNSUPPORTED_FIELD = object()
 
 
+def _shorten_to_oneline(text: str, max_len: int = 80) -> str:
+    """改行をスペースに畳んで 1 行化し、長すぎたら省略する。"""
+    one_line = " ".join(text.splitlines())
+    if len(one_line) > max_len:
+        return one_line[: max_len - 1] + "…"
+    return one_line
+
+
 def _prompt_custom_field_value(
     custom_field: CustomField,
     project_id: str,
@@ -597,6 +605,11 @@ def _prompt_custom_field_value(
             except (KeyboardInterrupt, EOFError):
                 return None
             if value:
+                print(
+                    messages.prompt_field_value.format(
+                        name=name, value=_shorten_to_oneline(value)
+                    )
+                )
                 return value
 
     # 日付
@@ -608,9 +621,6 @@ def _prompt_custom_field_value(
             ).strip()
         except (KeyboardInterrupt, EOFError):
             return None
-        if not value:
-            return None
-        print(messages.prompt_field_value.format(name=name, value=value))
         return value
 
     # 進捗 (0-100% の 10% 刻み)
@@ -634,9 +644,6 @@ def _prompt_custom_field_value(
             ).strip()
         except (KeyboardInterrupt, EOFError):
             return None
-        if not value:
-            return None
-        print(messages.prompt_field_value.format(name=name, value=value))
         return value
 
     # 小数
@@ -648,9 +655,6 @@ def _prompt_custom_field_value(
             ).strip()
         except (KeyboardInterrupt, EOFError):
             return None
-        if not value:
-            return None
-        print(messages.prompt_field_value.format(name=name, value=value))
         return value
 
     # リスト
@@ -781,6 +785,13 @@ def handle_issue_create(args: argparse.Namespace) -> None:
         )
     if args.description is None:
         description = open_editor()
+        if description:
+            print(
+                messages.prompt_field_value.format(
+                    name=messages.field_description,
+                    value=_shorten_to_oneline(description),
+                )
+            )
     else:
         description = args.description
     if interactive:
