@@ -368,6 +368,8 @@ class MessagesProto(Protocol):
     """prompt_what_next の選択肢: そのまま送信"""
     action_continue_in_browser: str
     """prompt_what_next の選択肢: ブラウザで続きを編集"""
+    attachment_field_unsupported_notice: str
+    """{name}: 必須カスタムフィールドに添付ファイル型がある場合の未対応通知。ブラウザでの編集が必要"""
 
     # ---- prompt validators ----
     error_input_required: str

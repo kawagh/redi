@@ -488,10 +488,14 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         exit(1)
 
 
+# attachment 型のような未対応フィールドで「スキップしてブラウザでの編集に倒す」ことを示すセンチネル
+_SKIP_UNSUPPORTED_FIELD = object()
+
+
 def _prompt_custom_field_value(
     custom_field: CustomField,
     project_id: str,
-) -> str | list[str] | None:
+) -> str | list[str] | object | None:
     name = custom_field["name"]
     field_format = custom_field["field_format"]
     multiple = custom_field["multiple"]
@@ -669,9 +673,10 @@ def _prompt_custom_field_value(
             print(messages.prompt_field_value.format(name=name, value=value))
             return value
 
-    # ファイル is not supported
+    # ファイル添付は redi 側で対応していないため、呼び出し側に「ブラウザで編集」を強制させる
     if field_format == "attachment":
-        return
+        print(messages.attachment_field_unsupported_notice.format(name=name))
+        return _SKIP_UNSUPPORTED_FIELD
 
     # 自由入力(string,link)
     try:
@@ -685,17 +690,18 @@ def _prompt_custom_field_value(
 
 def _interactive_fill_required_custom_fields(
     project_id: str, tracker_id: str | None, existing: str | None
-) -> str | None:
+) -> tuple[str | None, bool]:
+    """戻り値の bool は「未対応の必須フィールドが含まれていた = ブラウザ編集が必須」を示す。"""
     custom_fields = fetch_custom_fields()
     if custom_fields is None:
         # 非管理者はあらかじめ渡されているパラメータを使うしかない
-        return existing
+        return existing, False
     project_cf_ids = fetch_project_issue_custom_field_ids(project_id)
     required = filter_required_issue_custom_fields(
         custom_fields, project_cf_ids, tracker_id
     )
     if not required:
-        return existing
+        return existing, False
 
     existing_ids: set[int] = set()
     if existing:
@@ -704,10 +710,14 @@ def _interactive_fill_required_custom_fields(
             existing_ids.add(int(key))
 
     added: list[str] = []
+    browser_only = False
     for cf in required:
         if cf["id"] in existing_ids:
             continue
         value = _prompt_custom_field_value(cf, project_id)
+        if value is _SKIP_UNSUPPORTED_FIELD:
+            browser_only = True
+            continue
         if value is None:
             print(messages.canceled)
             exit(1)
@@ -717,10 +727,10 @@ def _interactive_fill_required_custom_fields(
         else:
             added.append(f"{cf['id']}={value}")
     if not added:
-        return existing
+        return existing, browser_only
     if existing:
-        return existing + "," + ",".join(added)
-    return ",".join(added)
+        return existing + "," + ",".join(added), browser_only
+    return ",".join(added), browser_only
 
 
 def handle_issue_create(args: argparse.Namespace) -> None:
@@ -732,6 +742,7 @@ def handle_issue_create(args: argparse.Namespace) -> None:
     tracker_id = args.tracker_id
     custom_fields = args.custom_fields
     interactive = subject is None or args.description is None
+    browser_only = False
     if subject is None:
         if tracker_id is None:
             trackers = fetch_trackers()
@@ -756,7 +767,7 @@ def handle_issue_create(args: argparse.Namespace) -> None:
             print(messages.canceled_empty_subject)
             exit(1)
         # 必要なカスタムフィールドを対話的に入力
-        custom_fields = _interactive_fill_required_custom_fields(
+        custom_fields, browser_only = _interactive_fill_required_custom_fields(
             project_id=project_id,
             tracker_id=tracker_id,
             existing=args.custom_fields,
@@ -766,10 +777,15 @@ def handle_issue_create(args: argparse.Namespace) -> None:
     else:
         description = args.description
     if interactive:
-        action_options: list[tuple[str, str]] = [
-            ("submit", messages.action_submit),
-            ("browser", messages.action_continue_in_browser),
-        ]
+        # 添付ファイル必須など redi で送信できないケースは「ブラウザで編集」のみ提示する
+        action_options: list[tuple[str, str]] = (
+            [("browser", messages.action_continue_in_browser)]
+            if browser_only
+            else [
+                ("submit", messages.action_submit),
+                ("browser", messages.action_continue_in_browser),
+            ]
+        )
         try:
             action = inline_choice(messages.prompt_what_next, action_options)
         except KeyboardInterrupt:

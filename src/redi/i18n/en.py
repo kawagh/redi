@@ -255,6 +255,9 @@ class En(MessagesProto):
     prompt_what_next = "What's next?"
     action_submit = "Submit"
     action_continue_in_browser = "Continue in browser"
+    attachment_field_unsupported_notice = (
+        "{name}: attachment-type fields are not supported; please edit in browser"
+    )
 
     # ---- prompt validators ----
     error_input_required = "Required"
