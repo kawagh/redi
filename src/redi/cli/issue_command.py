@@ -14,7 +14,14 @@ from redi.cli._common import (
     open_editor,
     resolve_alias,
 )
-from redi.cli.prompt_util import DueDateValidator, HourValidator
+from redi.cli.prompt_util import (
+    DateValidator,
+    DueDateValidator,
+    FloatValidator,
+    HourValidator,
+    IntValidator,
+    RequiredValidator,
+)
 from redi.config import default_project_id, redmine_url
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
 from redi.api.issue import (
@@ -482,131 +489,177 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         exit(1)
 
 
+# attachment 型のような未対応フィールドで「スキップしてブラウザでの編集に倒す」ことを示すセンチネル
+_SKIP_UNSUPPORTED_FIELD = object()
+
+
+def _shorten_to_oneline(text: str, max_len: int = 80) -> str:
+    """改行をスペースに畳んで 1 行化し、長すぎたら省略する。"""
+    one_line = " ".join(text.splitlines())
+    if len(one_line) > max_len:
+        return one_line[: max_len - 1] + "…"
+    return one_line
+
+
+def _choose_from_options(
+    name: str,
+    label: str,
+    options: list[tuple[str, str]],
+    multiple: bool,
+    default_value: str,
+) -> str | list[str] | object:
+    """選択肢からの入力を取得する共通処理。空オプションは _SKIP_UNSUPPORTED_FIELD を返す。"""
+    if not options:
+        return _SKIP_UNSUPPORTED_FIELD
+    label_map = dict(options)
+    if multiple:
+        # 空選択は受け付けず、最低 1 つチェックされるまで再表示する
+        while True:
+            checked = inline_checkbox(
+                label,
+                options,
+                initial_checked=[default_value] if default_value else None,
+            )
+            if checked:
+                break
+        display = ", ".join(label_map[k] for k in checked)
+        print(messages.prompt_field_value.format(name=name, value=display))
+        return checked
+    key = inline_choice(label, options, default=default_value or None)
+    print(messages.prompt_field_value.format(name=name, value=label_map[key]))
+    return key
+
+
 def _prompt_custom_field_value(
     custom_field: CustomField,
     project_id: str,
-) -> str | list[str] | None:
+) -> str | list[str] | object:
     name = custom_field["name"]
     field_format = custom_field["field_format"]
     multiple = custom_field["multiple"]
     label = messages.prompt_required_field.format(name=name)
+    default_value = custom_field.get("default_value") or ""
 
-    # not support All formats
-    # キーバリューリスト
-    if field_format == "enumeration":
-        possible_values = custom_field.get("possible_values") or []
-        options: list[tuple[str, str]] = [
-            (str(pv.get("value", "")), str(pv.get("label", "")))
-            for pv in possible_values
-            if pv.get("value", "") != ""
-        ]
-        if not options:
-            return None
-        label_map = dict(options)
-        try:
-            if multiple:
-                checked = inline_checkbox(label, options)
-                if not checked:
-                    return None
-                display = ", ".join(label_map[k] for k in checked)
-                print(messages.prompt_field_value.format(name=name, value=display))
-                return checked
-            key = inline_choice(label, options)
-        except KeyboardInterrupt:
-            return None
-        print(messages.prompt_field_value.format(name=name, value=label_map[key]))
-        return key
+    match field_format:
+        # キーバリューリスト
+        case "enumeration":
+            possible_values = custom_field.get("possible_values") or []
+            options: list[tuple[str, str]] = [
+                (str(pv.get("value", "")), str(pv.get("label", "")))
+                for pv in possible_values
+                if pv.get("value", "") != ""
+            ]
+            return _choose_from_options(name, label, options, multiple, default_value)
 
-    # ユーザー
-    if field_format == "user":
-        users = fetch_project_users(project_id)
-        options = [(str(u["id"]), u.get("name", "")) for u in users]
-        if not options:
-            return None
-        label_map = dict(options)
-        try:
-            if multiple:
-                checked = inline_checkbox(label, options)
-                if not checked:
-                    return None
-                display = ", ".join(label_map[k] for k in checked)
-                print(messages.prompt_field_value.format(name=name, value=display))
-                return checked
-            key = inline_choice(label, options)
-        except KeyboardInterrupt:
-            return None
-        print(messages.prompt_field_value.format(name=name, value=label_map[key]))
-        return key
+        # リスト
+        case "list":
+            possible = custom_field.get("possible_values") or []
+            options = [
+                (str(pv.get("value", "")), str(pv.get("value", "")))
+                for pv in possible
+                if pv.get("value", "") != ""
+            ]
+            return _choose_from_options(name, label, options, multiple, default_value)
 
-    # バージョン
-    if field_format == "version":
-        versions = fetch_versions(project_id)
-        options = [(str(v["id"]), v["name"]) for v in versions]
-        if not options:
-            return None
-        label_map = dict(options)
-        try:
-            if multiple:
-                checked = inline_checkbox(label, options)
-                if not checked:
-                    return None
-                display = ", ".join(label_map[k] for k in checked)
-                print(messages.prompt_field_value.format(name=name, value=display))
-                return checked
-            key = inline_choice(label, options)
-        except KeyboardInterrupt:
-            return None
-        print(messages.prompt_field_value.format(name=name, value=label_map[key]))
-        return key
+        # ユーザー
+        case "user":
+            users = fetch_project_users(project_id)
+            options = [(str(u["id"]), u.get("name", "")) for u in users]
+            return _choose_from_options(name, label, options, multiple, default_value)
 
-    # リスト
-    if field_format == "list":
-        possible = custom_field.get("possible_values") or []
-        options: list[tuple[str, str]] = [
-            (str(pv.get("value", "")), str(pv.get("value", "")))
-            for pv in possible
-            if pv.get("value", "") != ""
-        ]
-        if options:
-            try:
-                if multiple:
-                    checked = inline_checkbox(label, options)
-                    if not checked:
-                        return None
+        # バージョン
+        case "version":
+            versions = fetch_versions(project_id)
+            options = [(str(v["id"]), v["name"]) for v in versions]
+            return _choose_from_options(name, label, options, multiple, default_value)
+
+        # 真偽値
+        case "bool":
+            bool_options: list[tuple[str, str]] = [
+                ("1", messages.label_bool_true),
+                ("0", messages.label_bool_false),
+            ]
+            bool_label_map = dict(bool_options)
+            key = inline_choice(label, bool_options, default=default_value or None)
+            print(
+                messages.prompt_field_value.format(name=name, value=bool_label_map[key])
+            )
+            return key
+
+        # 長いテキスト
+        case "text":
+            # 空のまま閉じられたらエディタを開き直す
+            while True:
+                value = open_editor(initial_text=default_value)
+                if value:
                     print(
                         messages.prompt_field_value.format(
-                            name=name, value=", ".join(checked)
+                            name=name, value=_shorten_to_oneline(value)
                         )
                     )
-                    return checked
-                value = inline_choice(label, options)
-            except KeyboardInterrupt:
-                return None
-            print(messages.prompt_field_value.format(name=name, value=value))
+                    return value
+
+        # 日付
+        case "date":
+            return prompt(
+                messages.prompt_custom_field_label.format(name=label),
+                validator=DateValidator(),
+                default=default_value,
+            ).strip()
+
+        # 進捗 (0-100% の 10% 刻み)
+        case "progressbar":
+            progress_options: list[tuple[str, str]] = [
+                (str(r), f"{r}%") for r in range(0, 101, 10)
+            ]
+            value = inline_choice(label, progress_options)
+            print(messages.prompt_field_value.format(name=name, value=f"{value}%"))
             return value
-    # 自由入力
-    try:
-        return (
-            prompt(messages.prompt_custom_field_label.format(name=label)).strip()
-            or None
-        )
-    except (KeyboardInterrupt, EOFError):
-        return None
+
+        # 整数
+        case "int":
+            return prompt(
+                messages.prompt_custom_field_label.format(name=label),
+                validator=IntValidator(),
+                default=default_value,
+            ).strip()
+
+        # 小数
+        case "float":
+            return prompt(
+                messages.prompt_custom_field_label.format(name=label),
+                validator=FloatValidator(),
+                default=default_value,
+            ).strip()
+
+        # ファイル添付は redi 側で対応していないため、呼び出し側に「ブラウザで編集」を強制させる
+        case "attachment":
+            print(messages.attachment_field_unsupported_notice.format(name=name))
+            return _SKIP_UNSUPPORTED_FIELD
+
+        # 自由入力(string,link)。未知のフォーマット
+        case _:
+            return prompt(
+                messages.prompt_custom_field_label.format(name=label),
+                validator=RequiredValidator(),
+                default=default_value,
+            ).strip()
 
 
 def _interactive_fill_required_custom_fields(
     project_id: str, tracker_id: str | None, existing: str | None
-) -> str | None:
+) -> tuple[str | None, bool]:
+    """戻り値の bool は「未対応の必須フィールドが含まれていた = ブラウザ編集が必須」を示す。"""
     custom_fields = fetch_custom_fields()
     if custom_fields is None:
         # 非管理者はあらかじめ渡されているパラメータを使うしかない
-        return existing
+        return existing, False
     project_cf_ids = fetch_project_issue_custom_field_ids(project_id)
     required = filter_required_issue_custom_fields(
         custom_fields, project_cf_ids, tracker_id
     )
     if not required:
-        return existing
+        return existing, False
 
     existing_ids: set[int] = set()
     if existing:
@@ -615,23 +668,28 @@ def _interactive_fill_required_custom_fields(
             existing_ids.add(int(key))
 
     added: list[str] = []
+    browser_only = False
     for cf in required:
         if cf["id"] in existing_ids:
             continue
-        value = _prompt_custom_field_value(cf, project_id)
-        if value is None:
+        try:
+            value = _prompt_custom_field_value(cf, project_id)
+        except (KeyboardInterrupt, EOFError):
             print(messages.canceled)
             exit(1)
+        if value is _SKIP_UNSUPPORTED_FIELD:
+            browser_only = True
+            continue
         if isinstance(value, list):
             for v in value:
                 added.append(f"{cf['id']}={v}")
         else:
             added.append(f"{cf['id']}={value}")
     if not added:
-        return existing
+        return existing, browser_only
     if existing:
-        return existing + "," + ",".join(added)
-    return ",".join(added)
+        return existing + "," + ",".join(added), browser_only
+    return ",".join(added), browser_only
 
 
 def handle_issue_create(args: argparse.Namespace) -> None:
@@ -643,6 +701,7 @@ def handle_issue_create(args: argparse.Namespace) -> None:
     tracker_id = args.tracker_id
     custom_fields = args.custom_fields
     interactive = subject is None or args.description is None
+    browser_only = False
     if subject is None:
         if tracker_id is None:
             trackers = fetch_trackers()
@@ -667,20 +726,32 @@ def handle_issue_create(args: argparse.Namespace) -> None:
             print(messages.canceled_empty_subject)
             exit(1)
         # 必要なカスタムフィールドを対話的に入力
-        custom_fields = _interactive_fill_required_custom_fields(
+        custom_fields, browser_only = _interactive_fill_required_custom_fields(
             project_id=project_id,
             tracker_id=tracker_id,
             existing=args.custom_fields,
         )
     if args.description is None:
         description = open_editor()
+        if description:
+            print(
+                messages.prompt_field_value.format(
+                    name=messages.field_description,
+                    value=_shorten_to_oneline(description),
+                )
+            )
     else:
         description = args.description
     if interactive:
-        action_options: list[tuple[str, str]] = [
-            ("submit", messages.action_submit),
-            ("browser", messages.action_continue_in_browser),
-        ]
+        # 添付ファイル必須など redi で送信できないケースは「ブラウザで編集」のみ提示する
+        action_options: list[tuple[str, str]] = (
+            [("browser", messages.action_continue_in_browser)]
+            if browser_only
+            else [
+                ("submit", messages.action_submit),
+                ("browser", messages.action_continue_in_browser),
+            ]
+        )
         try:
             action = inline_choice(messages.prompt_what_next, action_options)
         except KeyboardInterrupt:

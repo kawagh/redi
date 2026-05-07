@@ -254,14 +254,19 @@ class Ja(MessagesProto):
     prompt_required_field = "{name}（必須）"
     prompt_field_value = "{name}: {value}"
     prompt_custom_field_label = "{name}: "
+    label_bool_true = "はい"
+    label_bool_false = "いいえ"
     prompt_what_next = "次のアクションを選択してください"
     action_submit = "送信する"
     action_continue_in_browser = "ブラウザで編集する"
+    attachment_field_unsupported_notice = (
+        "{name}: 添付ファイル型はサポート対象外のためブラウザでの編集が必要です"
+    )
 
     # ---- prompt validators ----
     error_input_required = "入力してください"
     error_url_format = "http:// または https:// で始まるURLを入力してください"
-    error_date_format = "YYYY-MM-DD で入力してください（空文字でクリア）"
+    error_date_format = "YYYY-MM-DD で入力してください"
     error_date_after_start = "開始日 {date} 以降の日付を入力してください"
     error_numeric_required = "数値を入力してください"
     error_page_title_required = "ページタイトルを入力してください"
