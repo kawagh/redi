@@ -501,6 +501,35 @@ def _shorten_to_oneline(text: str, max_len: int = 80) -> str:
     return one_line
 
 
+def _choose_from_options(
+    name: str,
+    label: str,
+    options: list[tuple[str, str]],
+    multiple: bool,
+    default_value: str,
+) -> str | list[str] | object:
+    """選択肢からの入力を取得する共通処理。空オプションは _SKIP_UNSUPPORTED_FIELD を返す。"""
+    if not options:
+        return _SKIP_UNSUPPORTED_FIELD
+    label_map = dict(options)
+    if multiple:
+        # 空選択は受け付けず、最低 1 つチェックされるまで再表示する
+        while True:
+            checked = inline_checkbox(
+                label,
+                options,
+                initial_checked=[default_value] if default_value else None,
+            )
+            if checked:
+                break
+        display = ", ".join(label_map[k] for k in checked)
+        print(messages.prompt_field_value.format(name=name, value=display))
+        return checked
+    key = inline_choice(label, options, default=default_value or None)
+    print(messages.prompt_field_value.format(name=name, value=label_map[key]))
+    return key
+
+
 def _prompt_custom_field_value(
     custom_field: CustomField,
     project_id: str,
@@ -520,63 +549,29 @@ def _prompt_custom_field_value(
                 for pv in possible_values
                 if pv.get("value", "") != ""
             ]
-            if not options:
-                return _SKIP_UNSUPPORTED_FIELD
-            label_map = dict(options)
-            if multiple:
-                # 空選択は受け付けず、最低 1 つチェックされるまで再表示する
-                while True:
-                    checked = inline_checkbox(
-                        label,
-                        options,
-                        initial_checked=[default_value] if default_value else None,
-                    )
-                    if checked:
-                        break
-                display = ", ".join(label_map[k] for k in checked)
-                print(messages.prompt_field_value.format(name=name, value=display))
-                return checked
-            key = inline_choice(label, options, default=default_value or None)
-            print(messages.prompt_field_value.format(name=name, value=label_map[key]))
-            return key
+            return _choose_from_options(name, label, options, multiple, default_value)
+
+        # リスト
+        case "list":
+            possible = custom_field.get("possible_values") or []
+            options = [
+                (str(pv.get("value", "")), str(pv.get("value", "")))
+                for pv in possible
+                if pv.get("value", "") != ""
+            ]
+            return _choose_from_options(name, label, options, multiple, default_value)
 
         # ユーザー
         case "user":
             users = fetch_project_users(project_id)
             options = [(str(u["id"]), u.get("name", "")) for u in users]
-            if not options:
-                return _SKIP_UNSUPPORTED_FIELD
-            label_map = dict(options)
-            if multiple:
-                while True:
-                    checked = inline_checkbox(label, options)
-                    if checked:
-                        break
-                display = ", ".join(label_map[k] for k in checked)
-                print(messages.prompt_field_value.format(name=name, value=display))
-                return checked
-            key = inline_choice(label, options)
-            print(messages.prompt_field_value.format(name=name, value=label_map[key]))
-            return key
+            return _choose_from_options(name, label, options, multiple, default_value)
 
         # バージョン
         case "version":
             versions = fetch_versions(project_id)
             options = [(str(v["id"]), v["name"]) for v in versions]
-            if not options:
-                return _SKIP_UNSUPPORTED_FIELD
-            label_map = dict(options)
-            if multiple:
-                while True:
-                    checked = inline_checkbox(label, options)
-                    if checked:
-                        break
-                display = ", ".join(label_map[k] for k in checked)
-                print(messages.prompt_field_value.format(name=name, value=display))
-                return checked
-            key = inline_choice(label, options)
-            print(messages.prompt_field_value.format(name=name, value=label_map[key]))
-            return key
+            return _choose_from_options(name, label, options, multiple, default_value)
 
         # 真偽値
         case "bool":
@@ -636,35 +631,6 @@ def _prompt_custom_field_value(
                 validator=FloatValidator(),
                 default=default_value,
             ).strip()
-
-        # リスト
-        case "list":
-            possible = custom_field.get("possible_values") or []
-            options = [
-                (str(pv.get("value", "")), str(pv.get("value", "")))
-                for pv in possible
-                if pv.get("value", "") != ""
-            ]
-            if not options:
-                return _SKIP_UNSUPPORTED_FIELD
-            if multiple:
-                while True:
-                    checked = inline_checkbox(
-                        label,
-                        options,
-                        initial_checked=[default_value] if default_value else None,
-                    )
-                    if checked:
-                        break
-                print(
-                    messages.prompt_field_value.format(
-                        name=name, value=", ".join(checked)
-                    )
-                )
-                return checked
-            value = inline_choice(label, options, default=default_value or None)
-            print(messages.prompt_field_value.format(name=name, value=value))
-            return value
 
         # ファイル添付は redi 側で対応していないため、呼び出し側に「ブラウザで編集」を強制させる
         case "attachment":
