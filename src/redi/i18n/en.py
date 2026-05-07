@@ -262,7 +262,7 @@ class En(MessagesProto):
     # ---- prompt validators ----
     error_input_required = "Required"
     error_url_format = "Enter a URL starting with http:// or https://"
-    error_date_format = "Use YYYY-MM-DD (empty to clear)"
+    error_date_format = "Use YYYY-MM-DD"
     error_date_after_start = "Enter a date on or after start date {date}"
     error_numeric_required = "Enter a number"
     error_page_title_required = "Enter a page title"

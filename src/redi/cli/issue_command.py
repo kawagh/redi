@@ -20,6 +20,7 @@ from redi.cli.prompt_util import (
     FloatValidator,
     HourValidator,
     IntValidator,
+    RequiredValidator,
 )
 from redi.config import default_project_id, redmine_url
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
@@ -515,9 +516,11 @@ def _prompt_custom_field_value(
         label_map = dict(options)
         try:
             if multiple:
-                checked = inline_checkbox(label, options)
-                if not checked:
-                    return None
+                # 空選択は受け付けず、最低 1 つチェックされるまで再表示する
+                while True:
+                    checked = inline_checkbox(label, options)
+                    if checked:
+                        break
                 display = ", ".join(label_map[k] for k in checked)
                 print(messages.prompt_field_value.format(name=name, value=display))
                 return checked
@@ -536,9 +539,10 @@ def _prompt_custom_field_value(
         label_map = dict(options)
         try:
             if multiple:
-                checked = inline_checkbox(label, options)
-                if not checked:
-                    return None
+                while True:
+                    checked = inline_checkbox(label, options)
+                    if checked:
+                        break
                 display = ", ".join(label_map[k] for k in checked)
                 print(messages.prompt_field_value.format(name=name, value=display))
                 return checked
@@ -557,9 +561,10 @@ def _prompt_custom_field_value(
         label_map = dict(options)
         try:
             if multiple:
-                checked = inline_checkbox(label, options)
-                if not checked:
-                    return None
+                while True:
+                    checked = inline_checkbox(label, options)
+                    if checked:
+                        break
                 display = ", ".join(label_map[k] for k in checked)
                 print(messages.prompt_field_value.format(name=name, value=display))
                 return checked
@@ -585,13 +590,14 @@ def _prompt_custom_field_value(
 
     # 長いテキスト
     if field_format == "text":
-        try:
-            value = open_editor()
-        except (KeyboardInterrupt, EOFError):
-            return None
-        if not value:
-            return None
-        return value
+        # 空のまま閉じられたらエディタを開き直す
+        while True:
+            try:
+                value = open_editor()
+            except (KeyboardInterrupt, EOFError):
+                return None
+            if value:
+                return value
 
     # 日付
     if field_format == "date":
@@ -658,9 +664,10 @@ def _prompt_custom_field_value(
         if options:
             try:
                 if multiple:
-                    checked = inline_checkbox(label, options)
-                    if not checked:
-                        return None
+                    while True:
+                        checked = inline_checkbox(label, options)
+                        if checked:
+                            break
                     print(
                         messages.prompt_field_value.format(
                             name=name, value=", ".join(checked)
@@ -680,10 +687,10 @@ def _prompt_custom_field_value(
 
     # 自由入力(string,link)
     try:
-        return (
-            prompt(messages.prompt_custom_field_label.format(name=label)).strip()
-            or None
-        )
+        return prompt(
+            messages.prompt_custom_field_label.format(name=label),
+            validator=RequiredValidator(),
+        ).strip()
     except (KeyboardInterrupt, EOFError):
         return None
 

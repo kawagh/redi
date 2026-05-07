@@ -14,6 +14,14 @@ _FLOAT_PATTERN = re.compile(r"-?\d+(\.\d+)?")
 _INT_PATTERN = re.compile(r"-?\d+")
 
 
+class RequiredValidator(Validator):
+    """空文字（空白のみを含む）を拒否する Validator。"""
+
+    def validate(self, document: Document) -> None:
+        if not document.text.strip():
+            raise ValidationError(message=messages.error_input_required)
+
+
 class UrlValidator(Validator):
     """http:// または https:// で始まるURLを許容するValidator。
 

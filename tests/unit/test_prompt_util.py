@@ -14,6 +14,7 @@ from redi.cli.prompt_util import (
     FloatValidator,
     HourValidator,
     IntValidator,
+    RequiredValidator,
     UrlValidator,
     digit_and_period_key_bindings,
     digit_only_key_bindings,
@@ -87,6 +88,23 @@ class TestDigitOnlyKeyBindings:
     def test_rejected_input_preserves_existing_text(self):
         """拒否された入力は既存バッファを変更しない"""
         assert _invoke(digit_only_key_bindings(), ".", initial="12") == "12"
+
+
+class TestRequiredValidator:
+    """RequiredValidator()は空文字（空白のみ）を拒否する"""
+
+    @pytest.mark.parametrize("text", ["a", "  hello  ", "0", "あ"])
+    def test_non_empty_passes(self, text: str):
+        """非空白文字を含む入力は通る"""
+        RequiredValidator().validate(Document(text=text))
+
+    @pytest.mark.parametrize("text", ["", " ", "   ", "\t"])
+    def test_empty_or_whitespace_raises_required(self, text: str):
+        """空文字や空白のみは『入力してください』でエラーになる"""
+        with pytest.raises(
+            ValidationError, match=re.escape(messages.error_input_required)
+        ):
+            RequiredValidator().validate(Document(text=text))
 
 
 class TestUrlValidator:

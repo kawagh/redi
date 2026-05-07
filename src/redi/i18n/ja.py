@@ -266,7 +266,7 @@ class Ja(MessagesProto):
     # ---- prompt validators ----
     error_input_required = "入力してください"
     error_url_format = "http:// または https:// で始まるURLを入力してください"
-    error_date_format = "YYYY-MM-DD で入力してください（空文字でクリア）"
+    error_date_format = "YYYY-MM-DD で入力してください"
     error_date_after_start = "開始日 {date} 以降の日付を入力してください"
     error_numeric_required = "数値を入力してください"
     error_page_title_required = "ページタイトルを入力してください"
