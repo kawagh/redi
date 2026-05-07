@@ -510,7 +510,7 @@ def _prompt_custom_field_value(
     multiple = custom_field["multiple"]
     label = messages.prompt_required_field.format(name=name)
 
-    # not support All formats
+    # attachment はブラウザに委ねる
     # キーバリューリスト
     if field_format == "enumeration":
         possible_values = custom_field.get("possible_values") or []

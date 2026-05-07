@@ -1,5 +1,5 @@
 import json
-from typing import NotRequired, TypedDict, cast
+from typing import NotRequired, TypedDict, cast, Literal
 
 from redi import cache
 from redi.client import client
@@ -13,7 +13,23 @@ class CustomField(TypedDict):
     name: str
     description: str
     customized_type: str  # ex. issue
-    field_format: str  # ex. enumeration, list, etc...
+    field_format: Literal[
+        # キーバリューリスト
+        "enumeration",
+        # テキスト
+        "string",
+        "version",
+        "attachment",
+        "user",
+        "list",
+        "link",
+        "float",
+        "int",
+        "date",
+        "progressbar",
+        # 長いテキスト
+        "text",
+    ]
     regexp: str
     min_length: int | None
     max_length: int | None
