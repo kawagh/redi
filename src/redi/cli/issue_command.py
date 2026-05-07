@@ -504,7 +504,7 @@ def _shorten_to_oneline(text: str, max_len: int = 80) -> str:
 def _prompt_custom_field_value(
     custom_field: CustomField,
     project_id: str,
-) -> str | list[str] | object | None:
+) -> str | list[str] | object:
     name = custom_field["name"]
     field_format = custom_field["field_format"]
     multiple = custom_field["multiple"]
@@ -520,21 +520,18 @@ def _prompt_custom_field_value(
             if pv.get("value", "") != ""
         ]
         if not options:
-            return None
+            return _SKIP_UNSUPPORTED_FIELD
         label_map = dict(options)
-        try:
-            if multiple:
-                # 空選択は受け付けず、最低 1 つチェックされるまで再表示する
-                while True:
-                    checked = inline_checkbox(label, options)
-                    if checked:
-                        break
-                display = ", ".join(label_map[k] for k in checked)
-                print(messages.prompt_field_value.format(name=name, value=display))
-                return checked
-            key = inline_choice(label, options)
-        except KeyboardInterrupt:
-            return None
+        if multiple:
+            # 空選択は受け付けず、最低 1 つチェックされるまで再表示する
+            while True:
+                checked = inline_checkbox(label, options)
+                if checked:
+                    break
+            display = ", ".join(label_map[k] for k in checked)
+            print(messages.prompt_field_value.format(name=name, value=display))
+            return checked
+        key = inline_choice(label, options)
         print(messages.prompt_field_value.format(name=name, value=label_map[key]))
         return key
 
@@ -543,20 +540,17 @@ def _prompt_custom_field_value(
         users = fetch_project_users(project_id)
         options = [(str(u["id"]), u.get("name", "")) for u in users]
         if not options:
-            return None
+            return _SKIP_UNSUPPORTED_FIELD
         label_map = dict(options)
-        try:
-            if multiple:
-                while True:
-                    checked = inline_checkbox(label, options)
-                    if checked:
-                        break
-                display = ", ".join(label_map[k] for k in checked)
-                print(messages.prompt_field_value.format(name=name, value=display))
-                return checked
-            key = inline_choice(label, options)
-        except KeyboardInterrupt:
-            return None
+        if multiple:
+            while True:
+                checked = inline_checkbox(label, options)
+                if checked:
+                    break
+            display = ", ".join(label_map[k] for k in checked)
+            print(messages.prompt_field_value.format(name=name, value=display))
+            return checked
+        key = inline_choice(label, options)
         print(messages.prompt_field_value.format(name=name, value=label_map[key]))
         return key
 
@@ -565,20 +559,17 @@ def _prompt_custom_field_value(
         versions = fetch_versions(project_id)
         options = [(str(v["id"]), v["name"]) for v in versions]
         if not options:
-            return None
+            return _SKIP_UNSUPPORTED_FIELD
         label_map = dict(options)
-        try:
-            if multiple:
-                while True:
-                    checked = inline_checkbox(label, options)
-                    if checked:
-                        break
-                display = ", ".join(label_map[k] for k in checked)
-                print(messages.prompt_field_value.format(name=name, value=display))
-                return checked
-            key = inline_choice(label, options)
-        except KeyboardInterrupt:
-            return None
+        if multiple:
+            while True:
+                checked = inline_checkbox(label, options)
+                if checked:
+                    break
+            display = ", ".join(label_map[k] for k in checked)
+            print(messages.prompt_field_value.format(name=name, value=display))
+            return checked
+        key = inline_choice(label, options)
         print(messages.prompt_field_value.format(name=name, value=label_map[key]))
         return key
 
@@ -589,10 +580,7 @@ def _prompt_custom_field_value(
             ("0", messages.label_bool_false),
         ]
         bool_label_map = dict(bool_options)
-        try:
-            key = inline_choice(label, bool_options)
-        except KeyboardInterrupt:
-            return None
+        key = inline_choice(label, bool_options)
         print(messages.prompt_field_value.format(name=name, value=bool_label_map[key]))
         return key
 
@@ -600,10 +588,7 @@ def _prompt_custom_field_value(
     if field_format == "text":
         # 空のまま閉じられたらエディタを開き直す
         while True:
-            try:
-                value = open_editor()
-            except (KeyboardInterrupt, EOFError):
-                return None
+            value = open_editor()
             if value:
                 print(
                     messages.prompt_field_value.format(
@@ -614,48 +599,33 @@ def _prompt_custom_field_value(
 
     # 日付
     if field_format == "date":
-        try:
-            value = prompt(
-                messages.prompt_custom_field_label.format(name=label),
-                validator=DateValidator(),
-            ).strip()
-        except (KeyboardInterrupt, EOFError):
-            return None
-        return value
+        return prompt(
+            messages.prompt_custom_field_label.format(name=label),
+            validator=DateValidator(),
+        ).strip()
 
     # 進捗 (0-100% の 10% 刻み)
     if field_format == "progressbar":
         progress_options: list[tuple[str, str]] = [
             (str(r), f"{r}%") for r in range(0, 101, 10)
         ]
-        try:
-            value = inline_choice(label, progress_options)
-        except KeyboardInterrupt:
-            return None
+        value = inline_choice(label, progress_options)
         print(messages.prompt_field_value.format(name=name, value=f"{value}%"))
         return value
 
     # 整数
     if field_format == "int":
-        try:
-            value = prompt(
-                messages.prompt_custom_field_label.format(name=label),
-                validator=IntValidator(),
-            ).strip()
-        except (KeyboardInterrupt, EOFError):
-            return None
-        return value
+        return prompt(
+            messages.prompt_custom_field_label.format(name=label),
+            validator=IntValidator(),
+        ).strip()
 
     # 小数
     if field_format == "float":
-        try:
-            value = prompt(
-                messages.prompt_custom_field_label.format(name=label),
-                validator=FloatValidator(),
-            ).strip()
-        except (KeyboardInterrupt, EOFError):
-            return None
-        return value
+        return prompt(
+            messages.prompt_custom_field_label.format(name=label),
+            validator=FloatValidator(),
+        ).strip()
 
     # リスト
     if field_format == "list":
@@ -666,21 +636,18 @@ def _prompt_custom_field_value(
             if pv.get("value", "") != ""
         ]
         if options:
-            try:
-                if multiple:
-                    while True:
-                        checked = inline_checkbox(label, options)
-                        if checked:
-                            break
-                    print(
-                        messages.prompt_field_value.format(
-                            name=name, value=", ".join(checked)
-                        )
+            if multiple:
+                while True:
+                    checked = inline_checkbox(label, options)
+                    if checked:
+                        break
+                print(
+                    messages.prompt_field_value.format(
+                        name=name, value=", ".join(checked)
                     )
-                    return checked
-                value = inline_choice(label, options)
-            except KeyboardInterrupt:
-                return None
+                )
+                return checked
+            value = inline_choice(label, options)
             print(messages.prompt_field_value.format(name=name, value=value))
             return value
 
@@ -690,13 +657,10 @@ def _prompt_custom_field_value(
         return _SKIP_UNSUPPORTED_FIELD
 
     # 自由入力(string,link)
-    try:
-        return prompt(
-            messages.prompt_custom_field_label.format(name=label),
-            validator=RequiredValidator(),
-        ).strip()
-    except (KeyboardInterrupt, EOFError):
-        return None
+    return prompt(
+        messages.prompt_custom_field_label.format(name=label),
+        validator=RequiredValidator(),
+    ).strip()
 
 
 def _interactive_fill_required_custom_fields(
@@ -725,13 +689,14 @@ def _interactive_fill_required_custom_fields(
     for cf in required:
         if cf["id"] in existing_ids:
             continue
-        value = _prompt_custom_field_value(cf, project_id)
+        try:
+            value = _prompt_custom_field_value(cf, project_id)
+        except (KeyboardInterrupt, EOFError):
+            print(messages.canceled)
+            exit(1)
         if value is _SKIP_UNSUPPORTED_FIELD:
             browser_only = True
             continue
-        if value is None:
-            print(messages.canceled)
-            exit(1)
         if isinstance(value, list):
             for v in value:
                 added.append(f"{cf['id']}={v}")
