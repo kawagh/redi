@@ -511,139 +511,142 @@ def _prompt_custom_field_value(
     label = messages.prompt_required_field.format(name=name)
     default_value = custom_field.get("default_value") or ""
 
-    # attachment はブラウザに委ねる
-    # キーバリューリスト
-    if field_format == "enumeration":
-        possible_values = custom_field.get("possible_values") or []
-        options: list[tuple[str, str]] = [
-            (str(pv.get("value", "")), str(pv.get("label", "")))
-            for pv in possible_values
-            if pv.get("value", "") != ""
-        ]
-        if not options:
-            return _SKIP_UNSUPPORTED_FIELD
-        label_map = dict(options)
-        if multiple:
-            # 空選択は受け付けず、最低 1 つチェックされるまで再表示する
-            while True:
-                checked = inline_checkbox(
-                    label,
-                    options,
-                    initial_checked=[default_value] if default_value else None,
-                )
-                if checked:
-                    break
-            display = ", ".join(label_map[k] for k in checked)
-            print(messages.prompt_field_value.format(name=name, value=display))
-            return checked
-        key = inline_choice(label, options, default=default_value or None)
-        print(messages.prompt_field_value.format(name=name, value=label_map[key]))
-        return key
-
-    # ユーザー
-    if field_format == "user":
-        users = fetch_project_users(project_id)
-        options = [(str(u["id"]), u.get("name", "")) for u in users]
-        if not options:
-            return _SKIP_UNSUPPORTED_FIELD
-        label_map = dict(options)
-        if multiple:
-            while True:
-                checked = inline_checkbox(label, options)
-                if checked:
-                    break
-            display = ", ".join(label_map[k] for k in checked)
-            print(messages.prompt_field_value.format(name=name, value=display))
-            return checked
-        key = inline_choice(label, options)
-        print(messages.prompt_field_value.format(name=name, value=label_map[key]))
-        return key
-
-    # バージョン
-    if field_format == "version":
-        versions = fetch_versions(project_id)
-        options = [(str(v["id"]), v["name"]) for v in versions]
-        if not options:
-            return _SKIP_UNSUPPORTED_FIELD
-        label_map = dict(options)
-        if multiple:
-            while True:
-                checked = inline_checkbox(label, options)
-                if checked:
-                    break
-            display = ", ".join(label_map[k] for k in checked)
-            print(messages.prompt_field_value.format(name=name, value=display))
-            return checked
-        key = inline_choice(label, options)
-        print(messages.prompt_field_value.format(name=name, value=label_map[key]))
-        return key
-
-    # 真偽値
-    if field_format == "bool":
-        bool_options: list[tuple[str, str]] = [
-            ("1", messages.label_bool_true),
-            ("0", messages.label_bool_false),
-        ]
-        bool_label_map = dict(bool_options)
-        key = inline_choice(label, bool_options, default=default_value or None)
-        print(messages.prompt_field_value.format(name=name, value=bool_label_map[key]))
-        return key
-
-    # 長いテキスト
-    if field_format == "text":
-        # 空のまま閉じられたらエディタを開き直す
-        while True:
-            value = open_editor(initial_text=default_value)
-            if value:
-                print(
-                    messages.prompt_field_value.format(
-                        name=name, value=_shorten_to_oneline(value)
+    match field_format:
+        # キーバリューリスト
+        case "enumeration":
+            possible_values = custom_field.get("possible_values") or []
+            options: list[tuple[str, str]] = [
+                (str(pv.get("value", "")), str(pv.get("label", "")))
+                for pv in possible_values
+                if pv.get("value", "") != ""
+            ]
+            if not options:
+                return _SKIP_UNSUPPORTED_FIELD
+            label_map = dict(options)
+            if multiple:
+                # 空選択は受け付けず、最低 1 つチェックされるまで再表示する
+                while True:
+                    checked = inline_checkbox(
+                        label,
+                        options,
+                        initial_checked=[default_value] if default_value else None,
                     )
-                )
-                return value
+                    if checked:
+                        break
+                display = ", ".join(label_map[k] for k in checked)
+                print(messages.prompt_field_value.format(name=name, value=display))
+                return checked
+            key = inline_choice(label, options, default=default_value or None)
+            print(messages.prompt_field_value.format(name=name, value=label_map[key]))
+            return key
 
-    # 日付
-    if field_format == "date":
-        return prompt(
-            messages.prompt_custom_field_label.format(name=label),
-            validator=DateValidator(),
-            default=default_value,
-        ).strip()
+        # ユーザー
+        case "user":
+            users = fetch_project_users(project_id)
+            options = [(str(u["id"]), u.get("name", "")) for u in users]
+            if not options:
+                return _SKIP_UNSUPPORTED_FIELD
+            label_map = dict(options)
+            if multiple:
+                while True:
+                    checked = inline_checkbox(label, options)
+                    if checked:
+                        break
+                display = ", ".join(label_map[k] for k in checked)
+                print(messages.prompt_field_value.format(name=name, value=display))
+                return checked
+            key = inline_choice(label, options)
+            print(messages.prompt_field_value.format(name=name, value=label_map[key]))
+            return key
 
-    # 進捗 (0-100% の 10% 刻み)
-    if field_format == "progressbar":
-        progress_options: list[tuple[str, str]] = [
-            (str(r), f"{r}%") for r in range(0, 101, 10)
-        ]
-        value = inline_choice(label, progress_options)
-        print(messages.prompt_field_value.format(name=name, value=f"{value}%"))
-        return value
+        # バージョン
+        case "version":
+            versions = fetch_versions(project_id)
+            options = [(str(v["id"]), v["name"]) for v in versions]
+            if not options:
+                return _SKIP_UNSUPPORTED_FIELD
+            label_map = dict(options)
+            if multiple:
+                while True:
+                    checked = inline_checkbox(label, options)
+                    if checked:
+                        break
+                display = ", ".join(label_map[k] for k in checked)
+                print(messages.prompt_field_value.format(name=name, value=display))
+                return checked
+            key = inline_choice(label, options)
+            print(messages.prompt_field_value.format(name=name, value=label_map[key]))
+            return key
 
-    # 整数
-    if field_format == "int":
-        return prompt(
-            messages.prompt_custom_field_label.format(name=label),
-            validator=IntValidator(),
-            default=default_value,
-        ).strip()
+        # 真偽値
+        case "bool":
+            bool_options: list[tuple[str, str]] = [
+                ("1", messages.label_bool_true),
+                ("0", messages.label_bool_false),
+            ]
+            bool_label_map = dict(bool_options)
+            key = inline_choice(label, bool_options, default=default_value or None)
+            print(
+                messages.prompt_field_value.format(name=name, value=bool_label_map[key])
+            )
+            return key
 
-    # 小数
-    if field_format == "float":
-        return prompt(
-            messages.prompt_custom_field_label.format(name=label),
-            validator=FloatValidator(),
-            default=default_value,
-        ).strip()
+        # 長いテキスト
+        case "text":
+            # 空のまま閉じられたらエディタを開き直す
+            while True:
+                value = open_editor(initial_text=default_value)
+                if value:
+                    print(
+                        messages.prompt_field_value.format(
+                            name=name, value=_shorten_to_oneline(value)
+                        )
+                    )
+                    return value
 
-    # リスト
-    if field_format == "list":
-        possible = custom_field.get("possible_values") or []
-        options: list[tuple[str, str]] = [
-            (str(pv.get("value", "")), str(pv.get("value", "")))
-            for pv in possible
-            if pv.get("value", "") != ""
-        ]
-        if options:
+        # 日付
+        case "date":
+            return prompt(
+                messages.prompt_custom_field_label.format(name=label),
+                validator=DateValidator(),
+                default=default_value,
+            ).strip()
+
+        # 進捗 (0-100% の 10% 刻み)
+        case "progressbar":
+            progress_options: list[tuple[str, str]] = [
+                (str(r), f"{r}%") for r in range(0, 101, 10)
+            ]
+            value = inline_choice(label, progress_options)
+            print(messages.prompt_field_value.format(name=name, value=f"{value}%"))
+            return value
+
+        # 整数
+        case "int":
+            return prompt(
+                messages.prompt_custom_field_label.format(name=label),
+                validator=IntValidator(),
+                default=default_value,
+            ).strip()
+
+        # 小数
+        case "float":
+            return prompt(
+                messages.prompt_custom_field_label.format(name=label),
+                validator=FloatValidator(),
+                default=default_value,
+            ).strip()
+
+        # リスト
+        case "list":
+            possible = custom_field.get("possible_values") or []
+            options = [
+                (str(pv.get("value", "")), str(pv.get("value", "")))
+                for pv in possible
+                if pv.get("value", "") != ""
+            ]
+            if not options:
+                return _SKIP_UNSUPPORTED_FIELD
             if multiple:
                 while True:
                     checked = inline_checkbox(
@@ -663,17 +666,18 @@ def _prompt_custom_field_value(
             print(messages.prompt_field_value.format(name=name, value=value))
             return value
 
-    # ファイル添付は redi 側で対応していないため、呼び出し側に「ブラウザで編集」を強制させる
-    if field_format == "attachment":
-        print(messages.attachment_field_unsupported_notice.format(name=name))
-        return _SKIP_UNSUPPORTED_FIELD
+        # ファイル添付は redi 側で対応していないため、呼び出し側に「ブラウザで編集」を強制させる
+        case "attachment":
+            print(messages.attachment_field_unsupported_notice.format(name=name))
+            return _SKIP_UNSUPPORTED_FIELD
 
-    # 自由入力(string,link)
-    return prompt(
-        messages.prompt_custom_field_label.format(name=label),
-        validator=RequiredValidator(),
-        default=default_value,
-    ).strip()
+        # 自由入力(string,link)。未知のフォーマット
+        case _:
+            return prompt(
+                messages.prompt_custom_field_label.format(name=label),
+                validator=RequiredValidator(),
+                default=default_value,
+            ).strip()
 
 
 def _interactive_fill_required_custom_fields(
