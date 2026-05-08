@@ -9,6 +9,11 @@ from prompt_toolkit.validation import Validator
 
 from redi.cli.alias import resolve_alias
 from redi.cli.editor import open_editor
+from redi.cli.keybinding import (
+    date_key_bindings,
+    digit_and_period_key_bindings,
+    digit_only_key_bindings,
+)
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.confirm import confirm_delete
 from redi.cli.validator import (
@@ -782,7 +787,9 @@ def _interactive_fill_optional_create_fields(
             )
         if "parent_issue" in selected:
             value = prompt(
-                messages.prompt_parent_issue_id, validator=optional_int_validator
+                messages.prompt_parent_issue_id,
+                validator=optional_int_validator,
+                key_bindings=digit_only_key_bindings(),
             ).strip()
             args.parent_issue_id = value or None
         if "start_date" in selected:
@@ -790,6 +797,7 @@ def _interactive_fill_optional_create_fields(
                 messages.prompt_start_date,
                 default=date.today().isoformat(),
                 validator=optional_date_validator,
+                key_bindings=date_key_bindings(),
             ).strip()
             args.start_date = value or None
         if "due_date" in selected:
@@ -802,11 +810,14 @@ def _interactive_fill_optional_create_fields(
             value = prompt(
                 messages.prompt_due_date,
                 validator=DueDateValidator(start_date_obj),
+                key_bindings=date_key_bindings(),
             ).strip()
             args.due_date = value or None
         if "estimated_hours" in selected:
             value = prompt(
-                messages.prompt_estimated_hours, validator=optional_hour_validator
+                messages.prompt_estimated_hours,
+                validator=optional_hour_validator,
+                key_bindings=digit_and_period_key_bindings(),
             ).strip()
             if value:
                 args.estimated_hours = float(value)

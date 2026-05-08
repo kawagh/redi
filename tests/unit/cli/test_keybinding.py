@@ -4,6 +4,7 @@ import pytest
 from prompt_toolkit.buffer import Buffer
 
 from redi.cli.keybinding import (
+    date_key_bindings,
     digit_and_period_key_bindings,
     digit_only_key_bindings,
 )
@@ -75,3 +76,33 @@ class TestDigitOnlyKeyBindings:
     def test_rejected_input_preserves_existing_text(self):
         """拒否された入力は既存バッファを変更しない"""
         assert _invoke(digit_only_key_bindings(), ".", initial="12") == "12"
+
+
+class TestDateKeyBindings:
+    """date_key_bindings()は数字とハイフンのみを入力可能にする"""
+
+    @pytest.mark.parametrize("ch", list("0123456789"))
+    def test_digits_are_inserted(self, ch: str):
+        """数字はすべてバッファに挿入される"""
+        assert _invoke(date_key_bindings(), ch) == ch
+
+    def test_hyphen_is_inserted(self):
+        """ハイフンはバッファに挿入される"""
+        assert _invoke(date_key_bindings(), "-") == "-"
+
+    def test_period_is_rejected(self):
+        """periodはバッファに挿入されない"""
+        assert _invoke(date_key_bindings(), ".") == ""
+
+    @pytest.mark.parametrize("ch", ["a", "Z", "+", " ", ",", "/", "*", "."])
+    def test_non_digit_non_hyphen_are_rejected(self, ch: str):
+        """数字とハイフン以外はバッファに挿入されない"""
+        assert _invoke(date_key_bindings(), ch) == ""
+
+    def test_appends_to_existing_text(self):
+        """既存のバッファ内容の末尾に追加される"""
+        assert _invoke(date_key_bindings(), "5", initial="2026-05-0") == "2026-05-05"
+
+    def test_rejected_input_preserves_existing_text(self):
+        """拒否された入力は既存バッファを変更しない"""
+        assert _invoke(date_key_bindings(), "a", initial="2026-05") == "2026-05"
