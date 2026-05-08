@@ -49,6 +49,7 @@ from redi.api.custom_field import (
     CustomField,
     fetch_custom_fields,
     fetch_project_issue_custom_field_ids,
+    filter_optional_issue_custom_fields,
     filter_required_issue_custom_fields,
 )
 
@@ -717,9 +718,17 @@ def _interactive_fill_required_custom_fields(
 
 
 def _interactive_fill_optional_create_fields(
-    args: argparse.Namespace, project_id: str
-) -> None:
-    """submit/browser の分岐前に、任意項目を選択して入力させる。"""
+    args: argparse.Namespace,
+    project_id: str,
+    tracker_id: str | None,
+    custom_fields: str | None,
+) -> str | None:
+    """アクションメニューから「任意項目を入力する」を選んだときの入力フロー。
+
+    標準項目（担当者・対象バージョン・親チケット・開始日・期日・予定工数）に加えて
+    任意のカスタムフィールドも選択肢に並べる。入力された CF 値を含めた更新後の
+    custom_fields 文字列を返す。
+    """
     field_options: list[tuple[str, str]] = [
         ("assigned_to", messages.field_assignee),
         ("fixed_version", messages.field_fixed_version),
@@ -728,6 +737,23 @@ def _interactive_fill_optional_create_fields(
         ("due_date", messages.field_due_date),
         ("estimated_hours", messages.field_estimated_hours),
     ]
+    optional_cfs: list[CustomField] = []
+    all_cfs = fetch_custom_fields()
+    if all_cfs is not None:
+        existing_ids: set[int] = set()
+        if custom_fields:
+            for pair in custom_fields.split(","):
+                existing_ids.add(int(pair.split("=")[0]))
+        project_cf_ids = fetch_project_issue_custom_field_ids(project_id)
+        optional_cfs = [
+            cf
+            for cf in filter_optional_issue_custom_fields(
+                all_cfs, project_cf_ids, tracker_id
+            )
+            if cf["id"] not in existing_ids
+        ]
+        for cf in optional_cfs:
+            field_options.append((f"cf_{cf['id']}", cf["name"]))
     try:
         selected = inline_checkbox(
             messages.prompt_select_create_optional_items,
@@ -737,7 +763,8 @@ def _interactive_fill_optional_create_fields(
         print(messages.canceled)
         exit(1)
     if not selected:
-        return
+        return custom_fields
+    added_cfs: list[str] = []
     try:
         if "assigned_to" in selected:
             users = fetch_project_users(project_id)
@@ -803,9 +830,25 @@ def _interactive_fill_optional_create_fields(
             ).strip()
             if value:
                 args.estimated_hours = float(value)
+        for cf in optional_cfs:
+            if f"cf_{cf['id']}" not in selected:
+                continue
+            cf_value = _prompt_custom_field_value(cf, project_id)
+            if cf_value is _SKIP_UNSUPPORTED_FIELD:
+                continue
+            if isinstance(cf_value, list):
+                for v in cf_value:
+                    added_cfs.append(f"{cf['id']}={v}")
+            else:
+                added_cfs.append(f"{cf['id']}={cf_value}")
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         exit(1)
+    if not added_cfs:
+        return custom_fields
+    if custom_fields:
+        return custom_fields + "," + ",".join(added_cfs)
+    return ",".join(added_cfs)
 
 
 def handle_issue_create(args: argparse.Namespace) -> None:
@@ -879,7 +922,9 @@ def handle_issue_create(args: argparse.Namespace) -> None:
                 print(messages.canceled)
                 exit(1)
             if action == "optional":
-                _interactive_fill_optional_create_fields(args, project_id)
+                custom_fields = _interactive_fill_optional_create_fields(
+                    args, project_id, tracker_id, custom_fields
+                )
                 continue
             if action == "browser":
                 url = _build_create_issue_url(
