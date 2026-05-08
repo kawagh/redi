@@ -226,7 +226,7 @@ class Ja(MessagesProto):
     prompt_select_assignee_none = "（担当者なし）"
     prompt_select_fixed_version = "対象バージョン"
     prompt_select_fixed_version_none = "（対象バージョンなし）"
-    prompt_parent_issue_id = "親チケットID（空文字でクリア）: "
+    prompt_parent_issue_id = "親チケットID（省略可）: "
     prompt_select_create_optional_items = (
         "入力する任意項目を選択 (Spaceで選択、Enterで確定、何も選ばずEnterでスキップ)"
     )
@@ -238,8 +238,8 @@ class Ja(MessagesProto):
     prompt_select_default_profile_to_set = (
         "デフォルトプロファイルとして設定するプロファイルを選択"
     )
-    prompt_start_date = "開始日（YYYY-MM-DD、空文字でクリア）: "
-    prompt_due_date = "期日（YYYY-MM-DD、空文字でクリア）: "
+    prompt_start_date = "開始日（YYYY-MM-DD、省略可）: "
+    prompt_due_date = "期日（YYYY-MM-DD、省略可）: "
     prompt_estimated_hours = "予定工数（例: 1.5 (h)）: "
     prompt_hours = "作業時間（例: 1.5 (h)）: "
     prompt_spent_on = "作業日（YYYY-MM-DD、省略で今日）: "
