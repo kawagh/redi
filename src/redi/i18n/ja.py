@@ -222,6 +222,11 @@ class Ja(MessagesProto):
     prompt_select_assignee = "担当者"
     prompt_select_assignee_none = "（担当者なし）"
     prompt_select_fixed_version = "対象バージョン"
+    prompt_select_fixed_version_none = "（対象バージョンなし）"
+    prompt_parent_issue_id = "親チケットID（省略可）: "
+    prompt_select_create_optional_items = (
+        "入力する任意項目を選択 (Spaceで選択、Enterで確定、何も選ばずEnterでスキップ)"
+    )
     prompt_select_activity = "作業分類"
     prompt_select_done_ratio = "進捗率"
     prompt_select_sharing = "共有設定"
@@ -230,8 +235,8 @@ class Ja(MessagesProto):
     prompt_select_default_profile_to_set = (
         "デフォルトプロファイルとして設定するプロファイルを選択"
     )
-    prompt_start_date = "開始日（YYYY-MM-DD、空文字でクリア）: "
-    prompt_due_date = "期日（YYYY-MM-DD、空文字でクリア）: "
+    prompt_start_date = "開始日（YYYY-MM-DD、省略可）: "
+    prompt_due_date = "期日（YYYY-MM-DD、省略可）: "
     prompt_estimated_hours = "予定工数（例: 1.5 (h)）: "
     prompt_hours = "作業時間（例: 1.5 (h)）: "
     prompt_spent_on = "作業日（YYYY-MM-DD、省略で今日）: "
@@ -258,6 +263,7 @@ class Ja(MessagesProto):
     label_bool_false = "いいえ"
     prompt_what_next = "次のアクションを選択してください"
     action_submit = "送信する"
+    action_fill_optional = "任意項目を入力する"
     action_continue_in_browser = "ブラウザで編集する"
     attachment_field_unsupported_notice = (
         "{name}: 添付ファイル型はサポート対象外のためブラウザでの編集が必要です"
@@ -281,6 +287,7 @@ class Ja(MessagesProto):
     field_priority = "優先度 (priority)"
     field_assignee = "担当者 (assigned_to)"
     field_fixed_version = "対象バージョン (fixed_version)"
+    field_parent_issue = "親チケット (parent_issue)"
     field_start_date = "開始日 (start_date)"
     field_due_date = "期日 (due_date)"
     field_done_ratio = "進捗率 (done_ratio)"

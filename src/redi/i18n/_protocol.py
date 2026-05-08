@@ -326,6 +326,9 @@ class MessagesProto(Protocol):
     prompt_select_assignee: str
     prompt_select_assignee_none: str
     prompt_select_fixed_version: str
+    prompt_select_fixed_version_none: str
+    prompt_parent_issue_id: str
+    prompt_select_create_optional_items: str
     prompt_select_activity: str
     prompt_select_done_ratio: str
     prompt_select_sharing: str
@@ -366,6 +369,8 @@ class MessagesProto(Protocol):
     """イシュー作成時に次のアクションを選ばせるメニューのタイトル"""
     action_submit: str
     """prompt_what_next の選択肢: そのまま送信"""
+    action_fill_optional: str
+    """prompt_what_next の選択肢: 任意項目を入力する"""
     action_continue_in_browser: str
     """prompt_what_next の選択肢: ブラウザで続きを編集"""
     attachment_field_unsupported_notice: str
@@ -390,6 +395,7 @@ class MessagesProto(Protocol):
     field_priority: str
     field_assignee: str
     field_fixed_version: str
+    field_parent_issue: str
     field_start_date: str
     field_due_date: str
     field_done_ratio: str

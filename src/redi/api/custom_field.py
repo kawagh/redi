@@ -107,3 +107,28 @@ def filter_required_issue_custom_fields(
                 continue
         result.append(cf)
     return result
+
+
+def filter_optional_issue_custom_fields(
+    custom_fields: list[CustomField],
+    project_cf_ids: set[int],
+    tracker_id: str | None,
+) -> list[CustomField]:
+    """
+    入力任意・プロジェクト/トラッカーに該当するイシュー用カスタムフィールドを抽出する。
+    """
+    result = []
+    for cf in custom_fields:
+        if cf.get("customized_type") != "issue":
+            continue
+        if cf.get("is_required"):
+            continue
+        if cf["id"] not in project_cf_ids:
+            continue
+        trackers = cf.get("trackers") or []
+        if trackers and tracker_id is not None:
+            tracker_ids = {str(t["id"]) for t in trackers}
+            if str(tracker_id) not in tracker_ids:
+                continue
+        result.append(cf)
+    return result

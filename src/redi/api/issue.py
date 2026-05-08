@@ -257,6 +257,11 @@ def create_issue(
     tracker_id: str | None = None,
     priority_id: str | None = None,
     assigned_to_id: str | None = None,
+    fixed_version_id: str | None = None,
+    parent_issue_id: str | None = None,
+    start_date: str | None = None,
+    due_date: str | None = None,
+    estimated_hours: float | None = None,
     custom_fields: str | None = None,
 ) -> None:
     """イシューを作成する
@@ -276,6 +281,16 @@ def create_issue(
         issue_data["priority_id"] = priority_id
     if assigned_to_id:
         issue_data["assigned_to_id"] = assigned_to_id
+    if fixed_version_id:
+        issue_data["fixed_version_id"] = fixed_version_id
+    if parent_issue_id:
+        issue_data["parent_issue_id"] = parent_issue_id
+    if start_date:
+        issue_data["start_date"] = start_date
+    if due_date:
+        issue_data["due_date"] = due_date
+    if estimated_hours is not None:
+        issue_data["estimated_hours"] = estimated_hours
     if custom_fields:
         issue_data["custom_fields"] = parse_custom_fields(custom_fields)
     response = client.post("/issues.json", json={"issue": issue_data})
