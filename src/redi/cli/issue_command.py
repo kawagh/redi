@@ -8,7 +8,7 @@ from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
 
 from redi.cli.alias import resolve_alias
-from redi.cli.util import open_editor
+from redi.cli.editor import open_editor
 from redi.cli.prompt_util import (
     confirm_delete,
     inline_checkbox,

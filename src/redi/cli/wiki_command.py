@@ -4,7 +4,7 @@ from prompt_toolkit import prompt
 from prompt_toolkit.validation import ValidationError, Validator
 
 from redi.cli.alias import resolve_alias
-from redi.cli.util import open_editor
+from redi.cli.editor import open_editor
 from redi.cli.prompt_util import confirm_delete, inline_choice
 from redi.config import default_project_id, wiki_project_id
 from redi.i18n import messages
