@@ -785,8 +785,6 @@ def _interactive_fill_optional_create_fields(
                 messages.prompt_parent_issue_id, validator=optional_int_validator
             ).strip()
             args.parent_issue_id = value or None
-            if args.parent_issue_id:
-                print(messages.parent_issue_label.format(value=args.parent_issue_id))
         if "start_date" in selected:
             value = prompt(
                 messages.prompt_start_date,
@@ -794,8 +792,6 @@ def _interactive_fill_optional_create_fields(
                 validator=optional_date_validator,
             ).strip()
             args.start_date = value or None
-            if args.start_date:
-                print(messages.start_date_label.format(value=args.start_date))
         if "due_date" in selected:
             start_date_obj: date | None = None
             if args.start_date:
@@ -808,15 +804,12 @@ def _interactive_fill_optional_create_fields(
                 validator=DueDateValidator(start_date_obj),
             ).strip()
             args.due_date = value or None
-            if args.due_date:
-                print(messages.due_date_label.format(value=args.due_date))
         if "estimated_hours" in selected:
             value = prompt(
                 messages.prompt_estimated_hours, validator=optional_hour_validator
             ).strip()
             if value:
                 args.estimated_hours = float(value)
-                print(messages.estimated_hours_label.format(value=args.estimated_hours))
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         exit(1)
