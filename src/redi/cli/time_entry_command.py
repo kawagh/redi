@@ -4,7 +4,7 @@ from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.validation import Validator
 
-from redi.cli.common import resolve_alias
+from redi.cli.alias import resolve_alias
 from redi.cli.prompt_util import (
     HourValidator,
     confirm_delete,

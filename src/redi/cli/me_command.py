@@ -1,6 +1,6 @@
 import argparse
 
-from redi.cli.common import resolve_alias
+from redi.cli.alias import resolve_alias
 from redi.i18n import messages
 from redi.api.me import read_my_account, update_my_account
 

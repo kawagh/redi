@@ -7,7 +7,8 @@ from datetime import date
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
 
-from redi.cli.common import open_editor, resolve_alias
+from redi.cli.alias import resolve_alias
+from redi.cli.util import open_editor
 from redi.cli.prompt_util import (
     DateValidator,
     DueDateValidator,

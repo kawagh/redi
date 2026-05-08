@@ -1,7 +1,7 @@
 import argparse
 
 from redi.api.file import create_file, list_files
-from redi.cli.common import resolve_alias
+from redi.cli.alias import resolve_alias
 from redi.config import default_project_id
 from redi.i18n import messages
 
