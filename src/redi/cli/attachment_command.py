@@ -6,7 +6,8 @@ from redi.api.attachment import (
     read_attachment,
     update_attachment,
 )
-from redi.cli._common import confirm_delete, resolve_alias
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
 from redi.i18n import messages
 
 

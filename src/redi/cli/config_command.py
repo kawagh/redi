@@ -1,6 +1,7 @@
 import argparse
 
-from redi.cli._common import inline_choice, resolve_alias
+from redi.cli.alias import resolve_alias
+from redi.cli.picker import inline_choice
 from redi.config import (
     SUPPORTED_LANGUAGES,
     create_profile,

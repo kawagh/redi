@@ -7,14 +7,11 @@ from datetime import date
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
 
-from redi.cli._common import (
-    confirm_delete,
-    inline_checkbox,
-    inline_choice,
-    open_editor,
-    resolve_alias,
-)
-from redi.cli.prompt_util import (
+from redi.cli.alias import resolve_alias
+from redi.cli.editor import open_editor
+from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.confirm import confirm_delete
+from redi.cli.validator import (
     DateValidator,
     DueDateValidator,
     FloatValidator,

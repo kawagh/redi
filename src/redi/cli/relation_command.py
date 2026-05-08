@@ -1,7 +1,7 @@
 import argparse
 
 from redi.api.issue_relation import read_relation
-from redi.cli._common import resolve_alias
+from redi.cli.alias import resolve_alias
 from redi.i18n import messages
 
 

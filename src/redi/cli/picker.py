@@ -1,60 +1,7 @@
-import os
-import subprocess
-import tempfile
-
-from prompt_toolkit import Application, prompt
+from prompt_toolkit import Application
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import HSplit, Layout, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
-
-from redi.config import editor
-from redi.i18n import messages
-
-
-def confirm_delete(summary: str) -> None:
-    print(summary)
-    try:
-        confirm = prompt(messages.prompt_confirm_delete).strip().lower()
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        exit(1)
-    if confirm != "yes":
-        print(messages.canceled)
-        exit(1)
-
-
-def confirm_delete_with_identifier(
-    summary: str, expected: str, field_label: str
-) -> None:
-    print(summary)
-    try:
-        entered = prompt(
-            messages.prompt_confirm_delete_with_identifier.format(
-                label=field_label, expected=expected
-            )
-        ).strip()
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        exit(1)
-    if entered != expected:
-        print(messages.canceled_field_mismatch.format(field=field_label))
-        exit(1)
-
-
-SUBCOMMAND_ALIASES: dict[str, str] = {
-    "v": "view",
-    "c": "create",
-    "u": "update",
-    "co": "comment",
-    "d": "delete",
-    "l": "list",
-}
-
-
-def resolve_alias(command: str | None) -> str | None:
-    if command is None:
-        return None
-    return SUBCOMMAND_ALIASES.get(command, command)
 
 
 def inline_checkbox(
@@ -197,22 +144,3 @@ def inline_choice(
         erase_when_done=True,
     )
     return app.run()
-
-
-def open_editor(initial_text: str = "") -> str:
-    with tempfile.NamedTemporaryFile(suffix=".md", mode="w+", delete=False) as f:
-        if initial_text:
-            f.write(initial_text)
-        tmp_path = f.name
-    try:
-        if editor == "code":
-            # wait to close file
-            editor_command = ["code", "--wait"]
-        else:
-            editor_command = [editor]
-
-        subprocess.run([*editor_command, tmp_path], check=True)
-        with open(tmp_path) as f:
-            return f.read().strip()
-    finally:
-        os.unlink(tmp_path)
