@@ -5,13 +5,8 @@ from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.validation import Validator
 
 from redi.cli.alias import resolve_alias
-from redi.cli.prompt_util import (
-    confirm_delete,
-    digit_and_period_key_bindings,
-    digit_only_key_bindings,
-    inline_checkbox,
-    inline_choice,
-)
+from redi.cli.keybinding import digit_and_period_key_bindings, digit_only_key_bindings
+from redi.cli.prompt_util import confirm_delete, inline_checkbox, inline_choice
 from redi.cli.validator import HourValidator
 from redi.config import default_project_id
 from redi.i18n import messages
