@@ -109,6 +109,17 @@ class TestHourValidator:
         ):
             HourValidator().validate(Document(text=text))
 
+    def test_allow_empty_passes_empty(self):
+        """allow_empty=True の場合、空文字は通る"""
+        HourValidator(allow_empty=True).validate(Document(text=""))
+
+    def test_allow_empty_still_rejects_invalid(self):
+        """allow_empty=True でも数値以外はエラーになる"""
+        with pytest.raises(
+            ValidationError, match=re.escape(messages.error_numeric_required)
+        ):
+            HourValidator(allow_empty=True).validate(Document(text="abc"))
+
 
 class TestIntValidator:
     """IntValidator()は符号付き整数を許容する"""
@@ -132,6 +143,17 @@ class TestIntValidator:
             ValidationError, match=re.escape(messages.error_numeric_required)
         ):
             IntValidator().validate(Document(text=text))
+
+    def test_allow_empty_passes_empty(self):
+        """allow_empty=True の場合、空文字は通る"""
+        IntValidator(allow_empty=True).validate(Document(text=""))
+
+    def test_allow_empty_still_rejects_invalid(self):
+        """allow_empty=True でも整数以外はエラーになる"""
+        with pytest.raises(
+            ValidationError, match=re.escape(messages.error_numeric_required)
+        ):
+            IntValidator(allow_empty=True).validate(Document(text="1.5"))
 
 
 class TestFloatValidator:
@@ -194,6 +216,15 @@ class TestDateValidator:
         """形式は合っていてもカレンダー上不正な日付は形式エラーになる"""
         with pytest.raises(ValidationError, match="YYYY-MM-DD"):
             DateValidator().validate(Document(text=text))
+
+    def test_allow_empty_passes_empty(self):
+        """allow_empty=True の場合、空文字は通る"""
+        DateValidator(allow_empty=True).validate(Document(text=""))
+
+    def test_allow_empty_still_rejects_invalid_format(self):
+        """allow_empty=True でも YYYY-MM-DD 以外は形式エラーになる"""
+        with pytest.raises(ValidationError, match="YYYY-MM-DD"):
+            DateValidator(allow_empty=True).validate(Document(text="2026/04/26"))
 
 
 class TestDueDateValidator:

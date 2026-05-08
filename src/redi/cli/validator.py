@@ -39,10 +39,18 @@ class UrlValidator(Validator):
 
 
 class HourValidator(Validator):
-    """工数入力用の Validator。整数または小数1個を含む数値のみ許容する。"""
+    """工数入力用の Validator。整数または小数1個を含む数値のみ許容する。
+
+    allow_empty=True の場合は空文字も許容する。
+    """
+
+    def __init__(self, allow_empty: bool = False) -> None:
+        self.allow_empty = allow_empty
 
     def validate(self, document: Document) -> None:
         text = document.text
+        if text == "" and self.allow_empty:
+            return
         if not text.replace(".", "", 1).isdigit():
             raise ValidationError(message=messages.error_numeric_required)
 
@@ -63,20 +71,34 @@ class IntValidator(Validator):
     """カスタムフィールド int 形式用の Validator。
 
     符号付き整数（負の値も許容）を受け付ける。
+    allow_empty=True の場合は空文字も許容する。
     """
+
+    def __init__(self, allow_empty: bool = False) -> None:
+        self.allow_empty = allow_empty
 
     def validate(self, document: Document) -> None:
         text = document.text.strip()
+        if text == "" and self.allow_empty:
+            return
         if not _INT_PATTERN.fullmatch(text):
             raise ValidationError(message=messages.error_numeric_required)
 
 
 class DateValidator(Validator):
-    """YYYY-MM-DD 形式の日付のみを許容する Validator。"""
+    """YYYY-MM-DD 形式の日付のみを許容する Validator。
+
+    allow_empty=True の場合は空文字も許容する。
+    """
+
+    def __init__(self, allow_empty: bool = False) -> None:
+        self.allow_empty = allow_empty
 
     def validate(self, document: Document) -> None:
         text = document.text.strip()
         if text == "":
+            if self.allow_empty:
+                return
             raise ValidationError(message=messages.error_input_required)
         if not _DATE_PATTERN.fullmatch(text):
             raise ValidationError(message=messages.error_date_format)
@@ -91,17 +113,14 @@ class DueDateValidator(Validator):
 
     def __init__(self, start_date: date | None) -> None:
         self.start_date = start_date
+        self._date_validator = DateValidator(allow_empty=True)
 
     def validate(self, document: Document) -> None:
+        self._date_validator.validate(document)
         text = document.text.strip()
         if text == "":
             return
-        if not _DATE_PATTERN.fullmatch(text):
-            raise ValidationError(message=messages.error_date_format)
-        try:
-            d = date.fromisoformat(text)
-        except ValueError:
-            raise ValidationError(message=messages.error_date_format)
+        d = date.fromisoformat(text)
         if self.start_date and d < self.start_date:
             raise ValidationError(
                 message=messages.error_date_after_start.format(

@@ -1,11 +1,9 @@
 import argparse
-import re
 import urllib.parse
 import webbrowser
 from datetime import date
 
 from prompt_toolkit import prompt
-from prompt_toolkit.validation import Validator
 
 from redi.cli.alias import resolve_alias
 from redi.cli.editor import open_editor
@@ -441,15 +439,11 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
                     value=version_labels[args.fixed_version_id]
                 )
             )
-        date_validator = Validator.from_callable(
-            lambda v: v == "" or bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", v)),
-            error_message=messages.error_date_format,
-        )
         if "start_date" in selected:
             args.start_date = prompt(
                 messages.prompt_start_date,
                 default=current.get("start_date") or date.today().isoformat(),
-                validator=date_validator,
+                validator=DateValidator(allow_empty=True),
             ).strip()
         if "due_date" in selected:
             effective_start = (
@@ -744,18 +738,6 @@ def _interactive_fill_optional_create_fields(
         exit(1)
     if not selected:
         return
-    optional_date_validator = Validator.from_callable(
-        lambda v: v == "" or bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", v)),
-        error_message=messages.error_date_format,
-    )
-    optional_int_validator = Validator.from_callable(
-        lambda v: v == "" or v.lstrip("-").isdigit(),
-        error_message=messages.error_numeric_required,
-    )
-    optional_hour_validator = Validator.from_callable(
-        lambda v: v == "" or v.replace(".", "", 1).isdigit(),
-        error_message=messages.error_numeric_required,
-    )
     try:
         if "assigned_to" in selected:
             users = fetch_project_users(project_id)
@@ -788,7 +770,7 @@ def _interactive_fill_optional_create_fields(
         if "parent_issue" in selected:
             value = prompt(
                 messages.prompt_parent_issue_id,
-                validator=optional_int_validator,
+                validator=IntValidator(allow_empty=True),
                 key_bindings=digit_only_key_bindings(),
             ).strip()
             args.parent_issue_id = value or None
@@ -796,7 +778,7 @@ def _interactive_fill_optional_create_fields(
             value = prompt(
                 messages.prompt_start_date,
                 default=date.today().isoformat(),
-                validator=optional_date_validator,
+                validator=DateValidator(allow_empty=True),
                 key_bindings=date_key_bindings(),
             ).strip()
             args.start_date = value or None
@@ -816,7 +798,7 @@ def _interactive_fill_optional_create_fields(
         if "estimated_hours" in selected:
             value = prompt(
                 messages.prompt_estimated_hours,
-                validator=optional_hour_validator,
+                validator=HourValidator(allow_empty=True),
                 key_bindings=digit_and_period_key_bindings(),
             ).strip()
             if value:
