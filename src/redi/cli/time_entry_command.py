@@ -4,7 +4,7 @@ from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.validation import Validator
 
-from redi.cli._common import (
+from redi.cli.common import (
     confirm_delete,
     inline_checkbox,
     inline_choice,

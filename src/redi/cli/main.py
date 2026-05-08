@@ -18,7 +18,7 @@ from redi.cli.enumerations_command import (
     add_time_entry_activity_parser,
     add_tracker_parser,
 )
-from redi.cli._common import open_editor
+from redi.cli.common import open_editor
 from redi.cli.group_command import add_group_parser, handle_group
 from redi.cli.init_command import add_init_parser, handle_init
 from redi.cli.issue_category_command import (

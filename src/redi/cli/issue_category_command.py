@@ -1,6 +1,6 @@
 import argparse
 
-from redi.cli._common import confirm_delete, resolve_alias
+from redi.cli.common import confirm_delete, resolve_alias
 from redi.config import default_project_id
 from redi.i18n import messages
 from redi.api.issue_category import (

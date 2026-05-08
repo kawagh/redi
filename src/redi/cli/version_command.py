@@ -7,7 +7,7 @@ from prompt_toolkit.keys import Keys
 from prompt_toolkit.shortcuts import choice
 from prompt_toolkit.validation import Validator
 
-from redi.cli._common import (
+from redi.cli.common import (
     confirm_delete,
     inline_checkbox,
     inline_choice,

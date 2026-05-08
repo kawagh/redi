@@ -1,6 +1,6 @@
 import argparse
 
-from redi.cli._common import confirm_delete, resolve_alias
+from redi.cli.common import confirm_delete, resolve_alias
 from redi.i18n import messages
 from redi.api.group import (
     add_group_user,
