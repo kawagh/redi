@@ -8,7 +8,6 @@ from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
 
 from redi.cli.common import (
-    confirm_delete,
     inline_checkbox,
     inline_choice,
     open_editor,
@@ -21,6 +20,7 @@ from redi.cli.prompt_util import (
     HourValidator,
     IntValidator,
     RequiredValidator,
+    confirm_delete,
 )
 from redi.config import default_project_id, redmine_url
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities

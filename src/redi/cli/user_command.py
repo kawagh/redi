@@ -1,6 +1,7 @@
 import argparse
 
-from redi.cli.common import confirm_delete_with_identifier, resolve_alias
+from redi.cli.common import resolve_alias
+from redi.cli.prompt_util import confirm_delete_with_identifier
 from redi.i18n import messages
 from redi.api.user import (
     create_user,
