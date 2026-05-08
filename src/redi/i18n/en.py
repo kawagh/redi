@@ -189,6 +189,9 @@ class En(MessagesProto):
     priority_label = "Priority: {value}"
     assignee_label = "Assignee: {value}"
     fixed_version_label = "Fixed version: {value}"
+    parent_issue_label = "Parent issue: {value}"
+    start_date_label = "Start date: {value}"
+    due_date_label = "Due date: {value}"
     done_ratio_label = "Done ratio: {value}%"
     estimated_hours_label = "Estimated hours: {value} h"
 
@@ -220,6 +223,12 @@ class En(MessagesProto):
     prompt_select_assignee = "Assignee"
     prompt_select_assignee_none = "(no assignee)"
     prompt_select_fixed_version = "Fixed version"
+    prompt_select_fixed_version_none = "(no fixed version)"
+    prompt_parent_issue_id = "Parent issue ID (empty to clear): "
+    prompt_select_create_optional_items = (
+        "Select optional items to fill in"
+        " (Space to toggle, Enter to confirm, Enter without selecting to skip)"
+    )
     prompt_select_activity = "Activity"
     prompt_select_done_ratio = "Done ratio"
     prompt_select_sharing = "Sharing"
@@ -277,6 +286,7 @@ class En(MessagesProto):
     field_priority = "priority"
     field_assignee = "assigned_to"
     field_fixed_version = "fixed_version"
+    field_parent_issue = "parent_issue"
     field_start_date = "start_date"
     field_due_date = "due_date"
     field_done_ratio = "done_ratio"

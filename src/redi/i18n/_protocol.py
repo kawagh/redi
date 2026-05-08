@@ -291,6 +291,12 @@ class MessagesProto(Protocol):
     """{value}"""
     fixed_version_label: str
     """{value}"""
+    parent_issue_label: str
+    """{value}"""
+    start_date_label: str
+    """{value}"""
+    due_date_label: str
+    """{value}"""
     done_ratio_label: str
     """{value}"""
     estimated_hours_label: str
@@ -326,6 +332,9 @@ class MessagesProto(Protocol):
     prompt_select_assignee: str
     prompt_select_assignee_none: str
     prompt_select_fixed_version: str
+    prompt_select_fixed_version_none: str
+    prompt_parent_issue_id: str
+    prompt_select_create_optional_items: str
     prompt_select_activity: str
     prompt_select_done_ratio: str
     prompt_select_sharing: str
@@ -390,6 +399,7 @@ class MessagesProto(Protocol):
     field_priority: str
     field_assignee: str
     field_fixed_version: str
+    field_parent_issue: str
     field_start_date: str
     field_due_date: str
     field_done_ratio: str

@@ -128,6 +128,19 @@ def add_issue_parser(
         "--assigned_to_id", "-a", help=messages.arg_help_issue_assigned_to_id
     )
     i_create_parser.add_argument(
+        "--fixed_version_id", help=messages.arg_help_issue_fixed_version_id
+    )
+    i_create_parser.add_argument(
+        "--parent_issue_id", help=messages.arg_help_issue_parent
+    )
+    i_create_parser.add_argument(
+        "--start_date", help=messages.arg_help_issue_start_date
+    )
+    i_create_parser.add_argument("--due_date", help=messages.arg_help_issue_due_date)
+    i_create_parser.add_argument(
+        "--estimated_hours", type=float, help=messages.arg_help_issue_estimated_hours
+    )
+    i_create_parser.add_argument(
         "--description",
         "-d",
         nargs="?",
@@ -251,6 +264,11 @@ def _build_create_issue_url(
     tracker_id: str | None = None,
     priority_id: str | None = None,
     assigned_to_id: str | None = None,
+    fixed_version_id: str | None = None,
+    parent_issue_id: str | None = None,
+    start_date: str | None = None,
+    due_date: str | None = None,
+    estimated_hours: float | None = None,
     custom_fields: str | None = None,
 ) -> str:
     params: list[tuple[str, str]] = []
@@ -264,6 +282,16 @@ def _build_create_issue_url(
         params.append(("issue[priority_id]", priority_id))
     if assigned_to_id:
         params.append(("issue[assigned_to_id]", assigned_to_id))
+    if fixed_version_id:
+        params.append(("issue[fixed_version_id]", fixed_version_id))
+    if parent_issue_id:
+        params.append(("issue[parent_issue_id]", parent_issue_id))
+    if start_date:
+        params.append(("issue[start_date]", start_date))
+    if due_date:
+        params.append(("issue[due_date]", due_date))
+    if estimated_hours is not None:
+        params.append(("issue[estimated_hours]", str(estimated_hours)))
     if custom_fields:
         for cf in parse_custom_fields(custom_fields):
             value = cf["value"]
@@ -689,6 +717,111 @@ def _interactive_fill_required_custom_fields(
     return ",".join(added), browser_only
 
 
+def _interactive_fill_optional_create_fields(
+    args: argparse.Namespace, project_id: str
+) -> None:
+    """submit/browser の分岐前に、任意項目を選択して入力させる。"""
+    field_options: list[tuple[str, str]] = [
+        ("assigned_to", messages.field_assignee),
+        ("fixed_version", messages.field_fixed_version),
+        ("parent_issue", messages.field_parent_issue),
+        ("start_date", messages.field_start_date),
+        ("due_date", messages.field_due_date),
+        ("estimated_hours", messages.field_estimated_hours),
+    ]
+    try:
+        selected = inline_checkbox(
+            messages.prompt_select_create_optional_items,
+            field_options,
+        )
+    except KeyboardInterrupt:
+        print(messages.canceled)
+        exit(1)
+    if not selected:
+        return
+    optional_date_validator = Validator.from_callable(
+        lambda v: v == "" or bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", v)),
+        error_message=messages.error_date_format,
+    )
+    optional_int_validator = Validator.from_callable(
+        lambda v: v == "" or v.lstrip("-").isdigit(),
+        error_message=messages.error_numeric_required,
+    )
+    optional_hour_validator = Validator.from_callable(
+        lambda v: v == "" or v.replace(".", "", 1).isdigit(),
+        error_message=messages.error_numeric_required,
+    )
+    try:
+        if "assigned_to" in selected:
+            users = fetch_project_users(project_id)
+            assignee_options: list[tuple[str, str]] = [
+                ("", messages.prompt_select_assignee_none)
+            ] + [(str(u["id"]), u.get("name", "")) for u in users]
+            assignee_labels = dict(assignee_options)
+            args.assigned_to_id = inline_choice(
+                messages.prompt_select_assignee, assignee_options
+            )
+            print(
+                messages.assignee_label.format(
+                    value=assignee_labels[args.assigned_to_id]
+                )
+            )
+        if "fixed_version" in selected:
+            versions = fetch_versions(project_id)
+            version_options: list[tuple[str, str]] = [
+                ("", messages.prompt_select_fixed_version_none)
+            ] + [(str(v["id"]), f"{v['name']} ({v['status']})") for v in versions]
+            version_labels = dict(version_options)
+            args.fixed_version_id = inline_choice(
+                messages.prompt_select_fixed_version, version_options
+            )
+            print(
+                messages.fixed_version_label.format(
+                    value=version_labels[args.fixed_version_id]
+                )
+            )
+        if "parent_issue" in selected:
+            value = prompt(
+                messages.prompt_parent_issue_id, validator=optional_int_validator
+            ).strip()
+            args.parent_issue_id = value or None
+            if args.parent_issue_id:
+                print(messages.parent_issue_label.format(value=args.parent_issue_id))
+        if "start_date" in selected:
+            value = prompt(
+                messages.prompt_start_date,
+                default=date.today().isoformat(),
+                validator=optional_date_validator,
+            ).strip()
+            args.start_date = value or None
+            if args.start_date:
+                print(messages.start_date_label.format(value=args.start_date))
+        if "due_date" in selected:
+            start_date_obj: date | None = None
+            if args.start_date:
+                try:
+                    start_date_obj = date.fromisoformat(args.start_date)
+                except ValueError:
+                    start_date_obj = None
+            value = prompt(
+                messages.prompt_due_date,
+                validator=DueDateValidator(start_date_obj),
+            ).strip()
+            args.due_date = value or None
+            if args.due_date:
+                print(messages.due_date_label.format(value=args.due_date))
+        if "estimated_hours" in selected:
+            value = prompt(
+                messages.prompt_estimated_hours, validator=optional_hour_validator
+            ).strip()
+            if value:
+                args.estimated_hours = float(value)
+                print(messages.estimated_hours_label.format(value=args.estimated_hours))
+    except (KeyboardInterrupt, EOFError):
+        print(messages.canceled)
+        exit(1)
+
+
 def handle_issue_create(args: argparse.Namespace) -> None:
     project_id = args.project_id or default_project_id
     if not project_id:
@@ -728,6 +861,8 @@ def handle_issue_create(args: argparse.Namespace) -> None:
             tracker_id=tracker_id,
             existing=args.custom_fields,
         )
+        # 任意項目を選択して対話的に入力（担当者・対象バージョン・親チケット・開始日・期日・予定工数）
+        _interactive_fill_optional_create_fields(args, project_id)
     if args.description is None:
         description = open_editor()
         if description:
@@ -762,6 +897,11 @@ def handle_issue_create(args: argparse.Namespace) -> None:
                 tracker_id=tracker_id,
                 priority_id=args.priority_id,
                 assigned_to_id=args.assigned_to_id,
+                fixed_version_id=args.fixed_version_id,
+                parent_issue_id=args.parent_issue_id,
+                start_date=args.start_date,
+                due_date=args.due_date,
+                estimated_hours=args.estimated_hours,
                 custom_fields=custom_fields,
             )
             webbrowser.open(url)
@@ -773,6 +913,11 @@ def handle_issue_create(args: argparse.Namespace) -> None:
         tracker_id=tracker_id,
         priority_id=args.priority_id,
         assigned_to_id=args.assigned_to_id,
+        fixed_version_id=args.fixed_version_id,
+        parent_issue_id=args.parent_issue_id,
+        start_date=args.start_date,
+        due_date=args.due_date,
+        estimated_hours=args.estimated_hours,
         custom_fields=custom_fields,
     )
 

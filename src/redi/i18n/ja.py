@@ -191,6 +191,9 @@ class Ja(MessagesProto):
     priority_label = "優先度: {value}"
     assignee_label = "担当者: {value}"
     fixed_version_label = "対象バージョン: {value}"
+    parent_issue_label = "親チケット: {value}"
+    start_date_label = "開始日: {value}"
+    due_date_label = "期日: {value}"
     done_ratio_label = "進捗率: {value}%"
     estimated_hours_label = "予定工数: {value} h"
 
@@ -222,6 +225,11 @@ class Ja(MessagesProto):
     prompt_select_assignee = "担当者"
     prompt_select_assignee_none = "（担当者なし）"
     prompt_select_fixed_version = "対象バージョン"
+    prompt_select_fixed_version_none = "（対象バージョンなし）"
+    prompt_parent_issue_id = "親チケットID（空文字でクリア）: "
+    prompt_select_create_optional_items = (
+        "入力する任意項目を選択 (Spaceで選択、Enterで確定、何も選ばずEnterでスキップ)"
+    )
     prompt_select_activity = "作業分類"
     prompt_select_done_ratio = "進捗率"
     prompt_select_sharing = "共有設定"
@@ -281,6 +289,7 @@ class Ja(MessagesProto):
     field_priority = "優先度 (priority)"
     field_assignee = "担当者 (assigned_to)"
     field_fixed_version = "対象バージョン (fixed_version)"
+    field_parent_issue = "親チケット (parent_issue)"
     field_start_date = "開始日 (start_date)"
     field_due_date = "期日 (due_date)"
     field_done_ratio = "進捗率 (done_ratio)"
