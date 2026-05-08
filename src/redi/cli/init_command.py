@@ -5,8 +5,7 @@ import requests
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
 
-from redi.cli.common import inline_choice
-from redi.cli.prompt_util import UrlValidator
+from redi.cli.prompt_util import UrlValidator, inline_choice
 from redi.config import CONFIG_PATH, create_profile
 from redi.i18n import messages
 
