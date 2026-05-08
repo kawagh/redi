@@ -263,6 +263,7 @@ class En(MessagesProto):
     label_bool_false = "No"
     prompt_what_next = "What's next?"
     action_submit = "Submit"
+    action_fill_optional = "Fill in optional items"
     action_continue_in_browser = "Continue in browser"
     attachment_field_unsupported_notice = (
         "{name}: attachment-type fields are not supported; please edit in browser"

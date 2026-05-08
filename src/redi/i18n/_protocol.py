@@ -375,6 +375,8 @@ class MessagesProto(Protocol):
     """イシュー作成時に次のアクションを選ばせるメニューのタイトル"""
     action_submit: str
     """prompt_what_next の選択肢: そのまま送信"""
+    action_fill_optional: str
+    """prompt_what_next の選択肢: 任意項目を入力する"""
     action_continue_in_browser: str
     """prompt_what_next の選択肢: ブラウザで続きを編集"""
     attachment_field_unsupported_notice: str

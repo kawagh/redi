@@ -861,8 +861,6 @@ def handle_issue_create(args: argparse.Namespace) -> None:
             tracker_id=tracker_id,
             existing=args.custom_fields,
         )
-        # 任意項目を選択して対話的に入力（担当者・対象バージョン・親チケット・開始日・期日・予定工数）
-        _interactive_fill_optional_create_fields(args, project_id)
     if args.description is None:
         description = open_editor()
         if description:
@@ -876,36 +874,45 @@ def handle_issue_create(args: argparse.Namespace) -> None:
         description = args.description
     if interactive:
         # 添付ファイル必須など redi で送信できないケースは「ブラウザで編集」のみ提示する
-        action_options: list[tuple[str, str]] = (
-            [("browser", messages.action_continue_in_browser)]
-            if browser_only
-            else [
-                ("submit", messages.action_submit),
-                ("browser", messages.action_continue_in_browser),
-            ]
-        )
-        try:
-            action = inline_choice(messages.prompt_what_next, action_options)
-        except KeyboardInterrupt:
-            print(messages.canceled)
-            exit(1)
-        if action == "browser":
-            url = _build_create_issue_url(
-                project_id=project_id,
-                subject=subject,
-                description=description,
-                tracker_id=tracker_id,
-                priority_id=args.priority_id,
-                assigned_to_id=args.assigned_to_id,
-                fixed_version_id=args.fixed_version_id,
-                parent_issue_id=args.parent_issue_id,
-                start_date=args.start_date,
-                due_date=args.due_date,
-                estimated_hours=args.estimated_hours,
-                custom_fields=custom_fields,
+        while True:
+            action_options: list[tuple[str, str]] = (
+                [
+                    ("browser", messages.action_continue_in_browser),
+                    ("optional", messages.action_fill_optional),
+                ]
+                if browser_only
+                else [
+                    ("submit", messages.action_submit),
+                    ("browser", messages.action_continue_in_browser),
+                    ("optional", messages.action_fill_optional),
+                ]
             )
-            webbrowser.open(url)
-            return
+            try:
+                action = inline_choice(messages.prompt_what_next, action_options)
+            except KeyboardInterrupt:
+                print(messages.canceled)
+                exit(1)
+            if action == "optional":
+                _interactive_fill_optional_create_fields(args, project_id)
+                continue
+            if action == "browser":
+                url = _build_create_issue_url(
+                    project_id=project_id,
+                    subject=subject,
+                    description=description,
+                    tracker_id=tracker_id,
+                    priority_id=args.priority_id,
+                    assigned_to_id=args.assigned_to_id,
+                    fixed_version_id=args.fixed_version_id,
+                    parent_issue_id=args.parent_issue_id,
+                    start_date=args.start_date,
+                    due_date=args.due_date,
+                    estimated_hours=args.estimated_hours,
+                    custom_fields=custom_fields,
+                )
+                webbrowser.open(url)
+                return
+            break
     create_issue(
         project_id=project_id,
         subject=subject,

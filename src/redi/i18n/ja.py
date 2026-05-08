@@ -266,6 +266,7 @@ class Ja(MessagesProto):
     label_bool_false = "いいえ"
     prompt_what_next = "次のアクションを選択してください"
     action_submit = "送信する"
+    action_fill_optional = "任意項目を入力する"
     action_continue_in_browser = "ブラウザで編集する"
     attachment_field_unsupported_notice = (
         "{name}: 添付ファイル型はサポート対象外のためブラウザでの編集が必要です"
