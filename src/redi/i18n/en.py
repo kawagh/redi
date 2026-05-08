@@ -189,9 +189,6 @@ class En(MessagesProto):
     priority_label = "Priority: {value}"
     assignee_label = "Assignee: {value}"
     fixed_version_label = "Fixed version: {value}"
-    parent_issue_label = "Parent issue: {value}"
-    start_date_label = "Start date: {value}"
-    due_date_label = "Due date: {value}"
     done_ratio_label = "Done ratio: {value}%"
     estimated_hours_label = "Estimated hours: {value} h"
 

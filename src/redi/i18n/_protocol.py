@@ -291,12 +291,6 @@ class MessagesProto(Protocol):
     """{value}"""
     fixed_version_label: str
     """{value}"""
-    parent_issue_label: str
-    """{value}"""
-    start_date_label: str
-    """{value}"""
-    due_date_label: str
-    """{value}"""
     done_ratio_label: str
     """{value}"""
     estimated_hours_label: str

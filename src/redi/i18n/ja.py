@@ -191,9 +191,6 @@ class Ja(MessagesProto):
     priority_label = "優先度: {value}"
     assignee_label = "担当者: {value}"
     fixed_version_label = "対象バージョン: {value}"
-    parent_issue_label = "親チケット: {value}"
-    start_date_label = "開始日: {value}"
-    due_date_label = "期日: {value}"
     done_ratio_label = "進捗率: {value}%"
     estimated_hours_label = "予定工数: {value} h"
 
