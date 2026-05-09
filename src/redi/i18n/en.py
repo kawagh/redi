@@ -452,7 +452,12 @@ class En(MessagesProto):
     tui_time_entry_delete_failed = "Failed to delete time entry: {error}"
     tui_time_entry_delete_prompt = "Delete? {summary} [y/N]"
     tui_issue_delete_failed = "Failed to delete issue: {error}"
-    tui_issue_delete_prompt = "Delete? {summary} [y/N]"
+    tui_issue_delete_modal_title = "Confirm issue deletion"
+    tui_issue_delete_modal_target = "Target: #{id} {subject}"
+    tui_issue_delete_modal_prompt = 'Type issue_id "{expected}" to confirm deletion'
+    tui_issue_delete_modal_input_label = "issue_id> "
+    tui_issue_delete_modal_mismatch = "issue_id does not match"
+    tui_issue_delete_modal_hint = "[Enter] confirm  [Esc] cancel"
 
     # ---- argparse helps (root) ----
     arg_help_root_description = "Redmine CLI"

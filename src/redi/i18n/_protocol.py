@@ -604,8 +604,14 @@ class MessagesProto(Protocol):
     """{summary}"""
     tui_issue_delete_failed: str
     """{error}"""
-    tui_issue_delete_prompt: str
-    """{summary}"""
+    tui_issue_delete_modal_title: str
+    tui_issue_delete_modal_target: str
+    """{id}, {subject}"""
+    tui_issue_delete_modal_prompt: str
+    """{expected}"""
+    tui_issue_delete_modal_input_label: str
+    tui_issue_delete_modal_mismatch: str
+    tui_issue_delete_modal_hint: str
 
     # ---- argparse helps (root) ----
     arg_help_root_description: str

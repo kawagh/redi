@@ -25,6 +25,7 @@ from redi.config import default_project_id
 from redi.i18n import messages
 from redi.tui.issue_tab import (
     ISSUE_TAB,
+    close_delete_modal as issue_close_delete_modal,
     comment_select_cursor_down,
     comment_select_cursor_up,
     confirm_comment_delete,
@@ -33,9 +34,9 @@ from redi.tui.issue_tab import (
     exit_comment_select_mode,
     fetch_issues_with_filter,
     load_journals,
+    open_delete_modal as issue_open_delete_modal,
     reload_with_filter,
     request_comment_delete,
-    request_delete as issue_request_delete,
 )
 from redi.tui.state import (
     FIXED_ROWS,
@@ -233,6 +234,35 @@ def _render_filter_section(
     return parts
 
 
+def _render_issue_delete_modal(state: TuiState) -> Renderable:
+    modal = state.issue_tab.delete_modal
+    parts: Renderable = []
+    parts.append(
+        (
+            "",
+            messages.tui_issue_delete_modal_target.format(
+                id=modal.target_id, subject=modal.target_subject
+            )
+            + "\n\n",
+        )
+    )
+    parts.append(
+        (
+            "",
+            messages.tui_issue_delete_modal_prompt.format(expected=modal.target_id)
+            + "\n",
+        )
+    )
+    parts.append(("bold fg:ansicyan", messages.tui_issue_delete_modal_input_label))
+    parts.append(("reverse", modal.input_text or " "))
+    parts.append(("", "\n"))
+    if modal.mismatch:
+        parts.append(("fg:ansired", messages.tui_issue_delete_modal_mismatch + "\n"))
+    parts.append(("", "\n"))
+    parts.append(("", messages.tui_issue_delete_modal_hint))
+    return parts
+
+
 def _render_filter_modal(state: TuiState) -> Renderable:
     f = state.issue_tab.filter
     modal = state.issue_tab.filter_modal
@@ -370,6 +400,7 @@ def run_issue_tui(
             and not state.show_help
             and not state.issue_tab.filter_modal.show
             and not state.time_entry_tab.filter_modal.show
+            and not state.issue_tab.delete_modal.show
             and state.error_modal is None
             and not state.issue_tab.comment_select.active
         )
@@ -381,6 +412,7 @@ def run_issue_tui(
     show_time_entry_filter_modal = Condition(
         lambda: state.time_entry_tab.filter_modal.show
     )
+    show_issue_delete_modal = Condition(lambda: state.issue_tab.delete_modal.show)
     show_error_modal = Condition(lambda: state.error_modal is not None)
     comment_select_mode = Condition(
         lambda: (
@@ -600,12 +632,10 @@ def run_issue_tui(
         _clear_temporary_state()
         if state.tab == "time_entries":
             prompt = time_entry_request_delete(state)
+            if prompt is not None:
+                state.confirm_delete_prompt = prompt
         elif state.tab == "issues":
-            prompt = issue_request_delete(state)
-        else:
-            return
-        if prompt is not None:
-            state.confirm_delete_prompt = prompt
+            issue_open_delete_modal(state)
 
     @kb.add("R", filter=normal_mode)
     def _(event):
@@ -625,12 +655,34 @@ def run_issue_tui(
             if result is not None:
                 exit_comment_select_mode(state)
                 event.app.exit(result=result)
-        elif state.tab == "issues":
-            issue_confirm_delete(state)
 
     @kb.add("<any>", filter=confirm_delete_mode)
     def _(event):
         state.confirm_delete_prompt = None
+
+    @kb.add("enter", filter=show_issue_delete_modal)
+    def _(event):
+        issue_confirm_delete(state)
+
+    @kb.add("escape", filter=show_issue_delete_modal)
+    @kb.add("c-c", filter=show_issue_delete_modal)
+    def _(event):
+        issue_close_delete_modal(state)
+
+    @kb.add("backspace", filter=show_issue_delete_modal)
+    def _(event):
+        modal = state.issue_tab.delete_modal
+        if modal.input_text:
+            modal.input_text = modal.input_text[:-1]
+            modal.mismatch = False
+
+    @kb.add("<any>", filter=show_issue_delete_modal)
+    def _(event):
+        data = event.data
+        if data and len(data) == 1 and data.isdigit():
+            modal = state.issue_tab.delete_modal
+            modal.input_text += data
+            modal.mismatch = False
 
     @kb.add("q", filter=normal_mode)
     @kb.add("c-c", filter=normal_mode)
@@ -945,6 +997,28 @@ def run_issue_tui(
         ),
     )
 
+    issue_delete_float = Float(
+        content=ConditionalContainer(
+            content=VSplit(
+                [
+                    Window(width=1, char=" "),
+                    Frame(
+                        Window(
+                            FormattedTextControl(
+                                lambda: _render_issue_delete_modal(state),
+                                show_cursor=False,
+                            ),
+                            wrap_lines=False,
+                        ),
+                        title=lambda: messages.tui_issue_delete_modal_title,
+                    ),
+                    Window(width=1, char=" "),
+                ]
+            ),
+            filter=show_issue_delete_modal,
+        ),
+    )
+
     app = Application(
         layout=Layout(
             FloatContainer(
@@ -953,6 +1027,7 @@ def run_issue_tui(
                     help_float,
                     filter_float,
                     time_entry_filter_float,
+                    issue_delete_float,
                     error_float,
                 ],
             )

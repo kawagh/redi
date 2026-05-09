@@ -394,33 +394,64 @@ def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
             return
 
 
-def request_delete(state: TuiState) -> str | None:
-    """カーソル位置の issue 削除確認プロンプトを返す。対象がなければ None。"""
+def open_delete_modal(state: TuiState) -> bool:
+    """カーソル位置の issue を対象に削除確認 modal を開く。対象がなければ False。"""
     issues = state.issue_tab.issues
     if not issues:
-        return None
+        return False
     issue = issues[state.issue_tab.cursor]
-    summary = f"#{issue.get('id', '')} {issue.get('subject', '')}"
-    return messages.tui_issue_delete_prompt.format(summary=summary)
+    issue_id = issue.get("id")
+    if issue_id is None:
+        return False
+    modal = state.issue_tab.delete_modal
+    modal.show = True
+    modal.target_id = int(issue_id)
+    modal.target_subject = str(issue.get("subject", ""))
+    modal.input_text = ""
+    modal.mismatch = False
+    return True
+
+
+def close_delete_modal(state: TuiState) -> None:
+    """削除確認 modal を閉じて入力をクリアする。"""
+    modal = state.issue_tab.delete_modal
+    modal.show = False
+    modal.input_text = ""
+    modal.mismatch = False
 
 
 def confirm_delete(state: TuiState) -> None:
-    """カーソル位置の issue を削除する。失敗時は flash_message に出す。"""
+    """modal で入力された issue_id がカーソル行と一致したら削除する。
+
+    一致しない場合は modal.mismatch を立て、入力をクリアして再入力させる。
+    削除成功時は modal を閉じ、ローカルの issue 一覧から該当行を取り除く。
+    削除失敗時は modal を閉じて flash_message にエラーを出す。
+    """
+    modal = state.issue_tab.delete_modal
     issues = state.issue_tab.issues
     if not issues:
+        close_delete_modal(state)
         return
     cursor = state.issue_tab.cursor
     issue = issues[cursor]
+    expected = str(modal.target_id)
+    entered = modal.input_text.strip()
+    if entered != expected or str(issue.get("id")) != expected:
+        modal.mismatch = True
+        modal.input_text = ""
+        return
     try:
         response = client.delete(f"/issues/{issue['id']}.json")
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
+        close_delete_modal(state)
         state.flash_message = messages.tui_issue_delete_failed.format(error=e)
         return
     issues.pop(cursor)
     state.issue_tab.total_count = max(0, state.issue_tab.total_count - 1)
     if cursor >= len(issues):
         state.issue_tab.cursor = max(0, len(issues) - 1)
+    close_delete_modal(state)
 
 
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:

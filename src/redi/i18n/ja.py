@@ -457,7 +457,14 @@ class Ja(MessagesProto):
     tui_time_entry_delete_failed = "作業時間の削除に失敗しました: {error}"
     tui_time_entry_delete_prompt = "削除しますか? {summary} [y/N]"
     tui_issue_delete_failed = "イシューの削除に失敗しました: {error}"
-    tui_issue_delete_prompt = "削除しますか? {summary} [y/N]"
+    tui_issue_delete_modal_title = "イシュー削除の確認"
+    tui_issue_delete_modal_target = "対象: #{id} {subject}"
+    tui_issue_delete_modal_prompt = (
+        '削除を実行するには issue_id "{expected}" を入力してください'
+    )
+    tui_issue_delete_modal_input_label = "issue_id> "
+    tui_issue_delete_modal_mismatch = "issue_id が一致しません"
+    tui_issue_delete_modal_hint = "[Enter] 確定  [Esc] キャンセル"
 
     # ---- argparse helps (root) ----
     arg_help_root_description = "Redmine CLI"

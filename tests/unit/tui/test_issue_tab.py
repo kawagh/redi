@@ -4,7 +4,12 @@ import requests
 
 from redi.api.issue import Issue
 from redi.tui import issue_tab
-from redi.tui.issue_tab import _page_label, confirm_delete, request_delete
+from redi.tui.issue_tab import (
+    _page_label,
+    close_delete_modal,
+    confirm_delete,
+    open_delete_modal,
+)
 from redi.tui.state import TuiState
 
 
@@ -64,41 +69,56 @@ class _StubResponse:
             raise requests.exceptions.HTTPError(f"{self.status_code}")
 
 
-class TestRequestDelete:
-    """request_delete() は確認プロンプト文字列を返す"""
+class TestOpenDeleteModal:
+    """open_delete_modal() は対象 issue 情報をモーダル状態に書き込む"""
 
-    def test_returns_prompt_with_summary(self):
-        """カーソル位置の issue id / subject を summary として埋め込む"""
+    def test_opens_with_target_id_and_subject(self):
+        """カーソル位置の issue を target_id/target_subject に保持する"""
         state = TuiState()
-        state.issue_tab.issues = [
-            {"id": 11, "subject": "first"},
-            {"id": 22, "subject": "second"},
-        ]
+        state.issue_tab.issues = cast(
+            list[Issue],
+            [
+                {"id": 11, "subject": "first"},
+                {"id": 22, "subject": "second"},
+            ],
+        )
         state.issue_tab.cursor = 1
-        prompt = request_delete(state)
-        assert prompt is not None
-        assert "#22" in prompt
-        assert "second" in prompt
+        assert open_delete_modal(state) is True
+        modal = state.issue_tab.delete_modal
+        assert modal.show is True
+        assert modal.target_id == 22
+        assert modal.target_subject == "second"
+        assert modal.input_text == ""
+        assert modal.mismatch is False
 
-    def test_returns_none_when_empty(self):
-        """issues が空のときは None を返し、削除確認を出さない"""
+    def test_returns_false_when_empty(self):
+        """issues が空のときは modal を開かず False"""
         state = TuiState()
-        assert request_delete(state) is None
+        assert open_delete_modal(state) is False
+        assert state.issue_tab.delete_modal.show is False
 
 
 class TestConfirmDelete:
-    """confirm_delete() は API DELETE を発行してローカル一覧から取り除く"""
+    """confirm_delete() は modal の入力 id がカーソル行と一致したら削除する"""
 
-    def test_removes_cursor_entry_and_decrements_total(self, monkeypatch):
-        """成功時はカーソル行を pop し、total_count を 1 減らす"""
-        state = TuiState()
-        state.issue_tab.issues = [
-            {"id": 1, "subject": "a"},
-            {"id": 2, "subject": "b"},
-            {"id": 3, "subject": "c"},
-        ]
+    def _setup(self, state: TuiState, *, input_text: str) -> None:
+        state.issue_tab.issues = cast(
+            list[Issue],
+            [
+                {"id": 1, "subject": "a"},
+                {"id": 2, "subject": "b"},
+                {"id": 3, "subject": "c"},
+            ],
+        )
         state.issue_tab.cursor = 1
         state.issue_tab.total_count = 3
+        open_delete_modal(state)
+        state.issue_tab.delete_modal.input_text = input_text
+
+    def test_removes_cursor_entry_when_id_matches(self, monkeypatch):
+        """入力が target_id と一致すれば DELETE を発行し pop / total_count -1"""
+        state = TuiState()
+        self._setup(state, input_text="2")
 
         called: dict = {}
 
@@ -113,14 +133,33 @@ class TestConfirmDelete:
         assert [i["id"] for i in state.issue_tab.issues] == [1, 3]
         assert state.issue_tab.total_count == 2
         assert state.issue_tab.cursor == 1
+        assert state.issue_tab.delete_modal.show is False
         assert state.flash_message is None
+
+    def test_mismatch_keeps_modal_open_and_clears_input(self, monkeypatch):
+        """入力が一致しなければ削除せず mismatch=True で再入力を促す"""
+        state = TuiState()
+        self._setup(state, input_text="9")
+
+        def fail(path: str):
+            raise AssertionError("DELETE should not be called on mismatch")
+
+        monkeypatch.setattr(issue_tab.client, "delete", fail)
+        confirm_delete(state)
+
+        assert [i["id"] for i in state.issue_tab.issues] == [1, 2, 3]
+        assert state.issue_tab.delete_modal.show is True
+        assert state.issue_tab.delete_modal.mismatch is True
+        assert state.issue_tab.delete_modal.input_text == ""
 
     def test_clamps_cursor_when_deleting_last(self, monkeypatch):
         """末尾を削除した場合、cursor を新しい末尾にクランプする"""
         state = TuiState()
-        state.issue_tab.issues = [{"id": 1}, {"id": 2}]
+        state.issue_tab.issues = cast(list[Issue], [{"id": 1}, {"id": 2}])
         state.issue_tab.cursor = 1
         state.issue_tab.total_count = 2
+        open_delete_modal(state)
+        state.issue_tab.delete_modal.input_text = "2"
 
         monkeypatch.setattr(issue_tab.client, "delete", lambda path: _StubResponse(204))
         confirm_delete(state)
@@ -128,12 +167,14 @@ class TestConfirmDelete:
         assert [i["id"] for i in state.issue_tab.issues] == [1]
         assert state.issue_tab.cursor == 0
 
-    def test_sets_flash_message_on_failure(self, monkeypatch):
-        """API エラー時は flash_message にメッセージを入れ、一覧は変更しない"""
+    def test_sets_flash_message_on_api_failure(self, monkeypatch):
+        """API エラー時は modal を閉じ、flash_message にメッセージを出す"""
         state = TuiState()
-        state.issue_tab.issues = [{"id": 1, "subject": "a"}]
+        state.issue_tab.issues = cast(list[Issue], [{"id": 1, "subject": "a"}])
         state.issue_tab.cursor = 0
         state.issue_tab.total_count = 1
+        open_delete_modal(state)
+        state.issue_tab.delete_modal.input_text = "1"
 
         def fake_delete(path: str):
             raise requests.exceptions.ConnectionError("boom")
@@ -143,16 +184,23 @@ class TestConfirmDelete:
 
         assert state.issue_tab.issues == [{"id": 1, "subject": "a"}]
         assert state.issue_tab.total_count == 1
+        assert state.issue_tab.delete_modal.show is False
         assert state.flash_message is not None
         assert "boom" in state.flash_message
 
-    def test_noop_when_empty(self, monkeypatch):
-        """issues が空なら API を呼ばずに何もしない"""
+
+class TestCloseDeleteModal:
+    """close_delete_modal() は modal を閉じて入力をクリアする"""
+
+    def test_clears_state(self):
         state = TuiState()
+        state.issue_tab.issues = cast(list[Issue], [{"id": 1, "subject": "a"}])
+        open_delete_modal(state)
+        state.issue_tab.delete_modal.input_text = "12"
+        state.issue_tab.delete_modal.mismatch = True
 
-        def fail(path: str):
-            raise AssertionError("should not be called")
+        close_delete_modal(state)
 
-        monkeypatch.setattr(issue_tab.client, "delete", fail)
-        confirm_delete(state)
-        assert state.issue_tab.issues == []
+        assert state.issue_tab.delete_modal.show is False
+        assert state.issue_tab.delete_modal.input_text == ""
+        assert state.issue_tab.delete_modal.mismatch is False
