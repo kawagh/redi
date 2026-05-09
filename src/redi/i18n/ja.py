@@ -456,6 +456,8 @@ class Ja(MessagesProto):
     tui_time_entry_load_failed = "作業時間の取得に失敗しました: {error}"
     tui_time_entry_delete_failed = "作業時間の削除に失敗しました: {error}"
     tui_time_entry_delete_prompt = "削除しますか? {summary} [y/N]"
+    tui_issue_delete_failed = "イシューの削除に失敗しました: {error}"
+    tui_issue_delete_prompt = "削除しますか? {summary} [y/N]"
 
     # ---- argparse helps (root) ----
     arg_help_root_description = "Redmine CLI"
@@ -812,6 +814,7 @@ class Ja(MessagesProto):
     tui_help_issue_comment_select_in_mode = (
         "コメント選択モード中: jk:移動 u:更新 D:削除 Esc/q:抜ける"
     )
+    tui_help_issue_delete = "選択したイシューを削除 (y/Y で確定)"
 
     # ---- TUI help labels (wiki tab) ----
     tui_help_wiki_load_text = "選択ページの本文を読込"

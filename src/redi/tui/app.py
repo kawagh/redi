@@ -29,11 +29,13 @@ from redi.tui.issue_tab import (
     comment_select_cursor_up,
     confirm_comment_delete,
     confirm_comment_edit,
+    confirm_delete as issue_confirm_delete,
     exit_comment_select_mode,
     fetch_issues_with_filter,
     load_journals,
     reload_with_filter,
     request_comment_delete,
+    request_delete as issue_request_delete,
 )
 from redi.tui.state import (
     FIXED_ROWS,
@@ -596,9 +598,12 @@ def run_issue_tui(
     @kb.add("D", filter=normal_mode)
     def _(event):
         _clear_temporary_state()
-        if state.tab != "time_entries":
+        if state.tab == "time_entries":
+            prompt = time_entry_request_delete(state)
+        elif state.tab == "issues":
+            prompt = issue_request_delete(state)
+        else:
             return
-        prompt = time_entry_request_delete(state)
         if prompt is not None:
             state.confirm_delete_prompt = prompt
 
@@ -620,6 +625,8 @@ def run_issue_tui(
             if result is not None:
                 exit_comment_select_mode(state)
                 event.app.exit(result=result)
+        elif state.tab == "issues":
+            issue_confirm_delete(state)
 
     @kb.add("<any>", filter=confirm_delete_mode)
     def _(event):

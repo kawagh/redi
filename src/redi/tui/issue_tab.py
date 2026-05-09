@@ -1,5 +1,7 @@
 import webbrowser
 
+import requests
+
 from redi.api.issue import (
     Issue,
     IssuesPageResponse,
@@ -7,6 +9,7 @@ from redi.api.issue import (
     fetch_issue,
     fetch_issues_page,
 )
+from redi.client import client
 from redi.config import default_project_id, redmine_url
 from redi.i18n import messages
 from redi.tui.render import highlight_segments, render_meta_table
@@ -391,6 +394,35 @@ def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
             return
 
 
+def request_delete(state: TuiState) -> str | None:
+    """カーソル位置の issue 削除確認プロンプトを返す。対象がなければ None。"""
+    issues = state.issue_tab.issues
+    if not issues:
+        return None
+    issue = issues[state.issue_tab.cursor]
+    summary = f"#{issue.get('id', '')} {issue.get('subject', '')}"
+    return messages.tui_issue_delete_prompt.format(summary=summary)
+
+
+def confirm_delete(state: TuiState) -> None:
+    """カーソル位置の issue を削除する。失敗時は flash_message に出す。"""
+    issues = state.issue_tab.issues
+    if not issues:
+        return
+    cursor = state.issue_tab.cursor
+    issue = issues[cursor]
+    try:
+        response = client.delete(f"/issues/{issue['id']}.json")
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        state.flash_message = messages.tui_issue_delete_failed.format(error=e)
+        return
+    issues.pop(cursor)
+    state.issue_tab.total_count = max(0, state.issue_tab.total_count - 1)
+    if cursor >= len(issues):
+        state.issue_tab.cursor = max(0, len(issues) - 1)
+
+
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
     if key == "u":
         if not state.issue_tab.issues:
@@ -430,6 +462,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  c / u", messages.tui_help_issue_create_or_update),
     ("  n", messages.tui_help_issue_add_comment),
     ("  t", messages.tui_help_issue_create_time_entry),
+    ("  D", messages.tui_help_issue_delete),
     ("  v / <N>V", messages.tui_help_issue_open_web_or_n),
     ("  R", messages.tui_help_reload),
     (messages.tui_help_section_other, ""),

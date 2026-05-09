@@ -451,6 +451,8 @@ class En(MessagesProto):
     tui_time_entry_load_failed = "Failed to fetch time entries: {error}"
     tui_time_entry_delete_failed = "Failed to delete time entry: {error}"
     tui_time_entry_delete_prompt = "Delete? {summary} [y/N]"
+    tui_issue_delete_failed = "Failed to delete issue: {error}"
+    tui_issue_delete_prompt = "Delete? {summary} [y/N]"
 
     # ---- argparse helps (root) ----
     arg_help_root_description = "Redmine CLI"
@@ -802,6 +804,7 @@ class En(MessagesProto):
     tui_help_issue_comment_select_in_mode = (
         "In select mode: jk:move u:update D:delete Esc/q:exit"
     )
+    tui_help_issue_delete = "Delete the selected issue (confirm with y/Y)"
 
     # ---- TUI help labels (wiki tab) ----
     tui_help_wiki_load_text = "Load body of the selected page"
