@@ -32,7 +32,7 @@ tasks:
   test:
     desc: run tests (except E2E)
     cmds:
-      - uv run pytest -v
+      - uv run pytest -v --cov=src/redi
 
   test:e2e:
     desc: run E2E tests
