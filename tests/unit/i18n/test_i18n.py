@@ -1,8 +1,21 @@
 import re
+from pathlib import Path
 
 from redi import i18n
+from redi.i18n._protocol import MessagesProto
 from redi.i18n.en import En
 from redi.i18n.ja import Ja
+
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _scan_sources() -> str:
+    parts: list[str] = []
+    for base in (REPO_ROOT / "src", REPO_ROOT / "tests"):
+        for p in base.rglob("*.py"):
+            parts.append(p.read_text())
+    return "\n".join(parts)
 
 
 class TestKeysParity:
@@ -58,3 +71,39 @@ class TestFormat:
     def test_profile_created_en(self):
         """en: name を埋め込んだ英語メッセージになる"""
         assert En.profile_created.format(name="dev") == "Created profile 'dev'"
+
+
+class TestProtocolImplemented:
+    """MessagesProto で宣言した key を Ja / En 双方が実装している
+
+    Protocol の annotation-only メンバは ty では実装漏れを検出できないため
+    このテストで補完する。
+    """
+
+    def test_ja_implements_all(self):
+        """Ja は MessagesProto の全 key を実装している"""
+        missing = [k for k in MessagesProto.__annotations__ if not hasattr(Ja, k)]
+        assert not missing, missing
+
+    def test_en_implements_all(self):
+        """En は MessagesProto の全 key を実装している"""
+        missing = [k for k in MessagesProto.__annotations__ if not hasattr(En, k)]
+        assert not missing, missing
+
+
+class TestNoUnusedKeys:
+    """_protocol.py に宣言した全 key が src/ または tests/ から参照されている
+
+    なお逆向き(`messages.<key>` の <key> が未定義) は ty が
+    unresolved-attribute として検出するためテストでは扱わない。
+    """
+
+    def test_all_keys_referenced(self):
+        """MessagesProto の公開 key が `messages.<key>` として参照されている"""
+        searched = _scan_sources()
+        unused = [
+            k
+            for k in MessagesProto.__annotations__
+            if not k.startswith("_") and f"messages.{k}" not in searched
+        ]
+        assert not unused, unused

@@ -323,7 +323,6 @@ class Ja(MessagesProto):
     delete_target_category = "削除するイシューカテゴリ: {id} {name}"
     delete_target_group = "削除するグループ: {id} {name}"
     delete_target_time_entry = "削除する作業時間: {id} {hours}h {activity} ({spent_on})"
-    delete_confirm_tui = "削除しますか? {summary} [y/N]"
 
     # ---- detail labels ----
     label_assignable = "割り当て可能: {value}"
@@ -357,14 +356,12 @@ class Ja(MessagesProto):
     label_allowed_statuses_header = "遷移可能なステータス:"
     label_revisions_header = "リビジョン:"
     label_journals_header = "コメント/変更履歴:"
-    label_comments_header = "コメント:"
     label_due_date_field = "期日: {value}"
     label_sharing_field = "共有: {value}"
     label_parent_project = "親プロジェクト: {id} {name}"
     label_trackers_header = "トラッカー:"
     label_issue_categories_header = "イシューカテゴリ:"
     label_enabled_modules_header = "有効モジュール:"
-    label_user_field = "  ユーザー: {name} (id={id})"
     label_issue_field = "  イシュー: #{id}"
     label_comments_field = "  コメント: {value}"
     label_user_in_te = "  ユーザー: {name} (id={id})"
@@ -454,8 +451,6 @@ class Ja(MessagesProto):
     arg_help_skip_confirm = "確認プロンプトをスキップ"
     arg_help_open_web = "ブラウザでRedmineのページを開く"
     arg_help_project_id = "プロジェクトID"
-    arg_help_project_id_filter = "プロジェクトIDでフィルタリング"
-    arg_help_user_id = "ユーザーIDでフィルタリング（'me'も可）"
     arg_help_full_profiles = "全プロファイルを表示"
 
     # ---- argparse helps (subcommand summary) ----

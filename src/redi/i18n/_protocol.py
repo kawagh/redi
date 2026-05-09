@@ -5,7 +5,9 @@ class MessagesProto(Protocol):
     """全言語が満たすべきメッセージ集合の輪郭。
 
     新しいメッセージを追加するときはまずここに key を宣言し、
-    ja.py / en.py に実装を追加する。実装側に欠けがあれば ty が検出する。
+    ja.py / en.py に実装を追加する。実装側に欠けがあれば
+    tests/unit/i18n/test_i18n.py の TestProtocolImplemented が検出する
+    (Protocol の annotation-only メンバは ty では強制されないため)。
     """
 
     # ---- profile / config ----
@@ -439,8 +441,6 @@ class MessagesProto(Protocol):
     """{id}, {name}"""
     delete_target_time_entry: str
     """{id}, {hours}, {activity}, {spent_on}"""
-    delete_confirm_tui: str
-    """{summary}"""
 
     # ---- detail/output labels ----
     label_assignable: str
@@ -490,7 +490,6 @@ class MessagesProto(Protocol):
     label_allowed_statuses_header: str
     label_revisions_header: str
     label_journals_header: str
-    label_comments_header: str
     label_due_date_field: str
     """{value}"""
     label_sharing_field: str
@@ -500,8 +499,6 @@ class MessagesProto(Protocol):
     label_trackers_header: str
     label_issue_categories_header: str
     label_enabled_modules_header: str
-    label_user_field: str
-    """{name}, {id}"""
     label_issue_field: str
     """{id}"""
     label_comments_field: str
@@ -594,14 +591,7 @@ class MessagesProto(Protocol):
     arg_help_skip_confirm: str
     arg_help_open_web: str
     arg_help_project_id: str
-    arg_help_project_id_filter: str
-    arg_help_user_id: str
     arg_help_full_profiles: str
-
-    # ---- argparse helps (subcommand summary) ----
-    arg_help_crud_subcommands: str
-    arg_help_role_subcommands: str
-    arg_help_file_subcommands: str
 
     # ---- argparse helps (project) ----
     arg_help_project_command: str
