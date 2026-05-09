@@ -324,7 +324,6 @@ class En(MessagesProto):
     delete_target_time_entry = (
         "Time entry to delete: {id} {hours}h {activity} ({spent_on})"
     )
-    delete_confirm_tui = "Delete? {summary} [y/N]"
 
     # ---- detail labels ----
     label_assignable = "Assignable: {value}"
@@ -358,14 +357,12 @@ class En(MessagesProto):
     label_allowed_statuses_header = "Allowed statuses:"
     label_revisions_header = "Revisions:"
     label_journals_header = "Journals/changes:"
-    label_comments_header = "Comments:"
     label_due_date_field = "Due date: {value}"
     label_sharing_field = "Sharing: {value}"
     label_parent_project = "Parent project: {id} {name}"
     label_trackers_header = "Trackers:"
     label_issue_categories_header = "Issue categories:"
     label_enabled_modules_header = "Enabled modules:"
-    label_user_field = "  User: {name} (id={id})"
     label_issue_field = "  Issue: #{id}"
     label_comments_field = "  Comments: {value}"
     label_user_in_te = "  User: {name} (id={id})"
@@ -451,8 +448,6 @@ class En(MessagesProto):
     arg_help_skip_confirm = "Skip confirmation prompt"
     arg_help_open_web = "Open the Redmine page in a browser"
     arg_help_project_id = "Project ID"
-    arg_help_project_id_filter = "Filter by project ID"
-    arg_help_user_id = "Filter by user ID ('me' allowed)"
     arg_help_full_profiles = "Show all profiles"
 
     # ---- argparse helps (subcommand summary) ----
