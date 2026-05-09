@@ -5,7 +5,9 @@ class MessagesProto(Protocol):
     """全言語が満たすべきメッセージ集合の輪郭。
 
     新しいメッセージを追加するときはまずここに key を宣言し、
-    ja.py / en.py に実装を追加する。実装側に欠けがあれば ty が検出する。
+    ja.py / en.py に実装を追加する。実装側に欠けがあれば
+    tests/unit/i18n/test_i18n.py の TestProtocolImplemented が検出する
+    (Protocol の annotation-only メンバは ty では強制されないため)。
     """
 
     # ---- profile / config ----

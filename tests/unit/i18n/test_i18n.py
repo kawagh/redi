@@ -73,6 +73,24 @@ class TestFormat:
         assert En.profile_created.format(name="dev") == "Created profile 'dev'"
 
 
+class TestProtocolImplemented:
+    """MessagesProto で宣言した key を Ja / En 双方が実装している
+
+    Protocol の annotation-only メンバは ty では実装漏れを検出できないため
+    このテストで補完する。
+    """
+
+    def test_ja_implements_all(self):
+        """Ja は MessagesProto の全 key を実装している"""
+        missing = [k for k in MessagesProto.__annotations__ if not hasattr(Ja, k)]
+        assert not missing, missing
+
+    def test_en_implements_all(self):
+        """En は MessagesProto の全 key を実装している"""
+        missing = [k for k in MessagesProto.__annotations__ if not hasattr(En, k)]
+        assert not missing, missing
+
+
 class TestNoUnusedKeys:
     """_protocol.py に宣言した全 key が src/ または tests/ から参照されている
 
