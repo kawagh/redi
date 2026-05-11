@@ -97,6 +97,8 @@ class MessagesProto(Protocol):
     """ファイルが見つからない。{path}"""
     attachment_not_found: str
     """添付ファイルが見つからない。{id}"""
+    issue_journal_not_found: str
+    """イシューのジャーナルが見つからない。{id}"""
     time_entry_not_found: str
     """作業時間が見つからない。{id}"""
     version_not_found: str
@@ -192,6 +194,10 @@ class MessagesProto(Protocol):
     """{id}"""
     attachment_updated: str
     """{url}"""
+    issue_journal_updated: str
+    """{id}"""
+    issue_journal_deleted: str
+    """{id}"""
     group_updated: str
     """{id}"""
     group_deleted: str
@@ -251,6 +257,8 @@ class MessagesProto(Protocol):
     time_entry_delete_failed: str
     attachment_delete_failed: str
     attachment_update_failed: str
+    issue_journal_update_failed: str
+    issue_journal_delete_failed: str
     group_create_failed: str
     group_update_failed: str
     group_delete_failed: str
@@ -435,6 +443,8 @@ class MessagesProto(Protocol):
     """{id}, {kind}, {principal_id}, {principal_name}, {roles}"""
     delete_target_attachment: str
     """{id}, {filename}"""
+    delete_target_issue_journal: str
+    """{id}, {notes}"""
     delete_target_category: str
     """{id}, {name}"""
     delete_target_group: str
@@ -795,6 +805,14 @@ class MessagesProto(Protocol):
     arg_help_relation_command: str
     arg_help_relation_view: str
     arg_help_relation_view_id: str
+
+    # ---- argparse helps (issue journal) ----
+    arg_help_issue_journal_command: str
+    arg_help_issue_journal_update: str
+    arg_help_issue_journal_update_id: str
+    arg_help_issue_journal_update_notes: str
+    arg_help_issue_journal_delete: str
+    arg_help_issue_journal_delete_id: str
 
     # ---- argparse helps (attachment) ----
     arg_help_attachment_command: str

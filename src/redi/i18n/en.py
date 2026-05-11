@@ -53,6 +53,7 @@ class En(MessagesProto):
     parent_page_not_found = "Parent page not found: {title}"
     file_not_found = "File not found: {path}"
     attachment_not_found = "Attachment not found: #{id}"
+    issue_journal_not_found = "Issue journal not found: #{id}"
     time_entry_not_found = "Time entry not found: {id}"
     version_not_found = "Version not found: {id}"
     group_not_found = "Group not found: #{id}"
@@ -117,6 +118,8 @@ class En(MessagesProto):
     time_entry_deleted = "Deleted time entry: {id}"
     attachment_deleted = "Deleted attachment: #{id}"
     attachment_updated = "Updated attachment: {url}"
+    issue_journal_updated = "Updated issue journal: #{id}"
+    issue_journal_deleted = "Deleted issue journal: #{id}"
     group_updated = "Updated group: {id}"
     group_deleted = "Deleted group: {id}"
     group_user_added = "Added user {user_id} to group {group_id}"
@@ -163,6 +166,8 @@ class En(MessagesProto):
     time_entry_delete_failed = "Failed to delete time entry"
     attachment_delete_failed = "Failed to delete attachment"
     attachment_update_failed = "Failed to update attachment"
+    issue_journal_update_failed = "Failed to update issue journal"
+    issue_journal_delete_failed = "Failed to delete issue journal"
     group_create_failed = "Failed to create group"
     group_update_failed = "Failed to update group"
     group_delete_failed = "Failed to delete group"
@@ -319,6 +324,7 @@ class En(MessagesProto):
         "Membership to delete: {id} [{kind}] {principal_id} {principal_name} - {roles}"
     )
     delete_target_attachment = "Attachment to delete: {id} {filename}"
+    delete_target_issue_journal = "Issue journal to delete: #{id} {notes}"
     delete_target_category = "Issue category to delete: {id} {name}"
     delete_target_group = "Group to delete: {id} {name}"
     delete_target_time_entry = (
@@ -669,6 +675,14 @@ class En(MessagesProto):
     arg_help_relation_command = "Issue relation details"
     arg_help_relation_view = "Relation details"
     arg_help_relation_view_id = "Relation ID"
+
+    # ---- argparse helps (issue journal) ----
+    arg_help_issue_journal_command = "update(u), delete(d)"
+    arg_help_issue_journal_update = "Update issue journal note"
+    arg_help_issue_journal_update_id = "Journal ID"
+    arg_help_issue_journal_update_notes = "Note text"
+    arg_help_issue_journal_delete = "Delete issue journal"
+    arg_help_issue_journal_delete_id = "Journal ID"
 
     # ---- argparse helps (attachment) ----
     arg_help_attachment_command = "Attachment details/update/delete"
