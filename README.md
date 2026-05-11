@@ -162,6 +162,7 @@ redi relation view <relation_id>
 
 # issue_journal (alias: ij, requires Redmine 5.0+)
 redi issue_journal update <journal_id> "updated note"
+redi issue_journal update <journal_id> "" # updating with an empty note is equivalent to delete
 redi issue_journal delete <journal_id> # confirm before delete (-y to skip)
 
 # time_entry (alias: te)
