@@ -42,7 +42,6 @@ from redi.api.issue_status import fetch_issue_statuses
 from redi.api.membership import fetch_project_users
 from redi.api.project import fetch_project
 from redi.api.time_entry import create_time_entry
-from redi.api.tracker import fetch_trackers
 from redi.api.version import fetch_versions
 from redi.i18n import messages
 
@@ -362,7 +361,12 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
     try:
         if "tracker" in selected:
-            trackers = fetch_trackers()
+            project_id = (current.get("project") or {}).get("id")
+            if not project_id:
+                print(messages.canceled_no_project)
+                exit(1)
+            project = fetch_project(str(project_id), include="trackers")
+            trackers = project.get("trackers") or []
             tracker_options: list[tuple[str, str]] = [
                 (str(t["id"]), t["name"]) for t in trackers
             ]
