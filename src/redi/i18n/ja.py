@@ -55,6 +55,7 @@ class Ja(MessagesProto):
     parent_page_not_found = "親ページが見つかりません: {title}"
     file_not_found = "ファイルが見つかりません: {path}"
     attachment_not_found = "添付ファイルが見つかりません: #{id}"
+    issue_journal_not_found = "イシューのジャーナルが見つかりません: #{id}"
     time_entry_not_found = "作業時間が見つかりません: {id}"
     version_not_found = "バージョンが見つかりません: {id}"
     group_not_found = "グループが見つかりません: #{id}"
@@ -121,6 +122,8 @@ class Ja(MessagesProto):
     time_entry_deleted = "作業時間を削除しました: {id}"
     attachment_deleted = "添付ファイルを削除しました: #{id}"
     attachment_updated = "添付ファイルを更新しました: {url}"
+    issue_journal_updated = "イシューのジャーナルを更新しました: #{id}"
+    issue_journal_deleted = "イシューのジャーナルを削除しました: #{id}"
     group_updated = "グループを更新しました: {id}"
     group_deleted = "グループを削除しました: {id}"
     group_user_added = "グループ {group_id} にユーザー {user_id} を追加しました"
@@ -165,6 +168,8 @@ class Ja(MessagesProto):
     time_entry_delete_failed = "作業時間の削除に失敗しました"
     attachment_delete_failed = "添付ファイルの削除に失敗しました"
     attachment_update_failed = "添付ファイルの更新に失敗しました"
+    issue_journal_update_failed = "イシューのジャーナルの更新に失敗しました"
+    issue_journal_delete_failed = "イシューのジャーナルの削除に失敗しました"
     group_create_failed = "グループの作成に失敗しました"
     group_update_failed = "グループの更新に失敗しました"
     group_delete_failed = "グループの削除に失敗しました"
@@ -320,6 +325,7 @@ class Ja(MessagesProto):
     delete_target_wiki_page = "削除するWikiページ: {title}"
     delete_target_membership = "削除するメンバーシップ: {id} [{kind}] {principal_id} {principal_name} - {roles}"
     delete_target_attachment = "削除する添付ファイル: {id} {filename}"
+    delete_target_issue_journal = "削除するイシューのジャーナル: #{id} {notes}"
     delete_target_category = "削除するイシューカテゴリ: {id} {name}"
     delete_target_group = "削除するグループ: {id} {name}"
     delete_target_time_entry = "削除する作業時間: {id} {hours}h {activity} ({spent_on})"
@@ -678,6 +684,14 @@ class Ja(MessagesProto):
     arg_help_relation_command = "イシュー関係性 詳細"
     arg_help_relation_view = "関係性詳細"
     arg_help_relation_view_id = "関係性ID"
+
+    # ---- argparse helps (issue journal) ----
+    arg_help_issue_journal_command = "update(u): 更新, delete(d): 削除"
+    arg_help_issue_journal_update = "イシューのジャーナル(コメント)を更新"
+    arg_help_issue_journal_update_id = "ジャーナルID"
+    arg_help_issue_journal_update_notes = "コメント本文"
+    arg_help_issue_journal_delete = "イシューのジャーナルを削除"
+    arg_help_issue_journal_delete_id = "ジャーナルID"
 
     # ---- argparse helps (attachment) ----
     arg_help_attachment_command = "添付ファイル詳細/更新/削除"
