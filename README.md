@@ -160,6 +160,10 @@ redi attachment delete <attachment_id> # confirm before delete (-y to skip)
 # relation (issue relation details)
 redi relation view <relation_id>
 
+# issue_journal (alias: ij, requires Redmine 5.0+)
+redi issue_journal update <journal_id> "updated note"
+redi issue_journal delete <journal_id> # confirm before delete (-y to skip)
+
 # time_entry (alias: te)
 redi time_entry -p <project_id> -u me
 redi time_entry create 1.5 -i <issue_id> -a <activity_id> -c "comment"
