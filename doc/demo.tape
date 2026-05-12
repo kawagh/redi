@@ -64,7 +64,41 @@ Set FontSize 16
 Set Width 1200
 Set Height 600
 
-# demo
+# redi issue create
+Type "redi issue create"
+Sleep 500ms
+Enter
+
+# select tracker
+Sleep 1s
+Type "j"
+Sleep 300ms
+Enter
+
+# input subject
+Sleep 500ms
+Type "Demo issue created via redi issue create"
+Sleep 300ms
+Enter
+
+# vim opens for description
+Sleep 1000ms
+Type "i"
+Sleep 200ms
+Type "created from redi demo tape."
+Sleep 300ms
+Escape
+Sleep 200ms
+Type ":wq"
+Enter
+
+# submit
+Sleep 1s
+Enter
+
+Sleep 2s
+
+# launch TUI
 Type "redi --tui"
 Sleep 500ms
 Enter
