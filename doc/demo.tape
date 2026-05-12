@@ -67,6 +67,9 @@ Set WindowBar Colorful
 Set WindowBarSize 40
 Set Theme "Catppuccin Mocha"
 
+Env LANG en_US.UTF-8
+
+
 # redi issue create
 Type "redi issue create"
 Sleep 500ms
