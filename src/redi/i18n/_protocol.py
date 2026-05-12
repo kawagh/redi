@@ -828,6 +828,8 @@ class MessagesProto(Protocol):
     # ---- argparse helps (time entry) ----
     arg_help_time_entry_command: str
     arg_help_time_entry_user_id: str
+    arg_help_time_entry_from: str
+    arg_help_time_entry_to: str
     arg_help_time_entry_list: str
     arg_help_time_entry_create: str
     arg_help_time_entry_hours: str

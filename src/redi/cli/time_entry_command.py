@@ -44,6 +44,22 @@ def add_time_entry_parser(
         "--user_id", "-u", help=messages.arg_help_time_entry_user_id
     )
     time_entry_parser.add_argument(
+        "--from",
+        dest="from_date",
+        help=messages.arg_help_time_entry_from,
+    )
+    time_entry_parser.add_argument(
+        "--to",
+        dest="to_date",
+        help=messages.arg_help_time_entry_to,
+    )
+    time_entry_parser.add_argument(
+        "--limit", "-l", type=int, help=messages.arg_help_limit
+    )
+    time_entry_parser.add_argument(
+        "--offset", "-o", type=int, help=messages.arg_help_offset
+    )
+    time_entry_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
     )
     te_subparsers = time_entry_parser.add_subparsers(dest="time_entry_command")
@@ -325,4 +341,12 @@ def handle_time_entry(args: argparse.Namespace) -> None:
         delete_time_entry(args.time_entry_id)
     elif cmd == "list" or cmd is None:
         project_id = args.project_id or default_project_id
-        list_time_entries(project_id=project_id, user_id=args.user_id, full=args.full)
+        list_time_entries(
+            project_id=project_id,
+            user_id=args.user_id,
+            from_date=args.from_date,
+            to_date=args.to_date,
+            limit=args.limit,
+            offset=args.offset,
+            full=args.full,
+        )
