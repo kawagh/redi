@@ -94,6 +94,7 @@ def format_time_entry_line(
 
 def fetch_time_entries_page(
     project_id: str | None = None,
+    user_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
 ) -> dict:
@@ -102,6 +103,8 @@ def fetch_time_entries_page(
     else:
         path = "/time_entries.json"
     params: dict = {}
+    if user_id:
+        params["user_id"] = user_id
     if limit is not None:
         params["limit"] = limit
     if offset is not None:
