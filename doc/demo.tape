@@ -63,8 +63,48 @@ Set Shell "bash"
 Set FontSize 16
 Set Width 1200
 Set Height 600
+Set WindowBar Colorful
+Set WindowBarSize 40
+Set Theme "Catppuccin Mocha"
 
-# demo
+Env LANG en_US.UTF-8
+
+
+# redi issue create
+Type "redi issue create"
+Sleep 500ms
+Enter
+
+# select tracker
+Sleep 1s
+Type "j"
+Sleep 300ms
+Enter
+
+# input subject
+Sleep 500ms
+Type "Demo issue create"
+Sleep 300ms
+Enter
+
+# vim opens for description
+Sleep 1000ms
+Type "i"
+Sleep 200ms
+Type "created from CLI."
+Sleep 300ms
+Escape
+Sleep 200ms
+Type ":wq"
+Enter
+
+# submit
+Sleep 1s
+Enter
+
+Sleep 2s
+
+# launch TUI
 Type "redi --tui"
 Sleep 500ms
 Enter
@@ -79,5 +119,43 @@ Type "k"
 Sleep 200ms
 Type "k"
 
-Sleep 3s
+Sleep 1s
+
+# update subject and description of current issue
+Type "u"
+Sleep 1s
+
+# cursor starts on description; toggle description, then move up to subject and toggle
+Type " "
+Sleep 200ms
+Type "k"
+Sleep 200ms
+Type " "
+Sleep 300ms
+Enter
+
+# subject prompt opens with current subject pre-filled
+Sleep 800ms
+Type " UPDATED"
+Sleep 300ms
+Enter
+
+# vim opens with current description
+Sleep 1500ms
+Type "o"
+Sleep 200ms
+Type "updated from TUI."
+Sleep 300ms
+Escape
+Sleep 200ms
+Type ":wq"
+Enter
+
+# TUI reopens after update
+Sleep 2s
+
+# quit TUI
+Type "q"
+
+Sleep 2s
 
