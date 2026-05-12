@@ -106,15 +106,27 @@ def fetch_issue_subjects(issue_ids: list[int]) -> dict[int, str]:
 def list_time_entries(
     project_id: str | None = None,
     user_id: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
     full: bool = False,
 ) -> None:
     if project_id:
         path = f"/projects/{project_id}/time_entries.json"
     else:
         path = "/time_entries.json"
-    params = {}
+    params: dict = {}
     if user_id:
         params["user_id"] = user_id
+    if from_date:
+        params["from"] = from_date
+    if to_date:
+        params["to"] = to_date
+    if limit is not None:
+        params["limit"] = limit
+    if offset is not None:
+        params["offset"] = offset
     response = client.get(path, params=params)
     response.raise_for_status()
     time_entries = response.json()["time_entries"]

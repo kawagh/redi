@@ -700,6 +700,8 @@ class En(MessagesProto):
         "list(l), view(v), create(c) (log), update(u), delete(d)"
     )
     arg_help_time_entry_user_id = "Filter by user ID ('me' allowed)"
+    arg_help_time_entry_from = "Filter by start date (YYYY-MM-DD, inclusive)"
+    arg_help_time_entry_to = "Filter by end date (YYYY-MM-DD, inclusive)"
     arg_help_time_entry_list = "List time entries"
     arg_help_time_entry_create = "Log time entry"
     arg_help_time_entry_hours = "Hours (e.g. 1.5; omit to enter interactively)"

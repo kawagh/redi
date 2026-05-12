@@ -707,6 +707,8 @@ class Ja(MessagesProto):
     # ---- argparse helps (time entry) ----
     arg_help_time_entry_command = "list(l): 一覧, view(v): 詳細, create(c): 登録, update(u): 更新, delete(d): 削除"
     arg_help_time_entry_user_id = "ユーザーIDでフィルタリング（'me'も可）"
+    arg_help_time_entry_from = "開始日でフィルタリング（YYYY-MM-DD、以降）"
+    arg_help_time_entry_to = "終了日でフィルタリング（YYYY-MM-DD、以前）"
     arg_help_time_entry_list = "作業時間一覧"
     arg_help_time_entry_create = "作業時間登録"
     arg_help_time_entry_hours = "時間（例: 1.5、省略で対話的に入力）"

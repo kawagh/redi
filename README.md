@@ -167,6 +167,8 @@ redi issue_journal delete <journal_id> # confirm before delete (-y to skip)
 
 # time_entry (alias: te)
 redi time_entry -p <project_id> -u me
+redi time_entry --from 2026-01-01 --to 2026-01-31 # filter by date range
+redi time_entry --limit 50 --offset 100 # pagination
 redi time_entry create 1.5 -i <issue_id> -a <activity_id> -c "comment"
 redi time_entry update <time_entry_id> --hours 2.0
 redi time_entry delete <time_entry_id> # confirm before delete (-y to skip)
