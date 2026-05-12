@@ -512,7 +512,14 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
             print(
                 messages.activity_label.format(value=activity_labels[args.activity_id])
             )
-            args.spent_on = prompt(messages.prompt_spent_on).strip() or None
+            args.spent_on = (
+                prompt(
+                    messages.prompt_spent_on,
+                    validator=DateValidator(allow_empty=True),
+                    key_bindings=date_key_bindings(),
+                ).strip()
+                or None
+            )
             args.time_comments = prompt(messages.prompt_time_comments).strip() or None
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
