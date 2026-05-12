@@ -1,3 +1,4 @@
+from redi.i18n import messages
 from redi.tui.state import IssueFilter, TimeEntryFilter
 
 
@@ -58,7 +59,8 @@ class TestTimeEntryFilter:
         f = TimeEntryFilter()
         assert f.user_id == "me"
         assert f.is_active() is True
-        assert f.short_label() == "user=自分"
+        # short_label のラベル部は messages から取得するので言語に依存する
+        assert f.short_label() == f"user={messages.tui_filter_assignee_me}"
 
     def test_unset_is_inactive(self):
         """user_id を None にすればフィルタは非アクティブ"""
