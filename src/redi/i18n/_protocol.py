@@ -536,8 +536,11 @@ class MessagesProto(Protocol):
     tui_tab_switch_hint: str
     tui_filter_status: str
     tui_filter_assignee: str
+    tui_filter_user: str
     tui_filter_hint: str
+    tui_filter_hint_single: str
     tui_filter_title: str
+    tui_filter_title_time_entries: str
     tui_help_title: str
     """{label}"""
     tui_error_modal_title: str
@@ -898,6 +901,7 @@ class MessagesProto(Protocol):
     tui_help_start_search: str
     tui_help_next_prev_match: str
     tui_help_filter_status_assignee: str
+    tui_help_filter_user: str
     tui_help_reload: str
     tui_help_show_or_close: str
     tui_help_quit: str

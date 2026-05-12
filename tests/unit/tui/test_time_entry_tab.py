@@ -144,6 +144,48 @@ class TestPageBackward:
         assert state.time_entry_tab.offset == 0
 
 
+class TestFetchPageUsesFilter:
+    """_fetch_page_with_subjects() は state.time_entry_tab.filter.user_id を API に渡す"""
+
+    def test_default_filter_passes_me(self, monkeypatch):
+        """デフォルトの filter (user_id='me') が API 呼び出しに伝わる"""
+        state = TuiState()
+        state.page_size = 5
+
+        captured: dict = {}
+
+        def fake_fetch(project_id, user_id, limit, offset):
+            captured["user_id"] = user_id
+            return {"time_entries": [], "total_count": 0}
+
+        monkeypatch.setattr(time_entry_tab, "fetch_time_entries_page", fake_fetch)
+        monkeypatch.setattr(time_entry_tab, "fetch_issue_subjects", lambda ids: {})
+
+        time_entry_tab._fetch_page_with_subjects(state, 0)
+
+        assert captured["user_id"] == "me"
+
+    def test_no_filter_passes_none(self, monkeypatch):
+        """user_id=None なら API には None が渡る (= フィルタしない)"""
+        state = TuiState()
+        state.page_size = 5
+        state.time_entry_tab.filter.user_id = None
+        state.time_entry_tab.filter.user_label = ""
+
+        captured: dict = {}
+
+        def fake_fetch(project_id, user_id, limit, offset):
+            captured["user_id"] = user_id
+            return {"time_entries": [], "total_count": 0}
+
+        monkeypatch.setattr(time_entry_tab, "fetch_time_entries_page", fake_fetch)
+        monkeypatch.setattr(time_entry_tab, "fetch_issue_subjects", lambda ids: {})
+
+        time_entry_tab._fetch_page_with_subjects(state, 0)
+
+        assert captured["user_id"] is None
+
+
 class TestConfirmDeleteUpdatesTotal:
     """削除時は total_count を 1 減らしてページ表示の整合性を保つ"""
 

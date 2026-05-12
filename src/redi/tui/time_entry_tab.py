@@ -19,6 +19,7 @@ def _fetch_page_with_subjects(state: TuiState, offset: int) -> dict:
     """`offset` から始まる 1 ページ分の time_entries と issue subjects をまとめて返す。"""
     page = fetch_time_entries_page(
         project_id=default_project_id,
+        user_id=state.time_entry_tab.filter.user_id,
         limit=state.page_size,
         offset=offset,
     )
@@ -135,7 +136,26 @@ def _page_label(state: TuiState) -> str:
 
 
 def _status_hint(state: TuiState) -> str:
-    return messages.tui_status_hint_time_entries.format(page_label=_page_label(state))
+    hint = messages.tui_status_hint_time_entries.format(page_label=_page_label(state))
+    if state.time_entry_tab.filter.is_active():
+        hint = f" [{state.time_entry_tab.filter.short_label()}]" + hint
+    return hint
+
+
+def reload_with_filter(state: TuiState) -> None:
+    """フィルタ条件で先頭ページから取得し直す。filter modal の適用で呼ぶ。"""
+    state.time_entry_tab.error = None
+    try:
+        page = _fetch_page_with_subjects(state, 0)
+    except requests.exceptions.RequestException as e:
+        state.time_entry_tab.error = messages.tui_time_entry_load_failed.format(error=e)
+        state.time_entry_tab.entries = []
+        state.time_entry_tab.total_count = 0
+        state.time_entry_tab.issue_subjects = {}
+        state.time_entry_tab.offset = 0
+        state.time_entry_tab.cursor = 0
+        return
+    _apply_page(state, page, 0)
 
 
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
@@ -326,6 +346,8 @@ _HELP_LINES: list[tuple[str, str]] = [
     (messages.tui_help_section_search, ""),
     ("  /", messages.tui_help_start_search),
     ("  n / N", messages.tui_help_next_prev_match),
+    (messages.tui_help_section_filter, ""),
+    ("  f", messages.tui_help_filter_user),
     (messages.tui_help_section_actions, ""),
     ("  c", messages.tui_help_time_entry_create),
     ("  u", messages.tui_help_time_entry_update),

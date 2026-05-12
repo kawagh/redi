@@ -34,6 +34,7 @@ from redi.tui.state import (
     FilterModalState,
     IssueFilter,
     Renderable,
+    TimeEntryFilter,
     TuiPosition,
     TuiResult,
     TuiState,
@@ -43,6 +44,7 @@ from redi.tui.tab import TabView
 from redi.tui.time_entry_tab import (
     TIME_ENTRY_TAB,
     confirm_delete as time_entry_confirm_delete,
+    reload_with_filter as time_entry_reload_with_filter,
     request_delete as time_entry_request_delete,
 )
 from redi.tui.wiki_tab import WIKI_TAB
@@ -171,6 +173,18 @@ def _build_assignee_choices(project_id: str | None) -> list[tuple[str | None, st
     return choices
 
 
+def _build_user_choices(project_id: str | None) -> list[tuple[str | None, str]]:
+    """time_entry フィルタモーダルのユーザー選択肢。先頭は特殊指定 (未設定/自分)。"""
+    choices: list[tuple[str | None, str]] = [
+        (None, messages.tui_filter_assignee_none),
+        ("me", messages.tui_filter_assignee_me),
+    ]
+    if project_id:
+        for u in fetch_project_users(project_id):
+            choices.append((str(u["id"]), u.get("name", "")))
+    return choices
+
+
 def _render_filter_section(
     modal: FilterModalState,
     section: FilterField,
@@ -218,6 +232,21 @@ def _render_filter_modal(state: TuiState) -> Renderable:
         )
     )
     parts.append(("", messages.tui_filter_hint))
+    return parts
+
+
+def _render_time_entry_filter_modal(state: TuiState) -> Renderable:
+    f = state.time_entry_tab.filter
+    modal = state.time_entry_tab.filter_modal
+    parts: Renderable = [("bold fg:ansicyan", f"[{messages.tui_filter_user}]\n")]
+    for i, (api_val, label) in enumerate(modal.user_choices):
+        is_cursor = i == modal.user_cursor
+        is_active = api_val == f.user_id
+        cursor_mark = ">" if is_cursor else " "
+        active_mark = "*" if is_active else " "
+        line_style = "reverse" if is_cursor else ("bold" if is_active else "")
+        parts.append((line_style, f" {cursor_mark} {active_mark} {label}\n"))
+    parts.append(("", messages.tui_filter_hint_single))
     return parts
 
 
@@ -306,6 +335,7 @@ def run_issue_tui(
             and state.confirm_delete_prompt is None
             and not state.show_help
             and not state.issue_tab.filter_modal.show
+            and not state.time_entry_tab.filter_modal.show
             and state.error_modal is None
         )
     )
@@ -313,6 +343,9 @@ def run_issue_tui(
     confirm_delete_mode = Condition(lambda: state.confirm_delete_prompt is not None)
     show_help_modal = Condition(lambda: state.show_help)
     show_filter_modal = Condition(lambda: state.issue_tab.filter_modal.show)
+    show_time_entry_filter_modal = Condition(
+        lambda: state.time_entry_tab.filter_modal.show
+    )
     show_error_modal = Condition(lambda: state.error_modal is not None)
 
     def _clear_temporary_state() -> None:
@@ -541,12 +574,23 @@ def run_issue_tui(
         modal.focus = "status"
         modal.show = True
 
+    def _open_time_entry_filter_modal() -> None:
+        modal = state.time_entry_tab.filter_modal
+        modal.user_choices = _build_user_choices(default_project_id)
+        modal.user_cursor = 0
+        for idx, (api_val, _label) in enumerate(modal.user_choices):
+            if api_val == state.time_entry_tab.filter.user_id:
+                modal.user_cursor = idx
+                break
+        modal.show = True
+
     @kb.add("f", filter=normal_mode)
     def _(event):
-        if state.tab != "issues":
-            return
         _clear_temporary_state()
-        _open_filter_modal()
+        if state.tab == "issues":
+            _open_filter_modal()
+        elif state.tab == "time_entries":
+            _open_time_entry_filter_modal()
 
     @kb.add("tab", filter=show_filter_modal)
     @kb.add("s-tab", filter=show_filter_modal)
@@ -612,6 +656,45 @@ def run_issue_tui(
     @kb.add("q", filter=show_filter_modal)
     def _(event):
         state.issue_tab.filter_modal.show = False
+
+    @kb.add("j", filter=show_time_entry_filter_modal)
+    @kb.add("down", filter=show_time_entry_filter_modal)
+    def _(event):
+        modal = state.time_entry_tab.filter_modal
+        modal.user_cursor = min(len(modal.user_choices) - 1, modal.user_cursor + 1)
+
+    @kb.add("k", filter=show_time_entry_filter_modal)
+    @kb.add("up", filter=show_time_entry_filter_modal)
+    def _(event):
+        modal = state.time_entry_tab.filter_modal
+        modal.user_cursor = max(0, modal.user_cursor - 1)
+
+    @kb.add("enter", filter=show_time_entry_filter_modal)
+    def _(event):
+        modal = state.time_entry_tab.filter_modal
+        if not modal.user_choices:
+            return
+        api_val, label = modal.user_choices[modal.user_cursor]
+        state.time_entry_tab.filter.user_id = api_val
+        if api_val is not None:
+            state.time_entry_tab.filter.user_label = label
+        _reset_preview_scroll()
+        time_entry_reload_with_filter(state)
+        modal.show = False
+
+    @kb.add("c", filter=show_time_entry_filter_modal)
+    def _(event):
+        state.time_entry_tab.filter = TimeEntryFilter(user_id=None, user_label="")
+        modal = state.time_entry_tab.filter_modal
+        modal.user_cursor = 0
+        _reset_preview_scroll()
+        time_entry_reload_with_filter(state)
+
+    @kb.add("escape", filter=show_time_entry_filter_modal)
+    @kb.add("f", filter=show_time_entry_filter_modal)
+    @kb.add("q", filter=show_time_entry_filter_modal)
+    def _(event):
+        state.time_entry_tab.filter_modal.show = False
 
     @kb.add("enter", filter=search_mode)
     def _(event):
@@ -720,6 +803,28 @@ def run_issue_tui(
         ),
     )
 
+    time_entry_filter_float = Float(
+        content=ConditionalContainer(
+            content=VSplit(
+                [
+                    Window(width=1, char=" "),
+                    Frame(
+                        Window(
+                            FormattedTextControl(
+                                lambda: _render_time_entry_filter_modal(state),
+                                show_cursor=False,
+                            ),
+                            wrap_lines=False,
+                        ),
+                        title=messages.tui_filter_title_time_entries,
+                    ),
+                    Window(width=1, char=" "),
+                ]
+            ),
+            filter=show_time_entry_filter_modal,
+        ),
+    )
+
     error_float = Float(
         content=ConditionalContainer(
             content=VSplit(
@@ -744,7 +849,13 @@ def run_issue_tui(
     app = Application(
         layout=Layout(
             FloatContainer(
-                content=main_layout, floats=[help_float, filter_float, error_float]
+                content=main_layout,
+                floats=[
+                    help_float,
+                    filter_float,
+                    time_entry_filter_float,
+                    error_float,
+                ],
             )
         ),
         key_bindings=kb,
