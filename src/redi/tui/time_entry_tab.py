@@ -2,7 +2,11 @@ import webbrowser
 
 import requests
 
-from redi.api.time_entry import fetch_issue_subjects, format_time_entry_line
+from redi.api.time_entry import (
+    fetch_issue_subjects,
+    fetch_time_entries_page,
+    format_time_entry_line,
+)
 from redi.client import client
 from redi.config import default_project_id, redmine_url
 from redi.i18n import messages
@@ -11,25 +15,14 @@ from redi.tui.state import Renderable, TuiPosition, TuiResult, TuiState
 from redi.tui.tab import TabView, noop, noop_jump
 
 
-def _fetch_time_entries(project_id: str | None) -> list[dict]:
-    if project_id:
-        path = f"/projects/{project_id}/time_entries.json"
-    else:
-        path = "/time_entries.json"
-    response = client.get(path)
-    response.raise_for_status()
-    return response.json()["time_entries"]
-
-
-def _load_time_entries(state: TuiState) -> None:
-    if state.time_entry_tab.loaded:
-        return
-    state.time_entry_tab.loaded = True
-    try:
-        entries = _fetch_time_entries(default_project_id)
-    except requests.exceptions.RequestException as e:
-        state.time_entry_tab.error = messages.tui_time_entry_load_failed.format(error=e)
-        return
+def _fetch_page_with_subjects(state: TuiState, offset: int) -> dict:
+    """`offset` から始まる 1 ページ分の time_entries と issue subjects をまとめて返す。"""
+    page = fetch_time_entries_page(
+        project_id=default_project_id,
+        limit=state.page_size,
+        offset=offset,
+    )
+    entries = page["time_entries"]
     issue_ids = sorted(
         {
             te["issue"]["id"]
@@ -41,9 +34,31 @@ def _load_time_entries(state: TuiState) -> None:
         subjects = fetch_issue_subjects(issue_ids)
     except requests.exceptions.RequestException:
         subjects = {}
-    state.time_entry_tab.entries = entries
-    state.time_entry_tab.issue_subjects = subjects
+    return {
+        "time_entries": entries,
+        "total_count": page.get("total_count", len(entries)),
+        "issue_subjects": subjects,
+    }
+
+
+def _apply_page(state: TuiState, page: dict, offset: int) -> None:
+    state.time_entry_tab.offset = offset
+    state.time_entry_tab.entries = page["time_entries"]
+    state.time_entry_tab.total_count = page["total_count"]
+    state.time_entry_tab.issue_subjects = page["issue_subjects"]
     state.time_entry_tab.cursor = 0
+
+
+def _load_time_entries(state: TuiState) -> None:
+    if state.time_entry_tab.loaded:
+        return
+    state.time_entry_tab.loaded = True
+    try:
+        page = _fetch_page_with_subjects(state, state.time_entry_tab.offset)
+    except requests.exceptions.RequestException as e:
+        state.time_entry_tab.error = messages.tui_time_entry_load_failed.format(error=e)
+        return
+    _apply_page(state, page, state.time_entry_tab.offset)
 
 
 def _render_list(state: TuiState) -> Renderable:
@@ -106,8 +121,21 @@ def _render_preview(state: TuiState) -> Renderable:
     return [("", "\n".join(lines))]
 
 
+def _page_label(state: TuiState) -> str:
+    total = state.time_entry_tab.total_count
+    page_size = state.page_size or 1
+    current = state.time_entry_tab.offset // page_size + 1
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    count = len(state.time_entry_tab.entries)
+    if count == 0:
+        return f"Page {current}/{total_pages} (0 / {total})"
+    start = state.time_entry_tab.offset + 1
+    end = state.time_entry_tab.offset + count
+    return f"Page {current}/{total_pages} ({start}-{end} / {total})"
+
+
 def _status_hint(state: TuiState) -> str:
-    return messages.tui_status_hint_time_entries
+    return messages.tui_status_hint_time_entries.format(page_label=_page_label(state))
 
 
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
@@ -123,7 +151,10 @@ def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
             action="create",
             tab="time_entries",
             issue_id=issue_id,
-            position=TuiPosition(cursor=state.time_entry_tab.cursor),
+            position=TuiPosition(
+                offset=state.time_entry_tab.offset,
+                cursor=state.time_entry_tab.cursor,
+            ),
         )
     if key == "u":
         entries = state.time_entry_tab.entries
@@ -134,7 +165,10 @@ def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
             action="update",
             tab="time_entries",
             time_entry_id=str(te["id"]),
-            position=TuiPosition(cursor=state.time_entry_tab.cursor),
+            position=TuiPosition(
+                offset=state.time_entry_tab.offset,
+                cursor=state.time_entry_tab.cursor,
+            ),
         )
     return None
 
@@ -208,30 +242,64 @@ def confirm_delete(state: TuiState) -> None:
         state.flash_message = messages.tui_time_entry_delete_failed.format(error=e)
         return
     entries.pop(cursor)
+    state.time_entry_tab.total_count = max(0, state.time_entry_tab.total_count - 1)
     if cursor >= len(entries):
         state.time_entry_tab.cursor = max(0, len(entries) - 1)
 
 
 def _on_reload(state: TuiState) -> None:
-    """time_entry 一覧を取り直す。
+    """現在のページのまま time_entry 一覧を取り直す。
 
-    `loaded` を立てたままだと `_load_time_entries` が早期 return するので
-    一度倒す。既存のカーソル位置は entry id 一致で復元を試み、無ければ先頭に戻る。
+    同じ id の entry が残っていればその位置に cursor を復元し、無ければ
+    元の cursor 位置を新一覧の範囲内にクランプする。
     """
     prev_id: int | None = None
     if state.time_entry_tab.entries:
         prev_id = state.time_entry_tab.entries[state.time_entry_tab.cursor].get("id")
-    state.time_entry_tab.loaded = False
+    prev_cursor = state.time_entry_tab.cursor
     state.time_entry_tab.error = None
-    state.time_entry_tab.entries = []
-    state.time_entry_tab.issue_subjects = {}
-    state.time_entry_tab.cursor = 0
-    _load_time_entries(state)
+    try:
+        page = _fetch_page_with_subjects(state, state.time_entry_tab.offset)
+    except requests.exceptions.RequestException as e:
+        state.time_entry_tab.error = messages.tui_time_entry_load_failed.format(error=e)
+        return
+    state.time_entry_tab.entries = page["time_entries"]
+    state.time_entry_tab.total_count = page["total_count"]
+    state.time_entry_tab.issue_subjects = page["issue_subjects"]
+    if not state.time_entry_tab.entries:
+        state.time_entry_tab.cursor = 0
+        return
     if prev_id is not None:
         for i, te in enumerate(state.time_entry_tab.entries):
             if te.get("id") == prev_id:
                 state.time_entry_tab.cursor = i
                 return
+    state.time_entry_tab.cursor = max(
+        0, min(prev_cursor, len(state.time_entry_tab.entries) - 1)
+    )
+
+
+def _on_page_forward(state: TuiState) -> None:
+    next_offset = state.time_entry_tab.offset + state.page_size
+    try:
+        page = _fetch_page_with_subjects(state, next_offset)
+    except requests.exceptions.RequestException as e:
+        state.time_entry_tab.error = messages.tui_time_entry_load_failed.format(error=e)
+        return
+    if page["time_entries"]:
+        _apply_page(state, page, next_offset)
+
+
+def _on_page_backward(state: TuiState) -> None:
+    if state.time_entry_tab.offset <= 0:
+        return
+    prev_offset = max(0, state.time_entry_tab.offset - state.page_size)
+    try:
+        page = _fetch_page_with_subjects(state, prev_offset)
+    except requests.exceptions.RequestException as e:
+        state.time_entry_tab.error = messages.tui_time_entry_load_failed.format(error=e)
+        return
+    _apply_page(state, page, prev_offset)
 
 
 def _on_open_web(state: TuiState) -> None:
@@ -251,6 +319,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  ↑/k/Ctrl+P", messages.tui_help_move_up),
     ("  ↓/j/Ctrl+N", messages.tui_help_move_down),
     ("  gg / G", messages.tui_help_goto_top_bottom),
+    ("  ←/h / →/l", messages.tui_help_prev_next_page),
     ("  Tab / Shift+Tab", messages.tui_help_switch_tab),
     ("  Ctrl+E / Ctrl+Y", messages.tui_help_preview_scroll_line),
     ("  Ctrl+D / Ctrl+U", messages.tui_help_preview_scroll_half_page),
@@ -280,8 +349,8 @@ TIME_ENTRY_TAB = TabView(
     on_goto_bottom=_on_goto_bottom,
     on_jump_to_id=noop_jump,
     on_enter=noop,
-    on_page_forward=noop,
-    on_page_backward=noop,
+    on_page_forward=_on_page_forward,
+    on_page_backward=_on_page_backward,
     on_open_web=_on_open_web,
     on_open_web_by_id=noop_jump,
     on_activate=_load_time_entries,

@@ -129,49 +129,81 @@ class TestWikiReload:
 
 
 class TestTimeEntryReload:
-    """time_entry タブの _on_reload() は loaded を倒して取り直す"""
+    """time_entry タブの _on_reload() は現在のページを再取得する"""
 
-    def test_restores_cursor_by_id(self, monkeypatch):
-        """同じ id の entry が残っていれば cursor をその位置に復元する"""
+    def test_preserves_offset_and_restores_cursor_by_id(self, monkeypatch):
+        """offset を保ったまま再取得し、同じ id が残っていれば cursor をその位置に復元する"""
         state = TuiState()
+        state.page_size = 5
         state.time_entry_tab.loaded = True
+        state.time_entry_tab.offset = 10
         state.time_entry_tab.entries = [
             {"id": 100},
             {"id": 200},
             {"id": 300},
         ]
+        state.time_entry_tab.total_count = 30
         state.time_entry_tab.cursor = 1  # id=200 にいる
 
-        def fake_load(state):
-            assert state.time_entry_tab.loaded is False
-            state.time_entry_tab.loaded = True
+        def fake_fetch(state, offset):
+            assert offset == 10
             # 200 は残っているが順序が変わる
-            state.time_entry_tab.entries = [
-                {"id": 400},
-                {"id": 200},
-            ]
-            state.time_entry_tab.cursor = 0
+            return {
+                "time_entries": [{"id": 400}, {"id": 200}],
+                "total_count": 30,
+                "issue_subjects": {},
+            }
 
-        monkeypatch.setattr(time_entry_tab, "_load_time_entries", fake_load)
+        monkeypatch.setattr(time_entry_tab, "_fetch_page_with_subjects", fake_fetch)
 
         time_entry_tab._on_reload(state)
 
+        assert state.time_entry_tab.offset == 10
         assert state.time_entry_tab.cursor == 1
+        assert state.time_entry_tab.total_count == 30
 
-    def test_falls_back_to_top_when_id_missing(self, monkeypatch):
-        """前回の id が新一覧に無ければ cursor=0 のまま"""
+    def test_clamps_cursor_when_new_page_is_shorter(self, monkeypatch):
+        """id 一致が無く件数が減ったら cursor は末尾にクランプされる"""
         state = TuiState()
-        state.time_entry_tab.loaded = True
-        state.time_entry_tab.entries = [{"id": 999}]
-        state.time_entry_tab.cursor = 0
+        state.page_size = 5
+        state.time_entry_tab.offset = 0
+        state.time_entry_tab.entries = [{"id": i} for i in range(1, 6)]
+        state.time_entry_tab.total_count = 5
+        state.time_entry_tab.cursor = 4
 
-        def fake_load(state):
-            state.time_entry_tab.loaded = True
-            state.time_entry_tab.entries = [{"id": 111}, {"id": 222}]
-            state.time_entry_tab.cursor = 0
-
-        monkeypatch.setattr(time_entry_tab, "_load_time_entries", fake_load)
+        monkeypatch.setattr(
+            time_entry_tab,
+            "_fetch_page_with_subjects",
+            lambda state, offset: {
+                "time_entries": [{"id": 999}],
+                "total_count": 1,
+                "issue_subjects": {},
+            },
+        )
 
         time_entry_tab._on_reload(state)
 
         assert state.time_entry_tab.cursor == 0
+        assert state.time_entry_tab.total_count == 1
+
+    def test_empty_result_resets_cursor(self, monkeypatch):
+        """再取得結果が空でも例外を投げず cursor=0 になる"""
+        state = TuiState()
+        state.page_size = 5
+        state.time_entry_tab.entries = [{"id": 999}]
+        state.time_entry_tab.cursor = 0
+        monkeypatch.setattr(
+            time_entry_tab,
+            "_fetch_page_with_subjects",
+            lambda state, offset: {
+                "time_entries": [],
+                "total_count": 0,
+                "issue_subjects": {},
+            },
+        )
+
+        time_entry_tab._on_reload(state)
+
+        assert state.time_entry_tab.cursor == 0
+        assert state.time_entry_tab.entries == []
+        assert state.time_entry_tab.total_count == 0
