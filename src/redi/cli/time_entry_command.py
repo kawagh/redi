@@ -5,10 +5,14 @@ from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.validation import Validator
 
 from redi.cli.alias import resolve_alias
-from redi.cli.keybinding import digit_and_period_key_bindings, digit_only_key_bindings
+from redi.cli.keybinding import (
+    date_key_bindings,
+    digit_and_period_key_bindings,
+    digit_only_key_bindings,
+)
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.confirm import confirm_delete
-from redi.cli.validator import HourValidator
+from redi.cli.validator import DateValidator, HourValidator
 from redi.config import default_project_id
 from redi.i18n import messages
 from redi.api.enumeration import fetch_time_entry_activities
@@ -179,7 +183,14 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
                 messages.activity_label.format(value=activity_labels[args.activity_id])
             )
         if not args.spent_on:
-            args.spent_on = prompt(messages.prompt_spent_on).strip() or None
+            args.spent_on = (
+                prompt(
+                    messages.prompt_spent_on,
+                    validator=DateValidator(allow_empty=True),
+                    key_bindings=date_key_bindings(),
+                ).strip()
+                or None
+            )
         if not args.comments:
             args.comments = prompt(messages.prompt_comment).strip() or None
     except (KeyboardInterrupt, EOFError):
@@ -235,6 +246,8 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
                 prompt(
                     messages.prompt_update_spent_on,
                     default=current.get("spent_on", "") or "",
+                    validator=DateValidator(allow_empty=True),
+                    key_bindings=date_key_bindings(),
                 ).strip()
                 or None
             )
