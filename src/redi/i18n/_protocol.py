@@ -545,6 +545,7 @@ class MessagesProto(Protocol):
     """{page_label}"""
     tui_status_hint_wiki: str
     tui_status_hint_time_entries: str
+    """{page_label}"""
     tui_flash_reloaded: str
     tui_filter_status_open_default: str
     tui_filter_status_all: str

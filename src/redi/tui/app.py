@@ -292,6 +292,8 @@ def run_issue_tui(
             if last.wiki_title in titles:
                 state.wiki_tab.cursor = titles.index(last.wiki_title)
     if state.tab == "time_entries":
+        if last and last.tab == "time_entries":
+            state.time_entry_tab.offset = last.position.offset
         TABS["time_entries"].on_activate(state)
         if last and last.tab == "time_entries":
             max_cursor = max(0, len(state.time_entry_tab.entries) - 1)

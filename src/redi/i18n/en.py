@@ -399,7 +399,7 @@ class En(MessagesProto):
     tui_status_hint_issues = " {page_label}  jk:move /:search f:filter c:create u:update v:web ?:help q:quit "
     tui_status_hint_wiki = " jk:move /:search c:create u:update v:web ?:help q:quit "
     tui_status_hint_time_entries = (
-        " jk:move /:search c:create u:update v:web ?:help q:quit "
+        " {page_label}  jk:move /:search c:create u:update v:web ?:help q:quit "
     )
     tui_flash_reloaded = "Reloaded"
     tui_filter_status_open_default = "open (default)"

@@ -400,7 +400,7 @@ class Ja(MessagesProto):
     )
     tui_status_hint_wiki = " jk:移動 /:検索 c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     tui_status_hint_time_entries = (
-        " jk:移動 /:検索 c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+        " {page_label}  jk:移動 /:検索 c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     )
     tui_flash_reloaded = "再読込しました"
     tui_filter_status_open_default = "open (デフォルト)"

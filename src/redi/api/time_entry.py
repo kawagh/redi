@@ -92,6 +92,25 @@ def format_time_entry_line(
     return "  ".join(parts)
 
 
+def fetch_time_entries_page(
+    project_id: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> dict:
+    if project_id:
+        path = f"/projects/{project_id}/time_entries.json"
+    else:
+        path = "/time_entries.json"
+    params: dict = {}
+    if limit is not None:
+        params["limit"] = limit
+    if offset is not None:
+        params["offset"] = offset
+    response = client.get(path, params=params)
+    response.raise_for_status()
+    return response.json()
+
+
 def fetch_issue_subjects(issue_ids: list[int]) -> dict[int, str]:
     if not issue_ids:
         return {}

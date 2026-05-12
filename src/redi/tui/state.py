@@ -99,7 +99,9 @@ class WikiTabState:
 @dataclass
 class TimeEntryTabState:
     loaded: bool = False
+    offset: int = 0
     entries: list[dict] = field(default_factory=list)
+    total_count: int = 0
     issue_subjects: dict[int, str] = field(default_factory=dict)
     cursor: int = 0
     error: str | None = None
