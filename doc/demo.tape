@@ -91,7 +91,7 @@ Enter
 Sleep 1000ms
 Type "i"
 Sleep 200ms
-Type "created from CUI."
+Type "created from CLI."
 Sleep 300ms
 Escape
 Sleep 200ms
