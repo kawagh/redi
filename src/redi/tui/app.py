@@ -161,8 +161,14 @@ def _build_status_choices() -> list[tuple[str | None, str]]:
     return choices
 
 
-def _build_assignee_choices(project_id: str | None) -> list[tuple[str | None, str]]:
-    """フィルタモーダルの担当者選択肢。先頭は特殊指定 (未設定/me/未割当)。"""
+def _build_assignee_choices(
+    project_id: str | None, me_id: str | None = None
+) -> list[tuple[str | None, str]]:
+    """フィルタモーダルの担当者選択肢。先頭は特殊指定 (未設定/me/未割当)。
+
+    `me_id` が指定されていれば、`fetch_project_users` の結果から自身を除外して
+    「自分」項目との重複表示を避ける。
+    """
     choices: list[tuple[str | None, str]] = [
         (None, messages.tui_filter_assignee_none),
         ("me", messages.tui_filter_assignee_me),
@@ -170,7 +176,10 @@ def _build_assignee_choices(project_id: str | None) -> list[tuple[str | None, st
     ]
     if project_id:
         for u in fetch_project_users(project_id):
-            choices.append((str(u["id"]), u.get("name", "")))
+            uid = str(u["id"])
+            if me_id is not None and uid == me_id:
+                continue
+            choices.append((uid, u.get("name", "")))
     return choices
 
 
@@ -572,7 +581,9 @@ def run_issue_tui(
     def _open_filter_modal() -> None:
         modal = state.issue_tab.filter_modal
         modal.status_choices = _build_status_choices()
-        modal.assignee_choices = _build_assignee_choices(default_project_id)
+        modal.assignee_choices = _build_assignee_choices(
+            default_project_id, state.me_id
+        )
         modal.status_cursor = 0
         for idx, (api_val, _label) in enumerate(modal.status_choices):
             if api_val == state.issue_tab.filter.status_id:
