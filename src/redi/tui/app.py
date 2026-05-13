@@ -604,7 +604,8 @@ def run_issue_tui(
 
     @kb.add("j", filter=show_filter_modal)
     @kb.add("down", filter=show_filter_modal)
-    def _(event):
+    @kb.add("c-n", filter=show_filter_modal)
+    def _issue_filter_modal_cursor_down(event):
         modal = state.issue_tab.filter_modal
         if modal.focus == "status":
             modal.status_cursor = min(
@@ -617,7 +618,8 @@ def run_issue_tui(
 
     @kb.add("k", filter=show_filter_modal)
     @kb.add("up", filter=show_filter_modal)
-    def _(event):
+    @kb.add("c-p", filter=show_filter_modal)
+    def _issue_filter_modal_cursor_up(event):
         modal = state.issue_tab.filter_modal
         if modal.focus == "status":
             modal.status_cursor = max(0, modal.status_cursor - 1)
@@ -659,13 +661,15 @@ def run_issue_tui(
 
     @kb.add("j", filter=show_time_entry_filter_modal)
     @kb.add("down", filter=show_time_entry_filter_modal)
-    def _(event):
+    @kb.add("c-n", filter=show_time_entry_filter_modal)
+    def _time_entry_filter_modal_cursor_down(event):
         modal = state.time_entry_tab.filter_modal
         modal.user_cursor = min(len(modal.user_choices) - 1, modal.user_cursor + 1)
 
     @kb.add("k", filter=show_time_entry_filter_modal)
     @kb.add("up", filter=show_time_entry_filter_modal)
-    def _(event):
+    @kb.add("c-p", filter=show_time_entry_filter_modal)
+    def _time_entry_filter_modal_cursor_up(event):
         modal = state.time_entry_tab.filter_modal
         modal.user_cursor = max(0, modal.user_cursor - 1)
 
