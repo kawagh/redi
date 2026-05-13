@@ -164,3 +164,6 @@ class TuiState:
     preview_scroll: int = 0
     # API エラー等を Float で出すための本文
     error_modal: str | None = None
+    # 起動時に `/my/account.json` から取得した自分のユーザー id。
+    # フィルタモーダルの選択肢で「自分」と実ユーザーの重複表示を避けるために使う。
+    me_id: str | None = None

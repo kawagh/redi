@@ -6,6 +6,16 @@ from redi.client import client
 from redi.i18n import messages
 
 
+def fetch_my_user_id() -> str | None:
+    """`/my/account.json` から自分のユーザー id を取得する。失敗時は None。"""
+    try:
+        response = client.get("/my/account.json")
+        response.raise_for_status()
+        return str(response.json()["user"]["id"])
+    except requests.RequestException:
+        return None
+
+
 def read_my_account(full: bool = False) -> None:
     response = client.get("/my/account.json")
     response.raise_for_status()

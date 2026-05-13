@@ -19,6 +19,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Frame
 
 from redi.api.issue_status import fetch_issue_statuses
+from redi.api.me import fetch_my_user_id
 from redi.api.membership import fetch_project_users
 from redi.config import default_project_id
 from redi.i18n import messages
@@ -173,15 +174,24 @@ def _build_assignee_choices(project_id: str | None) -> list[tuple[str | None, st
     return choices
 
 
-def _build_user_choices(project_id: str | None) -> list[tuple[str | None, str]]:
-    """time_entry フィルタモーダルのユーザー選択肢。先頭は特殊指定 (未設定/自分)。"""
+def _build_user_choices(
+    project_id: str | None, me_id: str | None = None
+) -> list[tuple[str | None, str]]:
+    """time_entry フィルタモーダルのユーザー選択肢。先頭は特殊指定 (未設定/自分)。
+
+    `me_id` が指定されていれば、`fetch_project_users` の結果から自身を除外して
+    「自分」項目との重複表示を避ける。
+    """
     choices: list[tuple[str | None, str]] = [
         (None, messages.tui_filter_assignee_none),
         ("me", messages.tui_filter_assignee_me),
     ]
     if project_id:
         for u in fetch_project_users(project_id):
-            choices.append((str(u["id"]), u.get("name", "")))
+            uid = str(u["id"])
+            if me_id is not None and uid == me_id:
+                continue
+            choices.append((uid, u.get("name", "")))
     return choices
 
 
@@ -291,6 +301,8 @@ def run_issue_tui(
 ) -> TuiResult | None:
     if state is None:
         state = TuiState()
+    if state.me_id is None:
+        state.me_id = fetch_my_user_id()
     last = state.last_result
     if last:
         state.tab = last.tab
@@ -576,7 +588,7 @@ def run_issue_tui(
 
     def _open_time_entry_filter_modal() -> None:
         modal = state.time_entry_tab.filter_modal
-        modal.user_choices = _build_user_choices(default_project_id)
+        modal.user_choices = _build_user_choices(default_project_id, state.me_id)
         modal.user_cursor = 0
         for idx, (api_val, _label) in enumerate(modal.user_choices):
             if api_val == state.time_entry_tab.filter.user_id:
