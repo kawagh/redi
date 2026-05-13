@@ -1,9 +1,44 @@
 import json
+from typing import NotRequired, TypedDict, cast
 
 import requests
 
 from redi.client import client
 from redi.i18n import messages
+
+
+class ProjectUser(TypedDict):
+    """`memberships[].user` の要素。"""
+
+    id: int
+    name: str
+
+
+class Role(TypedDict):
+    """`memberships[].roles` の要素。"""
+
+    id: int
+    name: str
+
+
+class Membership(TypedDict):
+    """`memberships[]` の要素。
+
+    `user` と `roles` は本ライブラリで扱うユーザーメンバーシップでは常に存在する前提。
+    """
+
+    id: int
+    user: ProjectUser
+    roles: list[Role]
+
+
+class MembershipsResponse(TypedDict):
+    """GET /projects/{id}/memberships.json のレスポンス。"""
+
+    memberships: list[Membership]
+    total_count: NotRequired[int]
+    offset: NotRequired[int]
+    limit: NotRequired[int]
 
 
 def list_memberships(project_id: str, full: bool = False) -> None:
@@ -17,12 +52,12 @@ def list_memberships(project_id: str, full: bool = False) -> None:
         print(_format_membership_line(m))
 
 
-def fetch_project_users(project_id: str) -> list[dict]:
+def fetch_project_users(project_id: str) -> list[ProjectUser]:
     """プロジェクトのメンバー（user）を返す。"""
     response = client.get(f"/projects/{project_id}/memberships.json")
     response.raise_for_status()
-    memberships = response.json()["memberships"]
-    return [m["user"] for m in memberships if m.get("user")]
+    data = cast(MembershipsResponse, response.json())
+    return [m["user"] for m in data["memberships"] if "user" in m]
 
 
 def fetch_membership(membership_id: str) -> dict:
