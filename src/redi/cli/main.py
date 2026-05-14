@@ -217,6 +217,7 @@ def main() -> None:
                             tracker_id=None,
                             priority_id=None,
                             assigned_to_id=None,
+                            fixed_version_id=None,
                             description=None,
                             custom_fields=None,
                         )
