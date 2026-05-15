@@ -217,6 +217,11 @@ def main() -> None:
                             tracker_id=None,
                             priority_id=None,
                             assigned_to_id=None,
+                            fixed_version_id=None,
+                            parent_issue_id=None,
+                            start_date=None,
+                            due_date=None,
+                            estimated_hours=None,
                             description=None,
                             custom_fields=None,
                         )
