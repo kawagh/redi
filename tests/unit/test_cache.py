@@ -2,6 +2,7 @@ import json
 import time
 
 from redi import cache, config
+import pytest
 
 
 class TestSave:
@@ -81,3 +82,22 @@ class TestLoad:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps({"timestamp": time.time()}))
         assert cache.load("statuses") is None
+
+
+class TestSlugifyUrl:
+    """_slugify_url() は URL をディレクトリ名に変換する"""
+
+    @pytest.mark.parametrize(
+        ("url", "expected"),
+        [
+            ("http://redmine.example.com", "redmine.example.com"),
+            ("https://redmine.example.com", "redmine.example.com"),
+            ("https://redmine.example.com/", "redmine.example.com"),
+            ("https://redmine.example.com/main", "redmine.example.com_main"),
+            ("https://redmine.example.com/main/", "redmine.example.com_main"),
+            ("http://localhost:3000", "localhost_3000"),
+            ("http://localhost:3001", "localhost_3001"),
+        ],
+    )
+    def test_slugify(self, url, expected):
+        assert cache._slugify_url(url) == expected
