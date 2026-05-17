@@ -5,7 +5,7 @@ from typing import NotRequired, TypedDict
 
 import requests
 
-from redi.api.exceptions import RedmineValidationException
+from redi.api.exceptions import RedmineValidationException, print_http_error_body
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
@@ -173,7 +173,7 @@ def delete_wiki(project_id: str, page_title: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.wiki_page_delete_failed)
         exit(1)
     print(messages.wiki_page_deleted.format(title=page_title))

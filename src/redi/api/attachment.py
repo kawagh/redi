@@ -4,6 +4,7 @@ import os
 
 import requests
 
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
@@ -25,7 +26,7 @@ def upload_file(file_path: str) -> dict:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.file_upload_failed_with_path.format(path=file_path))
         exit(1)
     token = response.json()["upload"]["token"]
@@ -78,7 +79,7 @@ def delete_attachment(attachment_id: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.attachment_delete_failed)
         exit(1)
     print(messages.attachment_deleted.format(id=attachment_id))
@@ -107,7 +108,7 @@ def update_attachment(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.attachment_update_failed)
         exit(1)
     print(

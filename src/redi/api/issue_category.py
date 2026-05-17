@@ -2,6 +2,7 @@ import json
 
 import requests
 
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.i18n import messages
 
@@ -75,7 +76,7 @@ def create_issue_category(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.category_create_failed)
         exit(1)
     created = response.json()["issue_category"]
@@ -106,7 +107,7 @@ def update_issue_category(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.category_update_failed)
         exit(1)
     print(messages.category_updated.format(id=category_id))
@@ -124,7 +125,7 @@ def delete_issue_category(category_id: str, reassign_to_id: int | None = None) -
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.category_delete_failed)
         exit(1)
     print(messages.category_deleted.format(id=category_id))

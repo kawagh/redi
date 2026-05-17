@@ -31,11 +31,14 @@ def _verify_connection(url: str, api_key: str) -> dict | None:
         response.raise_for_status()
         return response.json().get("user")
     except requests.exceptions.HTTPError as e:
-        print(
-            messages.connection_failed_http.format(
-                status=e.response.status_code, reason=e.response.reason
+        if e.response is not None:
+            print(
+                messages.connection_failed_http.format(
+                    status=e.response.status_code, reason=e.response.reason
+                )
             )
-        )
+        else:
+            print(messages.connection_failed_other.format(error=e))
     except requests.exceptions.RequestException as e:
         print(messages.connection_failed_other.format(error=e))
     return None

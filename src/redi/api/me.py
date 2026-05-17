@@ -2,6 +2,7 @@ import json
 
 import requests
 
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.i18n import messages
 
@@ -64,7 +65,7 @@ def update_my_account(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.account_update_failed)
         exit(1)
     print(messages.account_updated)

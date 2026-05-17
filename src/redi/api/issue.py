@@ -5,7 +5,7 @@ from collections import defaultdict
 import requests
 
 from redi.api.attachment import upload_file
-from redi.api.exceptions import RedmineValidationException
+from redi.api.exceptions import RedmineValidationException, print_http_error_body
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
@@ -300,7 +300,7 @@ def create_issue(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.issue_create_failed)
         exit(1)
     created = response.json()["issue"]
@@ -372,7 +372,7 @@ def update_issue(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.issue_update_failed)
         exit(1)
     url = f"{redmine_url}/issues/{issue_id}"
@@ -391,7 +391,7 @@ def add_watcher(issue_id: str, user_id: int) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.watcher_add_failed)
         exit(1)
     print(messages.watcher_added.format(issue_id=issue_id, user_id=user_id))
@@ -408,7 +408,7 @@ def remove_watcher(issue_id: str, user_id: int) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.watcher_remove_failed)
         exit(1)
     print(messages.watcher_removed.format(issue_id=issue_id, user_id=user_id))
@@ -423,7 +423,7 @@ def delete_issue(issue_id: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.issue_delete_failed)
         exit(1)
     print(messages.issue_deleted.format(id=issue_id))

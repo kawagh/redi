@@ -3,6 +3,7 @@ from typing import NotRequired, TypedDict, cast
 
 import requests
 
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.i18n import messages
 
@@ -112,7 +113,7 @@ def create_membership(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.membership_create_failed)
         exit(1)
     created = response.json()["membership"]
@@ -131,7 +132,7 @@ def update_membership(membership_id: str, role_ids: list[int]) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.membership_update_failed)
         exit(1)
     print(messages.membership_updated.format(id=membership_id))
@@ -146,7 +147,7 @@ def delete_membership(membership_id: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.membership_delete_failed)
         exit(1)
     print(messages.membership_deleted.format(id=membership_id))

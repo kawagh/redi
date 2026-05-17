@@ -1,5 +1,6 @@
 import requests
 
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.i18n import messages
 
@@ -16,7 +17,7 @@ def update_issue_journal(journal_id: str, notes: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.issue_journal_update_failed)
         exit(1)
     print(messages.issue_journal_updated.format(id=journal_id))
@@ -31,7 +32,7 @@ def delete_issue_journal(journal_id: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.issue_journal_delete_failed)
         exit(1)
     print(messages.issue_journal_deleted.format(id=journal_id))
