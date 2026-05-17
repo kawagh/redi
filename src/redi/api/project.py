@@ -3,6 +3,7 @@ import webbrowser
 
 import requests
 
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
@@ -74,7 +75,7 @@ def create_project(
         print(f"{project['id']} {project['name']} ({project['identifier']})")
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         exit(1)
 
 
@@ -105,7 +106,7 @@ def update_project(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.project_update_failed)
         exit(1)
     print(messages.project_updated.format(id=project_id))
@@ -120,7 +121,7 @@ def archive_project(project_id: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.project_archive_failed)
         exit(1)
     print(messages.project_archived.format(id=project_id))
@@ -135,7 +136,7 @@ def unarchive_project(project_id: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.project_unarchive_failed)
         exit(1)
     print(messages.project_unarchived.format(id=project_id))
@@ -150,7 +151,7 @@ def delete_project(project_id: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.project_delete_failed)
         exit(1)
     print(messages.project_deleted.format(id=project_id))

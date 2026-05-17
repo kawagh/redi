@@ -2,6 +2,7 @@ import json
 
 import requests
 
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
@@ -83,7 +84,7 @@ def update_group(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.group_update_failed)
         exit(1)
     print(messages.group_updated.format(id=group_id))
@@ -104,7 +105,7 @@ def add_group_user(group_id: str, user_id: int) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.group_add_user_failed)
         exit(1)
     print(messages.group_user_added.format(group_id=group_id, user_id=user_id))
@@ -124,7 +125,7 @@ def remove_group_user(group_id: str, user_id: int) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.group_remove_user_failed)
         exit(1)
     print(messages.group_user_removed.format(group_id=group_id, user_id=user_id))
@@ -142,7 +143,7 @@ def delete_group(group_id: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.group_delete_failed)
         exit(1)
     print(messages.group_deleted.format(id=group_id))
@@ -160,7 +161,7 @@ def create_group(name: str, user_ids: list[int] | None = None) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.group_create_failed)
         exit(1)
     created = response.json()["group"]

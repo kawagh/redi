@@ -2,6 +2,7 @@ import json
 
 import requests
 
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
@@ -45,7 +46,7 @@ def create_user(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.user_create_failed)
         exit(1)
     created = response.json()["user"]
@@ -175,7 +176,7 @@ def update_user(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.user_update_failed)
         exit(1)
     print(messages.user_updated.format(id=user_id))
@@ -193,7 +194,7 @@ def delete_user(user_id: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.user_delete_failed)
         exit(1)
     print(messages.user_deleted.format(id=user_id))

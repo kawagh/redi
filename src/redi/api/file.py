@@ -3,6 +3,7 @@ import json
 import requests
 
 from redi.api.attachment import upload_file
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.i18n import messages
 
@@ -50,7 +51,7 @@ def create_file(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.file_upload_failed)
         exit(1)
     print(messages.file_uploaded.format(filename=upload["filename"]))

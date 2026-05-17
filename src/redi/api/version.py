@@ -3,6 +3,7 @@ import webbrowser
 
 import requests
 
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
@@ -32,7 +33,7 @@ def create_version(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.version_create_failed)
         exit(1)
     created = response.json()["version"]
@@ -74,7 +75,7 @@ def update_version(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.version_update_failed)
         exit(1)
     print(
@@ -134,7 +135,7 @@ def delete_version(version_id: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.version_delete_failed)
         exit(1)
     print(messages.version_deleted.format(id=version_id))

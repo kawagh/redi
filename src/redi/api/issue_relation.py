@@ -2,6 +2,7 @@ import json
 
 import requests
 
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
@@ -48,7 +49,7 @@ def create_relation(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.relation_create_failed)
         exit(1)
     print(
@@ -83,7 +84,7 @@ def delete_relation(issue_id: str, issue_to_id: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.relation_delete_failed)
         return
     print(

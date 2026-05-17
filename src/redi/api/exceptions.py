@@ -5,6 +5,11 @@ import requests
 ValidationAction = Literal["create", "update"]
 
 
+def print_http_error_body(e: requests.exceptions.HTTPError) -> None:
+    if e.response is not None:
+        print(e.response.text)
+
+
 class RedmineValidationException(Exception):
     """Redmine API がバリデーションエラー (HTTP 422) を返したときに送出する例外。
 

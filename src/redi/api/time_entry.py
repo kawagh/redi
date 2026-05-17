@@ -2,7 +2,7 @@ import json
 
 import requests
 
-from redi.api.exceptions import RedmineValidationException
+from redi.api.exceptions import RedmineValidationException, print_http_error_body
 from redi.api.project import resolve_project_id
 from redi.client import client
 from redi.i18n import messages
@@ -46,7 +46,7 @@ def create_time_entry(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.time_entry_create_failed)
         exit(1)
     created = response.json()["time_entry"]
@@ -247,7 +247,7 @@ def update_time_entry(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.time_entry_update_failed)
         exit(1)
     print(messages.time_entry_updated.format(id=time_entry_id))
@@ -259,7 +259,7 @@ def delete_time_entry(time_entry_id: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.time_entry_delete_failed)
         exit(1)
     print(messages.time_entry_deleted.format(id=time_entry_id))
