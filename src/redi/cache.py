@@ -11,7 +11,7 @@ DEFAULT_TTL = 100 * 12 * 30 * 24 * 60 * 60  # 100 years
 def _slugify_url(url: str) -> str:
     """redmineのURL をディレクトリ名に変換する
 
-    https://redmine.example.com → redmine.example.com_8080_sub
+    https://redmine.example.com → redmine.example.com
     http://localhost:3000 → localhost_3000
     http://redmine.example.com:8080/sub → redmine.example.com_8080_sub
     """
