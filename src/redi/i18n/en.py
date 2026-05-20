@@ -428,6 +428,11 @@ class En(MessagesProto):
     tui_meta_activity = "Activity"
     tui_meta_issue = "Issue"
     tui_preview_comments_header = "Comments:"
+    tui_comment_select_status_hint = (
+        "Comment select: jk:move u:update D:delete Esc/q:cancel"
+    )
+    tui_comment_edit_canceled_empty = "Canceled (empty comment)"
+    tui_comment_delete_prompt = "Delete comment? {summary} [y/N]"
     tui_wiki_no_pages = "No wiki pages found"
     tui_wiki_loading = "(loading wiki...)"
     tui_wiki_load_failed = "Failed to fetch wiki: {error}"
@@ -775,11 +780,14 @@ class En(MessagesProto):
     tui_help_quit = "Quit"
 
     # ---- TUI help labels (issue tab) ----
-    tui_help_issue_load_comments = "Load comments for the selected issue"
+    tui_help_issue_load_comments = "Load comments & enter comment-select mode"
     tui_help_issue_create_or_update = "Create / update issue"
     tui_help_issue_add_comment = "Add comment (when no search query)"
     tui_help_issue_create_time_entry = "Create a time entry"
     tui_help_issue_open_web_or_n = "Open selected issue in web / open #N in web"
+    tui_help_issue_comment_select_in_mode = (
+        "In select mode: jk:move u:update D:delete Esc/q:exit"
+    )
 
     # ---- TUI help labels (wiki tab) ----
     tui_help_wiki_load_text = "Load body of the selected page"

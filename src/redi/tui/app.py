@@ -25,9 +25,15 @@ from redi.config import default_project_id
 from redi.i18n import messages
 from redi.tui.issue_tab import (
     ISSUE_TAB,
+    comment_select_cursor_down,
+    comment_select_cursor_up,
+    confirm_comment_delete,
+    confirm_comment_edit,
+    exit_comment_select_mode,
     fetch_issues_with_filter,
     load_journals,
     reload_with_filter,
+    request_comment_delete,
 )
 from redi.tui.state import (
     FIXED_ROWS,
@@ -328,7 +334,12 @@ def run_issue_tui(
         state.issue_tab.cursor = max(
             0, min(position.cursor, len(state.issue_tab.issues) - 1)
         )
-    if last and last.action == "comment" and last.issue_id:
+    # journalの更新
+    if (
+        last
+        and last.action in ("comment", "edit_comment", "delete_comment")
+        and last.issue_id
+    ):
         target_id = int(last.issue_id)
         target = next(
             (i for i in state.issue_tab.issues if i.get("id") == target_id), None
@@ -358,6 +369,7 @@ def run_issue_tui(
             and not state.issue_tab.filter_modal.show
             and not state.time_entry_tab.filter_modal.show
             and state.error_modal is None
+            and not state.issue_tab.comment_select.active
         )
     )
     search_mode = Condition(lambda: state.search_mode)
@@ -368,6 +380,12 @@ def run_issue_tui(
         lambda: state.time_entry_tab.filter_modal.show
     )
     show_error_modal = Condition(lambda: state.error_modal is not None)
+    comment_select_mode = Condition(
+        lambda: (
+            state.issue_tab.comment_select.active
+            and state.confirm_delete_prompt is None
+        )
+    )
 
     def _clear_temporary_state() -> None:
         state.number_buffer = ""
@@ -508,6 +526,49 @@ def run_issue_tui(
             if result is not None:
                 event.app.exit(result=result)
 
+    # issueTab;コメント選択モード
+    @kb.add("up", filter=comment_select_mode)
+    @kb.add("k", filter=comment_select_mode)
+    @kb.add("c-p", filter=comment_select_mode)
+    def _(event):
+        comment_select_cursor_up(state)
+
+    @kb.add("down", filter=comment_select_mode)
+    @kb.add("j", filter=comment_select_mode)
+    @kb.add("c-n", filter=comment_select_mode)
+    def _(event):
+        comment_select_cursor_down(state)
+
+    @kb.add("c-d", filter=comment_select_mode)
+    def _(event):
+        _scroll_preview(max(1, state.page_size // 2))
+
+    @kb.add("c-u", filter=comment_select_mode)
+    def _(event):
+        _scroll_preview(-max(1, state.page_size // 2))
+
+    @kb.add("u", filter=comment_select_mode)
+    def _(event):
+        result = confirm_comment_edit(state)
+        if result is not None:
+            exit_comment_select_mode(state)
+            event.app.exit(result=result)
+
+    @kb.add("D", filter=comment_select_mode)
+    def _(event):
+        prompt = request_comment_delete(state)
+        if prompt is not None:
+            state.confirm_delete_prompt = prompt
+
+    @kb.add("enter", filter=comment_select_mode)
+    def _(event):
+        pass
+
+    @kb.add("escape", filter=comment_select_mode)
+    @kb.add("q", filter=comment_select_mode)
+    def _(event):
+        exit_comment_select_mode(state)
+
     @kb.add("n", filter=normal_mode)
     def _(event):
         _clear_temporary_state()
@@ -554,6 +615,11 @@ def run_issue_tui(
         state.confirm_delete_prompt = None
         if state.tab == "time_entries":
             time_entry_confirm_delete(state)
+        elif state.tab == "issues" and state.issue_tab.comment_select.active:
+            result = confirm_comment_delete(state)
+            if result is not None:
+                exit_comment_select_mode(state)
+                event.app.exit(result=result)
 
     @kb.add("<any>", filter=confirm_delete_mode)
     def _(event):

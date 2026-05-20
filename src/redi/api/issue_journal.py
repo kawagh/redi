@@ -24,7 +24,10 @@ def update_issue_journal(journal_id: str, notes: str) -> None:
 
 
 def delete_issue_journal(journal_id: str) -> None:
-    response = client.delete(f"/journals/{journal_id}.json")
+    response = client.put(
+        f"/journals/{journal_id}.json",
+        json={"journal": {"notes": ""}},
+    )
     if response.status_code == 404:
         print(messages.issue_journal_not_found.format(id=journal_id))
         exit(1)

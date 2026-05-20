@@ -55,6 +55,7 @@ from redi.api.enumeration import (
 )
 from redi.api.exceptions import RedmineValidationException
 from redi.api.issue import add_note
+from redi.api.issue_journal import delete_issue_journal, update_issue_journal
 from redi.api.issue_status import list_issue_statuses
 from redi.api.query import list_queries
 from redi.api.tracker import list_trackers
@@ -232,6 +233,18 @@ def main() -> None:
                     notes = open_editor()
                     if notes:
                         add_note(tui_result.issue_id, notes)
+                elif tui_result.action == "edit_comment":
+                    if tui_result.journal_id is None:
+                        continue
+                    new_notes = open_editor(initial_text=tui_result.journal_notes)
+                    if not new_notes:
+                        print(messages.tui_comment_edit_canceled_empty)
+                    else:
+                        update_issue_journal(tui_result.journal_id, new_notes)
+                elif tui_result.action == "delete_comment":
+                    if tui_result.journal_id is None:
+                        continue
+                    delete_issue_journal(tui_result.journal_id)
                 elif tui_result.action == "create" and tui_result.tab == "wiki":
                     handle_wiki(
                         argparse.Namespace(
