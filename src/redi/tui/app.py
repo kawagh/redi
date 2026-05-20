@@ -626,7 +626,6 @@ def run_issue_tui(
         state.confirm_delete_prompt = None
 
     @kb.add("q", filter=normal_mode)
-    @kb.add("escape", filter=normal_mode)
     @kb.add("c-c", filter=normal_mode)
     def _(event):
         event.app.exit(result=None)

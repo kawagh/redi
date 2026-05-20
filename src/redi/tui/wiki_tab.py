@@ -238,7 +238,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  R", messages.tui_help_reload),
     (messages.tui_help_section_other, ""),
     ("  ?", messages.tui_help_show_or_close),
-    ("  q / Esc / Ctrl+C", messages.tui_help_quit),
+    ("  q / Ctrl+C", messages.tui_help_quit),
 ]
 
 
