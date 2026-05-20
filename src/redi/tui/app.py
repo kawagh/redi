@@ -25,6 +25,10 @@ from redi.config import default_project_id
 from redi.i18n import messages
 from redi.tui.issue_tab import (
     ISSUE_TAB,
+    comment_edit_cursor_down,
+    comment_edit_cursor_up,
+    confirm_comment_edit,
+    exit_comment_edit_mode,
     fetch_issues_with_filter,
     load_journals,
     reload_with_filter,
@@ -328,7 +332,8 @@ def run_issue_tui(
         state.issue_tab.cursor = max(
             0, min(position.cursor, len(state.issue_tab.issues) - 1)
         )
-    if last and last.action == "comment" and last.issue_id:
+    # journalの更新
+    if last and last.action in ("comment", "edit_comment") and last.issue_id:
         target_id = int(last.issue_id)
         target = next(
             (i for i in state.issue_tab.issues if i.get("id") == target_id), None
@@ -358,6 +363,7 @@ def run_issue_tui(
             and not state.issue_tab.filter_modal.show
             and not state.time_entry_tab.filter_modal.show
             and state.error_modal is None
+            and not state.issue_tab.comment_edit.active
         )
     )
     search_mode = Condition(lambda: state.search_mode)
@@ -368,6 +374,7 @@ def run_issue_tui(
         lambda: state.time_entry_tab.filter_modal.show
     )
     show_error_modal = Condition(lambda: state.error_modal is not None)
+    comment_edit_mode = Condition(lambda: state.issue_tab.comment_edit.active)
 
     def _clear_temporary_state() -> None:
         state.number_buffer = ""
@@ -507,6 +514,35 @@ def run_issue_tui(
             result = TABS[state.tab].on_action_key(state, action_key)
             if result is not None:
                 event.app.exit(result=result)
+
+    # issueTab;コメント選択モード
+    @kb.add("up", filter=comment_edit_mode)
+    @kb.add("k", filter=comment_edit_mode)
+    @kb.add("c-p", filter=comment_edit_mode)
+    def _(event):
+        comment_edit_cursor_up(state)
+
+    @kb.add("down", filter=comment_edit_mode)
+    @kb.add("j", filter=comment_edit_mode)
+    @kb.add("c-n", filter=comment_edit_mode)
+    def _(event):
+        comment_edit_cursor_down(state)
+
+    @kb.add("u", filter=comment_edit_mode)
+    def _(event):
+        result = confirm_comment_edit(state)
+        if result is not None:
+            exit_comment_edit_mode(state)
+            event.app.exit(result=result)
+
+    @kb.add("enter", filter=comment_edit_mode)
+    def _(event):
+        pass
+
+    @kb.add("escape", filter=comment_edit_mode)
+    @kb.add("q", filter=comment_edit_mode)
+    def _(event):
+        exit_comment_edit_mode(state)
 
     @kb.add("n", filter=normal_mode)
     def _(event):

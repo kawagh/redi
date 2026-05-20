@@ -3,7 +3,7 @@ from typing import Literal
 
 from redi.i18n import messages
 
-TuiAction = Literal["update", "create", "comment", "create_time_entry"]
+TuiAction = Literal["update", "create", "comment", "edit_comment", "create_time_entry"]
 TuiTab = Literal["issues", "wiki", "time_entries"]
 FilterField = Literal["status", "assignee"]
 
@@ -29,6 +29,8 @@ class TuiResult:
     wiki_title: str | None = None
     parent_wiki_title: str | None = None
     time_entry_id: str | None = None
+    journal_id: str | None = None
+    journal_notes: str = ""
     position: TuiPosition = field(default_factory=TuiPosition)
 
 
@@ -77,6 +79,15 @@ class FilterModalState:
 
 
 @dataclass
+class CommentEditState:
+    """issueタブのコメント選択時の状態"""
+
+    active: bool = False
+    cursor: int = 0
+    editable_indexes: list[int] = field(default_factory=list)
+
+
+@dataclass
 class IssueTabState:
     offset: int = 0
     cursor: int = 0
@@ -84,6 +95,7 @@ class IssueTabState:
     total_count: int = 0
     filter: IssueFilter = field(default_factory=IssueFilter)
     filter_modal: FilterModalState = field(default_factory=FilterModalState)
+    comment_edit: CommentEditState = field(default_factory=CommentEditState)
 
 
 @dataclass

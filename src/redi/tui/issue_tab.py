@@ -4,7 +4,14 @@ from redi.api.issue import fetch_issue, fetch_issues_page
 from redi.config import default_project_id, redmine_url
 from redi.i18n import messages
 from redi.tui.render import highlight_segments, render_meta_table
-from redi.tui.state import Renderable, TuiAction, TuiPosition, TuiResult, TuiState
+from redi.tui.state import (
+    CommentEditState,
+    Renderable,
+    TuiAction,
+    TuiPosition,
+    TuiResult,
+    TuiState,
+)
 from redi.tui.tab import TabView, noop
 
 
@@ -41,11 +48,21 @@ def _render_list(state: TuiState) -> Renderable:
     return result
 
 
+def _notes_journals(issue: dict) -> list[tuple[int, dict]]:
+    journals = issue.get("journals") or []
+    return [
+        (i, journal)
+        for i, journal in enumerate(journals)
+        if (journal.get("notes") or "").strip()
+    ]
+
+
 def _render_preview(state: TuiState) -> Renderable:
     if not state.issue_tab.issues:
         return []
     issue = state.issue_tab.issues[state.issue_tab.cursor]
-    lines = [f"#{issue.get('id', '')} {issue.get('subject', '')}", ""]
+    parts: Renderable = []
+    head_lines = [f"#{issue.get('id', '')} {issue.get('subject', '')}", ""]
 
     def named(field: str) -> str:
         value = issue.get(field)
@@ -78,35 +95,131 @@ def _render_preview(state: TuiState) -> Renderable:
         (messages.tui_meta_created, issue.get("created_on") or ""),
         (messages.tui_meta_updated, issue.get("updated_on") or ""),
     ]
-    lines.extend(render_meta_table(meta))
+    head_lines.extend(render_meta_table(meta))
 
     description = issue.get("description") or ""
     if description:
-        lines.append("")
-        lines.append("----")
-        lines.extend(description.splitlines())
+        head_lines.append("")
+        head_lines.append("----")
+        head_lines.extend(description.splitlines())
 
-    journals = issue.get("journals") or []
-    notes = [j for j in journals if (j.get("notes") or "").strip()]
-    if notes:
-        lines.append("")
-        lines.append("----")
-        lines.append(messages.tui_preview_comments_header)
-        for j in notes:
+    parts.append(("", "\n".join(head_lines)))
+
+    # journalを描画対象に追加
+    indexed = _notes_journals(issue)
+    if indexed:
+        parts.append(("", "\n\n----\n"))
+        parts.append(("", messages.tui_preview_comments_header + "\n"))
+        edit = state.issue_tab.comment_edit
+        editable_set = set(edit.editable_indexes) if edit.active else set()
+        focus_idx = (
+            edit.editable_indexes[edit.cursor]
+            if edit.active and edit.editable_indexes
+            else None
+        )
+        for j_idx, j in indexed:
             author = (j.get("user") or {}).get("name", "")
             created = j.get("created_on", "")
-            lines.append(f"[{created}] {author}")
-            for nl in (j.get("notes") or "").splitlines():
-                lines.append(f"  {nl}")
+            header_text = f"[{created}] {author}"
+            if edit.active:
+                prefix = "> " if j_idx == focus_idx else "  "
+                mark = "*" if j_idx in editable_set else " "
+                style = "reverse" if j_idx == focus_idx else ""
+                parts.append((style, f"{prefix}{mark} {header_text}\n"))
+            else:
+                parts.append(("", f"{header_text}\n"))
+            for note_line in (j.get("notes") or "").splitlines():
+                parts.append(
+                    ("", f"    {note_line}\n" if edit.active else f"  {note_line}\n")
+                )
 
-    return [("", "\n".join(lines))]
+    return parts
 
 
 def _status_hint(state: TuiState) -> str:
+    if state.issue_tab.comment_edit.active:
+        return messages.tui_comment_edit_status_hint
     hint = messages.tui_status_hint_issues.format(page_label=_page_label(state))
     if state.issue_tab.filter.is_active():
         hint = f" [{state.issue_tab.filter.short_label()}]" + hint
     return hint
+
+
+def editable_journal_indexes(issue: dict, me_id: str | None) -> list[int]:
+    """`issue["journals"]` のうち、自分が書いた notes 付き journal の index を返す。"""
+    if me_id is None:
+        return []
+    my_note_indexes: list[int] = []
+    for i, journal in enumerate(issue.get("journals") or []):
+        if not (journal.get("notes") or "").strip():
+            continue
+        author_id = (journal.get("user") or {}).get("id")
+        if author_id is not None and str(author_id) == str(me_id):
+            my_note_indexes.append(i)
+    return my_note_indexes
+
+
+def enter_comment_edit_mode(state: TuiState):
+    if not state.issue_tab.issues:
+        return
+    issue = state.issue_tab.issues[state.issue_tab.cursor]
+    indexes = editable_journal_indexes(issue, state.me_id)
+    if not indexes:
+        return
+    edit = state.issue_tab.comment_edit
+    edit.editable_indexes = indexes
+    edit.cursor = len(indexes) - 1
+    edit.active = True
+
+
+def comment_edit_cursor_up(state: TuiState) -> None:
+    edit = state.issue_tab.comment_edit
+    if edit.active and edit.editable_indexes:
+        edit.cursor = max(0, edit.cursor - 1)
+
+
+def comment_edit_cursor_down(state: TuiState) -> None:
+    edit = state.issue_tab.comment_edit
+    if edit.active and edit.editable_indexes:
+        edit.cursor = min(len(edit.editable_indexes) - 1, edit.cursor + 1)
+
+
+def exit_comment_edit_mode(state: TuiState) -> None:
+    state.issue_tab.comment_edit = CommentEditState()
+
+
+def selected_journal(state: TuiState) -> dict | None:
+    """選択モード中にカーソルが指している journal を返す。"""
+    edit = state.issue_tab.comment_edit
+    if not edit.active or not edit.editable_indexes:
+        return None
+    if not state.issue_tab.issues:
+        return None
+    issue = state.issue_tab.issues[state.issue_tab.cursor]
+    journals = issue.get("journals") or []
+    j_idx = edit.editable_indexes[edit.cursor]
+    if 0 <= j_idx < len(journals):
+        return journals[j_idx]
+    return None
+
+
+def confirm_comment_edit(state: TuiState) -> TuiResult | None:
+    """選択中の journal を編集対象とした TuiResult を返す。"""
+    journal = selected_journal(state)
+    if journal is None or journal.get("id") is None:
+        return None
+    issue_id = str(state.issue_tab.issues[state.issue_tab.cursor]["id"])
+    result = TuiResult(
+        action="edit_comment",
+        tab="issues",
+        issue_id=issue_id,
+        journal_id=str(journal["id"]),
+        journal_notes=journal.get("notes") or "",
+        position=TuiPosition(
+            offset=state.issue_tab.offset, cursor=state.issue_tab.cursor
+        ),
+    )
+    return result
 
 
 def _page_label(state: TuiState) -> str:
@@ -158,6 +271,7 @@ def _on_enter(state: TuiState) -> None:
     if issue.get("id") is None:
         return
     load_journals(issue)
+    enter_comment_edit_mode(state)
 
 
 def fetch_issues_with_filter(state: TuiState, offset: int) -> dict:
@@ -277,6 +391,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  f", messages.tui_help_filter_status_assignee),
     (messages.tui_help_section_actions, ""),
     ("  Enter", messages.tui_help_issue_load_comments),
+    ("  jk / u / Esc", messages.tui_help_issue_edit_comment_in_mode),
     ("  c / u", messages.tui_help_issue_create_or_update),
     ("  n", messages.tui_help_issue_add_comment),
     ("  t", messages.tui_help_issue_create_time_entry),
