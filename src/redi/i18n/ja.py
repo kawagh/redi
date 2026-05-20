@@ -431,8 +431,11 @@ class Ja(MessagesProto):
     tui_meta_activity = "作業分類"
     tui_meta_issue = "イシュー"
     tui_preview_comments_header = "コメント:"
-    tui_comment_edit_status_hint = "コメント選択: jk:移動 u:更新 Esc/q:キャンセル"
+    tui_comment_edit_status_hint = (
+        "コメント選択: jk:移動 u:更新 D:削除 Esc/q:キャンセル"
+    )
     tui_comment_edit_canceled_empty = "コメントが空のためキャンセル"
+    tui_comment_delete_prompt = "コメントを削除しますか? {summary} [y/N]"
     tui_wiki_no_pages = "Wikiページが見つかりません"
     tui_wiki_loading = "(Wikiを読み込み中...)"
     tui_wiki_load_failed = "Wikiの取得に失敗しました: {error}"
@@ -792,7 +795,7 @@ class Ja(MessagesProto):
     tui_help_issue_create_time_entry = "時間記録の作成"
     tui_help_issue_open_web_or_n = "選択イシューを web で開く / #N を web で開く"
     tui_help_issue_edit_comment_in_mode = (
-        "コメント選択モード中: jk:移動 u:更新 Esc/q:抜ける"
+        "コメント選択モード中: jk:移動 u:更新 D:削除 Esc/q:抜ける"
     )
 
     # ---- TUI help labels (wiki tab) ----

@@ -222,6 +222,35 @@ def confirm_comment_edit(state: TuiState) -> TuiResult | None:
     return result
 
 
+def request_comment_delete(state: TuiState) -> str | None:
+    """選択中コメントの削除確認プロンプトを返す。対象が無ければ None。"""
+    journal = selected_journal(state)
+    if journal is None or journal.get("id") is None:
+        return None
+    author = (journal.get("user") or {}).get("name", "")
+    created = journal.get("created_on", "")
+    notes_lines = (journal.get("notes") or "").strip().splitlines()
+    snippet = notes_lines[0] if notes_lines else ""
+    summary = " ".join(part for part in (f"[{created}]", author, snippet) if part)
+    return messages.tui_comment_delete_prompt.format(summary=summary)
+
+
+def confirm_comment_delete(state: TuiState) -> TuiResult | None:
+    journal = selected_journal(state)
+    if journal is None or journal.get("id") is None:
+        return None
+    issue_id = str(state.issue_tab.issues[state.issue_tab.cursor]["id"])
+    return TuiResult(
+        action="delete_comment",
+        tab="issues",
+        issue_id=issue_id,
+        journal_id=str(journal["id"]),
+        position=TuiPosition(
+            offset=state.issue_tab.offset, cursor=state.issue_tab.cursor
+        ),
+    )
+
+
 def _page_label(state: TuiState) -> str:
     total = state.issue_tab.total_count
     page_size = state.page_size or 1
@@ -391,7 +420,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  f", messages.tui_help_filter_status_assignee),
     (messages.tui_help_section_actions, ""),
     ("  Enter", messages.tui_help_issue_load_comments),
-    ("  jk / u / Esc", messages.tui_help_issue_edit_comment_in_mode),
+    ("  jk / u / D / Esc", messages.tui_help_issue_edit_comment_in_mode),
     ("  c / u", messages.tui_help_issue_create_or_update),
     ("  n", messages.tui_help_issue_add_comment),
     ("  t", messages.tui_help_issue_create_time_entry),

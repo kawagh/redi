@@ -577,6 +577,8 @@ class MessagesProto(Protocol):
     tui_preview_comments_header: str
     tui_comment_edit_status_hint: str
     tui_comment_edit_canceled_empty: str
+    tui_comment_delete_prompt: str
+    """{summary}"""
     tui_wiki_no_pages: str
     tui_wiki_loading: str
     tui_wiki_load_failed: str

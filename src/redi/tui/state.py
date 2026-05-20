@@ -3,7 +3,9 @@ from typing import Literal
 
 from redi.i18n import messages
 
-TuiAction = Literal["update", "create", "comment", "edit_comment", "create_time_entry"]
+TuiAction = Literal[
+    "update", "create", "comment", "edit_comment", "delete_comment", "create_time_entry"
+]
 TuiTab = Literal["issues", "wiki", "time_entries"]
 FilterField = Literal["status", "assignee"]
 
