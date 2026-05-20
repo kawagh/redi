@@ -5,7 +5,7 @@ from redi.config import default_project_id, redmine_url
 from redi.i18n import messages
 from redi.tui.render import highlight_segments, render_meta_table
 from redi.tui.state import (
-    CommentEditState,
+    CommentSelectState,
     Renderable,
     TuiAction,
     TuiPosition,
@@ -110,7 +110,7 @@ def _render_preview(state: TuiState) -> Renderable:
     if indexed:
         parts.append(("", "\n\n----\n"))
         parts.append(("", messages.tui_preview_comments_header + "\n"))
-        edit = state.issue_tab.comment_edit
+        edit = state.issue_tab.comment_select
         editable_set = set(edit.editable_indexes) if edit.active else set()
         focus_idx = (
             edit.editable_indexes[edit.cursor]
@@ -137,8 +137,8 @@ def _render_preview(state: TuiState) -> Renderable:
 
 
 def _status_hint(state: TuiState) -> str:
-    if state.issue_tab.comment_edit.active:
-        return messages.tui_comment_edit_status_hint
+    if state.issue_tab.comment_select.active:
+        return messages.tui_comment_select_status_hint
     hint = messages.tui_status_hint_issues.format(page_label=_page_label(state))
     if state.issue_tab.filter.is_active():
         hint = f" [{state.issue_tab.filter.short_label()}]" + hint
@@ -159,38 +159,38 @@ def editable_journal_indexes(issue: dict, me_id: str | None) -> list[int]:
     return my_note_indexes
 
 
-def enter_comment_edit_mode(state: TuiState):
+def enter_comment_select_mode(state: TuiState):
     if not state.issue_tab.issues:
         return
     issue = state.issue_tab.issues[state.issue_tab.cursor]
     indexes = editable_journal_indexes(issue, state.me_id)
     if not indexes:
         return
-    edit = state.issue_tab.comment_edit
+    edit = state.issue_tab.comment_select
     edit.editable_indexes = indexes
     edit.cursor = len(indexes) - 1
     edit.active = True
 
 
-def comment_edit_cursor_up(state: TuiState) -> None:
-    edit = state.issue_tab.comment_edit
+def comment_select_cursor_up(state: TuiState) -> None:
+    edit = state.issue_tab.comment_select
     if edit.active and edit.editable_indexes:
         edit.cursor = max(0, edit.cursor - 1)
 
 
-def comment_edit_cursor_down(state: TuiState) -> None:
-    edit = state.issue_tab.comment_edit
+def comment_select_cursor_down(state: TuiState) -> None:
+    edit = state.issue_tab.comment_select
     if edit.active and edit.editable_indexes:
         edit.cursor = min(len(edit.editable_indexes) - 1, edit.cursor + 1)
 
 
-def exit_comment_edit_mode(state: TuiState) -> None:
-    state.issue_tab.comment_edit = CommentEditState()
+def exit_comment_select_mode(state: TuiState) -> None:
+    state.issue_tab.comment_select = CommentSelectState()
 
 
 def selected_journal(state: TuiState) -> dict | None:
     """選択モード中にカーソルが指している journal を返す。"""
-    edit = state.issue_tab.comment_edit
+    edit = state.issue_tab.comment_select
     if not edit.active or not edit.editable_indexes:
         return None
     if not state.issue_tab.issues:
@@ -300,7 +300,7 @@ def _on_enter(state: TuiState) -> None:
     if issue.get("id") is None:
         return
     load_journals(issue)
-    enter_comment_edit_mode(state)
+    enter_comment_select_mode(state)
 
 
 def fetch_issues_with_filter(state: TuiState, offset: int) -> dict:
@@ -420,7 +420,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  f", messages.tui_help_filter_status_assignee),
     (messages.tui_help_section_actions, ""),
     ("  Enter", messages.tui_help_issue_load_comments),
-    ("  jk / u / D / Esc", messages.tui_help_issue_edit_comment_in_mode),
+    ("  jk / u / D / Esc", messages.tui_help_issue_comment_select_in_mode),
     ("  c / u", messages.tui_help_issue_create_or_update),
     ("  n", messages.tui_help_issue_add_comment),
     ("  t", messages.tui_help_issue_create_time_entry),

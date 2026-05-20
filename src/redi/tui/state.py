@@ -81,7 +81,7 @@ class FilterModalState:
 
 
 @dataclass
-class CommentEditState:
+class CommentSelectState:
     """issueタブのコメント選択時の状態"""
 
     active: bool = False
@@ -97,7 +97,7 @@ class IssueTabState:
     total_count: int = 0
     filter: IssueFilter = field(default_factory=IssueFilter)
     filter_modal: FilterModalState = field(default_factory=FilterModalState)
-    comment_edit: CommentEditState = field(default_factory=CommentEditState)
+    comment_select: CommentSelectState = field(default_factory=CommentSelectState)
 
 
 @dataclass

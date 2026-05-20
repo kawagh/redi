@@ -575,7 +575,7 @@ class MessagesProto(Protocol):
     tui_meta_activity: str
     tui_meta_issue: str
     tui_preview_comments_header: str
-    tui_comment_edit_status_hint: str
+    tui_comment_select_status_hint: str
     tui_comment_edit_canceled_empty: str
     tui_comment_delete_prompt: str
     """{summary}"""
@@ -916,7 +916,7 @@ class MessagesProto(Protocol):
     tui_help_issue_add_comment: str
     tui_help_issue_create_time_entry: str
     tui_help_issue_open_web_or_n: str
-    tui_help_issue_edit_comment_in_mode: str
+    tui_help_issue_comment_select_in_mode: str
     """選択モード中の jk/Enter/Esc 操作 (Enter でモードに入る)"""
 
     # ---- TUI help labels (wiki tab) ----
