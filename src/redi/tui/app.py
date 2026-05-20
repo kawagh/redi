@@ -538,6 +538,14 @@ def run_issue_tui(
     def _(event):
         comment_edit_cursor_down(state)
 
+    @kb.add("c-d", filter=comment_select_mode)
+    def _(event):
+        _scroll_preview(max(1, state.page_size // 2))
+
+    @kb.add("c-u", filter=comment_select_mode)
+    def _(event):
+        _scroll_preview(-max(1, state.page_size // 2))
+
     @kb.add("u", filter=comment_select_mode)
     def _(event):
         result = confirm_comment_edit(state)
