@@ -41,9 +41,7 @@ class Journal(TypedDict):
 
 
 class Issue(TypedDict):
-    """`
-    redmine Issue
-    """
+    """redmine Issue"""
 
     id: int
     project: IdName
