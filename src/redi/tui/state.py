@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
+from redi.api.issue import Issue
 from redi.i18n import messages
 
 TuiAction = Literal[
@@ -93,7 +94,7 @@ class CommentSelectState:
 class IssueTabState:
     offset: int = 0
     cursor: int = 0
-    issues: list[dict] = field(default_factory=list)
+    issues: list[Issue] = field(default_factory=list)
     total_count: int = 0
     filter: IssueFilter = field(default_factory=IssueFilter)
     filter_modal: FilterModalState = field(default_factory=FilterModalState)
