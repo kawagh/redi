@@ -1,3 +1,6 @@
+from typing import cast
+
+from redi.api.issue import Issue
 from redi.tui.issue_tab import _page_label
 from redi.tui.state import TuiState
 
@@ -9,7 +12,9 @@ def _make_state(
     state.page_size = page_size
     state.issue_tab.offset = offset
     state.issue_tab.total_count = total_count
-    state.issue_tab.issues = [{"id": i, "subject": ""} for i in range(issues_on_page)]
+    state.issue_tab.issues = cast(
+        list[Issue], [{"id": i, "subject": ""} for i in range(issues_on_page)]
+    )
     return state
 
 
