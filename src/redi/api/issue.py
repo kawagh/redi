@@ -23,6 +23,23 @@ class IssueStatus(TypedDict):
     is_closed: bool
 
 
+class JournalDetail(TypedDict):
+    property: str  # ex. attr
+    name: str  # ex. assigned_to_id
+    old_value: str | None
+    new_value: str | None
+
+
+class Journal(TypedDict):
+    id: int
+    user: IdName
+    notes: str
+    created_on: str
+    updated_on: str
+    private_notes: bool
+    details: list[JournalDetail]
+
+
 class Issue(TypedDict):
     """`
     redmine Issue
@@ -49,7 +66,7 @@ class Issue(TypedDict):
     created_on: str
     updated_on: str
     closed_on: str | None
-    journals: NotRequired[list[dict]]
+    journals: NotRequired[list[Journal]]
 
 
 class IssuesPageResponse(TypedDict):

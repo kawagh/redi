@@ -1,6 +1,12 @@
 import webbrowser
 
-from redi.api.issue import Issue, IssuesPageResponse, fetch_issue, fetch_issues_page
+from redi.api.issue import (
+    Issue,
+    IssuesPageResponse,
+    Journal,
+    fetch_issue,
+    fetch_issues_page,
+)
 from redi.config import default_project_id, redmine_url
 from redi.i18n import messages
 from redi.tui.render import highlight_segments, render_meta_table
@@ -48,7 +54,7 @@ def _render_list(state: TuiState) -> Renderable:
     return result
 
 
-def _notes_journals(issue: Issue) -> list[tuple[int, dict]]:
+def _notes_journals(issue: Issue) -> list[tuple[int, Journal]]:
     journals = issue.get("journals") or []
     return [
         (i, journal)
@@ -188,7 +194,7 @@ def exit_comment_select_mode(state: TuiState) -> None:
     state.issue_tab.comment_select = CommentSelectState()
 
 
-def selected_journal(state: TuiState) -> dict | None:
+def selected_journal(state: TuiState) -> Journal | None:
     """選択モード中にカーソルが指している journal を返す。"""
     edit = state.issue_tab.comment_select
     if not edit.active or not edit.editable_indexes:
