@@ -1,5 +1,8 @@
 """TUI タブの再読込 (R キー) 挙動の単体テスト。"""
 
+from typing import cast
+
+from redi.api.issue import Issue
 from redi.tui import issue_tab, time_entry_tab, wiki_tab
 from redi.tui.state import TuiState
 
@@ -13,9 +16,9 @@ class TestIssueReload:
         state.page_size = 5
         state.issue_tab.offset = 10
         state.issue_tab.cursor = 2
-        state.issue_tab.issues = [
-            {"id": i, "subject": f"old-{i}"} for i in range(11, 16)
-        ]
+        state.issue_tab.issues = cast(
+            list[Issue], [{"id": i, "subject": f"old-{i}"} for i in range(11, 16)]
+        )
         state.issue_tab.total_count = 30
 
         new_issues = [{"id": i, "subject": f"new-{i}"} for i in range(11, 16)]
@@ -39,7 +42,9 @@ class TestIssueReload:
         state.page_size = 5
         state.issue_tab.offset = 0
         state.issue_tab.cursor = 4
-        state.issue_tab.issues = [{"id": i, "subject": f"old-{i}"} for i in range(1, 6)]
+        state.issue_tab.issues = cast(
+            list[Issue], [{"id": i, "subject": f"old-{i}"} for i in range(1, 6)]
+        )
         state.issue_tab.total_count = 5
 
         new_issues = [{"id": 1, "subject": "only"}]
@@ -59,7 +64,7 @@ class TestIssueReload:
         state = TuiState()
         state.page_size = 5
         state.issue_tab.cursor = 3
-        state.issue_tab.issues = [{"id": 1, "subject": "x"}]
+        state.issue_tab.issues = cast(list[Issue], [{"id": 1, "subject": "x"}])
         monkeypatch.setattr(
             issue_tab,
             "fetch_issues_with_filter",

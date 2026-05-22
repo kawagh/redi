@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import json
 import webbrowser
 from collections import defaultdict
+from typing import NotRequired, TypedDict, cast
 
 import requests
 
@@ -9,6 +12,70 @@ from redi.api.exceptions import RedmineValidationException, print_http_error_bod
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
+
+
+class IssuesPageResponse(TypedDict):
+    """GET /issues.json のレスポンス"""
+
+    issues: list[Issue]
+    total_count: int
+    offset: int
+    limit: int
+
+
+class Issue(TypedDict):
+    """redmine Issue"""
+
+    id: int
+    project: IdName
+    tracker: IdName
+    status: IssueStatus
+    priority: IdName
+    author: IdName
+    # 担当者未割り当て時に存在しない
+    assigned_to: NotRequired[IdName]
+    subject: str
+    description: str
+    start_date: str | None
+    due_date: str | None
+    done_ratio: int
+    is_private: bool
+    estimated_hours: float | None
+    total_estimated_hours: float | None
+    spent_hours: float
+    total_spent_hours: float
+    created_on: str
+    updated_on: str
+    closed_on: str | None
+    journals: NotRequired[list[Journal]]
+
+
+class IdName(TypedDict):
+    id: int
+    name: str
+
+
+class IssueStatus(TypedDict):
+    id: int
+    name: str
+    is_closed: bool
+
+
+class Journal(TypedDict):
+    id: int
+    user: IdName
+    notes: str
+    created_on: str
+    updated_on: str
+    private_notes: bool
+    details: list[JournalDetail]
+
+
+class JournalDetail(TypedDict):
+    property: str  # ex. attr
+    name: str  # ex. assigned_to_id
+    old_value: str | None
+    new_value: str | None
 
 
 def fetch_issues_page(
@@ -21,7 +88,7 @@ def fetch_issues_page(
     query_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
-) -> dict:
+) -> IssuesPageResponse:
     params: dict = {}
     if project_id:
         params["project_id"] = project_id
@@ -43,7 +110,7 @@ def fetch_issues_page(
         params["offset"] = offset
     response = client.get("/issues.json", params=params)
     response.raise_for_status()
-    return response.json()
+    return cast(IssuesPageResponse, response.json())
 
 
 def fetch_issues(
@@ -56,7 +123,7 @@ def fetch_issues(
     query_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
-) -> list[dict]:
+) -> list[Issue]:
     return fetch_issues_page(
         project_id=project_id,
         fixed_version_id=fixed_version_id,
@@ -102,7 +169,7 @@ def list_issues(
             )
 
 
-def fetch_issue(issue_id: str, include: str = "") -> dict:
+def fetch_issue(issue_id: str, include: str = "") -> Issue:
     params = {}
     if include:
         params["include"] = include

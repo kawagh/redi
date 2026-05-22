@@ -1,6 +1,12 @@
 import webbrowser
 
-from redi.api.issue import fetch_issue, fetch_issues_page
+from redi.api.issue import (
+    Issue,
+    IssuesPageResponse,
+    Journal,
+    fetch_issue,
+    fetch_issues_page,
+)
 from redi.config import default_project_id, redmine_url
 from redi.i18n import messages
 from redi.tui.render import highlight_segments, render_meta_table
@@ -15,7 +21,7 @@ from redi.tui.state import (
 from redi.tui.tab import TabView, noop
 
 
-def load_journals(issue: dict) -> None:
+def load_journals(issue: Issue) -> None:
     fetched = fetch_issue(str(issue["id"]), include="journals")
     issue["journals"] = fetched.get("journals") or []
 
@@ -48,7 +54,7 @@ def _render_list(state: TuiState) -> Renderable:
     return result
 
 
-def _notes_journals(issue: dict) -> list[tuple[int, dict]]:
+def _notes_journals(issue: Issue) -> list[tuple[int, Journal]]:
     journals = issue.get("journals") or []
     return [
         (i, journal)
@@ -145,7 +151,7 @@ def _status_hint(state: TuiState) -> str:
     return hint
 
 
-def editable_journal_indexes(issue: dict, me_id: str | None) -> list[int]:
+def editable_journal_indexes(issue: Issue, me_id: str | None) -> list[int]:
     """`issue["journals"]` のうち、自分が書いた notes 付き journal の index を返す。"""
     if me_id is None:
         return []
@@ -188,7 +194,7 @@ def exit_comment_select_mode(state: TuiState) -> None:
     state.issue_tab.comment_select = CommentSelectState()
 
 
-def selected_journal(state: TuiState) -> dict | None:
+def selected_journal(state: TuiState) -> Journal | None:
     """選択モード中にカーソルが指している journal を返す。"""
     edit = state.issue_tab.comment_select
     if not edit.active or not edit.editable_indexes:
@@ -303,7 +309,7 @@ def _on_enter(state: TuiState) -> None:
     enter_comment_select_mode(state)
 
 
-def fetch_issues_with_filter(state: TuiState, offset: int) -> dict:
+def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse:
     f = state.issue_tab.filter
     return fetch_issues_page(
         project_id=default_project_id,
@@ -314,7 +320,7 @@ def fetch_issues_with_filter(state: TuiState, offset: int) -> dict:
     )
 
 
-def _apply_page(state: TuiState, page: dict, offset: int) -> None:
+def _apply_page(state: TuiState, page: IssuesPageResponse, offset: int) -> None:
     state.issue_tab.offset = offset
     state.issue_tab.issues = page["issues"]
     state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
