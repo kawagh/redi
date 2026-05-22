@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import webbrowser
 from collections import defaultdict
@@ -12,32 +14,13 @@ from redi.config import redmine_url
 from redi.i18n import messages
 
 
-class IdName(TypedDict):
-    id: int
-    name: str
+class IssuesPageResponse(TypedDict):
+    """GET /issues.json のレスポンス"""
 
-
-class IssueStatus(TypedDict):
-    id: int
-    name: str
-    is_closed: bool
-
-
-class JournalDetail(TypedDict):
-    property: str  # ex. attr
-    name: str  # ex. assigned_to_id
-    old_value: str | None
-    new_value: str | None
-
-
-class Journal(TypedDict):
-    id: int
-    user: IdName
-    notes: str
-    created_on: str
-    updated_on: str
-    private_notes: bool
-    details: list[JournalDetail]
+    issues: list[Issue]
+    total_count: int
+    offset: int
+    limit: int
 
 
 class Issue(TypedDict):
@@ -67,13 +50,32 @@ class Issue(TypedDict):
     journals: NotRequired[list[Journal]]
 
 
-class IssuesPageResponse(TypedDict):
-    """GET /issues.json のレスポンス"""
+class IdName(TypedDict):
+    id: int
+    name: str
 
-    issues: list[Issue]
-    total_count: int
-    offset: int
-    limit: int
+
+class IssueStatus(TypedDict):
+    id: int
+    name: str
+    is_closed: bool
+
+
+class Journal(TypedDict):
+    id: int
+    user: IdName
+    notes: str
+    created_on: str
+    updated_on: str
+    private_notes: bool
+    details: list[JournalDetail]
+
+
+class JournalDetail(TypedDict):
+    property: str  # ex. attr
+    name: str  # ex. assigned_to_id
+    old_value: str | None
+    new_value: str | None
 
 
 def fetch_issues_page(
