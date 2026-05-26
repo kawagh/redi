@@ -2,6 +2,7 @@ import argparse
 
 import pytest
 
+from redi.cli import main as main_module
 from redi.cli.main import build_redi_parser
 
 
@@ -9,7 +10,8 @@ class TestProfileFlagPlacement:
     """--profile はサブコマンドの前後どちらに置いても受け付けられる"""
 
     @pytest.fixture
-    def parser(self) -> argparse.ArgumentParser:
+    def parser(self, monkeypatch) -> argparse.ArgumentParser:
+        monkeypatch.setattr(main_module, "list_profile_names", lambda: [])
         return build_redi_parser()
 
     def test_before_subcommand(self, parser):
