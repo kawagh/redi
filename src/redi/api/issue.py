@@ -7,6 +7,7 @@ from typing import NotRequired, TypedDict, cast
 
 import requests
 
+from redi.api.types import IdName
 from redi.api.attachment import upload_file
 from redi.api.exceptions import RedmineValidationException, print_http_error_body
 from redi.client import client
@@ -48,11 +49,6 @@ class Issue(TypedDict):
     updated_on: str
     closed_on: str | None
     journals: NotRequired[list[Journal]]
-
-
-class IdName(TypedDict):
-    id: int
-    name: str
 
 
 class IssueStatus(TypedDict):

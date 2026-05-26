@@ -6,6 +6,7 @@ from typing import NotRequired, TypedDict, cast
 
 import requests
 
+from redi.api.types import IdName
 from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.config import redmine_url
@@ -37,11 +38,6 @@ class Project(TypedDict):
     issue_categories: NotRequired[list[IdName]]
     time_entry_activities: NotRequired[list[IdName]]
     enabled_modules: NotRequired[list[IdName]]
-
-
-class IdName(TypedDict):
-    id: int
-    name: str
 
 
 def list_projects(full: bool = False) -> None:
