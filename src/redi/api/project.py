@@ -1,12 +1,43 @@
+from __future__ import annotations
+
 import json
 import webbrowser
+from typing import NotRequired, TypedDict, cast
 
 import requests
 
+from redi.api.types import IdName
 from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
+
+
+class Project(TypedDict):
+    """redmine Project
+
+    GET /projects.json / GET /projects/{id}.json を実行して確認できたフィールドを記載。
+    `parent` や `trackers` などは親プロジェクトの有無や include 指定により
+    存在しない場合がある。
+    """
+
+    id: int
+    name: str
+    identifier: str
+    description: str | None
+    homepage: str
+    status: int
+    is_public: bool
+    inherit_members: bool
+    created_on: str
+    updated_on: str
+    # 親プロジェクトを持つ場合のみ存在
+    parent: NotRequired[IdName]
+    # include 指定時のみ存在
+    trackers: NotRequired[list[IdName]]
+    issue_categories: NotRequired[list[IdName]]
+    time_entry_activities: NotRequired[list[IdName]]
+    enabled_modules: NotRequired[list[IdName]]
 
 
 def list_projects(full: bool = False) -> None:
@@ -18,11 +49,11 @@ def list_projects(full: bool = False) -> None:
             print(f"{project['id']} {project['name']}")
 
 
-def fetch_projects() -> list[dict]:
+def fetch_projects() -> list[Project]:
     response = client.get("/projects.json")
     response.raise_for_status()
     data = response.json()
-    return data.get("projects", [])
+    return cast("list[Project]", data.get("projects", []))
 
 
 def resolve_project_id(value: str) -> str:
@@ -36,7 +67,7 @@ def resolve_project_id(value: str) -> str:
     exit(1)
 
 
-def fetch_project(project_id: str, include: str = "") -> dict:
+def fetch_project(project_id: str, include: str = "") -> Project:
     params: dict = {}
     if include:
         params["include"] = include
@@ -45,7 +76,7 @@ def fetch_project(project_id: str, include: str = "") -> dict:
         print(messages.project_not_found.format(id=project_id))
         exit(1)
     response.raise_for_status()
-    return response.json()["project"]
+    return cast("Project", response.json()["project"])
 
 
 def create_project(
@@ -173,16 +204,17 @@ def read_project(
         print(messages.project_not_found.format(id=project_id))
         exit(1)
     response.raise_for_status()
-    project = response.json()["project"]
+    project = cast("Project", response.json()["project"])
     if full:
         print(json.dumps(project, ensure_ascii=False))
         return
 
     lines = []
     lines.append(f"{project['id']} {project['name']} ({project['identifier']})")
-    if project.get("description"):
+    description = project.get("description")
+    if description:
         lines.append("")
-        lines.append(project["description"])
+        lines.append(description)
     parent = project.get("parent")
     if parent:
         lines.append("")
