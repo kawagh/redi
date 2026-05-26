@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from redi.api.issue import Issue
+from redi.api.wiki import WikiPage
 from redi.i18n import messages
 
 TuiAction = Literal[
@@ -104,7 +105,7 @@ class IssueTabState:
 @dataclass
 class WikiTabState:
     loaded: bool = False
-    pages: list[dict] = field(default_factory=list)
+    pages: list[WikiPage] = field(default_factory=list)
     labels: list[str] = field(default_factory=list)
     cursor: int = 0
     texts: dict[str, str] = field(default_factory=dict)
