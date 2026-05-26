@@ -46,7 +46,7 @@ from redi.cli.time_entry_command import add_time_entry_parser, handle_time_entry
 from redi.cli.user_command import add_user_parser, handle_user
 from redi.cli.version_command import add_version_parser, handle_version
 from redi.cli.wiki_command import add_wiki_parser, handle_wiki
-from redi.config import CONFIG_PATH, check_config
+from redi.config import CONFIG_PATH, check_config, list_profile_names
 from redi.api.custom_field import list_custom_fields
 from redi.api.enumeration import (
     list_document_categories,
@@ -76,7 +76,7 @@ def _format_validation_error(e: RedmineValidationException) -> str:
     )
 
 
-def _profile_parser() -> argparse.ArgumentParser:
+def _profile_parser(profile_names: list[str]) -> argparse.ArgumentParser:
     """--profile を後置するためのパーサ"""
     parser = argparse.ArgumentParser(
         # 親子でヘルプを衝突させない
@@ -86,6 +86,8 @@ def _profile_parser() -> argparse.ArgumentParser:
         "--profile",
         # 下流のパーサでprofileが未指定の場合に上流パーサの値を上書きするのを防ぐ
         default=argparse.SUPPRESS,
+        choices=profile_names or None,
+        metavar="PROFILE",
         help=messages.arg_help_profile,
     )
     return parser
@@ -103,11 +105,14 @@ def build_redi_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=messages.arg_help_debug_tui,
     )
+    profile_names = list_profile_names()
     parser.add_argument(
         "--profile",
+        choices=profile_names or None,
+        metavar="PROFILE",
         help=messages.arg_help_profile,
     )
-    parents = [_profile_parser()]
+    parents = [_profile_parser(profile_names)]
     subparsers = parser.add_subparsers(dest="command")
     add_project_parser(subparsers, parents)
     add_issue_parser(subparsers, parents)
