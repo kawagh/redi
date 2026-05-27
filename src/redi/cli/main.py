@@ -183,7 +183,7 @@ def main() -> None:
             tui_result = run_issue_tui(state=tui_state, debug_log_path=debug_log_path)
             if tui_result is None:
                 return
-            tui_state = TuiState(last_result=tui_result)
+            tui_state = tui_state.carry_over(tui_result)
             try:
                 if tui_result.action == "update" and tui_result.tab == "issues":
                     handle_issue_update(

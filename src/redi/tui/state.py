@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -184,3 +186,11 @@ class TuiState:
     # 起動時に `/my/account.json` から取得した自分のユーザー id。
     # フィルタモーダルの選択肢で「自分」と実ユーザーの重複表示を避けるために使う。
     me_id: str | None = None
+
+    def carry_over(self, result: TuiResult) -> TuiState:
+        """action 実行後の次のTUIループに 絞り込み条件を引き継ぐ"""
+
+        next_state = TuiState(last_result=result)
+        next_state.issue_tab.filter = self.issue_tab.filter
+        next_state.time_entry_tab.filter = self.time_entry_tab.filter
+        return next_state

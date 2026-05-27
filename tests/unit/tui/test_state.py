@@ -1,5 +1,5 @@
 from redi.i18n import messages
-from redi.tui.state import IssueFilter, TimeEntryFilter
+from redi.tui.state import IssueFilter, TimeEntryFilter, TuiResult, TuiState
 
 
 class TestIssueFilter:
@@ -73,3 +73,31 @@ class TestTimeEntryFilter:
         f = TimeEntryFilter(user_id="42", user_label="Alice")
         assert f.is_active() is True
         assert f.short_label() == "user=Alice"
+
+
+class TestCarryOver:
+    """carry_over() は action 実行後の次ループ用に TuiState を作り直す"""
+
+    def test_issue_filter_is_preserved(self):
+        """issue タブの絞り込み条件は次ループの TuiState に引き継がれる"""
+        prev = TuiState()
+        prev.issue_tab.filter = IssueFilter(
+            status_id="closed", status_label="closed のみ"
+        )
+        result = TuiResult(action="comment", tab="issues", issue_id="1")
+
+        next_state = prev.carry_over(result)
+
+        assert next_state.issue_tab.filter == prev.issue_tab.filter
+        assert next_state.issue_tab.filter.status_id == "closed"
+
+    def test_time_entry_filter_is_preserved(self):
+        """time_entry タブの絞り込み条件も引き継がれる"""
+        prev = TuiState()
+        prev.time_entry_tab.filter = TimeEntryFilter(user_id="42", user_label="Alice")
+        result = TuiResult(action="update", tab="time_entries", time_entry_id="9")
+
+        next_state = prev.carry_over(result)
+
+        assert next_state.time_entry_tab.filter == prev.time_entry_tab.filter
+        assert next_state.time_entry_tab.filter.user_id == "42"
