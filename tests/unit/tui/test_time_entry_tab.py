@@ -1,3 +1,6 @@
+from typing import cast
+
+from redi.api.time_entry import TimeEntry
 from redi.tui import time_entry_tab
 from redi.tui.state import TuiState
 
@@ -9,7 +12,9 @@ def _make_state(
     state.page_size = page_size
     state.time_entry_tab.offset = offset
     state.time_entry_tab.total_count = total_count
-    state.time_entry_tab.entries = [{"id": i} for i in range(entries_on_page)]
+    state.time_entry_tab.entries = cast(
+        list[TimeEntry], [{"id": i} for i in range(entries_on_page)]
+    )
     return state
 
 
@@ -49,7 +54,9 @@ class TestPageForward:
         state = TuiState()
         state.page_size = 5
         state.time_entry_tab.offset = 0
-        state.time_entry_tab.entries = [{"id": i} for i in range(1, 6)]
+        state.time_entry_tab.entries = cast(
+            list[TimeEntry], [{"id": i} for i in range(1, 6)]
+        )
         state.time_entry_tab.total_count = 12
         state.time_entry_tab.cursor = 3
 
@@ -74,7 +81,9 @@ class TestPageForward:
         state = TuiState()
         state.page_size = 5
         state.time_entry_tab.offset = 5
-        state.time_entry_tab.entries = [{"id": i} for i in range(6, 11)]
+        state.time_entry_tab.entries = cast(
+            list[TimeEntry], [{"id": i} for i in range(6, 11)]
+        )
         state.time_entry_tab.total_count = 10
         state.time_entry_tab.cursor = 2
 
@@ -102,7 +111,9 @@ class TestPageBackward:
         state = TuiState()
         state.page_size = 5
         state.time_entry_tab.offset = 10
-        state.time_entry_tab.entries = [{"id": i} for i in range(11, 16)]
+        state.time_entry_tab.entries = cast(
+            list[TimeEntry], [{"id": i} for i in range(11, 16)]
+        )
         state.time_entry_tab.total_count = 20
         state.time_entry_tab.cursor = 4
 
@@ -126,7 +137,7 @@ class TestPageBackward:
         state = TuiState()
         state.page_size = 5
         state.time_entry_tab.offset = 0
-        state.time_entry_tab.entries = [{"id": 1}]
+        state.time_entry_tab.entries = cast(list[TimeEntry], [{"id": 1}])
         state.time_entry_tab.cursor = 0
 
         called = False
@@ -191,7 +202,7 @@ class TestConfirmDeleteUpdatesTotal:
 
     def test_decrements_total_count(self, monkeypatch):
         state = TuiState()
-        state.time_entry_tab.entries = [{"id": 1}, {"id": 2}]
+        state.time_entry_tab.entries = cast(list[TimeEntry], [{"id": 1}, {"id": 2}])
         state.time_entry_tab.total_count = 5
         state.time_entry_tab.cursor = 0
 
