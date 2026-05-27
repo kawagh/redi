@@ -118,12 +118,16 @@ def list_wikis(project_id: str, full: bool = False) -> None:
 
 
 def fetch_wiki(
-    project_id: str, page_title: str, version: int | None = None
+    project_id: str,
+    page_title: str,
+    version: int | None = None,
+    full: bool = False,
 ) -> WikiPage | None:
     path = f"/projects/{project_id}/wiki/{page_title}.json"
     if version is not None:
         path = f"/projects/{project_id}/wiki/{page_title}/{version}.json"
-    response = client.get(path)
+    params = {"include": "attachments"} if full else None
+    response = client.get(path, params=params)
     if response.status_code == 404:
         return None
     response.raise_for_status()
@@ -144,7 +148,7 @@ def read_wiki(
         print(url)
         webbrowser.open(url)
         return
-    wiki = fetch_wiki(project_id, page_title, version=version)
+    wiki = fetch_wiki(project_id, page_title, version=version, full=full)
     if wiki is None:
         if version is not None:
             print(
