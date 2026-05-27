@@ -1,14 +1,59 @@
+from __future__ import annotations
+
 import json
 import webbrowser
 from collections import defaultdict
-from typing import NotRequired, TypedDict
+from typing import NotRequired, TypedDict, cast
 
 import requests
 
 from redi.api.exceptions import RedmineValidationException, print_http_error_body
+from redi.api.types import IdName
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
+
+
+class WikiPage(TypedDict):
+    """redmine Wiki page
+
+    GET /projects/{id}/wiki/index.json / GET /projects/{id}/wiki/{title}.json を
+    実行して確認できたフィールドを記載。
+    index では title / version / created_on / updated_on と（あれば）parent のみが
+    返り、text / author / comments は個別ページ取得時のみ含まれる。
+    """
+
+    title: str
+    version: int
+    created_on: str
+    updated_on: str
+    # 親ページを持つ場合のみ存在
+    parent: NotRequired[WikiPageParent]
+    # 個別ページ取得時のみ存在
+    text: NotRequired[str]
+    author: NotRequired[IdName]
+    comments: NotRequired[str]
+    # include=attachments 指定時のみ存在
+    attachments: NotRequired[list[WikiAttachment]]
+
+
+class WikiPageParent(TypedDict):
+    """Wiki ページの親ページ参照。`title` のみを持つ。"""
+
+    title: str
+
+
+class WikiAttachment(TypedDict):
+    """Wiki ページの添付ファイル。include=attachments 指定時に含まれる。"""
+
+    id: int
+    filename: str
+    filesize: int  # bytes
+    content_type: str  # ex. text/plain
+    description: str
+    content_url: str
+    author: IdName
+    created_on: str
 
 
 class WikiPageUpdateBody(TypedDict):
@@ -32,23 +77,24 @@ def normalize_title(t: str) -> str:
     return normalized
 
 
-def fetch_wikis(project_id: str) -> list[dict]:
+def fetch_wikis(project_id: str) -> list[WikiPage]:
     response = client.get(f"/projects/{project_id}/wiki/index.json")
     response.raise_for_status()
-    return response.json()["wiki_pages"]
+    return cast("list[WikiPage]", response.json()["wiki_pages"])
 
 
-def build_children_map(pages: list[dict]) -> dict[str | None, list[str]]:
+def build_children_map(pages: list[WikiPage]) -> dict[str | None, list[str]]:
     children_map: dict[str | None, list[str]] = defaultdict(list)
     for page in pages:
-        parent = page.get("parent", {}).get("title") if "parent" in page else None
+        parent_obj = page.get("parent")
+        parent = parent_obj["title"] if parent_obj is not None else None
         children_map[parent].append(page["title"])
     for titles in children_map.values():
         titles.sort()
     return children_map
 
 
-def flatten_wiki_tree(pages: list[dict]) -> list[tuple[dict, str]]:
+def flatten_wiki_tree(pages: list[WikiPage]) -> list[tuple[WikiPage, str]]:
     """
     Wiki ページをツリー順に並べ、(ページ辞書, ツリー前置子) のペア列として返す。
     前置子は `│   ├── ` のようなツリー装飾で、末尾にタイトル等を連結すれば
@@ -56,7 +102,7 @@ def flatten_wiki_tree(pages: list[dict]) -> list[tuple[dict, str]]:
     """
     children_map = build_children_map(pages)
     by_title = {p["title"]: p for p in pages}
-    result: list[tuple[dict, str]] = []
+    result: list[tuple[WikiPage, str]] = []
 
     def walk(parent: str | None, prefix: str) -> None:
         children = children_map.get(parent, [])
@@ -85,16 +131,20 @@ def list_wikis(project_id: str, full: bool = False) -> None:
 
 
 def fetch_wiki(
-    project_id: str, page_title: str, version: int | None = None
-) -> dict | None:
+    project_id: str,
+    page_title: str,
+    version: int | None = None,
+    full: bool = False,
+) -> WikiPage | None:
     path = f"/projects/{project_id}/wiki/{page_title}.json"
     if version is not None:
         path = f"/projects/{project_id}/wiki/{page_title}/{version}.json"
-    response = client.get(path)
+    params = {"include": "attachments"} if full else None
+    response = client.get(path, params=params)
     if response.status_code == 404:
         return None
     response.raise_for_status()
-    return response.json()["wiki_page"]
+    return cast("WikiPage", response.json()["wiki_page"])
 
 
 def read_wiki(
@@ -111,7 +161,7 @@ def read_wiki(
         print(url)
         webbrowser.open(url)
         return
-    wiki = fetch_wiki(project_id, page_title, version=version)
+    wiki = fetch_wiki(project_id, page_title, version=version, full=full)
     if wiki is None:
         if version is not None:
             print(

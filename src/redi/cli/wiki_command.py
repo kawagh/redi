@@ -10,6 +10,7 @@ from redi.cli.confirm import confirm_delete
 from redi.config import default_project_id, wiki_project_id
 from redi.i18n import messages
 from redi.api.wiki import (
+    WikiPage,
     build_children_map,
     create_wiki,
     delete_wiki,
@@ -31,7 +32,7 @@ def _prompt_wiki_comments() -> str:
         exit(1)
 
 
-def build_wiki_tree_choices(pages: list[dict]) -> list[tuple[str, str]]:
+def build_wiki_tree_choices(pages: list[WikiPage]) -> list[tuple[str, str]]:
     children_map = build_children_map(pages)
     options: list[tuple[str, str]] = []
 

@@ -3,6 +3,7 @@
 from typing import cast
 
 from redi.api.issue import Issue
+from redi.api.wiki import WikiPage
 from redi.tui import issue_tab, time_entry_tab, wiki_tab
 from redi.tui.state import TuiState
 
@@ -85,11 +86,14 @@ class TestWikiReload:
         """同じタイトルが残っていれば cursor をその位置に復元する"""
         state = TuiState()
         state.wiki_tab.loaded = True
-        state.wiki_tab.pages = [
-            {"title": "A"},
-            {"title": "B"},
-            {"title": "C"},
-        ]
+        state.wiki_tab.pages = cast(
+            list[WikiPage],
+            [
+                {"title": "A"},
+                {"title": "B"},
+                {"title": "C"},
+            ],
+        )
         state.wiki_tab.labels = ["A", "B", "C"]
         state.wiki_tab.cursor = 1  # B にいる
         state.wiki_tab.texts = {"A": "cached"}
@@ -118,7 +122,7 @@ class TestWikiReload:
         """前回のタイトルが新一覧に無ければ cursor=0 のまま"""
         state = TuiState()
         state.wiki_tab.loaded = True
-        state.wiki_tab.pages = [{"title": "deleted"}]
+        state.wiki_tab.pages = cast(list[WikiPage], [{"title": "deleted"}])
         state.wiki_tab.cursor = 0
 
         def fake_load(state):
