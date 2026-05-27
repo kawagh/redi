@@ -3,6 +3,7 @@
 from typing import cast
 
 from redi.api.issue import Issue
+from redi.api.time_entry import TimeEntry
 from redi.api.wiki import WikiPage
 from redi.tui import issue_tab, time_entry_tab, wiki_tab
 from redi.tui.state import TuiState
@@ -146,11 +147,14 @@ class TestTimeEntryReload:
         state.page_size = 5
         state.time_entry_tab.loaded = True
         state.time_entry_tab.offset = 10
-        state.time_entry_tab.entries = [
-            {"id": 100},
-            {"id": 200},
-            {"id": 300},
-        ]
+        state.time_entry_tab.entries = cast(
+            list[TimeEntry],
+            [
+                {"id": 100},
+                {"id": 200},
+                {"id": 300},
+            ],
+        )
         state.time_entry_tab.total_count = 30
         state.time_entry_tab.cursor = 1  # id=200 にいる
 
@@ -176,7 +180,9 @@ class TestTimeEntryReload:
         state = TuiState()
         state.page_size = 5
         state.time_entry_tab.offset = 0
-        state.time_entry_tab.entries = [{"id": i} for i in range(1, 6)]
+        state.time_entry_tab.entries = cast(
+            list[TimeEntry], [{"id": i} for i in range(1, 6)]
+        )
         state.time_entry_tab.total_count = 5
         state.time_entry_tab.cursor = 4
 
@@ -199,7 +205,7 @@ class TestTimeEntryReload:
         """再取得結果が空でも例外を投げず cursor=0 になる"""
         state = TuiState()
         state.page_size = 5
-        state.time_entry_tab.entries = [{"id": 999}]
+        state.time_entry_tab.entries = cast(list[TimeEntry], [{"id": 999}])
         state.time_entry_tab.cursor = 0
         monkeypatch.setattr(
             time_entry_tab,

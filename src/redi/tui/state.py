@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from redi.api.issue import Issue
+from redi.api.time_entry import TimeEntry
 from redi.api.wiki import WikiPage
 from redi.i18n import messages
 
@@ -145,7 +146,7 @@ class TimeEntryFilterModalState:
 class TimeEntryTabState:
     loaded: bool = False
     offset: int = 0
-    entries: list[dict] = field(default_factory=list)
+    entries: list[TimeEntry] = field(default_factory=list)
     total_count: int = 0
     issue_subjects: dict[int, str] = field(default_factory=dict)
     cursor: int = 0
