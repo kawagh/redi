@@ -34,13 +34,26 @@ class WikiPage(TypedDict):
     author: NotRequired[IdName]
     comments: NotRequired[str]
     # include=attachments 指定時のみ存在
-    attachments: NotRequired[list[dict]]
+    attachments: NotRequired[list[WikiAttachment]]
 
 
 class WikiPageParent(TypedDict):
     """Wiki ページの親ページ参照。`title` のみを持つ。"""
 
     title: str
+
+
+class WikiAttachment(TypedDict):
+    """Wiki ページの添付ファイル。include=attachments 指定時に含まれる。"""
+
+    id: int
+    filename: str
+    filesize: int  # bytes
+    content_type: str  # ex. text/plain
+    description: str
+    content_url: str
+    author: IdName
+    created_on: str
 
 
 class WikiPageUpdateBody(TypedDict):
