@@ -25,8 +25,8 @@ class TimeEntry(TypedDict):
     user: IdName
     activity: IdName
     hours: float
-    comments: str
-    spent_on: str
+    comments: str | None
+    spent_on: str  # YYYY-MM-DD
     created_on: str
     updated_on: str
     # チケットに紐づく作業時間の場合のみ存在
