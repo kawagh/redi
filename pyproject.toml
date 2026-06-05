@@ -1,6 +1,6 @@
 [project]
 name = "redtile"
-version = "0.0.40"
+version = "0.0.41"
 description = "Redmine CLI/TUI tool that wraps the Redmine REST API"
 readme = "README.md"
 authors = [
