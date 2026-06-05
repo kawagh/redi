@@ -188,6 +188,10 @@ redi news -p <project_id>
 redi issue_category -p <project_id>
 redi issue_category create "category" -p <project_id>
 
+# issue_template (alias: it)
+# This command requires redmine_issue_templates plugin ( https://www.redmine.org/plugins/redmine_issue_templates )
+redi issue_template # list issue_templates
+
 # others
 redi user # list users (alias: u)
 redi tracker # list trackers (alias: t)
