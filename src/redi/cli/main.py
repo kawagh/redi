@@ -35,6 +35,10 @@ from redi.cli.issue_journal_command import (
     add_issue_journal_parser,
     handle_issue_journal,
 )
+from redi.cli.issue_template_command import (
+    add_issue_template_parser,
+    handle_issue_template,
+)
 from redi.cli.me_command import add_me_parser, handle_me
 from redi.cli.membership_command import add_membership_parser, handle_membership
 from redi.cli.news_command import add_news_parser, handle_news
@@ -140,6 +144,7 @@ def build_redi_parser() -> argparse.ArgumentParser:
     add_time_entry_parser(subparsers, parents)
     add_file_parser(subparsers, parents)
     add_issue_journal_parser(subparsers, parents)
+    add_issue_template_parser(subparsers, parents)
     return parser
 
 
@@ -391,5 +396,7 @@ def main() -> None:
         handle_file(args)
     elif args.command in ("issue_journal", "ij"):
         handle_issue_journal(args)
+    elif args.command in ("issue_template", "it"):
+        handle_issue_template(args)
     else:
         parser.print_help()

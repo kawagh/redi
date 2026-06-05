@@ -763,6 +763,15 @@ class Ja(MessagesProto):
     arg_help_query_command = "カスタムクエリ一覧"
     arg_help_custom_field_command = "カスタムフィールド一覧"
 
+    # ---- argparse helps (issue_template) ----
+    arg_help_issue_template_command = (
+        "チケットテンプレート一覧 (redmine_issue_templates プラグインが必要です)"
+    )
+    issue_template_not_available = (
+        "issue_templates エンドポイントが見つかりません "
+        "(redmine_issue_templates プラグインが必要です)"
+    )
+
     # ---- config_command suffix ----
     config_profile_suffix = "（profile: {name}）"
 

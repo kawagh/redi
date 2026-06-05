@@ -754,6 +754,14 @@ class En(MessagesProto):
     arg_help_query_command = "List custom queries"
     arg_help_custom_field_command = "List custom fields"
 
+    # ---- argparse helps (issue_template) ----
+    arg_help_issue_template_command = (
+        "List issue templates (requires redmine_issue_templates plugin)"
+    )
+    issue_template_not_available = (
+        "issue_templates endpoint not found (requires redmine_issue_templates plugin)"
+    )
+
     # ---- config_command suffix ----
     config_profile_suffix = " (profile: {name})"
 
