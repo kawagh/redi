@@ -39,6 +39,33 @@ def fetch_issue_templates(project_id: str) -> dict[str, list[IssueTemplate]]:
     return response.json()
 
 
+def fetch_enabled_issue_templates(
+    project_id: str, tracker_id: str | None = None
+) -> list[IssueTemplate]:
+    """issue create フローで選択肢として並べる有効なテンプレートを取得する。
+
+    プラグイン未インストール時は exit せず空リストを返す。
+    tracker_id を指定すると、その tracker に紐づくテンプレートのみに絞り込む。
+    """
+    response = client.get(f"/projects/{project_id}/issue_templates.json")
+    # プラグイン非インストール時は create を中断せずテンプレートなしとして扱う
+    if response.status_code == 404:
+        return []
+    response.raise_for_status()
+    data = response.json()
+    templates: list[IssueTemplate] = []
+    for key in _KEYS:
+        for template in data.get(key) or []:
+            if not template.get("enabled", True):
+                continue
+            if tracker_id is not None and str(template.get("tracker_id")) != str(
+                tracker_id
+            ):
+                continue
+            templates.append(template)
+    return templates
+
+
 def list_issue_templates(project_id: str, full: bool = False) -> None:
     templates = fetch_issue_templates(project_id)
     if full:

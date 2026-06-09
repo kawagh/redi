@@ -198,6 +198,7 @@ class Ja(MessagesProto):
     fixed_version_label = "対象バージョン: {value}"
     done_ratio_label = "進捗率: {value}%"
     estimated_hours_label = "予定工数: {value} h"
+    template_label = "テンプレート: {value}"
 
     # ---- init flow ----
     api_key_url_hint = "APIキーは {url}/my/account で確認できます"
@@ -222,6 +223,8 @@ class Ja(MessagesProto):
     prompt_parent_page = "親ページ"
     prompt_edit_page = "編集するページ"
     prompt_select_tracker = "トラッカーを選択"
+    prompt_select_template = "テンプレートを選択"
+    prompt_select_template_none = "（テンプレートを使用しない）"
     prompt_select_status = "ステータス"
     prompt_select_priority = "優先度"
     prompt_select_assignee = "担当者"
