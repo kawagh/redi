@@ -37,6 +37,7 @@ tasks:
   test:e2e:
     desc: run E2E tests
     cmds:
+      - ./script/init-redmine.sh
       - uv run pytest -m e2e
 
   release:
