@@ -305,6 +305,8 @@ class MessagesProto(Protocol):
     """{value}"""
     estimated_hours_label: str
     """{value}"""
+    template_label: str
+    """{value}"""
 
     # ---- init flow ----
     api_key_url_hint: str
@@ -331,6 +333,8 @@ class MessagesProto(Protocol):
     prompt_parent_page: str
     prompt_edit_page: str
     prompt_select_tracker: str
+    prompt_select_template: str
+    prompt_select_template_none: str
     prompt_select_status: str
     prompt_select_priority: str
     prompt_select_assignee: str

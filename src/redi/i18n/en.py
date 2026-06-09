@@ -196,6 +196,7 @@ class En(MessagesProto):
     fixed_version_label = "Fixed version: {value}"
     done_ratio_label = "Done ratio: {value}%"
     estimated_hours_label = "Estimated hours: {value} h"
+    template_label = "Template: {value}"
 
     # ---- init flow ----
     api_key_url_hint = "API key can be found at {url}/my/account"
@@ -220,6 +221,8 @@ class En(MessagesProto):
     prompt_parent_page = "Parent page"
     prompt_edit_page = "Page to edit"
     prompt_select_tracker = "Select tracker"
+    prompt_select_template = "Select template"
+    prompt_select_template_none = "(Do not use a template)"
     prompt_select_status = "Status"
     prompt_select_priority = "Priority"
     prompt_select_assignee = "Assignee"

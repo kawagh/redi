@@ -39,6 +39,7 @@ from redi.api.issue import (
 )
 from redi.api.issue_relation import create_relation, delete_relation
 from redi.api.issue_status import fetch_issue_statuses
+from redi.api.issue_template import IssueTemplate, fetch_enabled_issue_templates
 from redi.api.membership import fetch_project_users
 from redi.api.project import fetch_project
 from redi.api.time_entry import create_time_entry
@@ -863,6 +864,33 @@ def _interactive_fill_optional_create_fields(
     return ",".join(added_cfs)
 
 
+def _interactive_select_issue_template(
+    project_id: str, tracker_id: str | None
+) -> IssueTemplate | None:
+    """create フローでテンプレートを選択させる。
+
+    redmine_issue_templates プラグインが無い、または有効なテンプレートが
+    無い場合は None を返し、選択ステップ自体をスキップする。
+    """
+    templates = fetch_enabled_issue_templates(project_id, tracker_id)
+    if not templates:
+        return None
+    options: list[tuple[str, str]] = [("", messages.prompt_select_template_none)] + [
+        (str(t["id"]), t["title"]) for t in templates
+    ]
+    template_map = {str(t["id"]): t for t in templates}
+    try:
+        selected = inline_choice(messages.prompt_select_template, options)
+    except KeyboardInterrupt:
+        print(messages.canceled)
+        exit(1)
+    if not selected:
+        return None
+    template = template_map[selected]
+    print(messages.template_label.format(value=template["title"]))
+    return template
+
+
 def handle_issue_create(args: argparse.Namespace) -> None:
     project_id = args.project_id or default_project_id
     if not project_id:
@@ -873,6 +901,7 @@ def handle_issue_create(args: argparse.Namespace) -> None:
     custom_fields = args.custom_fields
     interactive = subject is None or args.description is None
     browser_only = False
+    template_description = ""
     if subject is None:
         if tracker_id is None:
             project = fetch_project(project_id, include="trackers")
@@ -889,8 +918,14 @@ def handle_issue_create(args: argparse.Namespace) -> None:
                 print(messages.canceled)
                 exit(1)
             print(messages.tracker_label.format(value=labels[tracker_id]))
+        # テンプレートを選択し、題名・説明の初期値として反映させる
+        template = _interactive_select_issue_template(project_id, tracker_id)
+        subject_default = ""
+        if template is not None:
+            subject_default = template["issue_title"]
+            template_description = template["description"]
         try:
-            subject = prompt(messages.prompt_subject).strip()
+            subject = prompt(messages.prompt_subject, default=subject_default).strip()
         except (KeyboardInterrupt, EOFError):
             print(messages.canceled)
             exit(1)
@@ -904,7 +939,7 @@ def handle_issue_create(args: argparse.Namespace) -> None:
             existing=args.custom_fields,
         )
     if args.description is None:
-        description = open_editor()
+        description = open_editor(initial_text=template_description)
         if description:
             print(
                 messages.prompt_field_value.format(
