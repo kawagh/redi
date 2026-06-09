@@ -42,6 +42,16 @@ def inline_checkbox(
         nonlocal cursor
         cursor = min(len(values) - 1, cursor + 1)
 
+    @kb.add("g", "g")
+    def _top(event):
+        nonlocal cursor
+        cursor = 0
+
+    @kb.add("G")
+    def _bottom(event):
+        nonlocal cursor
+        cursor = len(values) - 1
+
     @kb.add(" ")
     def _toggle(event):
         value = values[cursor][0]
@@ -112,6 +122,16 @@ def inline_choice(
     def _down(event):
         nonlocal cursor
         cursor = min(len(options) - 1, cursor + 1)
+
+    @kb.add("g", "g")
+    def _top(event):
+        nonlocal cursor
+        cursor = 0
+
+    @kb.add("G")
+    def _bottom(event):
+        nonlocal cursor
+        cursor = len(options) - 1
 
     @kb.add("enter")
     def _accept(event):
