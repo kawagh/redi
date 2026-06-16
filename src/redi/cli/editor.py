@@ -22,3 +22,16 @@ def open_editor(initial_text: str = "") -> str:
             return f.read().strip()
     finally:
         os.unlink(tmp_path)
+
+
+def save_text_to_tempfile(text: str) -> str:
+    """text を一時ファイルに保存してそのパスを返す(呼び出し側で削除しない)。
+
+    issue create/update などが失敗したときに、エディタで記載した本文が
+    失われないよう退避させる用途で使う。
+    """
+    with tempfile.NamedTemporaryFile(
+        prefix="redi-", suffix=".md", mode="w", delete=False
+    ) as f:
+        f.write(text)
+        return f.name

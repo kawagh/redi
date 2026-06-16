@@ -6,7 +6,7 @@ from datetime import date
 from prompt_toolkit import prompt
 
 from redi.cli.alias import resolve_alias
-from redi.cli.editor import open_editor
+from redi.cli.editor import open_editor, save_text_to_tempfile
 from redi.cli.keybinding import (
     date_key_bindings,
     digit_and_period_key_bindings,
@@ -891,6 +891,14 @@ def _interactive_select_issue_template(
     return template
 
 
+def _save_body_on_failure(text: str) -> None:
+    """送信失敗時に、エディタで記載した本文を一時ファイルへ退避する。"""
+    if not text:
+        return
+    path = save_text_to_tempfile(text)
+    print(messages.body_saved_to_tempfile.format(path=path))
+
+
 def handle_issue_create(args: argparse.Namespace) -> None:
     project_id = args.project_id or default_project_id
     if not project_id:
@@ -938,6 +946,7 @@ def handle_issue_create(args: argparse.Namespace) -> None:
             tracker_id=tracker_id,
             existing=args.custom_fields,
         )
+    description_from_editor = args.description is None
     if args.description is None:
         description = open_editor(initial_text=template_description)
         if description:
@@ -992,20 +1001,25 @@ def handle_issue_create(args: argparse.Namespace) -> None:
                 webbrowser.open(url)
                 return
             break
-    create_issue(
-        project_id=project_id,
-        subject=subject,
-        description=description,
-        tracker_id=tracker_id,
-        priority_id=args.priority_id,
-        assigned_to_id=args.assigned_to_id,
-        fixed_version_id=args.fixed_version_id,
-        parent_issue_id=args.parent_issue_id,
-        start_date=args.start_date,
-        due_date=args.due_date,
-        estimated_hours=args.estimated_hours,
-        custom_fields=custom_fields,
-    )
+    try:
+        create_issue(
+            project_id=project_id,
+            subject=subject,
+            description=description,
+            tracker_id=tracker_id,
+            priority_id=args.priority_id,
+            assigned_to_id=args.assigned_to_id,
+            fixed_version_id=args.fixed_version_id,
+            parent_issue_id=args.parent_issue_id,
+            start_date=args.start_date,
+            due_date=args.due_date,
+            estimated_hours=args.estimated_hours,
+            custom_fields=custom_fields,
+        )
+    except Exception:
+        if description_from_editor:
+            _save_body_on_failure(description)
+        raise
 
 
 def handle_issue_update(args: argparse.Namespace) -> None:
@@ -1037,9 +1051,11 @@ def handle_issue_update(args: argparse.Namespace) -> None:
     if no_args_provided:
         _interactive_fill_issue_update_args(args)
     description = args.description
+    description_from_editor = False
     if description is not None and description == "":
         current = fetch_issue(args.issue_id)
         description = open_editor(current.get("description") or "")
+        description_from_editor = True
     should_update_issue = (
         args.subject
         or description is not None
@@ -1062,24 +1078,29 @@ def handle_issue_update(args: argparse.Namespace) -> None:
     )
     should_create_time_entry = args.hours is not None
     if should_update_issue:
-        update_issue(
-            issue_id=args.issue_id,
-            subject=args.subject,
-            description=description if description else None,
-            tracker_id=args.tracker_id,
-            status_id=args.status_id,
-            priority_id=args.priority_id,
-            assigned_to_id=args.assigned_to_id,
-            fixed_version_id=args.fixed_version_id,
-            parent_issue_id=args.parent_issue_id,
-            start_date=args.start_date,
-            due_date=args.due_date,
-            done_ratio=args.done_ratio,
-            estimated_hours=args.estimated_hours,
-            notes=args.notes or "",
-            custom_fields=args.custom_fields,
-            attachments=args.attach,
-        )
+        try:
+            update_issue(
+                issue_id=args.issue_id,
+                subject=args.subject,
+                description=description if description else None,
+                tracker_id=args.tracker_id,
+                status_id=args.status_id,
+                priority_id=args.priority_id,
+                assigned_to_id=args.assigned_to_id,
+                fixed_version_id=args.fixed_version_id,
+                parent_issue_id=args.parent_issue_id,
+                start_date=args.start_date,
+                due_date=args.due_date,
+                done_ratio=args.done_ratio,
+                estimated_hours=args.estimated_hours,
+                notes=args.notes or "",
+                custom_fields=args.custom_fields,
+                attachments=args.attach,
+            )
+        except Exception:
+            if description_from_editor and description:
+                _save_body_on_failure(description)
+            raise
     if args.delete_relation:
         if not args.relate_to:
             print(messages.delete_relation_requires_to)
