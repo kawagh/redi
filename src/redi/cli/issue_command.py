@@ -946,7 +946,6 @@ def handle_issue_create(args: argparse.Namespace) -> None:
             tracker_id=tracker_id,
             existing=args.custom_fields,
         )
-    description_from_editor = args.description is None
     if args.description is None:
         description = open_editor(initial_text=template_description)
         if description:
@@ -1017,8 +1016,7 @@ def handle_issue_create(args: argparse.Namespace) -> None:
             custom_fields=custom_fields,
         )
     except Exception:
-        if description_from_editor:
-            _save_body_on_failure(description)
+        _save_body_on_failure(description)
         raise
 
 
@@ -1051,11 +1049,9 @@ def handle_issue_update(args: argparse.Namespace) -> None:
     if no_args_provided:
         _interactive_fill_issue_update_args(args)
     description = args.description
-    description_from_editor = False
     if description is not None and description == "":
         current = fetch_issue(args.issue_id)
         description = open_editor(current.get("description") or "")
-        description_from_editor = True
     should_update_issue = (
         args.subject
         or description is not None
@@ -1098,8 +1094,7 @@ def handle_issue_update(args: argparse.Namespace) -> None:
                 attachments=args.attach,
             )
         except Exception:
-            if description_from_editor and description:
-                _save_body_on_failure(description)
+            _save_body_on_failure(description)
             raise
     if args.delete_relation:
         if not args.relate_to:
