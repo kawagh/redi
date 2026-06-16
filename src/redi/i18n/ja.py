@@ -35,6 +35,9 @@ class Ja(MessagesProto):
     issue_or_project_id_required = "issue_idまたはproject_idを指定してください"
     delete_relation_requires_to = "--delete-relation には --to が必要です"
     relate_and_to_required = "--relate と --to は両方指定してください"
+    body_saved_to_tempfile = (
+        "送信に失敗したため、本文を一時ファイルに保存しました: {path}"
+    )
 
     # ---- not found ----
     role_not_found = "ロールが見つかりません: #{id}"

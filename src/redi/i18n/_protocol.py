@@ -67,6 +67,8 @@ class MessagesProto(Protocol):
     """--delete-relation には --to が必要"""
     relate_and_to_required: str
     """--relate と --to は両方指定する"""
+    body_saved_to_tempfile: str
+    """送信に失敗したため本文を一時ファイルに保存。{path}"""
 
     # ---- not found ----
     role_not_found: str

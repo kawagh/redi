@@ -35,6 +35,9 @@ class En(MessagesProto):
     issue_or_project_id_required = "Specify issue_id or project_id"
     delete_relation_requires_to = "--delete-relation requires --to"
     relate_and_to_required = "Specify both --relate and --to"
+    body_saved_to_tempfile = (
+        "Submission failed; saved the body to a temporary file: {path}"
+    )
 
     # ---- not found ----
     role_not_found = "Role not found: #{id}"
