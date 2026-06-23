@@ -64,3 +64,8 @@ tasks:
     cmds:
       - bash ./script/init-redmine-demo.sh
       - vhs ./doc/demo.tape
+
+  rulesync:
+    desc: sync skills
+    cmds:
+      - rulesync generate -t agentsmd,claudecode -f skills --simulate-skills

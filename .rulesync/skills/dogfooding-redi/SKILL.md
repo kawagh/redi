@@ -1,6 +1,8 @@
 ---
 name: dogfooding-redi
 description: redi を使用して見つけた課題・機能要望を `redi issue create` で Redmine に起票する
+targets:
+  - '*'
 ---
 - ユーザーが指定した--profile `profile_name`でrediコマンドを使用してください
 - 重複起票を防ぐため`redi issue`で現在起票されているチケットを把握してください
