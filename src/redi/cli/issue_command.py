@@ -546,8 +546,8 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
             args.time_comments = prompt(messages.prompt_time_comments).strip() or None
         # 選択されたカスタムフィールドの値を入力する
         current_cf_values = {
-            custome_field["id"]: custome_field.get("value")
-            for custome_field in (current.get("custom_fields") or [])
+            custom_field["id"]: custom_field.get("value")
+            for custom_field in (current.get("custom_fields") or [])
         }
         added_custom_fields: list[str] = []
         for custom_field in applicable_custom_fields:
