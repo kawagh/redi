@@ -711,7 +711,9 @@ def _prompt_custom_field_value(
             progress_options: list[tuple[str, str]] = [
                 (str(r), f"{r}%") for r in range(0, 101, 10)
             ]
-            value = inline_choice(label, progress_options)
+            value = inline_choice(
+                label, progress_options, default=default_value or None
+            )
             print(messages.prompt_field_value.format(name=name, value=f"{value}%"))
             return value
 
