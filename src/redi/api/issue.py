@@ -45,10 +45,18 @@ class Issue(TypedDict):
     total_estimated_hours: float | None
     spent_hours: float
     total_spent_hours: float
+    # GET /issues/{id}では含まれる
+    custom_fields: NotRequired[list[IssueCustomField]]
     created_on: str
     updated_on: str
     closed_on: str | None
     journals: NotRequired[list[Journal]]
+
+
+class IssueCustomField(TypedDict):
+    id: int
+    name: str
+    value: str
 
 
 class IssueStatus(TypedDict):
