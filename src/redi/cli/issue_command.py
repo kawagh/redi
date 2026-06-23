@@ -2,6 +2,7 @@ import argparse
 import urllib.parse
 import webbrowser
 from datetime import date
+from typing import cast
 
 from prompt_toolkit import prompt
 
@@ -346,6 +347,27 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         ("notes", messages.field_notes),
         ("time_entry", messages.field_time_entry),
     ]
+    # 対象イシューのプロジェクト/トラッカーに該当するカスタムフィールドを選択肢に並べる
+    issue_project_id = current.get("project").get("id")
+    issue_tracker_id = current.get("tracker").get("id")
+    applicable_custom_fields: list[CustomField] = []
+    all_custom_fields = fetch_custom_fields()
+    if all_custom_fields is not None:
+        project_custom_field_ids = fetch_project_issue_custom_field_ids(
+            str(issue_project_id)
+        )
+        tracker_id_str = str(issue_tracker_id)
+        applicable_custom_fields = filter_required_issue_custom_fields(
+            all_custom_fields,
+            project_custom_field_ids,
+            tracker_id_str,
+        ) + filter_optional_issue_custom_fields(
+            all_custom_fields,
+            project_custom_field_ids,
+            tracker_id_str,
+        )
+        for custom_field in applicable_custom_fields:
+            field_values.append((f"cf_{custom_field['id']}", custom_field["name"]))
     try:
         selected = inline_checkbox(
             messages.prompt_select_update_items,
@@ -522,6 +544,39 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
                 or None
             )
             args.time_comments = prompt(messages.prompt_time_comments).strip() or None
+        # 選択されたカスタムフィールドの値を入力する
+        current_cf_values = {
+            custome_field["id"]: custome_field.get("value")
+            for custome_field in (current.get("custom_fields") or [])
+        }
+        added_custom_fields: list[str] = []
+        for custom_field in applicable_custom_fields:
+            if f"cf_{custom_field['id']}" not in selected:
+                continue
+            custom_field_for_prompt = custom_field
+            current_value = current_cf_values.get(custom_field["id"])
+            if isinstance(current_value, str) and current_value:
+                # 現在値を入力のデフォルトとして提示する
+                custom_field_for_prompt = cast(
+                    CustomField, {**custom_field, "default_value": current_value}
+                )
+            custom_field_value = _prompt_custom_field_value(
+                custom_field_for_prompt, str(issue_project_id)
+            )
+            if custom_field_value is _SKIP_UNSUPPORTED_FIELD:
+                continue
+            if isinstance(custom_field_value, list):
+                for v in custom_field_value:
+                    added_custom_fields.append(f"{custom_field['id']}={v}")
+            else:
+                added_custom_fields.append(f"{custom_field['id']}={custom_field_value}")
+        if added_custom_fields:
+            if args.custom_fields:
+                args.custom_fields = (
+                    args.custom_fields + "," + ",".join(added_custom_fields)
+                )
+            else:
+                args.custom_fields = ",".join(added_custom_fields)
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         exit(1)
