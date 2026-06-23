@@ -555,8 +555,8 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
                 continue
             custom_field_for_prompt = custom_field
             current_value = current_cf_values.get(custom_field["id"])
-            if isinstance(current_value, str) and current_value:
-                # 現在値を入力のデフォルトとして提示する
+            # 文字列・複数選択(リスト)いずれの現在値も入力のデフォルトとして提示する
+            if current_value:
                 custom_field_for_prompt = cast(
                     CustomField, {**custom_field, "default_value": current_value}
                 )
@@ -599,26 +599,32 @@ def _choose_from_options(
     label: str,
     options: list[tuple[str, str]],
     multiple: bool,
-    default_value: str,
+    default_value: str | list[str],
 ) -> str | list[str] | object:
     """選択肢からの入力を取得する共通処理。空オプションは _SKIP_UNSUPPORTED_FIELD を返す。"""
     if not options:
         return _SKIP_UNSUPPORTED_FIELD
     label_map = dict(options)
     if multiple:
+        # 複数選択の現在値(リスト)はそのまま、単一値は1要素のリストにして初期チェックする
+        if isinstance(default_value, list):
+            initial_checked = default_value
+        else:
+            initial_checked = [default_value] if default_value else None
         # 空選択は受け付けず、最低 1 つチェックされるまで再表示する
         while True:
             checked = inline_checkbox(
                 label,
                 options,
-                initial_checked=[default_value] if default_value else None,
+                initial_checked=initial_checked,
             )
             if checked:
                 break
         display = ", ".join(label_map[k] for k in checked)
         print(messages.prompt_field_value.format(name=name, value=display))
         return checked
-    key = inline_choice(label, options, default=default_value or None)
+    default_key = default_value[0] if isinstance(default_value, list) else default_value
+    key = inline_choice(label, options, default=default_key or None)
     print(messages.prompt_field_value.format(name=name, value=label_map[key]))
     return key
 
