@@ -56,7 +56,9 @@ class Issue(TypedDict):
 class IssueCustomField(TypedDict):
     id: int
     name: str
-    value: str
+    # valueがlist[str] の時に True
+    multiple: NotRequired[bool]
+    value: str | list[str]
 
 
 class IssueStatus(TypedDict):
