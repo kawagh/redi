@@ -224,7 +224,9 @@ def main() -> None:
                     handle_issue_create(
                         argparse.Namespace(
                             subject=None,
-                            project_id=None,
+                            # TUI 内で切り替えたプロジェクトに作成する。
+                            # None なら従来どおり default_project_id に落ちる。
+                            project_id=tui_state.project_id,
                             tracker_id=None,
                             priority_id=None,
                             assigned_to_id=None,
@@ -259,7 +261,7 @@ def main() -> None:
                     handle_wiki(
                         argparse.Namespace(
                             wiki_command="create",
-                            project_id=None,
+                            project_id=tui_state.project_id,
                             full=False,
                             page_title=None,
                             parent_title=tui_result.parent_wiki_title,
@@ -271,7 +273,7 @@ def main() -> None:
                     handle_wiki(
                         argparse.Namespace(
                             wiki_command="update",
-                            project_id=None,
+                            project_id=tui_state.project_id,
                             full=False,
                             page_title=tui_result.wiki_title,
                             description=None,
@@ -284,7 +286,7 @@ def main() -> None:
                     handle_time_entry(
                         argparse.Namespace(
                             time_entry_command="create",
-                            project_id=None,
+                            project_id=tui_state.project_id,
                             user_id=None,
                             full=False,
                             hours=None,
@@ -298,7 +300,7 @@ def main() -> None:
                     handle_time_entry(
                         argparse.Namespace(
                             time_entry_command="create",
-                            project_id=None,
+                            project_id=tui_state.project_id,
                             user_id=None,
                             full=False,
                             hours=None,

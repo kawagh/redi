@@ -101,3 +101,13 @@ class TestCarryOver:
 
         assert next_state.time_entry_tab.filter == prev.time_entry_tab.filter
         assert next_state.time_entry_tab.filter.user_id == "42"
+
+    def test_project_override_is_preserved(self):
+        """p で切り替えたプロジェクトは action 実行後の次ループにも引き継がれる"""
+        prev = TuiState(project_id="2", project_label="Beta")
+        result = TuiResult(action="create", tab="issues", issue_id="")
+
+        next_state = prev.carry_over(result)
+
+        assert next_state.project_id == "2"
+        assert next_state.project_label == "Beta"

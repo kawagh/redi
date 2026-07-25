@@ -8,7 +8,7 @@ from redi.api.time_entry import (
     format_time_entry_line,
 )
 from redi.client import client
-from redi.config import default_project_id, redmine_url
+from redi.config import redmine_url
 from redi.i18n import messages
 from redi.tui.render import highlight_segments, render_meta_table
 from redi.tui.state import Renderable, TuiPosition, TuiResult, TuiState
@@ -18,7 +18,7 @@ from redi.tui.tab import TabView, noop, noop_jump
 def _fetch_page_with_subjects(state: TuiState, offset: int) -> dict:
     """`offset` から始まる 1 ページ分の time_entries と issue subjects をまとめて返す。"""
     page = fetch_time_entries_page(
-        project_id=default_project_id,
+        project_id=state.effective_project_id(),
         user_id=state.time_entry_tab.filter.user_id,
         limit=state.page_size,
         offset=offset,
@@ -348,6 +348,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  n / N", messages.tui_help_next_prev_match),
     (messages.tui_help_section_filter, ""),
     ("  f", messages.tui_help_filter_user),
+    ("  p", messages.tui_help_switch_project),
     (messages.tui_help_section_actions, ""),
     ("  c", messages.tui_help_time_entry_create),
     ("  u", messages.tui_help_time_entry_update),

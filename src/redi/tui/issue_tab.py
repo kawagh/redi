@@ -7,7 +7,7 @@ from redi.api.issue import (
     fetch_issue,
     fetch_issues_page,
 )
-from redi.config import default_project_id, redmine_url
+from redi.config import redmine_url
 from redi.i18n import messages
 from redi.tui.render import highlight_segments, render_meta_table
 from redi.tui.state import (
@@ -312,7 +312,7 @@ def _on_enter(state: TuiState) -> None:
 def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse:
     f = state.issue_tab.filter
     return fetch_issues_page(
-        project_id=default_project_id,
+        project_id=state.effective_project_id(),
         status_id=f.status_id,
         assigned_to=f.assigned_to_id,
         limit=state.page_size,
@@ -424,6 +424,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  n / N", messages.tui_help_next_prev_match),
     (messages.tui_help_section_filter, ""),
     ("  f", messages.tui_help_filter_status_assignee),
+    ("  p", messages.tui_help_switch_project),
     (messages.tui_help_section_actions, ""),
     ("  Enter", messages.tui_help_issue_load_comments),
     ("  jk / u / D / Esc", messages.tui_help_issue_comment_select_in_mode),

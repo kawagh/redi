@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from redi import config
 from redi.api.issue import Issue
 from redi.api.time_entry import TimeEntry
 from redi.api.wiki import WikiPage
@@ -83,6 +84,16 @@ class FilterModalState:
     # 各セクション内のカーソル位置
     status_cursor: int = 0
     assignee_cursor: int = 0
+
+
+@dataclass
+class ProjectModalState:
+    """p で開くプロジェクト切替 modal の表示・選択肢キャッシュ・カーソル状態。"""
+
+    show: bool = False
+    # 選択肢: (Redmine のプロジェクト id, 表示名) の組
+    choices: list[tuple[str, str]] = field(default_factory=list)
+    cursor: int = 0
 
 
 @dataclass
@@ -186,6 +197,17 @@ class TuiState:
     # 起動時に `/my/account.json` から取得した自分のユーザー id。
     # フィルタモーダルの選択肢で「自分」と実ユーザーの重複表示を避けるために使う。
     me_id: str | None = None
+    # p で切り替えたセッション内のプロジェクト。None は未切替 (config の既定に従う)。
+    project_id: str | None = None
+    project_label: str = ""
+    project_modal: ProjectModalState = field(default_factory=ProjectModalState)
+
+    def effective_project_id(self) -> str | None:
+        return self.project_id or config.default_project_id
+
+    def effective_wiki_project_id(self) -> str | None:
+        # 明示切替はユーザーの直接操作なので wiki_project_id より優先する。
+        return self.project_id or config.wiki_project_id or config.default_project_id
 
     def carry_over(self, result: TuiResult) -> TuiState:
         """action 実行後の次のTUIループに 絞り込み条件を引き継ぐ"""
@@ -193,4 +215,6 @@ class TuiState:
         next_state = TuiState(last_result=result)
         next_state.issue_tab.filter = self.issue_tab.filter
         next_state.time_entry_tab.filter = self.time_entry_tab.filter
+        next_state.project_id = self.project_id
+        next_state.project_label = self.project_label
         return next_state
