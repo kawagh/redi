@@ -402,14 +402,23 @@ class Ja(MessagesProto):
     tui_filter_hint_single = "\njk:移動 Enter:適用 c:クリア Esc/f:閉じる"
     tui_filter_title = "フィルタ (Esc/f で閉じる)"
     tui_filter_title_time_entries = "ユーザーでフィルタ (Esc/f で閉じる)"
+    tui_project_modal_title = "プロジェクト切替 (Esc/p で閉じる)"
+    tui_project_modal_hint = "\njk:移動 Enter:切替 Esc/p:閉じる"
+    tui_current_project = "  [project: {name}]"
+    tui_flash_project_switched = "プロジェクトを {name} に切り替えました"
+    tui_project_load_failed = "プロジェクト一覧の取得に失敗しました: {error}"
     tui_help_title = "ヘルプ - {label} タブ (任意のキーで閉じる)"
     tui_error_modal_title = "エラー (q で閉じる)"
     tui_status_hint_issues = (
-        " {page_label}  jk:移動 /:検索 f:フィルタ c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+        " {page_label}  jk:移動 /:検索 f:フィルタ p:プロジェクト"
+        " c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     )
-    tui_status_hint_wiki = " jk:移動 /:検索 c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+    tui_status_hint_wiki = (
+        " jk:移動 /:検索 p:プロジェクト c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+    )
     tui_status_hint_time_entries = (
-        " {page_label}  jk:移動 /:検索 f:フィルタ c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+        " {page_label}  jk:移動 /:検索 f:フィルタ p:プロジェクト"
+        " c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     )
     tui_flash_reloaded = "再読込しました"
     tui_filter_status_open_default = "open (デフォルト)"
@@ -799,6 +808,7 @@ class Ja(MessagesProto):
     tui_help_next_prev_match = "次 / 前の検索結果"
     tui_help_filter_status_assignee = "ステータス/担当者でフィルタ (フローティング)"
     tui_help_filter_user = "ユーザーでフィルタ (フローティング)"
+    tui_help_switch_project = "プロジェクトを切り替え (フローティング)"
     tui_help_reload = "現在のタブを再読込"
     tui_help_show_or_close = "このヘルプを表示 / 閉じる"
     tui_help_quit = "終了"

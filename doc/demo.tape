@@ -69,6 +69,13 @@ Set Theme "Catppuccin Mocha"
 
 Env LANG en_US.UTF-8
 
+# 画面には redi と表示しつつ、実体はリポジトリ上のコードを実行する
+Hide
+Type "alias redi='uv run redi'"
+Enter
+Type "clear"
+Enter
+Show
 
 # redi issue create
 Type "redi issue create"

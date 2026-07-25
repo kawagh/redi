@@ -2,6 +2,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
+import requests
 from prompt_toolkit import Application
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import Condition
@@ -21,7 +22,7 @@ from prompt_toolkit.widgets import Frame
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.me import fetch_my_user_id
 from redi.api.membership import fetch_project_users
-from redi.config import default_project_id
+from redi.api.project import fetch_projects
 from redi.i18n import messages
 from redi.tui.issue_tab import (
     ISSUE_TAB,
@@ -42,10 +43,12 @@ from redi.tui.state import (
     IssueFilter,
     Renderable,
     TimeEntryFilter,
+    TimeEntryTabState,
     TuiPosition,
     TuiResult,
     TuiState,
     TuiTab,
+    WikiTabState,
 )
 from redi.tui.tab import TabView
 from redi.tui.time_entry_tab import (
@@ -104,6 +107,15 @@ def _render_tabs(state: TuiState) -> Renderable:
         style = "reverse" if state.tab == key else ""
         parts.append((style, f" {tab.label} "))
     parts.append(("", messages.tui_tab_switch_hint))
+    # 未切替時は名前解決の API を呼ばず config の設定値 (id/identifier) を出す。
+    project = state.project_label or state.effective_project_id()
+    if project:
+        parts.append(
+            (
+                "bold fg:ansicyan",
+                messages.tui_current_project.format(name=project),
+            )
+        )
     return parts
 
 
@@ -208,6 +220,75 @@ def _build_user_choices(
                 continue
             choices.append((uid, u.get("name", "")))
     return choices
+
+
+def _build_project_choices() -> list[tuple[str, str]]:
+    """プロジェクト切替モーダルの選択肢。(プロジェクト id, 表示名) の組。"""
+    return [(str(p["id"]), p.get("name", "")) for p in fetch_projects()]
+
+
+def open_project_modal(state: TuiState) -> None:
+    """プロジェクト切替モーダルを開く。一覧取得に失敗したら error modal に流す。"""
+    modal = state.project_modal
+    try:
+        projects = fetch_projects()
+    except requests.exceptions.RequestException as e:
+        state.error_modal = messages.tui_project_load_failed.format(error=e)
+        return
+    modal.choices = [(str(p["id"]), p.get("name", "")) for p in projects]
+    modal.cursor = 0
+    # config には id のほか identifier も設定できるので両方で現在プロジェクトを
+    # 探し、id へ解決して保持する (`*` 表示とカーソル初期位置に使う)。
+    modal.active_id = None
+    current = state.effective_project_id()
+    if current is not None:
+        for idx, p in enumerate(projects):
+            if str(p["id"]) == str(current) or p.get("identifier") == current:
+                modal.active_id = str(p["id"])
+                modal.cursor = idx
+                break
+    modal.show = True
+
+
+def apply_project_switch(state: TuiState, project_id: str, label: str) -> None:
+    """セッション内のプロジェクトを切り替え、全タブを新プロジェクトで取り直す。"""
+    state.project_id = project_id
+    state.project_label = label
+    state.project_modal.show = False
+    # 数値 id のフィルタは旧プロジェクトのユーザーを指すのでクリアする。
+    # プロジェクト非依存の特殊値 (未設定/me/未割当) と status は保持する。
+    issue_filter = state.issue_tab.filter
+    if issue_filter.assigned_to_id not in (None, "me", "!*"):
+        issue_filter.assigned_to_id = None
+        issue_filter.assigned_to_label = messages.tui_filter_assignee_none
+    te_filter = state.time_entry_tab.filter
+    if te_filter.user_id not in (None, "me"):
+        te_filter = TimeEntryFilter()
+    # time_entry / wiki は state を作り直して遅延再取得に任せる。
+    # wiki の texts はタイトルのみがキーなので、残すと別プロジェクトの同名
+    # ページに旧本文が表示されてしまう。
+    state.time_entry_tab = TimeEntryTabState(filter=te_filter)
+    state.wiki_tab = WikiTabState()
+    state.preview_scroll = 0
+    # issues タブは on_activate が noop で遅延再取得できないため即時取り直す。
+    reload_with_filter(state)
+    if state.tab in ("time_entries", "wiki"):
+        TABS[state.tab].on_activate(state)
+    state.flash_message = messages.tui_flash_project_switched.format(name=label)
+
+
+def _render_project_modal(state: TuiState) -> Renderable:
+    modal = state.project_modal
+    parts: Renderable = []
+    for i, (pid, label) in enumerate(modal.choices):
+        is_cursor = i == modal.cursor
+        is_active = modal.active_id is not None and pid == modal.active_id
+        cursor_mark = ">" if is_cursor else " "
+        active_mark = "*" if is_active else " "
+        line_style = "reverse" if is_cursor else ("bold" if is_active else "")
+        parts.append((line_style, f" {cursor_mark} {active_mark} {label}\n"))
+    parts.append(("", messages.tui_project_modal_hint))
+    return parts
 
 
 def _render_filter_section(
@@ -370,6 +451,7 @@ def run_issue_tui(
             and not state.time_entry_tab.filter_modal.show
             and state.error_modal is None
             and not state.issue_tab.comment_select.active
+            and not state.project_modal.show
         )
     )
     search_mode = Condition(lambda: state.search_mode)
@@ -380,6 +462,7 @@ def run_issue_tui(
         lambda: state.time_entry_tab.filter_modal.show
     )
     show_error_modal = Condition(lambda: state.error_modal is not None)
+    show_project_modal = Condition(lambda: state.project_modal.show)
     comment_select_mode = Condition(
         lambda: (
             state.issue_tab.comment_select.active
@@ -647,7 +730,7 @@ def run_issue_tui(
         modal = state.issue_tab.filter_modal
         modal.status_choices = _build_status_choices()
         modal.assignee_choices = _build_assignee_choices(
-            default_project_id, state.me_id
+            state.effective_project_id(), state.me_id
         )
         modal.status_cursor = 0
         for idx, (api_val, _label) in enumerate(modal.status_choices):
@@ -664,7 +747,9 @@ def run_issue_tui(
 
     def _open_time_entry_filter_modal() -> None:
         modal = state.time_entry_tab.filter_modal
-        modal.user_choices = _build_user_choices(default_project_id, state.me_id)
+        modal.user_choices = _build_user_choices(
+            state.effective_project_id(), state.me_id
+        )
         modal.user_cursor = 0
         for idx, (api_val, _label) in enumerate(modal.user_choices):
             if api_val == state.time_entry_tab.filter.user_id:
@@ -679,6 +764,40 @@ def run_issue_tui(
             _open_filter_modal()
         elif state.tab == "time_entries":
             _open_time_entry_filter_modal()
+
+    @kb.add("p", filter=normal_mode)
+    def _(event):
+        _clear_temporary_state()
+        open_project_modal(state)
+
+    @kb.add("j", filter=show_project_modal)
+    @kb.add("down", filter=show_project_modal)
+    @kb.add("c-n", filter=show_project_modal)
+    def _project_modal_cursor_down(event):
+        modal = state.project_modal
+        modal.cursor = min(len(modal.choices) - 1, modal.cursor + 1)
+
+    @kb.add("k", filter=show_project_modal)
+    @kb.add("up", filter=show_project_modal)
+    @kb.add("c-p", filter=show_project_modal)
+    def _project_modal_cursor_up(event):
+        modal = state.project_modal
+        modal.cursor = max(0, modal.cursor - 1)
+
+    @kb.add("enter", filter=show_project_modal)
+    def _(event):
+        modal = state.project_modal
+        if not modal.choices:
+            return
+        pid, label = modal.choices[modal.cursor]
+        _reset_preview_scroll()
+        apply_project_switch(state, pid, label)
+
+    @kb.add("escape", filter=show_project_modal)
+    @kb.add("p", filter=show_project_modal)
+    @kb.add("q", filter=show_project_modal)
+    def _(event):
+        state.project_modal.show = False
 
     @kb.add("tab", filter=show_filter_modal)
     @kb.add("s-tab", filter=show_filter_modal)
@@ -917,6 +1036,28 @@ def run_issue_tui(
         ),
     )
 
+    project_float = Float(
+        content=ConditionalContainer(
+            content=VSplit(
+                [
+                    Window(width=1, char=" "),
+                    Frame(
+                        Window(
+                            FormattedTextControl(
+                                lambda: _render_project_modal(state),
+                                show_cursor=False,
+                            ),
+                            wrap_lines=False,
+                        ),
+                        title=messages.tui_project_modal_title,
+                    ),
+                    Window(width=1, char=" "),
+                ]
+            ),
+            filter=show_project_modal,
+        ),
+    )
+
     error_float = Float(
         content=ConditionalContainer(
             content=VSplit(
@@ -946,6 +1087,7 @@ def run_issue_tui(
                     help_float,
                     filter_float,
                     time_entry_filter_float,
+                    project_float,
                     error_float,
                 ],
             )

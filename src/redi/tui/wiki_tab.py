@@ -3,7 +3,7 @@ import webbrowser
 import requests
 
 from redi.api.wiki import fetch_wiki, fetch_wikis, flatten_wiki_tree
-from redi.config import default_project_id, redmine_url, wiki_project_id
+from redi.config import redmine_url
 from redi.i18n import messages
 from redi.tui.render import highlight_segments, render_meta_table
 from redi.tui.state import (
@@ -16,15 +16,15 @@ from redi.tui.state import (
 from redi.tui.tab import TabView, noop, noop_jump
 
 
-def _wiki_project() -> str | None:
-    return wiki_project_id or default_project_id
+def _wiki_project(state: TuiState) -> str | None:
+    return state.effective_wiki_project_id()
 
 
 def _load_wikis(state: TuiState) -> None:
     if state.wiki_tab.loaded:
         return
     state.wiki_tab.loaded = True
-    project = _wiki_project()
+    project = _wiki_project(state)
     if not project:
         state.wiki_tab.error = messages.tui_wiki_project_required
         return
@@ -44,7 +44,7 @@ def _load_wikis(state: TuiState) -> None:
 def _load_wiki_text(state: TuiState, title: str) -> None:
     if title in state.wiki_tab.texts:
         return
-    project = _wiki_project()
+    project = _wiki_project(state)
     if not project:
         return
     try:
@@ -211,7 +211,7 @@ def _on_reload(state: TuiState) -> None:
 def _on_open_web(state: TuiState) -> None:
     if not state.wiki_tab.pages:
         return
-    project = _wiki_project()
+    project = _wiki_project(state)
     if not project:
         return
     title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
@@ -230,6 +230,8 @@ _HELP_LINES: list[tuple[str, str]] = [
     (messages.tui_help_section_search, ""),
     ("  /", messages.tui_help_start_search),
     ("  n / N", messages.tui_help_next_prev_match),
+    (messages.tui_help_section_filter, ""),
+    ("  p", messages.tui_help_switch_project),
     (messages.tui_help_section_actions, ""),
     ("  Enter", messages.tui_help_wiki_load_text),
     ("  c", messages.tui_help_wiki_create_child),

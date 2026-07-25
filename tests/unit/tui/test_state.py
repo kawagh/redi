@@ -1,3 +1,4 @@
+from redi import config
 from redi.i18n import messages
 from redi.tui.state import IssueFilter, TimeEntryFilter, TuiResult, TuiState
 
@@ -75,6 +76,42 @@ class TestTimeEntryFilter:
         assert f.short_label() == "user=Alice"
 
 
+class TestEffectiveProjectId:
+    """effective_project_id() は override > config の優先順位で解決する"""
+
+    def test_override_wins(self, monkeypatch):
+        monkeypatch.setattr(config, "default_project_id", "5")
+        monkeypatch.setattr(config, "wiki_project_id", "7")
+        state = TuiState(project_id="2")
+
+        assert state.effective_project_id() == "2"
+        # 明示切替は wiki_project_id より優先する
+        assert state.effective_wiki_project_id() == "2"
+
+    def test_falls_back_to_config(self, monkeypatch):
+        monkeypatch.setattr(config, "default_project_id", "5")
+        monkeypatch.setattr(config, "wiki_project_id", "7")
+        state = TuiState()
+
+        assert state.effective_project_id() == "5"
+        assert state.effective_wiki_project_id() == "7"
+
+    def test_wiki_falls_back_to_default_project(self, monkeypatch):
+        monkeypatch.setattr(config, "default_project_id", "5")
+        monkeypatch.setattr(config, "wiki_project_id", None)
+        state = TuiState()
+
+        assert state.effective_wiki_project_id() == "5"
+
+    def test_none_when_nothing_is_set(self, monkeypatch):
+        monkeypatch.setattr(config, "default_project_id", None)
+        monkeypatch.setattr(config, "wiki_project_id", None)
+        state = TuiState()
+
+        assert state.effective_project_id() is None
+        assert state.effective_wiki_project_id() is None
+
+
 class TestCarryOver:
     """carry_over() は action 実行後の次ループ用に TuiState を作り直す"""
 
@@ -101,3 +138,13 @@ class TestCarryOver:
 
         assert next_state.time_entry_tab.filter == prev.time_entry_tab.filter
         assert next_state.time_entry_tab.filter.user_id == "42"
+
+    def test_project_override_is_preserved(self):
+        """p で切り替えたプロジェクトは action 実行後の次ループにも引き継がれる"""
+        prev = TuiState(project_id="2", project_label="Beta")
+        result = TuiResult(action="create", tab="issues", issue_id="")
+
+        next_state = prev.carry_over(result)
+
+        assert next_state.project_id == "2"
+        assert next_state.project_label == "Beta"
