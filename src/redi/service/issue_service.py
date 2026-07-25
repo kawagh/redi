@@ -31,7 +31,12 @@ def list_issues(
     limit: int | None = None,
     offset: int | None = None,
 ) -> list[Issue]:
-    """イシュー一覧を取得する。"""
+    """イシュー一覧を取得する。
+
+    Raises:
+        ProjectNotFoundException: 指定したプロジェクトが存在しない (HTTP 404)
+        requests.exceptions.HTTPError: それ以外の HTTP エラー
+    """
     return issue_api.fetch_issues(
         project_id=project_id,
         fixed_version_id=fixed_version_id,

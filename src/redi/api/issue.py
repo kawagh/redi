@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import NotRequired, TypedDict, cast
 
-from redi.api.exceptions import RedmineValidationException
+from redi.api.exceptions import ProjectNotFoundException, RedmineValidationException
 from redi.api.types import IdName
 from redi.client import client
 
@@ -125,6 +125,9 @@ def fetch_issues_page(
     if offset is not None:
         params["offset"] = offset
     response = client.get("/issues.json", params=params)
+    # 存在しない (または閲覧できない) プロジェクトを指定すると Redmine は 404 を返す
+    if response.status_code == 404 and project_id:
+        raise ProjectNotFoundException(project_id)
     response.raise_for_status()
     return cast(IssuesPageResponse, response.json())
 
