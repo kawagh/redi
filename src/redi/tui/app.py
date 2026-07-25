@@ -383,7 +383,7 @@ def _render_help(state: TuiState) -> Renderable:
     label = _help_version_label()
     padding = max(0, body_width - get_cwidth(label))
     parts.append(("", "\n"))
-    parts.append(("fg:ansibrightblack", f"{' ' * padding}{label}"))
+    parts.append(("fg:ansiwhite", f"{' ' * padding}{label}"))
     return parts
 
 
