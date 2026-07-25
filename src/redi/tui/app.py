@@ -107,11 +107,13 @@ def _render_tabs(state: TuiState) -> Renderable:
         style = "reverse" if state.tab == key else ""
         parts.append((style, f" {tab.label} "))
     parts.append(("", messages.tui_tab_switch_hint))
-    if state.project_label:
+    # 未切替時は名前解決の API を呼ばず config の設定値 (id/identifier) を出す。
+    project = state.project_label or state.effective_project_id()
+    if project:
         parts.append(
             (
                 "bold fg:ansicyan",
-                messages.tui_current_project.format(name=state.project_label),
+                messages.tui_current_project.format(name=project),
             )
         )
     return parts

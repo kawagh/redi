@@ -221,6 +221,35 @@ class TestApplyProjectSwitch:
         assert activated == []
 
 
+class TestRenderTabs:
+    """_render_tabs() は現在のプロジェクトを常に表示する"""
+
+    def test_shows_config_project_when_unswitched(self, monkeypatch):
+        monkeypatch.setattr(config, "default_project_id", "redidemo")
+        state = TuiState()
+
+        rendered = "".join(text for _style, text in app._render_tabs(state))
+
+        assert "[project: redidemo]" in rendered
+
+    def test_switched_label_takes_precedence(self, monkeypatch):
+        monkeypatch.setattr(config, "default_project_id", "redidemo")
+        state = TuiState(project_id="2", project_label="Beta")
+
+        rendered = "".join(text for _style, text in app._render_tabs(state))
+
+        assert "[project: Beta]" in rendered
+        assert "redidemo" not in rendered
+
+    def test_no_label_when_nothing_is_set(self, monkeypatch):
+        monkeypatch.setattr(config, "default_project_id", None)
+        state = TuiState()
+
+        rendered = "".join(text for _style, text in app._render_tabs(state))
+
+        assert "[project:" not in rendered
+
+
 class TestRenderProjectModal:
     """_render_project_modal() は active な行に * を付ける"""
 
