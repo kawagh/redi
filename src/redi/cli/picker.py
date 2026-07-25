@@ -11,7 +11,11 @@ def inline_checkbox(
     initial_checked: list[str] | None = None,
 ) -> list[str]:
     keys = [v for v, _ in values]
-    cursor = keys.index(initial_value) if initial_value in keys else 0
+    cursor = (
+        keys.index(initial_value)
+        if initial_value is not None and initial_value in keys
+        else 0
+    )
     checked: set[str] = {v for v in (initial_checked or []) if v in keys}
 
     def render():
@@ -98,7 +102,7 @@ def inline_choice(
     default: str | None = None,
 ) -> str:
     keys = [v for v, _ in options]
-    cursor = keys.index(default) if default in keys else 0
+    cursor = keys.index(default) if default is not None and default in keys else 0
 
     def render():
         fragments: list[tuple[str, str]] = []
