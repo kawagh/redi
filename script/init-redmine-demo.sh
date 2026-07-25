@@ -4,7 +4,7 @@ set -e
 docker compose down redmine-for-demo
 docker compose up -d redmine-for-demo
 sleep 5
-API_KEYS_OUTPUT=$(docker exec -i redi-redmine-for-demo-1 rails runner - <<RUBY
+API_KEYS_OUTPUT=$(docker compose exec -T redmine-for-demo rails runner - <<RUBY
     # 初期生成される管理者のパスワードを変更
     admin = User.find_by(login: 'admin')
     admin.password = 'adminadmin'
