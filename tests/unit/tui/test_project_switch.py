@@ -59,7 +59,7 @@ class TestOpenProjectModal:
     """open_project_modal() は選択肢を構築し現在プロジェクトへカーソルを合わせる"""
 
     def test_cursor_on_switched_project(self, monkeypatch):
-        """切替済みならそのプロジェクトの位置にカーソルが乗る"""
+        """切替済みならそのプロジェクトの位置にカーソルが乗り active_id が入る"""
         monkeypatch.setattr(app, "fetch_projects", lambda: PROJECTS)
         state = TuiState(project_id="2")
 
@@ -68,19 +68,32 @@ class TestOpenProjectModal:
         assert state.project_modal.show is True
         assert state.project_modal.choices == [("1", "Alpha"), ("2", "Beta")]
         assert state.project_modal.cursor == 1
+        assert state.project_modal.active_id == "2"
 
-    def test_cursor_matches_config_identifier(self, monkeypatch):
-        """config には identifier も設定できるので identifier でも位置を探す"""
+    def test_unswitched_marks_config_default_project(self, monkeypatch):
+        """未切替でも toml の default_project_id のプロジェクトが active になる"""
+        monkeypatch.setattr(app, "fetch_projects", lambda: PROJECTS)
+        monkeypatch.setattr(config, "default_project_id", "1")
+        state = TuiState()
+
+        app.open_project_modal(state)
+
+        assert state.project_modal.active_id == "1"
+        assert state.project_modal.cursor == 0
+
+    def test_config_identifier_is_resolved_to_id(self, monkeypatch):
+        """config には identifier も設定できるので id に解決して保持する"""
         monkeypatch.setattr(app, "fetch_projects", lambda: PROJECTS)
         monkeypatch.setattr(config, "default_project_id", "beta")
         state = TuiState()
 
         app.open_project_modal(state)
 
+        assert state.project_modal.active_id == "2"
         assert state.project_modal.cursor == 1
 
     def test_cursor_top_when_no_current_project(self, monkeypatch):
-        """未切替かつ config 未設定ならカーソルは先頭"""
+        """未切替かつ config 未設定ならカーソルは先頭で active 無し"""
         monkeypatch.setattr(app, "fetch_projects", lambda: PROJECTS)
         monkeypatch.setattr(config, "default_project_id", None)
         state = TuiState()
@@ -88,6 +101,7 @@ class TestOpenProjectModal:
         app.open_project_modal(state)
 
         assert state.project_modal.cursor == 0
+        assert state.project_modal.active_id is None
 
     def test_request_error_goes_to_error_modal(self, monkeypatch):
         """取得失敗時は error modal に流し、モーダルは開かない"""
@@ -139,16 +153,6 @@ class TestApplyProjectSwitch:
         assert state.flash_message == messages.tui_flash_project_switched.format(
             name="Beta"
         )
-
-    def test_clear_resets_override(self, monkeypatch):
-        monkeypatch.setattr(app, "reload_with_filter", lambda state: None)
-        state = TuiState(project_id="2", project_label="Beta")
-
-        app.apply_project_switch(state, None, "")
-
-        assert state.project_id is None
-        assert state.project_label == ""
-        assert state.flash_message == messages.tui_flash_project_cleared
 
     def test_numeric_user_filters_are_cleared(self, monkeypatch):
         """数値 ID のフィルタは旧プロジェクトのユーザーを指すのでクリアされる"""
@@ -215,6 +219,29 @@ class TestApplyProjectSwitch:
         app.apply_project_switch(state, "2", "Beta")
 
         assert activated == []
+
+
+class TestRenderProjectModal:
+    """_render_project_modal() は active な行に * を付ける"""
+
+    def test_marks_active_row(self):
+        state = TuiState()
+        state.project_modal.choices = [("1", "Alpha"), ("2", "Beta")]
+        state.project_modal.cursor = 0
+        state.project_modal.active_id = "2"
+
+        rendered = "".join(text for _style, text in app._render_project_modal(state))
+
+        assert " >   Alpha" in rendered
+        assert "   * Beta" in rendered
+
+    def test_no_mark_without_active(self):
+        state = TuiState()
+        state.project_modal.choices = [("1", "Alpha")]
+
+        rendered = "".join(text for _style, text in app._render_project_modal(state))
+
+        assert "*" not in rendered
 
 
 class TestEffectiveProjectId:

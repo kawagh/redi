@@ -553,7 +553,6 @@ class MessagesProto(Protocol):
     """{name}"""
     tui_flash_project_switched: str
     """{name}"""
-    tui_flash_project_cleared: str
     tui_project_load_failed: str
     """{error}"""
     tui_help_title: str

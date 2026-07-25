@@ -94,6 +94,10 @@ class ProjectModalState:
     # 選択肢: (Redmine のプロジェクト id, 表示名) の組
     choices: list[tuple[str, str]] = field(default_factory=list)
     cursor: int = 0
+    # 現在有効なプロジェクトを id に解決した値。config には identifier も
+    # 設定できるため、モーダルを開くときに choices の id と比較できる形へ
+    # 解決してから保持する。`*` 表示とカーソル初期位置に使う。
+    active_id: str | None = None
 
 
 @dataclass

@@ -235,21 +235,21 @@ def open_project_modal(state: TuiState) -> None:
         return
     modal.choices = [(str(p["id"]), p.get("name", "")) for p in projects]
     modal.cursor = 0
-    # config には id のほか identifier も設定できるので両方でカーソル位置を探す。
+    # config には id のほか identifier も設定できるので両方で現在プロジェクトを
+    # 探し、id へ解決して保持する (`*` 表示とカーソル初期位置に使う)。
+    modal.active_id = None
     current = state.effective_project_id()
     if current is not None:
         for idx, p in enumerate(projects):
             if str(p["id"]) == str(current) or p.get("identifier") == current:
+                modal.active_id = str(p["id"])
                 modal.cursor = idx
                 break
     modal.show = True
 
 
-def apply_project_switch(state: TuiState, project_id: str | None, label: str) -> None:
-    """セッション内のプロジェクトを切り替え、全タブを新プロジェクトで取り直す。
-
-    `project_id=None` はオーバーライド解除 (config の既定に戻す)。
-    """
+def apply_project_switch(state: TuiState, project_id: str, label: str) -> None:
+    """セッション内のプロジェクトを切り替え、全タブを新プロジェクトで取り直す。"""
     state.project_id = project_id
     state.project_label = label
     state.project_modal.show = False
@@ -272,19 +272,15 @@ def apply_project_switch(state: TuiState, project_id: str | None, label: str) ->
     reload_with_filter(state)
     if state.tab in ("time_entries", "wiki"):
         TABS[state.tab].on_activate(state)
-    if project_id is not None:
-        state.flash_message = messages.tui_flash_project_switched.format(name=label)
-    else:
-        state.flash_message = messages.tui_flash_project_cleared
+    state.flash_message = messages.tui_flash_project_switched.format(name=label)
 
 
 def _render_project_modal(state: TuiState) -> Renderable:
     modal = state.project_modal
-    active = state.effective_project_id()
     parts: Renderable = []
     for i, (pid, label) in enumerate(modal.choices):
         is_cursor = i == modal.cursor
-        is_active = active is not None and pid == str(active)
+        is_active = modal.active_id is not None and pid == modal.active_id
         cursor_mark = ">" if is_cursor else " "
         active_mark = "*" if is_active else " "
         line_style = "reverse" if is_cursor else ("bold" if is_active else "")
@@ -794,11 +790,6 @@ def run_issue_tui(
         pid, label = modal.choices[modal.cursor]
         _reset_preview_scroll()
         apply_project_switch(state, pid, label)
-
-    @kb.add("c", filter=show_project_modal)
-    def _(event):
-        _reset_preview_scroll()
-        apply_project_switch(state, None, "")
 
     @kb.add("escape", filter=show_project_modal)
     @kb.add("p", filter=show_project_modal)
