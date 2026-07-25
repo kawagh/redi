@@ -1,5 +1,6 @@
 import shutil
 from datetime import datetime
+from importlib.metadata import version
 from pathlib import Path
 
 import requests
@@ -17,6 +18,7 @@ from prompt_toolkit.layout.containers import (
     Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.utils import get_cwidth
 from prompt_toolkit.widgets import Frame
 
 from redi.api.issue_status import fetch_issue_statuses
@@ -356,20 +358,32 @@ def _render_time_entry_filter_modal(state: TuiState) -> Renderable:
     return parts
 
 
+def _help_version_label() -> str:
+    return f"redi v{version('redtile')}"
+
+
 def _render_help(state: TuiState) -> Renderable:
     lines = TABS[state.tab].help_lines
     width = max(len(key) for key, _ in lines) + 2
     parts: Renderable = []
     seen_section = False
+    # バージョン行を右下に寄せるため、本文の最大表示幅 (CJK は2セル) を測る
+    body_width = 0
     for key, desc in lines:
         if not desc:
             if seen_section:
                 parts.append(("", "\n"))
             parts.append(("bold", f"{key}\n"))
             seen_section = True
+            body_width = max(body_width, get_cwidth(key))
         else:
             parts.append(("bold fg:ansicyan", key.ljust(width)))
             parts.append(("", f"  {desc}\n"))
+            body_width = max(body_width, width + 2 + get_cwidth(desc))
+    label = _help_version_label()
+    padding = max(0, body_width - get_cwidth(label))
+    parts.append(("", "\n"))
+    parts.append(("fg:ansiwhite", f"{' ' * padding}{label}"))
     return parts
 
 
