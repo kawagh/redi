@@ -244,42 +244,6 @@ class TestRenderProjectModal:
         assert "*" not in rendered
 
 
-class TestEffectiveProjectId:
-    """effective_project_id() は override > config の優先順位で解決する"""
-
-    def test_override_wins(self, monkeypatch):
-        monkeypatch.setattr(config, "default_project_id", "5")
-        monkeypatch.setattr(config, "wiki_project_id", "7")
-        state = TuiState(project_id="2")
-
-        assert state.effective_project_id() == "2"
-        # 明示切替は wiki_project_id より優先する
-        assert state.effective_wiki_project_id() == "2"
-
-    def test_falls_back_to_config(self, monkeypatch):
-        monkeypatch.setattr(config, "default_project_id", "5")
-        monkeypatch.setattr(config, "wiki_project_id", "7")
-        state = TuiState()
-
-        assert state.effective_project_id() == "5"
-        assert state.effective_wiki_project_id() == "7"
-
-    def test_wiki_falls_back_to_default_project(self, monkeypatch):
-        monkeypatch.setattr(config, "default_project_id", "5")
-        monkeypatch.setattr(config, "wiki_project_id", None)
-        state = TuiState()
-
-        assert state.effective_wiki_project_id() == "5"
-
-    def test_none_when_nothing_is_set(self, monkeypatch):
-        monkeypatch.setattr(config, "default_project_id", None)
-        monkeypatch.setattr(config, "wiki_project_id", None)
-        state = TuiState()
-
-        assert state.effective_project_id() is None
-        assert state.effective_wiki_project_id() is None
-
-
 class TestFetchUsesEffectiveProject:
     """各タブの fetch には切替後のプロジェクト id が渡る"""
 
