@@ -14,7 +14,6 @@ from prompt_toolkit.layout.containers import (
     Float,
     FloatContainer,
     HSplit,
-    ScrollOffsets,
     VSplit,
     Window,
 )
@@ -40,6 +39,7 @@ from redi.tui.issue.issue_tab import (
     reload_with_filter,
     request_comment_delete,
 )
+from redi.tui.project_modal import build_project_float
 from redi.tui.state import (
     FIXED_ROWS,
     IssueFilter,
@@ -280,28 +280,6 @@ def apply_project_switch(state: TuiState, project_id: str, label: str) -> None:
     if state.tab in ("time_entries", "wiki"):
         TABS[state.tab].on_activate(state)
     state.flash_message = messages.tui_flash_project_switched.format(name=label)
-
-
-def _render_project_list(state: TuiState) -> Renderable:
-    """プロジェクト切替 modal の選択肢を描画する。
-
-    ヒントは別 Window に置くのでここには含めない。1 行目から選択肢が並ぶため、
-    カーソル行はそのまま `modal.cursor` になる。
-    """
-    modal = state.project_modal
-    parts: Renderable = []
-    for i, (pid, label) in enumerate(modal.choices):
-        is_cursor = i == modal.cursor
-        is_active = modal.active_id is not None and pid == modal.active_id
-        cursor_mark = ">" if is_cursor else " "
-        active_mark = "*" if is_active else " "
-        line_style = "reverse" if is_cursor else ("bold" if is_active else "")
-        parts.append((line_style, f" {cursor_mark} {active_mark} {label}\n"))
-    return parts
-
-
-def _render_project_modal_hint() -> Renderable:
-    return [("", messages.tui_project_modal_hint)]
 
 
 def _help_version_label() -> str:
@@ -959,45 +937,7 @@ def run_issue_tui(
         state, show_time_entry_filter_modal
     )
 
-    project_float = Float(
-        content=ConditionalContainer(
-            content=VSplit(
-                [
-                    Window(width=1, char=" "),
-                    Frame(
-                        HSplit(
-                            [
-                                # プロジェクト数が多いと端末高を超えるため、
-                                # カーソル位置を渡して選択中の行まで
-                                # スクロールさせる。
-                                Window(
-                                    FormattedTextControl(
-                                        lambda: _render_project_list(state),
-                                        show_cursor=False,
-                                        get_cursor_position=lambda: Point(
-                                            0, state.project_modal.cursor
-                                        ),
-                                    ),
-                                    wrap_lines=False,
-                                    scroll_offsets=ScrollOffsets(top=1, bottom=1),
-                                ),
-                                # ヒントはスクロール対象から外して常に見せる
-                                Window(
-                                    FormattedTextControl(
-                                        _render_project_modal_hint, show_cursor=False
-                                    ),
-                                    height=1,
-                                ),
-                            ]
-                        ),
-                        title=messages.tui_project_modal_title,
-                    ),
-                    Window(width=1, char=" "),
-                ]
-            ),
-            filter=show_project_modal,
-        ),
-    )
+    project_float = build_project_float(state, show_project_modal)
 
     error_float = Float(
         content=ConditionalContainer(
