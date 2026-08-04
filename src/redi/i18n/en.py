@@ -404,7 +404,7 @@ class En(MessagesProto):
     tui_filter_title = "Filter (Esc/f to close)"
     tui_filter_title_time_entries = "Filter user (Esc/f to close)"
     tui_project_modal_title = "Switch project (Esc/p to close)"
-    tui_project_modal_hint = "\njk:move Enter:switch Esc/p:close"
+    tui_project_modal_hint = "jk:move Enter:switch Esc/p:close"
     tui_current_project = "  [project: {name}]"
     tui_flash_project_switched = "Switched project to {name}"
     tui_project_load_failed = "Failed to load projects: {error}"

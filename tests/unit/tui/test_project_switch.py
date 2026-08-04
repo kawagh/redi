@@ -253,7 +253,7 @@ class TestRenderTabs:
 
 
 class TestRenderProjectModal:
-    """_render_project_modal() は active な行に * を付ける"""
+    """_render_project_list() は active な行に * を付ける"""
 
     def test_marks_active_row(self):
         state = TuiState()
@@ -261,7 +261,7 @@ class TestRenderProjectModal:
         state.project_modal.cursor = 0
         state.project_modal.active_id = "2"
 
-        rendered = "".join(text for _style, text in app._render_project_modal(state))
+        rendered = "".join(text for _style, text in app._render_project_list(state))
 
         assert " >   Alpha" in rendered
         assert "   * Beta" in rendered
@@ -270,7 +270,7 @@ class TestRenderProjectModal:
         state = TuiState()
         state.project_modal.choices = [("1", "Alpha")]
 
-        rendered = "".join(text for _style, text in app._render_project_modal(state))
+        rendered = "".join(text for _style, text in app._render_project_list(state))
 
         assert "*" not in rendered
 
