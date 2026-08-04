@@ -1,7 +1,7 @@
 from typing import cast
 
 from redi.api.issue import Issue
-from redi.tui.issue_tab import _page_label
+from redi.tui.issue.issue_tab import _page_label
 from redi.tui.state import TuiState
 
 
