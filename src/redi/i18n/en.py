@@ -400,7 +400,7 @@ class En(MessagesProto):
     tui_filter_assignee = "Assignee"
     tui_filter_user = "User"
     tui_filter_hint = "Tab/h/l:column jk:move Enter:apply c:clear all Esc/f:close"
-    tui_filter_hint_single = "\njk:move Enter:apply c:clear Esc/f:close"
+    tui_filter_hint_single = "jk:move Enter:apply c:clear Esc/f:close"
     tui_filter_title = "Filter (Esc/f to close)"
     tui_filter_title_time_entries = "Filter user (Esc/f to close)"
     tui_project_modal_title = "Switch project (Esc/p to close)"

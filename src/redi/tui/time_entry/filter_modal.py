@@ -1,9 +1,12 @@
 """time_entries タブの f で開くフィルタ modal のレイアウトと描画。"""
 
+from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import FilterOrBool
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
     Float,
+    HSplit,
+    ScrollOffsets,
     VSplit,
     Window,
 )
@@ -11,10 +14,11 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Frame
 
 from redi.i18n import messages
-from redi.tui.state import Renderable, TuiState
+from redi.tui.state import Renderable, TimeEntryFilterModalState, TuiState
 
 
-def render_filter_modal(state: TuiState) -> Renderable:
+def render_filter_column(state: TuiState) -> Renderable:
+    """ユーザー選択肢の列を描画する。"""
     f = state.time_entry_tab.filter
     modal = state.time_entry_tab.filter_modal
     parts: Renderable = [("bold fg:ansicyan", f"[{messages.tui_filter_user}]\n")]
@@ -25,12 +29,28 @@ def render_filter_modal(state: TuiState) -> Renderable:
         active_mark = "*" if is_active else " "
         line_style = "reverse" if is_cursor else ("bold" if is_active else "")
         parts.append((line_style, f" {cursor_mark} {active_mark} {label}\n"))
-    parts.append(("", messages.tui_filter_hint_single))
     return parts
+
+
+def filter_column_cursor_y(modal: TimeEntryFilterModalState) -> int:
+    """`render_filter_column` の描画結果におけるカーソル行 (0 始まり)。
+
+    Window にカーソル位置を伝えて選択中の行が常に画面内へ来るようスクロール
+    させるために使う。0 行目はセクションヘッダなので選択肢は 1 行目から並ぶ。
+    """
+    return 1 + modal.user_cursor
+
+
+def render_filter_hint() -> Renderable:
+    return [("", messages.tui_filter_hint_single)]
 
 
 def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
     """time_entries タブのフィルタ modal の Float を組み立てる。
+
+    プロジェクトのユーザーが多いと選択肢が端末高を超えるため、列に
+    `get_cursor_position` を渡してカーソル行が画面内に収まるようスクロール
+    させる。ヒントは列とは別の Window に置き、スクロールしても常に見せる。
 
     Frame を VSplit で挟んで左右に幅1の空白パディングを置く理由は
     `run_issue_tui` の help_float 手前のコメントを参照。
@@ -41,12 +61,30 @@ def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
                 [
                     Window(width=1, char=" "),
                     Frame(
-                        Window(
-                            FormattedTextControl(
-                                lambda: render_filter_modal(state),
-                                show_cursor=False,
-                            ),
-                            wrap_lines=False,
+                        HSplit(
+                            [
+                                Window(
+                                    FormattedTextControl(
+                                        lambda: render_filter_column(state),
+                                        show_cursor=False,
+                                        get_cursor_position=lambda: Point(
+                                            0,
+                                            filter_column_cursor_y(
+                                                state.time_entry_tab.filter_modal
+                                            ),
+                                        ),
+                                    ),
+                                    wrap_lines=False,
+                                    scroll_offsets=ScrollOffsets(top=1, bottom=1),
+                                ),
+                                # ヒントは列のスクロール対象から外して常に見せる
+                                Window(
+                                    FormattedTextControl(
+                                        render_filter_hint, show_cursor=False
+                                    ),
+                                    height=1,
+                                ),
+                            ]
                         ),
                         title=messages.tui_filter_title_time_entries,
                     ),
