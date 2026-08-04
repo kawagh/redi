@@ -398,7 +398,7 @@ class Ja(MessagesProto):
     tui_filter_status = "ステータス"
     tui_filter_assignee = "担当者"
     tui_filter_user = "ユーザー"
-    tui_filter_hint = "\nTab/h/l:列切替 jk:移動 Enter:適用 c:全クリア Esc/f:閉じる"
+    tui_filter_hint = "Tab/h/l:列切替 jk:移動 Enter:適用 c:全クリア Esc/f:閉じる"
     tui_filter_hint_single = "\njk:移動 Enter:適用 c:クリア Esc/f:閉じる"
     tui_filter_title = "フィルタ (Esc/f で閉じる)"
     tui_filter_title_time_entries = "ユーザーでフィルタ (Esc/f で閉じる)"

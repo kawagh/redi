@@ -14,6 +14,7 @@ from prompt_toolkit.layout.containers import (
     Float,
     FloatContainer,
     HSplit,
+    ScrollOffsets,
     VSplit,
     Window,
 )
@@ -314,12 +315,16 @@ def _render_filter_section(
     return parts
 
 
-def _render_filter_modal(state: TuiState) -> Renderable:
+def _render_filter_column(state: TuiState, section: FilterField) -> Renderable:
+    """フィルタ modal の 1 列 (status か assignee) を描画する。
+
+    2 列を縦に連結せず列ごとに描くことで、modal の高さが選択肢数の合計ではなく
+    max(status, assignee) で済み、選択肢が多くても縦に溢れにくくなる。
+    """
     f = state.issue_tab.filter
     modal = state.issue_tab.filter_modal
-    parts: Renderable = []
-    parts.extend(
-        _render_filter_section(
+    if section == "status":
+        return _render_filter_section(
             modal,
             "status",
             messages.tui_filter_status,
@@ -327,20 +332,50 @@ def _render_filter_modal(state: TuiState) -> Renderable:
             modal.status_cursor,
             f.status_id,
         )
+    return _render_filter_section(
+        modal,
+        "assignee",
+        messages.tui_filter_assignee,
+        modal.assignee_choices,
+        modal.assignee_cursor,
+        f.assigned_to_id,
     )
-    parts.append(("", "\n"))
-    parts.extend(
-        _render_filter_section(
-            modal,
-            "assignee",
-            messages.tui_filter_assignee,
-            modal.assignee_choices,
-            modal.assignee_cursor,
-            f.assigned_to_id,
-        )
+
+
+def _filter_column_cursor_y(modal: FilterModalState, section: FilterField) -> int:
+    """`_render_filter_column` の描画結果におけるカーソル行 (0 始まり)。
+
+    Window にカーソル位置を伝えて選択中の行が常に画面内へ来るようスクロール
+    させるために使う。0 行目はセクションヘッダなので選択肢は 1 行目から並ぶ。
+    """
+    cursor = modal.status_cursor if section == "status" else modal.assignee_cursor
+    return 1 + cursor
+
+
+def _render_filter_hint() -> Renderable:
+    return [("", messages.tui_filter_hint)]
+
+
+def _filter_column_window(state: TuiState, section: FilterField) -> Window:
+    """フィルタ modal の 1 列を載せる Window。
+
+    選択肢が端末高を超えると Float が高さを端末内へ切り詰め、Window にはその
+    切り詰め後の高さが渡る。`get_cursor_position` を与えておくと Window が
+    カーソル行を画面内に収めるようスクロールしてくれるので、選択肢が多くても
+    選択中の行を見失わない (渡さないと vertical_scroll が 0 のまま先頭が出続け、
+    下の方の選択肢が見えなくなる)。
+    """
+    return Window(
+        FormattedTextControl(
+            lambda: _render_filter_column(state, section),
+            show_cursor=False,
+            get_cursor_position=lambda: Point(
+                0, _filter_column_cursor_y(state.issue_tab.filter_modal, section)
+            ),
+        ),
+        wrap_lines=False,
+        scroll_offsets=ScrollOffsets(top=1, bottom=1),
     )
-    parts.append(("", messages.tui_filter_hint))
-    return parts
 
 
 def _render_time_entry_filter_modal(state: TuiState) -> Renderable:
@@ -1013,11 +1048,25 @@ def run_issue_tui(
                 [
                     Window(width=1, char=" "),
                     Frame(
-                        Window(
-                            FormattedTextControl(
-                                lambda: _render_filter_modal(state), show_cursor=False
-                            ),
-                            wrap_lines=False,
+                        HSplit(
+                            [
+                                VSplit(
+                                    [
+                                        _filter_column_window(state, "status"),
+                                        Window(width=1, char=" "),
+                                        Window(width=1, char="│"),
+                                        Window(width=1, char=" "),
+                                        _filter_column_window(state, "assignee"),
+                                    ]
+                                ),
+                                # ヒントは列のスクロール対象から外して常に見せる
+                                Window(
+                                    FormattedTextControl(
+                                        _render_filter_hint, show_cursor=False
+                                    ),
+                                    height=1,
+                                ),
+                            ]
                         ),
                         title=messages.tui_filter_title,
                     ),
