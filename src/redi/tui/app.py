@@ -62,7 +62,7 @@ from redi.tui.time_entry.time_entry_tab import (
     reload_with_filter as time_entry_reload_with_filter,
     request_delete as time_entry_request_delete,
 )
-from redi.tui.wiki_tab import WIKI_TAB
+from redi.tui.wiki.wiki_tab import WIKI_TAB
 
 TABS: dict[TuiTab, TabView] = {
     "issues": ISSUE_TAB,
