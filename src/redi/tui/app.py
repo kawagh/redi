@@ -52,7 +52,10 @@ from redi.tui.state import (
     WikiTabState,
 )
 from redi.tui.tab import TabView
-from redi.tui.time_entry_tab import (
+from redi.tui.time_entry.filter_modal import (
+    build_filter_float as build_time_entry_filter_float,
+)
+from redi.tui.time_entry.time_entry_tab import (
     TIME_ENTRY_TAB,
     confirm_delete as time_entry_confirm_delete,
     reload_with_filter as time_entry_reload_with_filter,
@@ -289,21 +292,6 @@ def _render_project_modal(state: TuiState) -> Renderable:
         line_style = "reverse" if is_cursor else ("bold" if is_active else "")
         parts.append((line_style, f" {cursor_mark} {active_mark} {label}\n"))
     parts.append(("", messages.tui_project_modal_hint))
-    return parts
-
-
-def _render_time_entry_filter_modal(state: TuiState) -> Renderable:
-    f = state.time_entry_tab.filter
-    modal = state.time_entry_tab.filter_modal
-    parts: Renderable = [("bold fg:ansicyan", f"[{messages.tui_filter_user}]\n")]
-    for i, (api_val, label) in enumerate(modal.user_choices):
-        is_cursor = i == modal.user_cursor
-        is_active = api_val == f.user_id
-        cursor_mark = ">" if is_cursor else " "
-        active_mark = "*" if is_active else " "
-        line_style = "reverse" if is_cursor else ("bold" if is_active else "")
-        parts.append((line_style, f" {cursor_mark} {active_mark} {label}\n"))
-    parts.append(("", messages.tui_filter_hint_single))
     return parts
 
 
@@ -958,26 +946,8 @@ def run_issue_tui(
 
     filter_float = build_filter_float(state, show_filter_modal)
 
-    time_entry_filter_float = Float(
-        content=ConditionalContainer(
-            content=VSplit(
-                [
-                    Window(width=1, char=" "),
-                    Frame(
-                        Window(
-                            FormattedTextControl(
-                                lambda: _render_time_entry_filter_modal(state),
-                                show_cursor=False,
-                            ),
-                            wrap_lines=False,
-                        ),
-                        title=messages.tui_filter_title_time_entries,
-                    ),
-                    Window(width=1, char=" "),
-                ]
-            ),
-            filter=show_time_entry_filter_modal,
-        ),
+    time_entry_filter_float = build_time_entry_filter_float(
+        state, show_time_entry_filter_modal
     )
 
     project_float = Float(

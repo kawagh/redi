@@ -5,8 +5,9 @@ from typing import cast
 from redi.api.issue import Issue
 from redi.api.time_entry import TimeEntry
 from redi.api.wiki import WikiPage
-from redi.tui import time_entry_tab, wiki_tab
+from redi.tui import wiki_tab
 from redi.tui.issue import issue_tab
+from redi.tui.time_entry import time_entry_tab
 from redi.tui.state import TuiState
 
 
