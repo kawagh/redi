@@ -26,7 +26,8 @@ from redi.api.me import fetch_my_user_id
 from redi.api.membership import fetch_project_users
 from redi.api.project import fetch_projects
 from redi.i18n import messages
-from redi.tui.issue_tab import (
+from redi.tui.issue.filter_modal import build_filter_float
+from redi.tui.issue.issue_tab import (
     ISSUE_TAB,
     comment_select_cursor_down,
     comment_select_cursor_up,
@@ -38,10 +39,9 @@ from redi.tui.issue_tab import (
     reload_with_filter,
     request_comment_delete,
 )
+from redi.tui.project_modal import build_project_float
 from redi.tui.state import (
     FIXED_ROWS,
-    FilterField,
-    FilterModalState,
     IssueFilter,
     Renderable,
     TimeEntryFilter,
@@ -53,13 +53,16 @@ from redi.tui.state import (
     WikiTabState,
 )
 from redi.tui.tab import TabView
-from redi.tui.time_entry_tab import (
+from redi.tui.time_entry.filter_modal import (
+    build_filter_float as build_time_entry_filter_float,
+)
+from redi.tui.time_entry.time_entry_tab import (
     TIME_ENTRY_TAB,
     confirm_delete as time_entry_confirm_delete,
     reload_with_filter as time_entry_reload_with_filter,
     request_delete as time_entry_request_delete,
 )
-from redi.tui.wiki_tab import WIKI_TAB
+from redi.tui.wiki.wiki_tab import WIKI_TAB
 
 TABS: dict[TuiTab, TabView] = {
     "issues": ISSUE_TAB,
@@ -277,85 +280,6 @@ def apply_project_switch(state: TuiState, project_id: str, label: str) -> None:
     if state.tab in ("time_entries", "wiki"):
         TABS[state.tab].on_activate(state)
     state.flash_message = messages.tui_flash_project_switched.format(name=label)
-
-
-def _render_project_modal(state: TuiState) -> Renderable:
-    modal = state.project_modal
-    parts: Renderable = []
-    for i, (pid, label) in enumerate(modal.choices):
-        is_cursor = i == modal.cursor
-        is_active = modal.active_id is not None and pid == modal.active_id
-        cursor_mark = ">" if is_cursor else " "
-        active_mark = "*" if is_active else " "
-        line_style = "reverse" if is_cursor else ("bold" if is_active else "")
-        parts.append((line_style, f" {cursor_mark} {active_mark} {label}\n"))
-    parts.append(("", messages.tui_project_modal_hint))
-    return parts
-
-
-def _render_filter_section(
-    modal: FilterModalState,
-    section: FilterField,
-    title: str,
-    choices: list[tuple[str | None, str]],
-    cursor: int,
-    active_id: str | None,
-) -> Renderable:
-    focused = modal.focus == section
-    header_style = "bold fg:ansicyan" if focused else "bold"
-    parts: Renderable = [(header_style, f"[{title}]\n")]
-    for i, (api_val, label) in enumerate(choices):
-        is_cursor = focused and i == cursor
-        is_active = api_val == active_id
-        cursor_mark = ">" if is_cursor else " "
-        active_mark = "*" if is_active else " "
-        line_style = "reverse" if is_cursor else ("bold" if is_active else "")
-        parts.append((line_style, f" {cursor_mark} {active_mark} {label}\n"))
-    return parts
-
-
-def _render_filter_modal(state: TuiState) -> Renderable:
-    f = state.issue_tab.filter
-    modal = state.issue_tab.filter_modal
-    parts: Renderable = []
-    parts.extend(
-        _render_filter_section(
-            modal,
-            "status",
-            messages.tui_filter_status,
-            modal.status_choices,
-            modal.status_cursor,
-            f.status_id,
-        )
-    )
-    parts.append(("", "\n"))
-    parts.extend(
-        _render_filter_section(
-            modal,
-            "assignee",
-            messages.tui_filter_assignee,
-            modal.assignee_choices,
-            modal.assignee_cursor,
-            f.assigned_to_id,
-        )
-    )
-    parts.append(("", messages.tui_filter_hint))
-    return parts
-
-
-def _render_time_entry_filter_modal(state: TuiState) -> Renderable:
-    f = state.time_entry_tab.filter
-    modal = state.time_entry_tab.filter_modal
-    parts: Renderable = [("bold fg:ansicyan", f"[{messages.tui_filter_user}]\n")]
-    for i, (api_val, label) in enumerate(modal.user_choices):
-        is_cursor = i == modal.user_cursor
-        is_active = api_val == f.user_id
-        cursor_mark = ">" if is_cursor else " "
-        active_mark = "*" if is_active else " "
-        line_style = "reverse" if is_cursor else ("bold" if is_active else "")
-        parts.append((line_style, f" {cursor_mark} {active_mark} {label}\n"))
-    parts.append(("", messages.tui_filter_hint_single))
-    return parts
 
 
 def _help_version_label() -> str:
@@ -1007,70 +931,13 @@ def run_issue_tui(
         ),
     )
 
-    filter_float = Float(
-        content=ConditionalContainer(
-            content=VSplit(
-                [
-                    Window(width=1, char=" "),
-                    Frame(
-                        Window(
-                            FormattedTextControl(
-                                lambda: _render_filter_modal(state), show_cursor=False
-                            ),
-                            wrap_lines=False,
-                        ),
-                        title=messages.tui_filter_title,
-                    ),
-                    Window(width=1, char=" "),
-                ]
-            ),
-            filter=show_filter_modal,
-        ),
+    filter_float = build_filter_float(state, show_filter_modal)
+
+    time_entry_filter_float = build_time_entry_filter_float(
+        state, show_time_entry_filter_modal
     )
 
-    time_entry_filter_float = Float(
-        content=ConditionalContainer(
-            content=VSplit(
-                [
-                    Window(width=1, char=" "),
-                    Frame(
-                        Window(
-                            FormattedTextControl(
-                                lambda: _render_time_entry_filter_modal(state),
-                                show_cursor=False,
-                            ),
-                            wrap_lines=False,
-                        ),
-                        title=messages.tui_filter_title_time_entries,
-                    ),
-                    Window(width=1, char=" "),
-                ]
-            ),
-            filter=show_time_entry_filter_modal,
-        ),
-    )
-
-    project_float = Float(
-        content=ConditionalContainer(
-            content=VSplit(
-                [
-                    Window(width=1, char=" "),
-                    Frame(
-                        Window(
-                            FormattedTextControl(
-                                lambda: _render_project_modal(state),
-                                show_cursor=False,
-                            ),
-                            wrap_lines=False,
-                        ),
-                        title=messages.tui_project_modal_title,
-                    ),
-                    Window(width=1, char=" "),
-                ]
-            ),
-            filter=show_project_modal,
-        ),
-    )
+    project_float = build_project_float(state, show_project_modal)
 
     error_float = Float(
         content=ConditionalContainer(

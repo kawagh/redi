@@ -9,7 +9,9 @@ from redi import config
 from redi.api.project import Project
 from redi.api.time_entry import TimeEntry
 from redi.i18n import messages
-from redi.tui import app, issue_tab, time_entry_tab
+from redi.tui import app, project_modal
+from redi.tui.issue import issue_tab
+from redi.tui.time_entry import time_entry_tab
 from redi.tui.state import IssueFilter, TimeEntryFilter, TuiState
 from redi.tui.tab import TabView, noop, noop_jump
 
@@ -251,7 +253,7 @@ class TestRenderTabs:
 
 
 class TestRenderProjectModal:
-    """_render_project_modal() は active な行に * を付ける"""
+    """render_project_list() は active な行に * を付ける"""
 
     def test_marks_active_row(self):
         state = TuiState()
@@ -259,7 +261,9 @@ class TestRenderProjectModal:
         state.project_modal.cursor = 0
         state.project_modal.active_id = "2"
 
-        rendered = "".join(text for _style, text in app._render_project_modal(state))
+        rendered = "".join(
+            text for _style, text in project_modal.render_project_list(state)
+        )
 
         assert " >   Alpha" in rendered
         assert "   * Beta" in rendered
@@ -268,7 +272,9 @@ class TestRenderProjectModal:
         state = TuiState()
         state.project_modal.choices = [("1", "Alpha")]
 
-        rendered = "".join(text for _style, text in app._render_project_modal(state))
+        rendered = "".join(
+            text for _style, text in project_modal.render_project_list(state)
+        )
 
         assert "*" not in rendered
 
