@@ -35,10 +35,6 @@ def render_project_list(state: TuiState) -> Renderable:
     return parts
 
 
-def render_project_hint() -> Renderable:
-    return [("", messages.tui_project_modal_hint)]
-
-
 def build_project_float(state: TuiState, show: FilterOrBool) -> Float:
     """プロジェクト切替 modal の Float を組み立てる。
 
@@ -71,7 +67,8 @@ def build_project_float(state: TuiState, show: FilterOrBool) -> Float:
                                 # ヒントはスクロール対象から外して常に見せる
                                 Window(
                                     FormattedTextControl(
-                                        render_project_hint, show_cursor=False
+                                        messages.tui_project_modal_hint,
+                                        show_cursor=False,
                                     ),
                                     height=1,
                                 ),

@@ -41,10 +41,6 @@ def filter_column_cursor_y(modal: TimeEntryFilterModalState) -> int:
     return 1 + modal.user_cursor
 
 
-def render_filter_hint() -> Renderable:
-    return [("", messages.tui_filter_hint_single)]
-
-
 def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
     """time_entries タブのフィルタ modal の Float を組み立てる。
 
@@ -80,7 +76,8 @@ def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
                                 # ヒントは列のスクロール対象から外して常に見せる
                                 Window(
                                     FormattedTextControl(
-                                        render_filter_hint, show_cursor=False
+                                        messages.tui_filter_hint_single,
+                                        show_cursor=False,
                                     ),
                                     height=1,
                                 ),

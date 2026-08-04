@@ -85,10 +85,6 @@ def filter_column_cursor_y(modal: FilterModalState, section: FilterField) -> int
     return 1 + cursor
 
 
-def render_filter_hint() -> Renderable:
-    return [("", messages.tui_filter_hint)]
-
-
 def _filter_column_window(state: TuiState, section: FilterField) -> Window:
     """フィルタ modal の 1 列を載せる Window。
 
@@ -137,7 +133,7 @@ def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
                                 # ヒントは列のスクロール対象から外して常に見せる
                                 Window(
                                     FormattedTextControl(
-                                        render_filter_hint, show_cursor=False
+                                        messages.tui_filter_hint, show_cursor=False
                                     ),
                                     height=1,
                                 ),
