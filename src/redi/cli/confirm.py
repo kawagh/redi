@@ -15,6 +15,18 @@ def confirm_delete(summary: str) -> None:
         exit(1)
 
 
+def confirm_overwrite(summary: str) -> None:
+    print(summary)
+    try:
+        confirm = prompt(messages.prompt_confirm_overwrite).strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        print(messages.canceled)
+        exit(1)
+    if confirm != "yes":
+        print(messages.canceled)
+        exit(1)
+
+
 def confirm_delete_with_identifier(
     summary: str, expected: str, field_label: str
 ) -> None:

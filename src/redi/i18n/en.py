@@ -121,6 +121,7 @@ class En(MessagesProto):
     time_entry_deleted = "Deleted time entry: {id}"
     attachment_deleted = "Deleted attachment: #{id}"
     attachment_updated = "Updated attachment: {url}"
+    attachment_downloaded = "Saved attachment: {path}"
     issue_journal_updated = "Updated issue journal: #{id}"
     issue_journal_deleted = "Deleted issue journal: #{id}"
     group_updated = "Updated group: {id}"
@@ -169,6 +170,10 @@ class En(MessagesProto):
     time_entry_delete_failed = "Failed to delete time entry"
     attachment_delete_failed = "Failed to delete attachment"
     attachment_update_failed = "Failed to update attachment"
+    attachment_download_failed = "Failed to download attachment"
+    attachment_content_url_unexpected = (
+        "Aborted download because content_url is not under redmine_url: {url}"
+    )
     issue_journal_update_failed = "Failed to update issue journal"
     issue_journal_delete_failed = "Failed to delete issue journal"
     group_create_failed = "Failed to create group"
@@ -215,6 +220,7 @@ class En(MessagesProto):
 
     # ---- prompts ----
     prompt_confirm_delete = "Are you sure you want to delete? (yes/No): "
+    prompt_confirm_overwrite = "Are you sure you want to overwrite? (yes/No): "
     prompt_confirm_delete_with_identifier = (
         'Type {label} "{expected}" to confirm deletion: '
     )
@@ -330,6 +336,7 @@ class En(MessagesProto):
         "Membership to delete: {id} [{kind}] {principal_id} {principal_name} - {roles}"
     )
     delete_target_attachment = "Attachment to delete: {id} {filename}"
+    overwrite_target_file = "File already exists: {path}"
     delete_target_issue_journal = "Issue journal to delete: #{id} {notes}"
     delete_target_category = "Issue category to delete: {id} {name}"
     delete_target_group = "Group to delete: {id} {name}"
@@ -704,7 +711,7 @@ class En(MessagesProto):
     arg_help_issue_journal_delete_id = "Journal ID"
 
     # ---- argparse helps (attachment) ----
-    arg_help_attachment_command = "Attachment details/update/delete"
+    arg_help_attachment_command = "Attachment details/download/update/delete"
     arg_help_attachment_view = "Attachment details"
     arg_help_attachment_view_id = "Attachment ID"
     arg_help_attachment_update = "Update attachment"
@@ -713,6 +720,11 @@ class En(MessagesProto):
     arg_help_attachment_description = "Description"
     arg_help_attachment_delete = "Delete attachment"
     arg_help_attachment_delete_id = "Attachment ID"
+    arg_help_attachment_download = "Download attachment"
+    arg_help_attachment_download_id = "Attachment ID"
+    arg_help_attachment_output = (
+        "Output path (defaults to the original filename in the current directory)"
+    )
 
     # ---- argparse helps (time entry) ----
     arg_help_time_entry_command = (

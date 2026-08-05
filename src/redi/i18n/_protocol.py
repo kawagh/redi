@@ -196,6 +196,8 @@ class MessagesProto(Protocol):
     """{id}"""
     attachment_updated: str
     """{url}"""
+    attachment_downloaded: str
+    """{path}"""
     issue_journal_updated: str
     """{id}"""
     issue_journal_deleted: str
@@ -259,6 +261,9 @@ class MessagesProto(Protocol):
     time_entry_delete_failed: str
     attachment_delete_failed: str
     attachment_update_failed: str
+    attachment_download_failed: str
+    attachment_content_url_unexpected: str
+    """{url}"""
     issue_journal_update_failed: str
     issue_journal_delete_failed: str
     group_create_failed: str
@@ -327,6 +332,7 @@ class MessagesProto(Protocol):
 
     # ---- prompts (interactive input messages) ----
     prompt_confirm_delete: str
+    prompt_confirm_overwrite: str
     prompt_confirm_delete_with_identifier: str
     """{label}, {expected}"""
     prompt_subject: str
@@ -449,6 +455,8 @@ class MessagesProto(Protocol):
     """{id}, {kind}, {principal_id}, {principal_name}, {roles}"""
     delete_target_attachment: str
     """{id}, {filename}"""
+    overwrite_target_file: str
+    """{path}"""
     delete_target_issue_journal: str
     """{id}, {notes}"""
     delete_target_category: str
@@ -846,6 +854,9 @@ class MessagesProto(Protocol):
     arg_help_attachment_description: str
     arg_help_attachment_delete: str
     arg_help_attachment_delete_id: str
+    arg_help_attachment_download: str
+    arg_help_attachment_download_id: str
+    arg_help_attachment_output: str
 
     # ---- argparse helps (time entry) ----
     arg_help_time_entry_command: str
