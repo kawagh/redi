@@ -6,6 +6,7 @@ from pathlib import Path
 import requests
 
 from redi.api.exceptions import print_http_error_body
+from redi.api.types import Attachment
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
@@ -40,7 +41,7 @@ def upload_file(file_path: str) -> dict:
     }
 
 
-def fetch_attachment(attachment_id: str) -> dict:
+def fetch_attachment(attachment_id: str) -> Attachment:
     response = client.get(f"/attachments/{attachment_id}.json")
     if response.status_code == 404:
         print(messages.attachment_not_found.format(id=attachment_id))
@@ -49,7 +50,7 @@ def fetch_attachment(attachment_id: str) -> dict:
     return response.json()["attachment"]
 
 
-def resolve_download_path(attachment: dict, output: str | None) -> Path:
+def resolve_download_path(attachment: Attachment, output: str | None) -> Path:
     filename = Path(attachment["filename"]).name or str(attachment["id"])
     if output is None:
         return Path(filename)
@@ -59,7 +60,7 @@ def resolve_download_path(attachment: dict, output: str | None) -> Path:
     return path
 
 
-def resolve_download_url_path(attachment: dict) -> str:
+def resolve_download_url_path(attachment: Attachment) -> str:
     # API キーを他ホストへ送らないよう、redmine_url 配下でない content_url は使わない
     content_url = attachment.get("content_url") or ""
     if not redmine_url or not content_url.startswith(redmine_url):
@@ -68,7 +69,7 @@ def resolve_download_url_path(attachment: dict) -> str:
     return content_url[len(redmine_url) :]
 
 
-def download_attachment(attachment: dict, path: Path) -> None:
+def download_attachment(attachment: Attachment, path: Path) -> None:
     response = client.get(resolve_download_url_path(attachment), stream=True)
     if response.status_code == 404:
         print(messages.attachment_not_found.format(id=attachment["id"]))
