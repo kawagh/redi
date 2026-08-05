@@ -50,7 +50,7 @@ def fetch_attachment(attachment_id: str) -> dict:
 
 
 def resolve_download_path(attachment: dict, output: str | None) -> Path:
-    filename = os.path.basename(attachment["filename"]) or str(attachment["id"])
+    filename = Path(attachment["filename"]).name or str(attachment["id"])
     if output is None:
         return Path(filename)
     path = Path(output).expanduser()
