@@ -125,6 +125,7 @@ class Ja(MessagesProto):
     time_entry_deleted = "作業時間を削除しました: {id}"
     attachment_deleted = "添付ファイルを削除しました: #{id}"
     attachment_updated = "添付ファイルを更新しました: {url}"
+    attachment_downloaded = "添付ファイルを保存しました: {path}"
     issue_journal_updated = "イシューのジャーナルを更新しました: #{id}"
     issue_journal_deleted = "イシューのジャーナルを削除しました: #{id}"
     group_updated = "グループを更新しました: {id}"
@@ -171,6 +172,10 @@ class Ja(MessagesProto):
     time_entry_delete_failed = "作業時間の削除に失敗しました"
     attachment_delete_failed = "添付ファイルの削除に失敗しました"
     attachment_update_failed = "添付ファイルの更新に失敗しました"
+    attachment_download_failed = "添付ファイルのダウンロードに失敗しました"
+    attachment_content_url_unexpected = (
+        "content_url が redmine_url 配下ではないためダウンロードを中止しました: {url}"
+    )
     issue_journal_update_failed = "イシューのジャーナルの更新に失敗しました"
     issue_journal_delete_failed = "イシューのジャーナルの削除に失敗しました"
     group_create_failed = "グループの作成に失敗しました"
@@ -217,6 +222,7 @@ class Ja(MessagesProto):
 
     # ---- prompts ----
     prompt_confirm_delete = "削除してもよろしいですか? (yes/No): "
+    prompt_confirm_overwrite = "上書きしてもよろしいですか? (yes/No): "
     prompt_confirm_delete_with_identifier = (
         '削除するには{label} "{expected}" を入力してください: '
     )
@@ -331,6 +337,7 @@ class Ja(MessagesProto):
     delete_target_wiki_page = "削除するWikiページ: {title}"
     delete_target_membership = "削除するメンバーシップ: {id} [{kind}] {principal_id} {principal_name} - {roles}"
     delete_target_attachment = "削除する添付ファイル: {id} {filename}"
+    overwrite_target_file = "既に存在するファイル: {path}"
     delete_target_issue_journal = "削除するイシューのジャーナル: #{id} {notes}"
     delete_target_category = "削除するイシューカテゴリ: {id} {name}"
     delete_target_group = "削除するグループ: {id} {name}"
@@ -717,7 +724,7 @@ class Ja(MessagesProto):
     arg_help_issue_journal_delete_id = "ジャーナルID"
 
     # ---- argparse helps (attachment) ----
-    arg_help_attachment_command = "添付ファイル詳細/更新/削除"
+    arg_help_attachment_command = "添付ファイル詳細/ダウンロード/更新/削除"
     arg_help_attachment_view = "添付ファイル詳細"
     arg_help_attachment_view_id = "添付ファイルID"
     arg_help_attachment_update = "添付ファイル更新"
@@ -726,6 +733,11 @@ class Ja(MessagesProto):
     arg_help_attachment_description = "説明"
     arg_help_attachment_delete = "添付ファイル削除"
     arg_help_attachment_delete_id = "添付ファイルID"
+    arg_help_attachment_download = "添付ファイルダウンロード"
+    arg_help_attachment_download_id = "添付ファイルID"
+    arg_help_attachment_output = (
+        "保存先パス(省略時はカレントディレクトリに元のファイル名で保存)"
+    )
 
     # ---- argparse helps (time entry) ----
     arg_help_time_entry_command = "list(l): 一覧, view(v): 詳細, create(c): 登録, update(u): 更新, delete(d): 削除"

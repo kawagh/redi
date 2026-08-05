@@ -154,6 +154,8 @@ redi file create ./foo.zip -p <project_id> -d "description"
 
 # attachment (alias: a)
 redi attachment view <attachment_id>
+redi attachment download <attachment_id> # alias: dl, save with the original filename
+redi attachment download <attachment_id> -o ./dir_or_path # confirm before overwrite (-y to skip)
 redi attachment update <attachment_id> -f new_name.png -d "desc"
 redi attachment delete <attachment_id> # confirm before delete (-y to skip)
 

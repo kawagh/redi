@@ -4,6 +4,7 @@ SUBCOMMAND_ALIASES: dict[str, str] = {
     "u": "update",
     "co": "comment",
     "d": "delete",
+    "dl": "download",
     "l": "list",
 }
 

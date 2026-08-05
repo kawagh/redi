@@ -8,7 +8,7 @@ from typing import NotRequired, TypedDict, cast
 import requests
 
 from redi.api.exceptions import RedmineValidationException, print_http_error_body
-from redi.api.types import IdName
+from redi.api.types import Attachment, IdName
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
@@ -34,26 +34,13 @@ class WikiPage(TypedDict):
     author: NotRequired[IdName]
     comments: NotRequired[str]
     # include=attachments 指定時のみ存在
-    attachments: NotRequired[list[WikiAttachment]]
+    attachments: NotRequired[list[Attachment]]
 
 
 class WikiPageParent(TypedDict):
     """Wiki ページの親ページ参照。`title` のみを持つ。"""
 
     title: str
-
-
-class WikiAttachment(TypedDict):
-    """Wiki ページの添付ファイル。include=attachments 指定時に含まれる。"""
-
-    id: int
-    filename: str
-    filesize: int  # bytes
-    content_type: str  # ex. text/plain
-    description: str
-    content_url: str
-    author: IdName
-    created_on: str
 
 
 class WikiPageUpdateBody(TypedDict):

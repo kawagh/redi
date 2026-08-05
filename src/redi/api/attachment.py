@@ -1,13 +1,17 @@
 import json
 import mimetypes
 import os
+from pathlib import Path
 
 import requests
 
 from redi.api.exceptions import print_http_error_body
+from redi.api.types import Attachment
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
+
+DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 
 
 def upload_file(file_path: str) -> dict:
@@ -37,13 +41,55 @@ def upload_file(file_path: str) -> dict:
     }
 
 
-def fetch_attachment(attachment_id: str) -> dict:
+def fetch_attachment(attachment_id: str) -> Attachment:
     response = client.get(f"/attachments/{attachment_id}.json")
     if response.status_code == 404:
         print(messages.attachment_not_found.format(id=attachment_id))
         exit(1)
     response.raise_for_status()
     return response.json()["attachment"]
+
+
+def resolve_download_path(attachment: Attachment, output: str | None) -> Path:
+    filename = Path(attachment["filename"]).name or str(attachment["id"])
+    if output is None:
+        return Path(filename)
+    path = Path(output).expanduser()
+    if path.is_dir():
+        return path / filename
+    return path
+
+
+def resolve_download_url_path(attachment: Attachment) -> str:
+    # API キーを他ホストへ送らないよう、redmine_url 配下でない content_url は使わない
+    content_url = attachment.get("content_url") or ""
+    if not redmine_url or not content_url.startswith(redmine_url):
+        print(messages.attachment_content_url_unexpected.format(url=content_url))
+        exit(1)
+    return content_url[len(redmine_url) :]
+
+
+def download_attachment(attachment: Attachment, path: Path) -> None:
+    response = client.get(resolve_download_url_path(attachment), stream=True)
+    if response.status_code == 404:
+        print(messages.attachment_not_found.format(id=attachment["id"]))
+        exit(1)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.attachment_download_failed)
+        exit(1)
+    try:
+        with open(path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
+                f.write(chunk)
+    except OSError as e:
+        print(e)
+        print(messages.attachment_download_failed)
+        exit(1)
+    print(messages.attachment_downloaded.format(path=path))
 
 
 def read_attachment(attachment_id: str, full: bool = False) -> None:

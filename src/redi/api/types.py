@@ -9,3 +9,19 @@ class IdName(TypedDict):
 
     id: int
     name: str
+
+
+class Attachment(TypedDict):
+    """添付ファイル。
+
+    GET /attachments/{id}.json や include=attachments で返るフィールドを記載。
+    """
+
+    id: int
+    filename: str
+    filesize: int  # bytes
+    content_type: str  # ex. text/plain
+    description: str
+    content_url: str
+    author: IdName
+    created_on: str

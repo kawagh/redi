@@ -2,12 +2,14 @@ import argparse
 
 from redi.api.attachment import (
     delete_attachment,
+    download_attachment,
     fetch_attachment,
     read_attachment,
+    resolve_download_path,
     update_attachment,
 )
 from redi.cli.alias import resolve_alias
-from redi.cli.confirm import confirm_delete
+from redi.cli.confirm import confirm_delete, confirm_overwrite
 from redi.i18n import messages
 
 
@@ -30,6 +32,21 @@ def add_attachment_parser(
     )
     a_view_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
+    )
+    a_download_parser = a_subparsers.add_parser(
+        "download",
+        aliases=["dl"],
+        help=messages.arg_help_attachment_download,
+        parents=parents,
+    )
+    a_download_parser.add_argument(
+        "attachment_id", help=messages.arg_help_attachment_download_id
+    )
+    a_download_parser.add_argument(
+        "--output", "-o", help=messages.arg_help_attachment_output
+    )
+    a_download_parser.add_argument(
+        "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
     a_update_parser = a_subparsers.add_parser(
         "update",
@@ -64,6 +81,12 @@ def handle_attachment(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.attachment_command)
     if cmd == "view":
         read_attachment(args.attachment_id, full=args.full)
+    elif cmd == "download":
+        attachment = fetch_attachment(args.attachment_id)
+        path = resolve_download_path(attachment, args.output)
+        if path.exists() and not args.yes:
+            confirm_overwrite(messages.overwrite_target_file.format(path=path))
+        download_attachment(attachment, path)
     elif cmd == "update":
         update_attachment(
             attachment_id=args.attachment_id,
