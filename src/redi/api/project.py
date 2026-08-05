@@ -12,6 +12,9 @@ from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
 
+# Redmine の一覧 API が 1 リクエストで返せる上限
+PROJECTS_PAGE_LIMIT = 100
+
 
 class Project(TypedDict):
     """redmine Project
@@ -50,10 +53,25 @@ def list_projects(full: bool = False) -> None:
 
 
 def fetch_projects() -> list[Project]:
-    response = client.get("/projects.json")
-    response.raise_for_status()
-    data = response.json()
-    return cast("list[Project]", data.get("projects", []))
+    """アクセスできるプロジェクトを全件返す。
+
+    Redmine の一覧 API は limit 未指定だと既定件数しか返さないため、
+    `total_count` を見て全件揃うまで offset を進める。
+    """
+    projects: list[Project] = []
+    offset = 0
+    while True:
+        response = client.get(
+            "/projects.json", params={"limit": PROJECTS_PAGE_LIMIT, "offset": offset}
+        )
+        response.raise_for_status()
+        data = response.json()
+        page = cast("list[Project]", data.get("projects", []))
+        projects.extend(page)
+        total_count = data.get("total_count")
+        if not page or total_count is None or len(projects) >= total_count:
+            return projects
+        offset += len(page)
 
 
 def resolve_project_id(value: str) -> str:
