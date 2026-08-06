@@ -227,14 +227,6 @@ def _build_user_choices(
     return choices
 
 
-def _build_project_choices() -> list[tuple[str, str]]:
-    """プロジェクト切替モーダルの選択肢。(プロジェクト id, 表示名) の組。"""
-    return [
-        (str(p["id"]), p.get("name", ""))
-        for p in sort_projects_by_id_desc(fetch_projects())
-    ]
-
-
 def open_project_modal(state: TuiState) -> None:
     """プロジェクト切替モーダルを開く。一覧取得に失敗したら error modal に流す。"""
     modal = state.project_modal

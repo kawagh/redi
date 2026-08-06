@@ -49,14 +49,6 @@ def _fake_tab(on_activate: Callable[[TuiState], None]) -> TabView:
     )
 
 
-class TestBuildProjectChoices:
-    """_build_project_choices() は fetch_projects() を (id, name) の組に変換する"""
-
-    def test_converts_projects_in_id_desc(self, monkeypatch):
-        monkeypatch.setattr(app, "fetch_projects", lambda: PROJECTS)
-        assert app._build_project_choices() == [("2", "Beta"), ("1", "Alpha")]
-
-
 class TestOpenProjectModal:
     """open_project_modal() は選択肢を構築し現在プロジェクトへカーソルを合わせる"""
 
