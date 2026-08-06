@@ -896,6 +896,14 @@ class MessagesProto(Protocol):
     # ---- argparse helps (search) ----
     arg_help_search_command: str
     arg_help_search_query: str
+    arg_help_search_scope: str
+    arg_help_search_all_words: str
+    arg_help_search_no_all_words: str
+    arg_help_search_titles_only: str
+    arg_help_search_open_issues: str
+    arg_help_search_attachments: str
+    arg_help_search_type: str
+    """{type}"""
 
     # ---- argparse helps (news) ----
     arg_help_news_command: str

@@ -766,6 +766,16 @@ class En(MessagesProto):
     # ---- argparse helps (search) ----
     arg_help_search_command = "Search"
     arg_help_search_query = "Search query"
+    arg_help_search_scope = "Search scope"
+    arg_help_search_all_words = "Match all words in the query (default)"
+    arg_help_search_no_all_words = "Match any word in the query"
+    arg_help_search_titles_only = "Search titles only"
+    arg_help_search_open_issues = "Search open issues only"
+    arg_help_search_attachments = (
+        "Search attachments (0: description only, "
+        "1: description and attachments, only: attachments only)"
+    )
+    arg_help_search_type = "Include {type} in results"
 
     # ---- argparse helps (news) ----
     arg_help_news_command = "List news"
