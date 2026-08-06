@@ -24,7 +24,7 @@ from prompt_toolkit.widgets import Frame
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.me import fetch_my_user_id
 from redi.api.membership import fetch_project_users
-from redi.api.project import fetch_projects
+from redi.api.project import fetch_projects, sort_projects_by_id_desc
 from redi.i18n import messages
 from redi.tui.issue.filter_modal import build_filter_float
 from redi.tui.issue.issue_tab import (
@@ -229,14 +229,17 @@ def _build_user_choices(
 
 def _build_project_choices() -> list[tuple[str, str]]:
     """プロジェクト切替モーダルの選択肢。(プロジェクト id, 表示名) の組。"""
-    return [(str(p["id"]), p.get("name", "")) for p in fetch_projects()]
+    return [
+        (str(p["id"]), p.get("name", ""))
+        for p in sort_projects_by_id_desc(fetch_projects())
+    ]
 
 
 def open_project_modal(state: TuiState) -> None:
     """プロジェクト切替モーダルを開く。一覧取得に失敗したら error modal に流す。"""
     modal = state.project_modal
     try:
-        projects = fetch_projects()
+        projects = sort_projects_by_id_desc(fetch_projects())
     except requests.exceptions.RequestException as e:
         state.error_modal = messages.tui_project_load_failed.format(error=e)
         return

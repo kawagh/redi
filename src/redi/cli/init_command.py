@@ -61,7 +61,8 @@ def _fetch_projects(url: str, api_key: str) -> list[dict]:
 
 def _select_project_id(message: str, projects: list[dict]) -> str:
     options: list[tuple[str, str]] = [
-        (str(p["id"]), f"{p['id']} {p['name']}") for p in projects
+        (str(p["id"]), f"{p['id']} {p['name']}")
+        for p in sorted(projects, key=lambda p: p["id"], reverse=True)
     ]
     try:
         return inline_choice(message, options)

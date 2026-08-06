@@ -52,9 +52,9 @@ def _fake_tab(on_activate: Callable[[TuiState], None]) -> TabView:
 class TestBuildProjectChoices:
     """_build_project_choices() は fetch_projects() を (id, name) の組に変換する"""
 
-    def test_converts_projects(self, monkeypatch):
+    def test_converts_projects_in_id_desc(self, monkeypatch):
         monkeypatch.setattr(app, "fetch_projects", lambda: PROJECTS)
-        assert app._build_project_choices() == [("1", "Alpha"), ("2", "Beta")]
+        assert app._build_project_choices() == [("2", "Beta"), ("1", "Alpha")]
 
 
 class TestOpenProjectModal:
@@ -68,8 +68,8 @@ class TestOpenProjectModal:
         app.open_project_modal(state)
 
         assert state.project_modal.show is True
-        assert state.project_modal.choices == [("1", "Alpha"), ("2", "Beta")]
-        assert state.project_modal.cursor == 1
+        assert state.project_modal.choices == [("2", "Beta"), ("1", "Alpha")]
+        assert state.project_modal.cursor == 0
         assert state.project_modal.active_id == "2"
 
     def test_unswitched_marks_config_default_project(self, monkeypatch):
@@ -81,7 +81,7 @@ class TestOpenProjectModal:
         app.open_project_modal(state)
 
         assert state.project_modal.active_id == "1"
-        assert state.project_modal.cursor == 0
+        assert state.project_modal.cursor == 1
 
     def test_config_identifier_is_resolved_to_id(self, monkeypatch):
         """config には identifier も設定できるので id に解決して保持する"""
@@ -92,7 +92,7 @@ class TestOpenProjectModal:
         app.open_project_modal(state)
 
         assert state.project_modal.active_id == "2"
-        assert state.project_modal.cursor == 1
+        assert state.project_modal.cursor == 0
 
     def test_cursor_top_when_no_current_project(self, monkeypatch):
         """未切替かつ config 未設定ならカーソルは先頭で active 無し"""

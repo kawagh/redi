@@ -74,6 +74,10 @@ def fetch_projects() -> list[Project]:
         offset += len(page)
 
 
+def sort_projects_by_id_desc(projects: list[Project]) -> list[Project]:
+    return sorted(projects, key=lambda p: p["id"], reverse=True)
+
+
 def resolve_project_id(value: str) -> str:
     if str(value).isdigit():
         return str(value)
