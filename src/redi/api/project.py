@@ -8,7 +8,7 @@ import requests
 
 from redi.api.types import IdName
 from redi.api.exceptions import print_http_error_body
-from redi.client import client
+from redi.client import RedmineClient, client
 from redi.config import redmine_url
 from redi.i18n import messages
 
@@ -52,16 +52,20 @@ def list_projects(full: bool = False) -> None:
             print(f"{project['id']} {project['name']}")
 
 
-def fetch_projects() -> list[Project]:
+def fetch_projects(api_client: RedmineClient | None = None) -> list[Project]:
     """アクセスできるプロジェクトを全件返す。
 
     Redmine の一覧 API は limit 未指定だと既定件数しか返さないため、
     `total_count` を見て全件揃うまで offset を進める。
+
+    `api_client` は config 未確定の `redi init` から、入力されたばかりの
+    URL/API キーで呼ぶために受ける。省略時はグローバルの client を使う。
     """
+    target = api_client or client
     projects: list[Project] = []
     offset = 0
     while True:
-        response = client.get(
+        response = target.get(
             "/projects.json", params={"limit": PROJECTS_PAGE_LIMIT, "offset": offset}
         )
         response.raise_for_status()
