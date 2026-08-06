@@ -783,7 +783,8 @@ class Ja(MessagesProto):
     arg_help_search_titles_only = "タイトルのみを検索する"
     arg_help_search_open_issues = "未完了のチケットのみを検索する"
     arg_help_search_attachments = "添付ファイルの検索方法(0: 説明のみ, 1: 説明と添付ファイル, only: 添付ファイルのみ)"
-    arg_help_search_type = "検索結果に {type} を含める"
+    arg_help_search_type = "検索対象の種別をカンマ区切りで指定（{choices}）"
+    error_invalid_search_type = "不明な検索種別です: {values}（指定可能: {choices}）"
 
     # ---- argparse helps (news) ----
     arg_help_news_command = "ニュース一覧"

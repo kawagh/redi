@@ -903,7 +903,9 @@ class MessagesProto(Protocol):
     arg_help_search_open_issues: str
     arg_help_search_attachments: str
     arg_help_search_type: str
-    """{type}"""
+    """{choices}"""
+    error_invalid_search_type: str
+    """{values} {choices}"""
 
     # ---- argparse helps (news) ----
     arg_help_news_command: str

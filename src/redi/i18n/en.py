@@ -775,7 +775,8 @@ class En(MessagesProto):
         "Search attachments (0: description only, "
         "1: description and attachments, only: attachments only)"
     )
-    arg_help_search_type = "Include {type} in results"
+    arg_help_search_type = "Object types to search, comma separated ({choices})"
+    error_invalid_search_type = "Unknown search type: {values} (available: {choices})"
 
     # ---- argparse helps (news) ----
     arg_help_news_command = "List news"
