@@ -778,8 +778,9 @@ class Ja(MessagesProto):
     arg_help_search_command = "検索"
     arg_help_search_query = "検索クエリ"
     arg_help_search_scope = "検索範囲"
-    arg_help_search_all_words = "クエリの全単語を含むものを検索する(デフォルト)"
-    arg_help_search_no_all_words = "クエリのいずれかの単語を含むものを検索する"
+    arg_help_search_no_all_words = (
+        "クエリのいずれかの単語を含むものを検索する(デフォルトは全単語)"
+    )
     arg_help_search_titles_only = "タイトルのみを検索する"
     arg_help_search_open_issues = "未完了のチケットのみを検索する"
     arg_help_search_attachments = "添付ファイルの検索方法(0: 説明のみ, 1: 説明と添付ファイル, only: 添付ファイルのみ)"

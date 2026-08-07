@@ -36,18 +36,11 @@ def add_search_parser(
     search_parser.add_argument(
         "--scope", choices=SEARCH_SCOPES, help=messages.arg_help_search_scope
     )
-    all_words_group = search_parser.add_mutually_exclusive_group()
-    all_words_group.add_argument(
-        "--all_words",
-        dest="all_words",
-        action="store_true",
-        default=None,
-        help=messages.arg_help_search_all_words,
-    )
-    all_words_group.add_argument(
+    search_parser.add_argument(
         "--no_all_words",
         dest="all_words",
         action="store_false",
+        default=None,
         help=messages.arg_help_search_no_all_words,
     )
     search_parser.add_argument(

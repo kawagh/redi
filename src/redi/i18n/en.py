@@ -767,8 +767,7 @@ class En(MessagesProto):
     arg_help_search_command = "Search"
     arg_help_search_query = "Search query"
     arg_help_search_scope = "Search scope"
-    arg_help_search_all_words = "Match all words in the query (default)"
-    arg_help_search_no_all_words = "Match any word in the query"
+    arg_help_search_no_all_words = "Match any word in the query (default: all words)"
     arg_help_search_titles_only = "Search titles only"
     arg_help_search_open_issues = "Search open issues only"
     arg_help_search_attachments = (
