@@ -36,6 +36,9 @@ def add_search_parser(
         "--offset", "-o", type=int, help=messages.arg_help_offset
     )
     search_parser.add_argument(
+        "--project_id", "-p", help=messages.arg_help_search_project_id
+    )
+    search_parser.add_argument(
         "--scope", choices=SEARCH_SCOPES, help=messages.arg_help_search_scope
     )
     search_parser.add_argument(
@@ -70,6 +73,7 @@ def handle_search(args: argparse.Namespace) -> None:
         query=args.query,
         limit=args.limit,
         offset=args.offset,
+        project_id=args.project_id,
         scope=args.scope,
         all_words=args.all_words,
         titles_only=args.titles_only,

@@ -777,6 +777,7 @@ class Ja(MessagesProto):
     # ---- argparse helps (search) ----
     arg_help_search_command = "検索"
     arg_help_search_query = "検索クエリ"
+    arg_help_search_project_id = "検索対象のプロジェクト(未指定なら全プロジェクト)"
     arg_help_search_scope = "検索範囲"
     arg_help_search_no_all_words = (
         "クエリのいずれかの単語を含むものを検索する(デフォルトは全単語)"

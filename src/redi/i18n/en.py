@@ -766,6 +766,9 @@ class En(MessagesProto):
     # ---- argparse helps (search) ----
     arg_help_search_command = "Search"
     arg_help_search_query = "Search query"
+    arg_help_search_project_id = (
+        "Search within the project (searches all projects if omitted)"
+    )
     arg_help_search_scope = "Search scope"
     arg_help_search_no_all_words = "Match any word in the query (default: all words)"
     arg_help_search_titles_only = "Search titles only"

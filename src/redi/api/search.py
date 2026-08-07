@@ -29,6 +29,7 @@ def search(
     query: str,
     limit: int | None = None,
     offset: int | None = None,
+    project_id: str | None = None,
     scope: SearchScope | None = None,
     all_words: bool = True,
     titles_only: bool = False,
@@ -42,6 +43,9 @@ def search(
         params["limit"] = limit
     if offset is not None:
         params["offset"] = offset
+    if project_id is not None:
+        # ルートが (projects/:id)/search のため、絞り込みのパラメータ名は id になる
+        params["id"] = project_id
     if scope is not None:
         params["scope"] = scope
     if not all_words:

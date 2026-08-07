@@ -40,6 +40,7 @@ class TestSearchParams:
         [
             ({"limit": 10}, {"limit": 10}),
             ({"offset": 20}, {"offset": 20}),
+            ({"project_id": "reditest"}, {"id": "reditest"}),
             ({"scope": "my_projects"}, {"scope": "my_projects"}),
             ({"titles_only": True}, {"titles_only": "1"}),
             ({"open_issues": True}, {"open_issues": "1"}),
@@ -48,6 +49,7 @@ class TestSearchParams:
         ids=[
             "limit",
             "offset",
+            "project_id",
             "scope",
             "titles_only",
             "open_issues",
@@ -65,6 +67,7 @@ class TestSearchParams:
         [
             {"limit": None},
             {"offset": None},
+            {"project_id": None},
             {"scope": None},
             {"titles_only": False},
             {"open_issues": False},
@@ -75,6 +78,7 @@ class TestSearchParams:
         ids=[
             "limit",
             "offset",
+            "project_id",
             "scope",
             "titles_only",
             "open_issues",
@@ -88,6 +92,12 @@ class TestSearchParams:
         search_module.search("redi", **kwargs)
 
         assert captured_params["params"] == {"q": "redi"}
+
+    def test_project_id_is_sent_as_id(self, captured_params):
+        """プロジェクトの絞り込みは id という名前で送る (project_id は無視される)"""
+        search_module.search("redi", project_id="reditest")
+
+        assert captured_params["params"] == {"q": "redi", "id": "reditest"}
 
     def test_all_words_false_sends_empty_value(self, captured_params):
         """all_words の無効化は空値で送る (Redmine は値の有無で真偽を判定する)"""
@@ -117,6 +127,7 @@ class TestSearchParams:
             "redi",
             limit=10,
             offset=20,
+            project_id="reditest",
             scope="my_projects",
             all_words=False,
             titles_only=True,
@@ -129,6 +140,7 @@ class TestSearchParams:
             "q": "redi",
             "limit": 10,
             "offset": 20,
+            "id": "reditest",
             "scope": "my_projects",
             "all_words": "",
             "titles_only": "1",
