@@ -66,7 +66,6 @@ class TestSearchParams:
             {"limit": None},
             {"offset": None},
             {"scope": None},
-            {"all_words": None},
             {"titles_only": False},
             {"open_issues": False},
             {"attachments": None},
@@ -77,7 +76,6 @@ class TestSearchParams:
             "limit",
             "offset",
             "scope",
-            "all_words",
             "titles_only",
             "open_issues",
             "attachments",
@@ -97,11 +95,11 @@ class TestSearchParams:
 
         assert captured_params["params"] == {"q": "redi", "all_words": ""}
 
-    def test_all_words_true_sends_flag(self, captured_params):
-        """all_words の有効化は 1 で送る"""
+    def test_all_words_true_is_omitted(self, captured_params):
+        """all_words の有効化は Redmine 側の既定なのでパラメータを送らない"""
         search_module.search("redi", all_words=True)
 
-        assert captured_params["params"] == {"q": "redi", "all_words": "1"}
+        assert captured_params["params"] == {"q": "redi"}
 
     def test_types_are_expanded_to_individual_params(self, captured_params):
         """種別は issues=1 のような個別パラメータへ展開される"""

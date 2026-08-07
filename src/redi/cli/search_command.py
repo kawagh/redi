@@ -42,7 +42,6 @@ def add_search_parser(
         "--no_all_words",
         dest="all_words",
         action="store_false",
-        default=None,
         help=messages.arg_help_search_no_all_words,
     )
     search_parser.add_argument(

@@ -30,7 +30,7 @@ def search(
     limit: int | None = None,
     offset: int | None = None,
     scope: SearchScope | None = None,
-    all_words: bool | None = None,
+    all_words: bool = True,
     titles_only: bool = False,
     open_issues: bool = False,
     attachments: SearchAttachments | None = None,
@@ -44,9 +44,9 @@ def search(
         params["offset"] = offset
     if scope is not None:
         params["scope"] = scope
-    if all_words is not None:
+    if not all_words:
         # Redmine は値の有無で真偽を判定するため、無効化するには空値を渡す
-        params["all_words"] = "1" if all_words else ""
+        params["all_words"] = ""
     if titles_only:
         params["titles_only"] = "1"
     if open_issues:
