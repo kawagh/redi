@@ -1,15 +1,17 @@
 import argparse
+from typing import cast
 
 from redi.api.search import (
     SEARCH_ATTACHMENTS,
     SEARCH_SCOPES,
     SEARCH_TYPES,
+    SearchType,
     search,
 )
 from redi.i18n import messages
 
 
-def _parse_search_types(value: str) -> list[str]:
+def _parse_search_types(value: str) -> list[SearchType]:
     """カンマ区切りの検索種別を検証してリストに変換する。"""
     types = [t.strip() for t in value.split(",") if t.strip()]
     unknown = [t for t in types if t not in SEARCH_TYPES]
@@ -19,7 +21,7 @@ def _parse_search_types(value: str) -> list[str]:
                 values=",".join(unknown), choices=",".join(SEARCH_TYPES)
             )
         )
-    return types
+    return cast(list[SearchType], types)
 
 
 def add_search_parser(

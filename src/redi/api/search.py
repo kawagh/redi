@@ -1,12 +1,13 @@
 import json
+from typing import Literal, get_args
 
 from redi.client import client
 from redi.i18n import messages
 
 
 # https://www.redmine.org/projects/redmine/wiki/Rest_Search
-SEARCH_SCOPES = ("all", "my_projects", "bookmarks", "subprojects")
-SEARCH_TYPES = (
+SearchScope = Literal["all", "my_projects", "bookmarks", "subprojects"]
+SearchType = Literal[
     "issues",
     "news",
     "documents",
@@ -14,8 +15,13 @@ SEARCH_TYPES = (
     "wiki_pages",
     "messages",
     "projects",
-)
-SEARCH_ATTACHMENTS = ("0", "1", "only")
+]
+SearchAttachments = Literal["0", "1", "only"]
+
+# argparse の choices や検証に使うため、Literal から実行時の値を導出する
+SEARCH_SCOPES: tuple[SearchScope, ...] = get_args(SearchScope)
+SEARCH_TYPES: tuple[SearchType, ...] = get_args(SearchType)
+SEARCH_ATTACHMENTS: tuple[SearchAttachments, ...] = get_args(SearchAttachments)
 
 
 # Optinal parameters
@@ -23,12 +29,12 @@ def search(
     query: str,
     limit: int | None = None,
     offset: int | None = None,
-    scope: str | None = None,
+    scope: SearchScope | None = None,
     all_words: bool | None = None,
     titles_only: bool = False,
     open_issues: bool = False,
-    attachments: str | None = None,
-    types: list[str] | None = None,
+    attachments: SearchAttachments | None = None,
+    types: list[SearchType] | None = None,
     full: bool = False,
 ) -> None:
     params: dict = {"q": query}
