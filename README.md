@@ -194,6 +194,18 @@ redi issue_category create "category" -p <project_id>
 # This command requires redmine_issue_templates plugin ( https://www.redmine.org/plugins/redmine_issue_templates )
 redi issue_template # list issue_templates
 
+# search (alias: s)
+redi search "keyword" # search all projects
+redi search "keyword" -p <project_id> # search within a project
+redi search "keyword" --type issues # limit object types
+redi search "keyword" --type issues,wiki_pages # comma separated (issues, news, documents, changesets, wiki_pages, messages, projects)
+redi search "keyword" --scope my_projects # all, my_projects, bookmarks, subprojects
+redi search "keyword" --titles_only --open_issues
+redi search "keyword" --no_all_words # match any word (default: all words)
+redi search "keyword" --attachments only # 0: description only, 1: description and attachments, only: attachments only
+redi search "keyword" --limit 10 --offset 10
+redi search "keyword" --full # output full JSON
+
 # others
 redi user # list users (alias: u)
 redi tracker # list trackers (alias: t)
@@ -205,7 +217,6 @@ redi role # list roles (alias: r)
 redi group # list groups (alias: g)
 redi custom_field # list custom fields (alias: cf)
 redi query # list custom queries (alias: q)
-redi search "keyword" # (alias: s)
 redi --version
 ```
 
