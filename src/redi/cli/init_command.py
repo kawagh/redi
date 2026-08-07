@@ -5,8 +5,10 @@ import requests
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
 
+from redi.api.project import Project, fetch_projects
 from redi.cli.picker import inline_choice
 from redi.cli.validator import UrlValidator
+from redi.client import RedmineClient
 from redi.config import CONFIG_PATH, create_profile
 from redi.i18n import messages
 
@@ -44,22 +46,15 @@ def _verify_connection(url: str, api_key: str) -> dict | None:
     return None
 
 
-def _fetch_projects(url: str, api_key: str) -> list[dict]:
+def _fetch_projects(url: str, api_key: str) -> list[Project]:
     try:
-        response = requests.get(
-            f"{url}/projects.json",
-            headers={"X-Redmine-API-Key": api_key},
-            params={"limit": 100},
-            timeout=10,
-        )
-        response.raise_for_status()
-        return response.json().get("projects", [])
+        return fetch_projects(RedmineClient(url.rstrip("/"), api_key))
     except requests.exceptions.RequestException as e:
         print(messages.project_list_fetch_failed.format(error=e))
         return []
 
 
-def _select_project_id(message: str, projects: list[dict]) -> str:
+def _select_project_id(message: str, projects: list[Project]) -> str:
     options: list[tuple[str, str]] = [
         (str(p["id"]), f"{p['id']} {p['name']}")
         for p in sorted(projects, key=lambda p: p["id"], reverse=True)

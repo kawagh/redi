@@ -1,6 +1,7 @@
 from prompt_toolkit import Application
+from prompt_toolkit.data_structures import Point
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.layout import HSplit, Layout, Window
+from prompt_toolkit.layout import HSplit, Layout, ScrollOffsets, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 
 
@@ -81,8 +82,14 @@ def inline_checkbox(
                     height=1,
                 ),
                 Window(
-                    FormattedTextControl(render, focusable=True, show_cursor=False),
+                    FormattedTextControl(
+                        render,
+                        focusable=True,
+                        show_cursor=False,
+                        get_cursor_position=lambda: Point(0, cursor),
+                    ),
                     dont_extend_height=True,
+                    scroll_offsets=ScrollOffsets(top=1, bottom=1),
                 ),
             ]
         ),
@@ -154,8 +161,14 @@ def inline_choice(
                     height=1,
                 ),
                 Window(
-                    FormattedTextControl(render, focusable=True, show_cursor=False),
+                    FormattedTextControl(
+                        render,
+                        focusable=True,
+                        show_cursor=False,
+                        get_cursor_position=lambda: Point(0, cursor),
+                    ),
                     dont_extend_height=True,
+                    scroll_offsets=ScrollOffsets(top=1, bottom=1),
                 ),
             ]
         ),
