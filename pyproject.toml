@@ -50,7 +50,6 @@ ignore = [
   "I001",    # import の並び順を強制しない
   "DTZ",     # tz を持たない date/datetime の生成を許容する
   "SIM114",  # 同一処理となる分岐の統合を必須としない
-  "PIE807",  # lambda: [] の使用を許容する
   "FURB122", # ループ内の write() を writelines() にまとめない
 ]
 
