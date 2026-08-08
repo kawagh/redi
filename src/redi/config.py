@@ -82,10 +82,10 @@ language: str = merged_config["language"]
 def check_config() -> None:
     if not redmine_url:
         print(f"set REDMINE_URL or add redmine_url to {CONFIG_PATH}")
-        exit(1)
+        sys.exit(1)
     if not redmine_api_key:
         print(f"set REDMINE_API_KEY or add redmine_api_key to {CONFIG_PATH}")
-        exit(1)
+        sys.exit(1)
 
 
 def update_config(
@@ -105,11 +105,11 @@ def update_config(
     target_profile = profile or doc.get("default_profile")
     if not target_profile:
         print("default_profile not found")
-        exit(1)
+        sys.exit(1)
     profile_table = doc.get(target_profile) if target_profile in doc else None
     if not isinstance(profile_table, Table):
         print(f"profile '{target_profile}' not found in {path}")
-        exit(1)
+        sys.exit(1)
 
     profile_table[key] = value
     with open(path, "w") as f:

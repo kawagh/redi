@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import json
+import sys
 import webbrowser
 from collections import defaultdict
 from typing import NotRequired, TypedDict, cast
 
 import requests
 
-from redi.api.types import IdName
 from redi.api.attachment import upload_file
 from redi.api.exceptions import RedmineValidationException, print_http_error_body
+from redi.api.types import IdName
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
@@ -182,7 +183,7 @@ def fetch_issue(issue_id: str, include: str = "") -> Issue:
     response = client.get(f"/issues/{issue_id}.json", params=params)
     if response.status_code == 404:
         print(messages.issue_not_found.format(id=issue_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return response.json()["issue"]
 
@@ -375,7 +376,7 @@ def create_issue(
         print(e)
         print_http_error_body(e)
         print(messages.issue_create_failed)
-        exit(1)
+        sys.exit(1)
     created = response.json()["issue"]
     url = f"{redmine_url}/issues/{created['id']}"
     print(messages.issue_created.format(url=url))
@@ -397,7 +398,7 @@ def update_issue(
     estimated_hours: float | None = None,
     notes: str = "",
     custom_fields: str | None = None,
-    attachments: list[str] = [],
+    attachments: list[str] | None = None,
 ) -> None:
     """イシューを更新する
 
@@ -437,7 +438,7 @@ def update_issue(
         issue_data["uploads"] = [upload_file(file_path) for file_path in attachments]
     if len(issue_data) == 0:
         print(messages.update_canceled)
-        exit()
+        sys.exit()
     response = client.put(f"/issues/{issue_id}.json", json={"issue": issue_data})
     if response.status_code == 422:
         raise RedmineValidationException.from_response("issue", "update", response)
@@ -447,7 +448,7 @@ def update_issue(
         print(e)
         print_http_error_body(e)
         print(messages.issue_update_failed)
-        exit(1)
+        sys.exit(1)
     url = f"{redmine_url}/issues/{issue_id}"
     print(messages.issue_updated.format(url=url))
 
@@ -459,14 +460,14 @@ def add_watcher(issue_id: str, user_id: int) -> None:
     )
     if response.status_code == 404:
         print(messages.issue_not_found.format(id=issue_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
         print(messages.watcher_add_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.watcher_added.format(issue_id=issue_id, user_id=user_id))
 
 
@@ -476,14 +477,14 @@ def remove_watcher(issue_id: str, user_id: int) -> None:
         print(
             messages.issue_or_user_not_found.format(issue_id=issue_id, user_id=user_id)
         )
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
         print(messages.watcher_remove_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.watcher_removed.format(issue_id=issue_id, user_id=user_id))
 
 
@@ -491,14 +492,14 @@ def delete_issue(issue_id: str) -> None:
     response = client.delete(f"/issues/{issue_id}.json")
     if response.status_code == 404:
         print(messages.issue_not_found.format(id=issue_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
         print(messages.issue_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.issue_deleted.format(id=issue_id))
 
 

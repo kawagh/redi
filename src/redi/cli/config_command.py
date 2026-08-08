@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 from redi.cli.alias import resolve_alias
 from redi.cli.picker import inline_choice
@@ -80,7 +81,7 @@ def _interactive_select_default_profile() -> None:
     profile_names = list_profile_names()
     if not profile_names:
         print(messages.no_profiles_available)
-        exit(1)
+        sys.exit(1)
     current_default = get_default_profile()
     options: list[tuple[str, str]] = [
         (name, f"{name} (default)" if name == current_default else name)
@@ -94,7 +95,7 @@ def _interactive_select_default_profile() -> None:
         )
     except KeyboardInterrupt:
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     if set_default_profile(selected):
         print(messages.default_profile_set.format(name=selected))
 
@@ -112,9 +113,11 @@ def handle_config(args: argparse.Namespace) -> None:
             language=args.language,
         )
         if not result.created:
-            exit(1)
+            sys.exit(1)
         print(messages.profile_created.format(name=args.profile_name))
-        if result.set_as_default:
+        # or で統合できるが、副作用のある set_default_profile() を
+        # 条件式に埋めない方が可読性が高い
+        if result.set_as_default:  # noqa: SIM114
             print(messages.default_profile_set.format(name=args.profile_name))
         elif args.set_default and set_default_profile(args.profile_name):
             print(messages.default_profile_set.format(name=args.profile_name))

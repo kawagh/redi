@@ -1,8 +1,6 @@
 import argparse
+import sys
 
-from redi.cli.alias import resolve_alias
-from redi.cli.confirm import confirm_delete
-from redi.i18n import messages
 from redi.api.group import (
     add_group_user,
     create_group,
@@ -13,6 +11,9 @@ from redi.api.group import (
     remove_group_user,
     update_group,
 )
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.i18n import messages
 
 
 def add_group_parser(
@@ -106,7 +107,7 @@ def handle_group(args: argparse.Namespace) -> None:
             remove_group_user(args.group_id, user_id)
         if not should_update and not args.add_user_ids and not args.remove_user_ids:
             print(messages.update_canceled)
-            exit()
+            sys.exit()
         return
     if cmd == "delete":
         if not args.yes:

@@ -1,8 +1,5 @@
 import argparse
 
-from redi.cli.alias import resolve_alias
-from redi.cli.confirm import confirm_delete_with_identifier
-from redi.i18n import messages
 from redi.api.user import (
     create_user,
     delete_user,
@@ -11,7 +8,9 @@ from redi.api.user import (
     read_user,
     update_user,
 )
-
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete_with_identifier
+from redi.i18n import messages
 
 MAIL_NOTIFICATION_CHOICES = [
     "all",

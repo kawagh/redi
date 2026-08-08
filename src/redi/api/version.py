@@ -1,4 +1,5 @@
 import json
+import sys
 import webbrowser
 
 import requests
@@ -35,7 +36,7 @@ def create_version(
         print(e)
         print_http_error_body(e)
         print(messages.version_create_failed)
-        exit(1)
+        sys.exit(1)
     created = response.json()["version"]
     print(
         messages.version_created.format(
@@ -67,7 +68,7 @@ def update_version(
         version_data["sharing"] = sharing
     if len(version_data) == 0:
         print(messages.update_canceled)
-        exit()
+        sys.exit()
     response = client.put(
         f"/versions/{version_id}.json", json={"version": version_data}
     )
@@ -77,7 +78,7 @@ def update_version(
         print(e)
         print_http_error_body(e)
         print(messages.version_update_failed)
-        exit(1)
+        sys.exit(1)
     print(
         messages.version_updated.format(
             id=version_id, url=f"{redmine_url}/versions/{version_id}"
@@ -89,7 +90,7 @@ def fetch_version(version_id: str) -> dict:
     response = client.get(f"/versions/{version_id}.json")
     if response.status_code == 404:
         print(messages.version_not_found.format(id=version_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return response.json()["version"]
 
@@ -130,14 +131,14 @@ def delete_version(version_id: str) -> None:
     response = client.delete(f"/versions/{version_id}.json")
     if response.status_code == 404:
         print(messages.version_not_found.format(id=version_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
         print(messages.version_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.version_deleted.format(id=version_id))
 
 

@@ -1,9 +1,6 @@
 import argparse
+import sys
 
-from redi.cli.alias import resolve_alias
-from redi.cli.confirm import confirm_delete
-from redi.config import default_project_id
-from redi.i18n import messages
 from redi.api.membership import (
     create_membership,
     delete_membership,
@@ -12,6 +9,10 @@ from redi.api.membership import (
     read_membership,
     update_membership,
 )
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.config import default_project_id
+from redi.i18n import messages
 
 
 def _parse_role_ids(value: str) -> list[int]:
@@ -107,10 +108,10 @@ def handle_membership(args: argparse.Namespace) -> None:
         project_id = args.project_id or default_project_id
         if not project_id:
             print(messages.project_id_required)
-            exit(1)
+            sys.exit(1)
         if args.user_id is None and args.group_id is None:
             print(messages.user_or_group_flag_required)
-            exit(1)
+            sys.exit(1)
         create_membership(
             project_id=project_id,
             role_ids=_parse_role_ids(args.role_ids),
@@ -146,5 +147,5 @@ def handle_membership(args: argparse.Namespace) -> None:
         project_id = args.project_id or default_project_id
         if not project_id:
             print(messages.project_id_required)
-            exit(1)
+            sys.exit(1)
         list_memberships(project_id, full=args.full)

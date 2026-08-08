@@ -1,8 +1,8 @@
 import argparse
 
+from redi.api.role import list_roles, read_role
 from redi.cli.alias import resolve_alias
 from redi.i18n import messages
-from redi.api.role import list_roles, read_role
 
 
 def add_role_parser(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from typing import NotRequired, TypedDict, cast
 
 import requests
@@ -63,7 +64,7 @@ def create_time_entry(
     """
     if not issue_id and not project_id:
         print(messages.issue_or_project_id_required)
-        exit(1)
+        sys.exit(1)
     # time_entries は他の API と異なり project_id に slug を受け付けず整数のみ許容
     # https://www.redmine.org/projects/redmine/wiki/Rest_TimeEntries
     if project_id is not None:
@@ -88,7 +89,7 @@ def create_time_entry(
         print(e)
         print_http_error_body(e)
         print(messages.time_entry_create_failed)
-        exit(1)
+        sys.exit(1)
     created = cast("TimeEntry", response.json()["time_entry"])
     print(
         messages.time_entry_created.format(
@@ -218,7 +219,7 @@ def fetch_time_entry(time_entry_id: str) -> TimeEntry:
     response = client.get(f"/time_entries/{time_entry_id}.json")
     if response.status_code == 404:
         print(messages.time_entry_not_found.format(id=time_entry_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return cast("TimeEntry", response.json()["time_entry"])
 
@@ -277,7 +278,7 @@ def update_time_entry(
         data["comments"] = comments
     if not data:
         print(messages.update_canceled_no_changes)
-        exit(1)
+        sys.exit(1)
     response = client.put(
         f"/time_entries/{time_entry_id}.json", json={"time_entry": data}
     )
@@ -289,7 +290,7 @@ def update_time_entry(
         print(e)
         print_http_error_body(e)
         print(messages.time_entry_update_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.time_entry_updated.format(id=time_entry_id))
 
 
@@ -301,5 +302,5 @@ def delete_time_entry(time_entry_id: str) -> None:
         print(e)
         print_http_error_body(e)
         print(messages.time_entry_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.time_entry_deleted.format(id=time_entry_id))

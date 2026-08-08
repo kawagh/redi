@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 from redi.api.file import create_file, list_files
 from redi.cli.alias import resolve_alias
@@ -39,7 +40,7 @@ def handle_file(args: argparse.Namespace) -> None:
     project_id = args.project_id or default_project_id
     if not project_id:
         print(messages.project_id_required)
-        exit(1)
+        sys.exit(1)
     cmd = resolve_alias(args.file_command)
     if cmd == "create":
         create_file(

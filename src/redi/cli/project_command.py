@@ -1,8 +1,6 @@
 import argparse
+import sys
 
-from redi.cli.alias import resolve_alias
-from redi.cli.confirm import confirm_delete_with_identifier
-from redi.i18n import messages
 from redi.api.project import (
     archive_project,
     create_project,
@@ -13,6 +11,9 @@ from redi.api.project import (
     unarchive_project,
     update_project,
 )
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete_with_identifier
+from redi.i18n import messages
 
 
 def add_project_parser(
@@ -161,6 +162,6 @@ def handle_project(args: argparse.Namespace) -> None:
             unarchive_project(args.project_id)
         elif not should_update:
             print(messages.update_canceled)
-            exit()
+            sys.exit()
     elif cmd == "list" or cmd is None:
         list_projects(full=args.full)

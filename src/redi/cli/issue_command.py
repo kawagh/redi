@@ -1,4 +1,5 @@
 import argparse
+import sys
 import urllib.parse
 import webbrowser
 from datetime import date
@@ -6,24 +7,13 @@ from typing import cast
 
 from prompt_toolkit import prompt
 
-from redi.cli.alias import resolve_alias
-from redi.cli.editor import open_editor, save_text_to_tempfile
-from redi.cli.keybinding import (
-    date_key_bindings,
-    digit_and_period_key_bindings,
-    digit_only_key_bindings,
+from redi.api.custom_field import (
+    CustomField,
+    fetch_custom_fields,
+    fetch_project_issue_custom_field_ids,
+    filter_optional_issue_custom_fields,
+    filter_required_issue_custom_fields,
 )
-from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.confirm import confirm_delete
-from redi.cli.validator import (
-    DateValidator,
-    DueDateValidator,
-    FloatValidator,
-    HourValidator,
-    IntValidator,
-    RequiredValidator,
-)
-from redi.config import default_project_id, redmine_url
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
 from redi.api.issue import (
     add_note,
@@ -45,15 +35,25 @@ from redi.api.membership import fetch_project_users
 from redi.api.project import fetch_project
 from redi.api.time_entry import create_time_entry
 from redi.api.version import fetch_versions
-from redi.i18n import messages
-
-from redi.api.custom_field import (
-    CustomField,
-    fetch_custom_fields,
-    fetch_project_issue_custom_field_ids,
-    filter_optional_issue_custom_fields,
-    filter_required_issue_custom_fields,
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.cli.editor import open_editor, save_text_to_tempfile
+from redi.cli.keybinding import (
+    date_key_bindings,
+    digit_and_period_key_bindings,
+    digit_only_key_bindings,
 )
+from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.validator import (
+    DateValidator,
+    DueDateValidator,
+    FloatValidator,
+    HourValidator,
+    IntValidator,
+    RequiredValidator,
+)
+from redi.config import default_project_id, redmine_url
+from redi.i18n import messages
 
 
 def add_issue_parser(
@@ -316,7 +316,7 @@ def _interactive_select_issue_id() -> str:
     issues = fetch_issues(project_id=default_project_id)
     if not issues:
         print(messages.no_issues_available)
-        exit(1)
+        sys.exit(1)
     options: list[tuple[str, str]] = [
         (str(i["id"]), f"#{i['id']} {i['subject']}") for i in issues
     ]
@@ -325,7 +325,7 @@ def _interactive_select_issue_id() -> str:
         issue_id = inline_choice(messages.prompt_select_issue_to_update, options)
     except KeyboardInterrupt:
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     print(messages.update_target_issue.format(label=labels[issue_id]))
     return issue_id
 
@@ -376,10 +376,10 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
         )
     except KeyboardInterrupt:
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     if not selected:
         print(messages.canceled_no_items_selected)
-        exit(1)
+        sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
     try:
@@ -387,7 +387,7 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
             project_id = (current.get("project") or {}).get("id")
             if not project_id:
                 print(messages.canceled_no_project)
-                exit(1)
+                sys.exit(1)
             project = fetch_project(str(project_id), include="trackers")
             trackers = project.get("trackers") or []
             tracker_options: list[tuple[str, str]] = [
@@ -430,7 +430,7 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
             project_id = (current.get("project") or {}).get("id")
             if not project_id:
                 print(messages.canceled_no_project)
-                exit(1)
+                sys.exit(1)
             users = fetch_project_users(str(project_id))
             assignee_options: list[tuple[str, str]] = [
                 ("", messages.prompt_select_assignee_none)
@@ -454,7 +454,7 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
             project_id = (current.get("project") or {}).get("id")
             if not project_id:
                 print(messages.canceled_no_project)
-                exit(1)
+                sys.exit(1)
             versions = fetch_versions(str(project_id))
             version_options: list[tuple[str, str]] = [
                 (str(v["id"]), f"{v['name']} ({v['status']})") for v in versions
@@ -579,7 +579,7 @@ def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
                 args.custom_fields = ",".join(added_custom_fields)
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
 
 # attachment 型のような未対応フィールドで「スキップしてブラウザでの編集に倒す」ことを示すセンチネル
@@ -777,7 +777,7 @@ def _interactive_fill_required_custom_fields(
             value = _prompt_custom_field_value(cf, project_id)
         except (KeyboardInterrupt, EOFError):
             print(messages.canceled)
-            exit(1)
+            sys.exit(1)
         if value is _SKIP_UNSUPPORTED_FIELD:
             browser_only = True
             continue
@@ -837,7 +837,7 @@ def _interactive_fill_optional_create_fields(
         )
     except KeyboardInterrupt:
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     if not selected:
         return custom_fields
     added_cfs: list[str] = []
@@ -919,7 +919,7 @@ def _interactive_fill_optional_create_fields(
                 added_cfs.append(f"{cf['id']}={cf_value}")
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     if not added_cfs:
         return custom_fields
     if custom_fields:
@@ -946,7 +946,7 @@ def _interactive_select_issue_template(
         selected = inline_choice(messages.prompt_select_template, options)
     except KeyboardInterrupt:
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     if not selected:
         return None
     template = template_map[selected]
@@ -966,7 +966,7 @@ def handle_issue_create(args: argparse.Namespace) -> None:
     project_id = args.project_id or default_project_id
     if not project_id:
         print(messages.project_id_required)
-        exit(1)
+        sys.exit(1)
     subject = args.subject
     tracker_id = args.tracker_id
     custom_fields = args.custom_fields
@@ -987,7 +987,7 @@ def handle_issue_create(args: argparse.Namespace) -> None:
                 )
             except KeyboardInterrupt:
                 print(messages.canceled)
-                exit(1)
+                sys.exit(1)
             print(messages.tracker_label.format(value=labels[tracker_id]))
         # テンプレートを選択し、題名・説明の初期値として反映させる
         template = _interactive_select_issue_template(project_id, tracker_id)
@@ -999,10 +999,10 @@ def handle_issue_create(args: argparse.Namespace) -> None:
             subject = prompt(messages.prompt_subject, default=subject_default).strip()
         except (KeyboardInterrupt, EOFError):
             print(messages.canceled)
-            exit(1)
+            sys.exit(1)
         if not subject:
             print(messages.canceled_empty_subject)
-            exit(1)
+            sys.exit(1)
         # 必要なカスタムフィールドを対話的に入力
         custom_fields, browser_only = _interactive_fill_required_custom_fields(
             project_id=project_id,
@@ -1039,7 +1039,7 @@ def handle_issue_create(args: argparse.Namespace) -> None:
                 action = inline_choice(messages.prompt_what_next, action_options)
             except KeyboardInterrupt:
                 print(messages.canceled)
-                exit(1)
+                sys.exit(1)
             if action == "optional":
                 custom_fields = _interactive_fill_optional_create_fields(
                     args, project_id, tracker_id, custom_fields
@@ -1162,7 +1162,7 @@ def handle_issue_update(args: argparse.Namespace) -> None:
     if args.delete_relation:
         if not args.relate_to:
             print(messages.delete_relation_requires_to)
-            exit(1)
+            sys.exit(1)
         delete_relation(
             issue_id=args.issue_id,
             issue_to_id=args.relate_to,
@@ -1175,7 +1175,7 @@ def handle_issue_update(args: argparse.Namespace) -> None:
         )
     elif args.relate or args.relate_to:
         print(messages.relate_and_to_required)
-        exit(1)
+        sys.exit(1)
     if should_create_time_entry:
         create_time_entry(
             issue_id=args.issue_id,
@@ -1196,7 +1196,7 @@ def handle_issue_update(args: argparse.Namespace) -> None:
         and not should_update_watchers
     ):
         print(messages.update_canceled_no_changes)
-        exit(1)
+        sys.exit(1)
 
 
 def handle_issue(args: argparse.Namespace) -> None:

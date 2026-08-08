@@ -11,7 +11,7 @@ class TestProfileFlagPlacement:
 
     @pytest.fixture
     def parser(self, monkeypatch) -> argparse.ArgumentParser:
-        monkeypatch.setattr(main_module, "list_profile_names", lambda: [])
+        monkeypatch.setattr(main_module, "list_profile_names", list)
         return build_redi_parser()
 
     def test_before_subcommand(self, parser):

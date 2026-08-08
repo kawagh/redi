@@ -5,11 +5,16 @@ import uuid
 
 
 def run_redi(*args: str) -> subprocess.CompletedProcess[str]:
-    """`redi <args...>` を subprocess で実行する (例: `run_redi("project", "list")`)。"""
+    """`redi <args...>` を subprocess で実行する (例: `run_redi("project", "list")`)。
+
+    異常終了を見逃さないよう `check=True` で実行する。
+    異常終了を検証する場合は `subprocess.CalledProcessError` を捕捉する。
+    """
     return subprocess.run(
         ["redi", *args],
         capture_output=True,
         text=True,
+        check=True,
     )
 
 

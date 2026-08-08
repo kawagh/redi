@@ -1,20 +1,10 @@
 import argparse
+import sys
 
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.validation import Validator
 
-from redi.cli.alias import resolve_alias
-from redi.cli.keybinding import (
-    date_key_bindings,
-    digit_and_period_key_bindings,
-    digit_only_key_bindings,
-)
-from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.confirm import confirm_delete
-from redi.cli.validator import DateValidator, HourValidator
-from redi.config import default_project_id
-from redi.i18n import messages
 from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.issue import fetch_issue
 from redi.api.project import fetch_projects
@@ -26,6 +16,17 @@ from redi.api.time_entry import (
     read_time_entry,
     update_time_entry,
 )
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.cli.keybinding import (
+    date_key_bindings,
+    digit_and_period_key_bindings,
+    digit_only_key_bindings,
+)
+from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.validator import DateValidator, HourValidator
+from redi.config import default_project_id
+from redi.i18n import messages
 
 
 def add_time_entry_parser(
@@ -211,7 +212,7 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
             args.comments = prompt(messages.prompt_comment).strip() or None
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
 
 def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
@@ -227,10 +228,10 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
     except KeyboardInterrupt:
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     if not selected:
         print(messages.canceled_no_items_selected)
-        exit(1)
+        sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
     try:
@@ -288,7 +289,7 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
                 args.issue_id = issue_id
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
 
 def handle_time_entry(args: argparse.Namespace) -> None:

@@ -1,8 +1,8 @@
 import argparse
 
+from redi.api.me import read_my_account, update_my_account
 from redi.cli.alias import resolve_alias
 from redi.i18n import messages
-from redi.api.me import read_my_account, update_my_account
 
 
 def add_me_parser(

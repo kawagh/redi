@@ -1,4 +1,5 @@
 import argparse
+import sys
 import tomllib
 
 import requests
@@ -63,7 +64,7 @@ def _select_project_id(message: str, projects: list[Project]) -> str:
         return inline_choice(message, options)
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
 
 def _has_existing_profile() -> bool:
@@ -77,7 +78,7 @@ def _has_existing_profile() -> bool:
 def handle_init(_args: argparse.Namespace) -> None:
     if _has_existing_profile():
         print(messages.init_profile_already_exists.format(path=CONFIG_PATH))
-        exit(1)
+        sys.exit(1)
 
     non_empty_validator = Validator.from_callable(
         lambda text: len(text.strip()) > 0,
@@ -93,12 +94,12 @@ def handle_init(_args: argparse.Namespace) -> None:
         ).strip()
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
     print(messages.checking_connection)
     user = _verify_connection(url, api_key)
     if user is None:
-        exit(1)
+        sys.exit(1)
     name = " ".join(filter(None, [user.get("firstname"), user.get("lastname")]))
     print(messages.connection_success.format(login=user.get("login", ""), name=name))
 
@@ -134,5 +135,5 @@ def handle_init(_args: argparse.Namespace) -> None:
         wiki_project_id=wiki_project_id,
     )
     if not result.created:
-        exit(1)
+        sys.exit(1)
     print(messages.config_created.format(path=CONFIG_PATH))

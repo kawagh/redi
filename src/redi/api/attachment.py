@@ -1,6 +1,7 @@
 import json
 import mimetypes
 import os
+import sys
 from pathlib import Path
 
 import requests
@@ -17,7 +18,7 @@ DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 def upload_file(file_path: str) -> dict:
     if not os.path.isfile(file_path):
         print(messages.file_not_found.format(path=file_path))
-        exit(1)
+        sys.exit(1)
     filename = os.path.basename(file_path)
     content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
     with open(file_path, "rb") as f:
@@ -32,7 +33,7 @@ def upload_file(file_path: str) -> dict:
         print(e)
         print_http_error_body(e)
         print(messages.file_upload_failed_with_path.format(path=file_path))
-        exit(1)
+        sys.exit(1)
     token = response.json()["upload"]["token"]
     return {
         "token": token,
@@ -45,7 +46,7 @@ def fetch_attachment(attachment_id: str) -> Attachment:
     response = client.get(f"/attachments/{attachment_id}.json")
     if response.status_code == 404:
         print(messages.attachment_not_found.format(id=attachment_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return response.json()["attachment"]
 
@@ -65,7 +66,7 @@ def resolve_download_url_path(attachment: Attachment) -> str:
     content_url = attachment.get("content_url") or ""
     if not redmine_url or not content_url.startswith(redmine_url):
         print(messages.attachment_content_url_unexpected.format(url=content_url))
-        exit(1)
+        sys.exit(1)
     return content_url[len(redmine_url) :]
 
 
@@ -73,22 +74,23 @@ def download_attachment(attachment: Attachment, path: Path) -> None:
     response = client.get(resolve_download_url_path(attachment), stream=True)
     if response.status_code == 404:
         print(messages.attachment_not_found.format(id=attachment["id"]))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
         print(messages.attachment_download_failed)
-        exit(1)
+        sys.exit(1)
     try:
         with open(path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
+            # writelines() でも等価だが、チャンク単位の書き込みは for の方が可読性が高い
+            for chunk in response.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):  # noqa: FURB122
                 f.write(chunk)
     except OSError as e:
         print(e)
         print(messages.attachment_download_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.attachment_downloaded.format(path=path))
 
 
@@ -120,14 +122,14 @@ def delete_attachment(attachment_id: str) -> None:
     response = client.delete(f"/attachments/{attachment_id}.json")
     if response.status_code == 404:
         print(messages.attachment_not_found.format(id=attachment_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
         print(messages.attachment_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.attachment_deleted.format(id=attachment_id))
 
 
@@ -143,20 +145,20 @@ def update_attachment(
         data["description"] = description
     if not data:
         print(messages.update_canceled)
-        exit()
+        sys.exit()
     response = client.patch(
         f"/attachments/{attachment_id}.json", json={"attachment": data}
     )
     if response.status_code == 404:
         print(messages.attachment_not_found.format(id=attachment_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
         print(messages.attachment_update_failed)
-        exit(1)
+        sys.exit(1)
     print(
         messages.attachment_updated.format(
             url=f"{redmine_url}/attachments/{attachment_id}"

@@ -1,8 +1,8 @@
 from typing import cast
 
 from redi.api.time_entry import TimeEntry
-from redi.tui.time_entry import time_entry_tab
 from redi.tui.state import TuiState
+from redi.tui.time_entry import time_entry_tab
 
 
 def _make_state(

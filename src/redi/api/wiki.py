@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import webbrowser
 from collections import defaultdict
 from typing import NotRequired, TypedDict, cast
@@ -158,7 +159,7 @@ def read_wiki(
             )
         else:
             print(messages.wiki_page_not_found.format(title=page_title))
-        exit(1)
+        sys.exit(1)
     if full:
         print(json.dumps(wiki, ensure_ascii=False, indent=2))
     else:
@@ -205,14 +206,14 @@ def delete_wiki(project_id: str, page_title: str) -> None:
     response = client.delete(f"/projects/{project_id}/wiki/{page_title}.json")
     if response.status_code == 404:
         print(messages.wiki_page_not_found.format(title=page_title))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
         print(messages.wiki_page_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.wiki_page_deleted.format(title=page_title))
 
 
