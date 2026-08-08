@@ -199,7 +199,8 @@ redi search "keyword" # search all projects
 redi search "keyword" -p <project_id> # search within a project
 redi search "keyword" --type issues # limit object types
 redi search "keyword" --type issues,wiki_pages # comma separated (issues, news, documents, changesets, wiki_pages, messages, projects)
-redi search "keyword" --scope my_projects # all, my_projects, bookmarks, subprojects
+redi search "keyword" --scope my_projects # all, my_projects, bookmarks (cannot be combined with -p)
+redi search "keyword" -p <project_id> --scope subprojects # search the project and its subprojects (-p is required)
 redi search "keyword" --titles_only --open_issues
 redi search "keyword" --no_all_words # match any word (default: all words)
 redi search "keyword" --attachments only # 0: description only, 1: description and attachments, only: attachments only

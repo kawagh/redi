@@ -906,6 +906,10 @@ class MessagesProto(Protocol):
     """{choices}"""
     error_invalid_search_type: str
     """{values} {choices}"""
+    error_search_scope_requires_project: str
+    """{scope}"""
+    error_search_scope_conflicts_project: str
+    """{scope}"""
 
     # ---- argparse helps (news) ----
     arg_help_news_command: str

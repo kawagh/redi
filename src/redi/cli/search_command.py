@@ -5,10 +5,29 @@ from redi.api.search import (
     SEARCH_ATTACHMENTS,
     SEARCH_SCOPES,
     SEARCH_TYPES,
+    SearchScope,
     SearchType,
     search,
 )
 from redi.i18n import messages
+
+
+def _validate_scope(scope: SearchScope | None, project_id: str | None) -> None:
+    """--scope と --project_id の組み合わせでエラーが返らないものをエラーにする
+
+    - subprojects は project_id がないと成立しないのでproject_idを求める
+    - project_id の指定がある場合は他のスコープの指定を受け付けないようにする
+    """
+    if scope is None:
+        return
+    if scope == "subprojects":
+        if project_id is None:
+            print(messages.error_search_scope_requires_project.format(scope=scope))
+            exit(1)
+        return
+    if project_id is not None:
+        print(messages.error_search_scope_conflicts_project.format(scope=scope))
+        exit(1)
 
 
 def _parse_search_types(value: str) -> list[SearchType]:
@@ -69,6 +88,7 @@ def add_search_parser(
 
 
 def handle_search(args: argparse.Namespace) -> None:
+    _validate_scope(args.scope, args.project_id)
     search(
         query=args.query,
         limit=args.limit,
