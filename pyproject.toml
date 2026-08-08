@@ -48,7 +48,6 @@ module-name = "redi"
 ignore = [
   "DTZ",     # tz を持たない date/datetime の生成を許容する
   "SIM114",  # 同一処理となる分岐の統合を必須としない
-  "FURB122", # ループ内の write() を writelines() にまとめない
 ]
 
 [tool.pytest.ini_options]

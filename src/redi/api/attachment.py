@@ -84,7 +84,8 @@ def download_attachment(attachment: Attachment, path: Path) -> None:
         sys.exit(1)
     try:
         with open(path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
+            # writelines() でも等価だが、チャンク単位の書き込みは for の方が可読性が高い
+            for chunk in response.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):  # noqa: FURB122
                 f.write(chunk)
     except OSError as e:
         print(e)
