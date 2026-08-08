@@ -44,9 +44,10 @@ dev = [
 module-name = "redi"
 
 [tool.ruff.lint]
-# ruff 0.16 で拡張されたデフォルトルールのうち、既存コードに適合しないものを除外する
 ignore = [
-  "DTZ",     # tz を持たない date/datetime の生成を許容する
+  # タイムゾーンを意識した実装はしないので許容する
+  "DTZ005", # datetime.now() を tz なしで呼ぶことを許容する
+  "DTZ011", # date.today() の使用を許容する
 ]
 
 [tool.pytest.ini_options]
