@@ -21,6 +21,7 @@ from redi.api.wiki import (
     read_wiki,
     update_wiki,
 )
+import sys
 
 
 def _prompt_wiki_comments() -> str:
@@ -29,7 +30,7 @@ def _prompt_wiki_comments() -> str:
         return prompt(messages.prompt_wiki_comments).strip()
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
 
 def build_wiki_tree_choices(pages: list[WikiPage]) -> list[tuple[str, str]]:
@@ -129,7 +130,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
     project_id = args.project_id or wiki_project_id or default_project_id
     if not project_id:
         print(messages.wiki_project_id_required)
-        exit(1)
+        sys.exit(1)
     cmd = resolve_alias(args.wiki_command)
     if cmd == "view":
         read_wiki(
@@ -164,10 +165,10 @@ def handle_wiki(args: argparse.Namespace) -> None:
                 ).strip()
             except (KeyboardInterrupt, EOFError):
                 print(messages.canceled)
-                exit(1)
+                sys.exit(1)
             if not page_title:
                 print(messages.canceled_empty_title)
-                exit(1)
+                sys.exit(1)
             if parent_title is None:
                 parent_options = build_wiki_tree_choices(pages)
                 if parent_options:
@@ -178,7 +179,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
                         )
                     except KeyboardInterrupt:
                         print(messages.canceled)
-                        exit(1)
+                        sys.exit(1)
                     print(
                         messages.parent_page_label.format(
                             label=parent_labels[parent_title].strip()
@@ -209,7 +210,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
             page = fetch_wiki(project_id, title)
             if page is None:
                 print(messages.wiki_page_not_found.format(title=title))
-                exit(1)
+                sys.exit(1)
             confirm_delete(
                 messages.delete_target_wiki_page.format(title=page.get("title", title))
             )
@@ -220,14 +221,14 @@ def handle_wiki(args: argparse.Namespace) -> None:
             pages = fetch_wikis(project_id)
             if not pages:
                 print(messages.wiki_page_does_not_exist)
-                exit(1)
+                sys.exit(1)
             page_options = build_wiki_tree_choices(pages)
             page_labels = dict(page_options)
             try:
                 page_title = inline_choice(messages.prompt_edit_page, page_options)
             except KeyboardInterrupt:
                 print(messages.canceled)
-                exit(1)
+                sys.exit(1)
             print(
                 messages.edit_target_page.format(label=page_labels[page_title].strip())
             )
@@ -239,7 +240,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
             current = fetch_wiki(project_id, page_title)
             if current is None:
                 print(messages.wiki_page_not_found.format(title=page_title))
-                exit(1)
+                sys.exit(1)
             version = current.get("version")
             text = open_editor(current.get("text") or "")
             comments = args.comments or _prompt_wiki_comments()

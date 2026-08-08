@@ -2,6 +2,7 @@ import json
 
 from redi.client import client
 from redi.i18n import messages
+import sys
 
 
 def list_roles(full: bool = False) -> None:
@@ -19,7 +20,7 @@ def fetch_role(role_id: str) -> dict:
     response = client.get(f"/roles/{role_id}.json")
     if response.status_code == 404:
         print(messages.role_not_found.format(id=role_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return response.json()["role"]
 

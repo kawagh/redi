@@ -12,6 +12,7 @@ from redi.api.membership import (
     read_membership,
     update_membership,
 )
+import sys
 
 
 def _parse_role_ids(value: str) -> list[int]:
@@ -107,10 +108,10 @@ def handle_membership(args: argparse.Namespace) -> None:
         project_id = args.project_id or default_project_id
         if not project_id:
             print(messages.project_id_required)
-            exit(1)
+            sys.exit(1)
         if args.user_id is None and args.group_id is None:
             print(messages.user_or_group_flag_required)
-            exit(1)
+            sys.exit(1)
         create_membership(
             project_id=project_id,
             role_ids=_parse_role_ids(args.role_ids),
@@ -146,5 +147,5 @@ def handle_membership(args: argparse.Namespace) -> None:
         project_id = args.project_id or default_project_id
         if not project_id:
             print(messages.project_id_required)
-            exit(1)
+            sys.exit(1)
         list_memberships(project_id, full=args.full)

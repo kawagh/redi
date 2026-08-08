@@ -3,6 +3,7 @@ import argparse
 from redi.api.issue_template import list_issue_templates
 from redi.config import default_project_id
 from redi.i18n import messages
+import sys
 
 
 def add_issue_template_parser(
@@ -24,5 +25,5 @@ def handle_issue_template(args: argparse.Namespace) -> None:
     project_id = args.project_id or default_project_id
     if not project_id:
         print(messages.project_id_required)
-        exit(1)
+        sys.exit(1)
     list_issue_templates(project_id, full=args.full)

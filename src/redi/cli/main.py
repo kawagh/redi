@@ -66,6 +66,7 @@ from redi.api.tracker import list_trackers
 from redi.api.wiki import WikiUpdateConflictException
 from redi.i18n import messages
 from redi.tui import TuiState, run_issue_tui
+import sys
 
 
 def _format_validation_error(e: RedmineValidationException) -> str:
@@ -342,7 +343,7 @@ def main() -> None:
             handle_issue(args)
         except RedmineValidationException as e:
             print(_format_validation_error(e))
-            exit(1)
+            sys.exit(1)
     elif args.command in ("version", "v"):
         handle_version(args)
     elif args.command in ("wiki", "w"):
@@ -350,10 +351,10 @@ def main() -> None:
             handle_wiki(args)
         except WikiUpdateConflictException as e:
             print(messages.wiki_page_update_conflict.format(title=e.title))
-            exit(1)
+            sys.exit(1)
         except RedmineValidationException as e:
             print(_format_validation_error(e))
-            exit(1)
+            sys.exit(1)
     elif args.command in ("user", "u"):
         handle_user(args)
     elif args.command == "me":
@@ -393,7 +394,7 @@ def main() -> None:
             handle_time_entry(args)
         except RedmineValidationException as e:
             print(_format_validation_error(e))
-            exit(1)
+            sys.exit(1)
     elif args.command in ("file", "f"):
         handle_file(args)
     elif args.command in ("issue_journal", "ij"):

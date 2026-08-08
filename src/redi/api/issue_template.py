@@ -5,6 +5,7 @@ from typing import TypedDict
 
 from redi.client import client
 from redi.i18n import messages
+import sys
 
 
 class IssueTemplate(TypedDict):
@@ -34,7 +35,7 @@ def fetch_issue_templates(project_id: str) -> dict[str, list[IssueTemplate]]:
     # プラグイン非インストール時
     if response.status_code == 404:
         print(messages.issue_template_not_available)
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return response.json()
 

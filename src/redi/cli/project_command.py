@@ -13,6 +13,7 @@ from redi.api.project import (
     unarchive_project,
     update_project,
 )
+import sys
 
 
 def add_project_parser(
@@ -161,6 +162,6 @@ def handle_project(args: argparse.Namespace) -> None:
             unarchive_project(args.project_id)
         elif not should_update:
             print(messages.update_canceled)
-            exit()
+            sys.exit()
     elif cmd == "list" or cmd is None:
         list_projects(full=args.full)

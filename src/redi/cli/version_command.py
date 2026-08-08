@@ -21,6 +21,7 @@ from redi.api.version import (
     read_version,
     update_version,
 )
+import sys
 
 
 def add_version_parser(
@@ -109,7 +110,7 @@ def _interactive_select_version_id(project_id: str) -> str:
     versions = fetch_versions(project_id)
     if not versions:
         print(messages.no_versions_available)
-        exit(1)
+        sys.exit(1)
     options: list[tuple[str, str]] = [
         (str(v["id"]), f"{v['id']} {v['name']} ({v['status']})") for v in versions
     ]
@@ -118,7 +119,7 @@ def _interactive_select_version_id(project_id: str) -> str:
         selected = inline_choice(messages.prompt_select_version_to_update, options)
     except KeyboardInterrupt:
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     print(messages.update_target_version.format(label=labels[selected]))
     return selected
 
@@ -136,10 +137,10 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
     except KeyboardInterrupt:
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     if not selected:
         print(messages.canceled_no_items_selected)
-        exit(1)
+        sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
     try:
@@ -188,7 +189,7 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
             print(messages.sharing_label.format(value=args.sharing))
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
 
 def _interactive_create_version(project_id: str, args: argparse.Namespace) -> None:
@@ -202,19 +203,19 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
         ).strip()
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
     try:
         due_date = prompt(messages.prompt_due_date_optional).strip() or None
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
     try:
         description = prompt(messages.prompt_description_optional).strip() or None
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
     sharing_options: list[tuple[str, str]] = [
         ("none", messages.sharing_none),
@@ -242,7 +243,7 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
         )
     except KeyboardInterrupt:
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     sharing = sharing_input if sharing_input != "none" else None
 
     create_version(
@@ -262,7 +263,7 @@ def handle_version(args: argparse.Namespace) -> None:
         project_id = args.project_id or default_project_id
         if not project_id:
             print(messages.project_id_required)
-            exit(1)
+            sys.exit(1)
         if args.name is None:
             _interactive_create_version(project_id, args)
         else:
@@ -288,7 +289,7 @@ def handle_version(args: argparse.Namespace) -> None:
             project_id = args.project_id or default_project_id
             if not project_id:
                 print(messages.project_id_required)
-                exit(1)
+                sys.exit(1)
             args.version_id = _interactive_select_version_id(project_id)
         no_args_provided = not (
             args.name
@@ -311,5 +312,5 @@ def handle_version(args: argparse.Namespace) -> None:
         project_id = args.project_id or default_project_id
         if not project_id:
             print(messages.project_id_required)
-            exit(1)
+            sys.exit(1)
         list_versions(project_id, full=args.full)

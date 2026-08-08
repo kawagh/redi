@@ -5,6 +5,7 @@ import requests
 from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.i18n import messages
+import sys
 
 
 def fetch_my_user_id() -> str | None:
@@ -59,7 +60,7 @@ def update_my_account(
         data["mail"] = mail
     if not data:
         print(messages.update_canceled_no_changes)
-        exit(1)
+        sys.exit(1)
     response = client.put("/my/account.json", json={"user": data})
     try:
         response.raise_for_status()
@@ -67,5 +68,5 @@ def update_my_account(
         print(e)
         print_http_error_body(e)
         print(messages.account_update_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.account_updated)

@@ -4,6 +4,7 @@ from redi.api.file import create_file, list_files
 from redi.cli.alias import resolve_alias
 from redi.config import default_project_id
 from redi.i18n import messages
+import sys
 
 
 def add_file_parser(
@@ -39,7 +40,7 @@ def handle_file(args: argparse.Namespace) -> None:
     project_id = args.project_id or default_project_id
     if not project_id:
         print(messages.project_id_required)
-        exit(1)
+        sys.exit(1)
     cmd = resolve_alias(args.file_command)
     if cmd == "create":
         create_file(

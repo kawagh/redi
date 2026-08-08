@@ -26,6 +26,7 @@ from redi.api.time_entry import (
     read_time_entry,
     update_time_entry,
 )
+import sys
 
 
 def add_time_entry_parser(
@@ -211,7 +212,7 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
             args.comments = prompt(messages.prompt_comment).strip() or None
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
 
 def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
@@ -227,10 +228,10 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
     except KeyboardInterrupt:
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     if not selected:
         print(messages.canceled_no_items_selected)
-        exit(1)
+        sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
     try:
@@ -288,7 +289,7 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
                 args.issue_id = issue_id
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
 
 def handle_time_entry(args: argparse.Namespace) -> None:

@@ -6,13 +6,14 @@ from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
+import sys
 
 
 def fetch_relation(relation_id: str) -> dict:
     response = client.get(f"/relations/{relation_id}.json")
     if response.status_code == 404:
         print(messages.relation_not_found.format(id=relation_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return response.json()["relation"]
 
@@ -51,7 +52,7 @@ def create_relation(
         print(e)
         print_http_error_body(e)
         print(messages.relation_create_failed)
-        exit(1)
+        sys.exit(1)
     print(
         messages.relation_created.format(
             from_id=issue_id, type=relation_type, to_id=issue_to_id
@@ -78,7 +79,7 @@ def delete_relation(issue_id: str, issue_to_id: str) -> None:
                 from_id=issue_id, to_id=issue_to_id
             )
         )
-        exit(1)
+        sys.exit(1)
     response = client.delete(f"/relations/{target_relation['id']}.json")
     try:
         response.raise_for_status()

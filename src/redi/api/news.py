@@ -2,6 +2,7 @@ import json
 
 from redi.client import client
 from redi.i18n import messages
+import sys
 
 
 def list_news(project_id: str | None = None, full: bool = False) -> None:
@@ -12,7 +13,7 @@ def list_news(project_id: str | None = None, full: bool = False) -> None:
     response = client.get(path)
     if response.status_code == 404:
         print(messages.project_not_found.format(id=project_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     news_list = response.json()["news"]
     if full:

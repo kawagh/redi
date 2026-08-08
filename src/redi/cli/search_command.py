@@ -10,6 +10,7 @@ from redi.api.search import (
     search,
 )
 from redi.i18n import messages
+import sys
 
 
 def _validate_scope(scope: SearchScope | None, project_id: str | None) -> None:
@@ -23,11 +24,11 @@ def _validate_scope(scope: SearchScope | None, project_id: str | None) -> None:
     if scope == "subprojects":
         if project_id is None:
             print(messages.error_search_scope_requires_project.format(scope=scope))
-            exit(1)
+            sys.exit(1)
         return
     if project_id is not None:
         print(messages.error_search_scope_conflicts_project.format(scope=scope))
-        exit(1)
+        sys.exit(1)
 
 
 def _parse_search_types(value: str) -> list[SearchType]:

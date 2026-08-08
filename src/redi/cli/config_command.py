@@ -12,6 +12,7 @@ from redi.config import (
     update_config,
 )
 from redi.i18n import messages, select_messages
+import sys
 
 
 def add_config_parser(
@@ -80,7 +81,7 @@ def _interactive_select_default_profile() -> None:
     profile_names = list_profile_names()
     if not profile_names:
         print(messages.no_profiles_available)
-        exit(1)
+        sys.exit(1)
     current_default = get_default_profile()
     options: list[tuple[str, str]] = [
         (name, f"{name} (default)" if name == current_default else name)
@@ -94,7 +95,7 @@ def _interactive_select_default_profile() -> None:
         )
     except KeyboardInterrupt:
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     if set_default_profile(selected):
         print(messages.default_profile_set.format(name=selected))
 
@@ -112,7 +113,7 @@ def handle_config(args: argparse.Namespace) -> None:
             language=args.language,
         )
         if not result.created:
-            exit(1)
+            sys.exit(1)
         print(messages.profile_created.format(name=args.profile_name))
         if result.set_as_default:
             print(messages.default_profile_set.format(name=args.profile_name))

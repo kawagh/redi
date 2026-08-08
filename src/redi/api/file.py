@@ -6,13 +6,14 @@ from redi.api.attachment import upload_file
 from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.i18n import messages
+import sys
 
 
 def list_files(project_id: str, full: bool = False) -> None:
     response = client.get(f"/projects/{project_id}/files.json")
     if response.status_code == 404:
         print(messages.project_not_found.format(id=project_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     files = response.json()["files"]
     if full:
@@ -46,12 +47,12 @@ def create_file(
     )
     if response.status_code == 404:
         print(messages.project_not_found.format(id=project_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
         print(messages.file_upload_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.file_uploaded.format(filename=upload["filename"]))

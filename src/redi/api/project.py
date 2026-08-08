@@ -11,6 +11,7 @@ from redi.api.exceptions import print_http_error_body
 from redi.client import RedmineClient, client
 from redi.config import redmine_url
 from redi.i18n import messages
+import sys
 
 # Redmine の一覧 API が 1 リクエストで返せる上限
 PROJECTS_PAGE_LIMIT = 100
@@ -90,7 +91,7 @@ def resolve_project_id(value: str) -> str:
         if p.get("identifier") == value or p.get("name") == value:
             return str(p["id"])
     print(messages.project_not_found.format(id=value))
-    exit(1)
+    sys.exit(1)
 
 
 def fetch_project(project_id: str, include: str = "") -> Project:
@@ -100,7 +101,7 @@ def fetch_project(project_id: str, include: str = "") -> Project:
     response = client.get(f"/projects/{project_id}.json", params=params)
     if response.status_code == 404:
         print(messages.project_not_found.format(id=project_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return cast("Project", response.json()["project"])
 
@@ -133,7 +134,7 @@ def create_project(
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
-        exit(1)
+        sys.exit(1)
 
 
 def update_project(
@@ -157,7 +158,7 @@ def update_project(
         data["tracker_ids"] = tracker_ids
     if len(data) == 0:
         print(messages.update_canceled)
-        exit()
+        sys.exit()
     response = client.put(f"/projects/{project_id}.json", json={"project": data})
     try:
         response.raise_for_status()
@@ -165,7 +166,7 @@ def update_project(
         print(e)
         print_http_error_body(e)
         print(messages.project_update_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.project_updated.format(id=project_id))
 
 
@@ -173,14 +174,14 @@ def archive_project(project_id: str) -> None:
     response = client.put(f"/projects/{project_id}/archive.json")
     if response.status_code == 404:
         print(messages.project_not_found.format(id=project_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
         print(messages.project_archive_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.project_archived.format(id=project_id))
 
 
@@ -188,14 +189,14 @@ def unarchive_project(project_id: str) -> None:
     response = client.put(f"/projects/{project_id}/unarchive.json")
     if response.status_code == 404:
         print(messages.project_not_found.format(id=project_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
         print(messages.project_unarchive_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.project_unarchived.format(id=project_id))
 
 
@@ -203,14 +204,14 @@ def delete_project(project_id: str) -> None:
     response = client.delete(f"/projects/{project_id}.json")
     if response.status_code == 404:
         print(messages.project_not_found.format(id=project_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
         print(messages.project_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.project_deleted.format(id=project_id))
 
 
@@ -228,7 +229,7 @@ def read_project(
     response = client.get(f"/projects/{project_id}.json", params=params)
     if response.status_code == 404:
         print(messages.project_not_found.format(id=project_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     project = cast("Project", response.json()["project"])
     if full:

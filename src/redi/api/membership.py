@@ -6,6 +6,7 @@ import requests
 from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.i18n import messages
+import sys
 
 
 class ProjectUser(TypedDict):
@@ -65,7 +66,7 @@ def fetch_membership(membership_id: str) -> dict:
     response = client.get(f"/memberships/{membership_id}.json")
     if response.status_code == 404:
         print(messages.membership_not_found.format(id=membership_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return response.json()["membership"]
 
@@ -105,7 +106,7 @@ def create_membership(
         data["user_id"] = group_id
     else:
         print(messages.user_or_group_id_required)
-        exit(1)
+        sys.exit(1)
     response = client.post(
         f"/projects/{project_id}/memberships.json", json={"membership": data}
     )
@@ -115,7 +116,7 @@ def create_membership(
         print(e)
         print_http_error_body(e)
         print(messages.membership_create_failed)
-        exit(1)
+        sys.exit(1)
     created = response.json()["membership"]
     print(messages.membership_created.format(line=_format_membership_line(created)))
 
@@ -123,7 +124,7 @@ def create_membership(
 def update_membership(membership_id: str, role_ids: list[int]) -> None:
     if not role_ids:
         print(messages.update_canceled)
-        exit()
+        sys.exit()
     response = client.put(
         f"/memberships/{membership_id}.json",
         json={"membership": {"role_ids": role_ids}},
@@ -134,7 +135,7 @@ def update_membership(membership_id: str, role_ids: list[int]) -> None:
         print(e)
         print_http_error_body(e)
         print(messages.membership_update_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.membership_updated.format(id=membership_id))
 
 
@@ -142,14 +143,14 @@ def delete_membership(membership_id: str) -> None:
     response = client.delete(f"/memberships/{membership_id}.json")
     if response.status_code == 404:
         print(messages.membership_not_found.format(id=membership_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
         print(messages.membership_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.membership_deleted.format(id=membership_id))
 
 
