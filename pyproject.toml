@@ -49,7 +49,6 @@ ignore = [
   "PLR1722", # exit() の使用を許容する
   "I001",    # import の並び順を強制しない
   "DTZ",     # tz を持たない date/datetime の生成を許容する
-  "PLW1510", # subprocess.run() への check 指定を必須としない
   "SIM114",  # 同一処理となる分岐の統合を必須としない
   "PIE807",  # lambda: [] の使用を許容する
   "FURB122", # ループ内の write() を writelines() にまとめない

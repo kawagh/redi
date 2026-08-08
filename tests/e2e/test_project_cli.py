@@ -1,3 +1,5 @@
+import subprocess
+
 import pytest
 
 from tests.e2e.utils import run_redi, unique_identifier
@@ -12,15 +14,9 @@ class TestProjectList:
         identifier = unique_identifier("e2e-list")
         name = f"e2e list {identifier}"
 
-        create_result = run_redi("project", "create", name, identifier)
-        assert create_result.returncode == 0, (
-            f"stdout:\n{create_result.stdout}\nstderr:\n{create_result.stderr}"
-        )
+        run_redi("project", "create", name, identifier)
 
         result = run_redi("project", "list")
-        assert result.returncode == 0, (
-            f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-        )
         assert identifier in result.stdout
 
 
@@ -31,9 +27,6 @@ class TestProjectView:
     def test_succeeds_for_existing_project_id(self):
         """init-redmine.sh で作成された id=1 のプロジェクト(reditest)を表示すると exit 0 で成功する"""
         result = run_redi("project", "view", "1")
-        assert result.returncode == 0, (
-            f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-        )
         assert "reditest" in result.stdout
 
 
@@ -46,15 +39,9 @@ class TestProjectCreate:
         identifier = unique_identifier("e2e-create")
         name = f"e2e create {identifier}"
 
-        create_result = run_redi("project", "create", name, identifier)
-        assert create_result.returncode == 0, (
-            f"stdout:\n{create_result.stdout}\nstderr:\n{create_result.stderr}"
-        )
+        run_redi("project", "create", name, identifier)
 
         view_result = run_redi("project", "view", identifier)
-        assert view_result.returncode == 0, (
-            f"stdout:\n{view_result.stdout}\nstderr:\n{view_result.stderr}"
-        )
         assert name in view_result.stdout
         assert identifier in view_result.stdout
 
@@ -69,22 +56,10 @@ class TestProjectUpdate:
         original_name = f"e2e update original {identifier}"
         updated_name = f"e2e update updated {identifier}"
 
-        create_result = run_redi("project", "create", original_name, identifier)
-        assert create_result.returncode == 0, (
-            f"stdout:\n{create_result.stdout}\nstderr:\n{create_result.stderr}"
-        )
-
-        update_result = run_redi(
-            "project", "update", identifier, "--name", updated_name
-        )
-        assert update_result.returncode == 0, (
-            f"stdout:\n{update_result.stdout}\nstderr:\n{update_result.stderr}"
-        )
+        run_redi("project", "create", original_name, identifier)
+        run_redi("project", "update", identifier, "--name", updated_name)
 
         view_result = run_redi("project", "view", identifier)
-        assert view_result.returncode == 0, (
-            f"stdout:\n{view_result.stdout}\nstderr:\n{view_result.stderr}"
-        )
         assert updated_name in view_result.stdout
         assert original_name not in view_result.stdout
 
@@ -98,20 +73,12 @@ class TestProjectDelete:
         identifier = unique_identifier("e2e-delete")
         name = f"e2e delete {identifier}"
 
-        create_result = run_redi("project", "create", name, identifier)
-        assert create_result.returncode == 0, (
-            f"stdout:\n{create_result.stdout}\nstderr:\n{create_result.stderr}"
-        )
+        run_redi("project", "create", name, identifier)
+        run_redi("project", "delete", identifier, "-y")
 
-        delete_result = run_redi("project", "delete", identifier, "-y")
-        assert delete_result.returncode == 0, (
-            f"stdout:\n{delete_result.stdout}\nstderr:\n{delete_result.stderr}"
-        )
-
-        view_result = run_redi("project", "view", identifier)
-        assert view_result.returncode != 0, (
-            f"削除後 view が成功してしまった\nstdout:\n{view_result.stdout}\nstderr:\n{view_result.stderr}"
-        )
-        assert "Project not found" in view_result.stdout, (
-            f"想定外のエラーで view が失敗\nstdout:\n{view_result.stdout}\nstderr:\n{view_result.stderr}"
+        with pytest.raises(subprocess.CalledProcessError) as view_error_info:
+            run_redi("project", "view", identifier)
+        view_error = view_error_info.value
+        assert "Project not found" in view_error.stdout, (
+            f"想定外のエラーで view が失敗\nstdout:\n{view_error.stdout}\nstderr:\n{view_error.stderr}"
         )
