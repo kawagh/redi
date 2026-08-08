@@ -1,14 +1,28 @@
 # PYTHON_ARGCOMPLETE_OK
 import argparse
 import logging
+import sys
 from datetime import datetime
 from importlib.metadata import version
 
 import argcomplete
 
+from redi.api.custom_field import list_custom_fields
+from redi.api.enumeration import (
+    list_document_categories,
+    list_issue_priorities,
+    list_time_entry_activities,
+)
+from redi.api.exceptions import RedmineValidationException
+from redi.api.issue import add_note
+from redi.api.issue_journal import delete_issue_journal, update_issue_journal
+from redi.api.issue_status import list_issue_statuses
+from redi.api.query import list_queries
+from redi.api.tracker import list_trackers
+from redi.api.wiki import WikiUpdateConflictException
 from redi.cli.attachment_command import add_attachment_parser, handle_attachment
 from redi.cli.config_command import add_config_parser, handle_config
-from redi.cli.file_command import add_file_parser, handle_file
+from redi.cli.editor import open_editor
 from redi.cli.enumerations_command import (
     add_custom_field_parser,
     add_document_category_parser,
@@ -18,7 +32,7 @@ from redi.cli.enumerations_command import (
     add_time_entry_activity_parser,
     add_tracker_parser,
 )
-from redi.cli.editor import open_editor
+from redi.cli.file_command import add_file_parser, handle_file
 from redi.cli.group_command import add_group_parser, handle_group
 from redi.cli.init_command import add_init_parser, handle_init
 from redi.cli.issue_category_command import (
@@ -51,22 +65,8 @@ from redi.cli.user_command import add_user_parser, handle_user
 from redi.cli.version_command import add_version_parser, handle_version
 from redi.cli.wiki_command import add_wiki_parser, handle_wiki
 from redi.config import CONFIG_PATH, check_config, list_profile_names
-from redi.api.custom_field import list_custom_fields
-from redi.api.enumeration import (
-    list_document_categories,
-    list_issue_priorities,
-    list_time_entry_activities,
-)
-from redi.api.exceptions import RedmineValidationException
-from redi.api.issue import add_note
-from redi.api.issue_journal import delete_issue_journal, update_issue_journal
-from redi.api.issue_status import list_issue_statuses
-from redi.api.query import list_queries
-from redi.api.tracker import list_trackers
-from redi.api.wiki import WikiUpdateConflictException
 from redi.i18n import messages
 from redi.tui import TuiState, run_issue_tui
-import sys
 
 
 def _format_validation_error(e: RedmineValidationException) -> str:

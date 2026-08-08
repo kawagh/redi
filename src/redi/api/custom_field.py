@@ -1,10 +1,10 @@
 import json
-from typing import NotRequired, TypedDict, cast, Literal
+import sys
+from typing import Literal, NotRequired, TypedDict, cast
 
 from redi import cache
 from redi.client import client
 from redi.i18n import messages
-import sys
 
 CACHE_KEY = "custom_fields"
 

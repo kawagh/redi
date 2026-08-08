@@ -1,9 +1,9 @@
 import argparse
+import sys
 
 from redi.api.issue_template import list_issue_templates
 from redi.config import default_project_id
 from redi.i18n import messages
-import sys
 
 
 def add_issue_template_parser(

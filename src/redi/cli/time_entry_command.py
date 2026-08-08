@@ -1,20 +1,10 @@
 import argparse
+import sys
 
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.validation import Validator
 
-from redi.cli.alias import resolve_alias
-from redi.cli.keybinding import (
-    date_key_bindings,
-    digit_and_period_key_bindings,
-    digit_only_key_bindings,
-)
-from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.confirm import confirm_delete
-from redi.cli.validator import DateValidator, HourValidator
-from redi.config import default_project_id
-from redi.i18n import messages
 from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.issue import fetch_issue
 from redi.api.project import fetch_projects
@@ -26,7 +16,17 @@ from redi.api.time_entry import (
     read_time_entry,
     update_time_entry,
 )
-import sys
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.cli.keybinding import (
+    date_key_bindings,
+    digit_and_period_key_bindings,
+    digit_only_key_bindings,
+)
+from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.validator import DateValidator, HourValidator
+from redi.config import default_project_id
+from redi.i18n import messages
 
 
 def add_time_entry_parser(

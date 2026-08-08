@@ -1,14 +1,9 @@
 import argparse
+import sys
 
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import ValidationError, Validator
 
-from redi.cli.alias import resolve_alias
-from redi.cli.editor import open_editor
-from redi.cli.picker import inline_choice
-from redi.cli.confirm import confirm_delete
-from redi.config import default_project_id, wiki_project_id
-from redi.i18n import messages
 from redi.api.wiki import (
     WikiPage,
     build_children_map,
@@ -21,7 +16,12 @@ from redi.api.wiki import (
     read_wiki,
     update_wiki,
 )
-import sys
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.cli.editor import open_editor
+from redi.cli.picker import inline_choice
+from redi.config import default_project_id, wiki_project_id
+from redi.i18n import messages
 
 
 def _prompt_wiki_comments() -> str:

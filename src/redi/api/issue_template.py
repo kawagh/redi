@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import json
+import sys
 from typing import TypedDict
 
 from redi.client import client
 from redi.i18n import messages
-import sys
 
 
 class IssueTemplate(TypedDict):

@@ -1,19 +1,19 @@
 from __future__ import annotations
 
 import json
+import sys
 import webbrowser
 from collections import defaultdict
 from typing import NotRequired, TypedDict, cast
 
 import requests
 
-from redi.api.types import IdName
 from redi.api.attachment import upload_file
 from redi.api.exceptions import RedmineValidationException, print_http_error_body
+from redi.api.types import IdName
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
-import sys
 
 
 class IssuesPageResponse(TypedDict):

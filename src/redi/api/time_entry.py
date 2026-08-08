@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from typing import NotRequired, TypedDict, cast
 
 import requests
@@ -10,7 +11,6 @@ from redi.api.project import resolve_project_id
 from redi.api.types import IdName
 from redi.client import client
 from redi.i18n import messages
-import sys
 
 
 class TimeEntry(TypedDict):

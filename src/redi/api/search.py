@@ -4,7 +4,6 @@ from typing import Literal, get_args
 from redi.client import client
 from redi.i18n import messages
 
-
 # https://www.redmine.org/projects/redmine/wiki/Rest_Search
 SearchScope = Literal["all", "my_projects", "bookmarks", "subprojects"]
 SearchType = Literal[

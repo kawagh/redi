@@ -1,8 +1,6 @@
 import argparse
+import sys
 
-from redi.cli.alias import resolve_alias
-from redi.cli.confirm import confirm_delete
-from redi.i18n import messages
 from redi.api.group import (
     add_group_user,
     create_group,
@@ -13,7 +11,9 @@ from redi.api.group import (
     remove_group_user,
     update_group,
 )
-import sys
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.i18n import messages
 
 
 def add_group_parser(

@@ -1,8 +1,8 @@
 import json
+import sys
 
 from redi.client import client
 from redi.i18n import messages
-import sys
 
 
 def list_news(project_id: str | None = None, full: bool = False) -> None:

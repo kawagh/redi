@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import json
+import sys
 import webbrowser
 from typing import NotRequired, TypedDict, cast
 
 import requests
 
-from redi.api.types import IdName
 from redi.api.exceptions import print_http_error_body
+from redi.api.types import IdName
 from redi.client import RedmineClient, client
 from redi.config import redmine_url
 from redi.i18n import messages
-import sys
 
 # Redmine の一覧 API が 1 リクエストで返せる上限
 PROJECTS_PAGE_LIMIT = 100

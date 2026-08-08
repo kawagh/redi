@@ -58,8 +58,14 @@ from redi.tui.time_entry.filter_modal import (
 )
 from redi.tui.time_entry.time_entry_tab import (
     TIME_ENTRY_TAB,
+)
+from redi.tui.time_entry.time_entry_tab import (
     confirm_delete as time_entry_confirm_delete,
+)
+from redi.tui.time_entry.time_entry_tab import (
     reload_with_filter as time_entry_reload_with_filter,
+)
+from redi.tui.time_entry.time_entry_tab import (
     request_delete as time_entry_request_delete,
 )
 from redi.tui.wiki.wiki_tab import WIKI_TAB

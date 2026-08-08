@@ -1,7 +1,8 @@
+import sys
+
 from prompt_toolkit import prompt
 
 from redi.i18n import messages
-import sys
 
 
 def confirm_delete(summary: str) -> None:

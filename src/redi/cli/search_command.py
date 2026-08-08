@@ -1,4 +1,5 @@
 import argparse
+import sys
 from typing import cast
 
 from redi.api.search import (
@@ -10,7 +11,6 @@ from redi.api.search import (
     search,
 )
 from redi.i18n import messages
-import sys
 
 
 def _validate_scope(scope: SearchScope | None, project_id: str | None) -> None:

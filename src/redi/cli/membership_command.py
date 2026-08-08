@@ -1,9 +1,6 @@
 import argparse
+import sys
 
-from redi.cli.alias import resolve_alias
-from redi.cli.confirm import confirm_delete
-from redi.config import default_project_id
-from redi.i18n import messages
 from redi.api.membership import (
     create_membership,
     delete_membership,
@@ -12,7 +9,10 @@ from redi.api.membership import (
     read_membership,
     update_membership,
 )
-import sys
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.config import default_project_id
+from redi.i18n import messages
 
 
 def _parse_role_ids(value: str) -> list[int]:

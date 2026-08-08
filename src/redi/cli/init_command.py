@@ -1,4 +1,5 @@
 import argparse
+import sys
 import tomllib
 
 import requests
@@ -11,7 +12,6 @@ from redi.cli.validator import UrlValidator
 from redi.client import RedmineClient
 from redi.config import CONFIG_PATH, create_profile
 from redi.i18n import messages
-import sys
 
 PROFILE_NAME = "default"
 

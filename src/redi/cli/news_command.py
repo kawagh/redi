@@ -1,8 +1,8 @@
 import argparse
 
+from redi.api.news import list_news
 from redi.config import default_project_id
 from redi.i18n import messages
-from redi.api.news import list_news
 
 
 def add_news_parser(

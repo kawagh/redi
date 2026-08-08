@@ -1,4 +1,5 @@
 import argparse
+import sys
 import urllib.parse
 import webbrowser
 from datetime import date
@@ -6,24 +7,13 @@ from typing import cast
 
 from prompt_toolkit import prompt
 
-from redi.cli.alias import resolve_alias
-from redi.cli.editor import open_editor, save_text_to_tempfile
-from redi.cli.keybinding import (
-    date_key_bindings,
-    digit_and_period_key_bindings,
-    digit_only_key_bindings,
+from redi.api.custom_field import (
+    CustomField,
+    fetch_custom_fields,
+    fetch_project_issue_custom_field_ids,
+    filter_optional_issue_custom_fields,
+    filter_required_issue_custom_fields,
 )
-from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.confirm import confirm_delete
-from redi.cli.validator import (
-    DateValidator,
-    DueDateValidator,
-    FloatValidator,
-    HourValidator,
-    IntValidator,
-    RequiredValidator,
-)
-from redi.config import default_project_id, redmine_url
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
 from redi.api.issue import (
     add_note,
@@ -45,16 +35,25 @@ from redi.api.membership import fetch_project_users
 from redi.api.project import fetch_project
 from redi.api.time_entry import create_time_entry
 from redi.api.version import fetch_versions
-from redi.i18n import messages
-
-from redi.api.custom_field import (
-    CustomField,
-    fetch_custom_fields,
-    fetch_project_issue_custom_field_ids,
-    filter_optional_issue_custom_fields,
-    filter_required_issue_custom_fields,
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.cli.editor import open_editor, save_text_to_tempfile
+from redi.cli.keybinding import (
+    date_key_bindings,
+    digit_and_period_key_bindings,
+    digit_only_key_bindings,
 )
-import sys
+from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.validator import (
+    DateValidator,
+    DueDateValidator,
+    FloatValidator,
+    HourValidator,
+    IntValidator,
+    RequiredValidator,
+)
+from redi.config import default_project_id, redmine_url
+from redi.i18n import messages
 
 
 def add_issue_parser(

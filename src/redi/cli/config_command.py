@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 from redi.cli.alias import resolve_alias
 from redi.cli.picker import inline_choice
@@ -12,7 +13,6 @@ from redi.config import (
     update_config,
 )
 from redi.i18n import messages, select_messages
-import sys
 
 
 def add_config_parser(

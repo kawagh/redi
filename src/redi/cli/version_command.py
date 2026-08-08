@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
@@ -7,11 +8,6 @@ from prompt_toolkit.keys import Keys
 from prompt_toolkit.shortcuts import choice
 from prompt_toolkit.validation import Validator
 
-from redi.cli.alias import resolve_alias
-from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.confirm import confirm_delete
-from redi.config import default_project_id
-from redi.i18n import messages
 from redi.api.version import (
     create_version,
     delete_version,
@@ -21,7 +17,11 @@ from redi.api.version import (
     read_version,
     update_version,
 )
-import sys
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.cli.picker import inline_checkbox, inline_choice
+from redi.config import default_project_id
+from redi.i18n import messages
 
 
 def add_version_parser(

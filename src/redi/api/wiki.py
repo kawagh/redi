@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import webbrowser
 from collections import defaultdict
 from typing import NotRequired, TypedDict, cast
@@ -12,7 +13,6 @@ from redi.api.types import Attachment, IdName
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
-import sys
 
 
 class WikiPage(TypedDict):

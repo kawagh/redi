@@ -6,7 +6,6 @@ from redi.i18n._protocol import MessagesProto
 from redi.i18n.en import En
 from redi.i18n.ja import Ja
 
-
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 

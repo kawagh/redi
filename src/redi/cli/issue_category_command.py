@@ -1,9 +1,6 @@
 import argparse
+import sys
 
-from redi.cli.alias import resolve_alias
-from redi.cli.confirm import confirm_delete
-from redi.config import default_project_id
-from redi.i18n import messages
 from redi.api.issue_category import (
     create_issue_category,
     delete_issue_category,
@@ -12,7 +9,10 @@ from redi.api.issue_category import (
     read_issue_category,
     update_issue_category,
 )
-import sys
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.config import default_project_id
+from redi.i18n import messages
 
 
 def add_issue_category_parser(

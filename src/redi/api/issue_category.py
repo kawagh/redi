@@ -1,11 +1,11 @@
 import json
+import sys
 
 import requests
 
 from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.i18n import messages
-import sys
 
 
 def list_issue_categories(project_id: str, full: bool = False) -> None:

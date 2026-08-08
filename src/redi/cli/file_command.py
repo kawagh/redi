@@ -1,10 +1,10 @@
 import argparse
+import sys
 
 from redi.api.file import create_file, list_files
 from redi.cli.alias import resolve_alias
 from redi.config import default_project_id
 from redi.i18n import messages
-import sys
 
 
 def add_file_parser(

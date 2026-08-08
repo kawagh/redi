@@ -1,6 +1,7 @@
 import json
 import mimetypes
 import os
+import sys
 from pathlib import Path
 
 import requests
@@ -10,7 +11,6 @@ from redi.api.types import Attachment
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
-import sys
 
 DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 

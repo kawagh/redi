@@ -1,8 +1,6 @@
 import argparse
+import sys
 
-from redi.cli.alias import resolve_alias
-from redi.cli.confirm import confirm_delete_with_identifier
-from redi.i18n import messages
 from redi.api.project import (
     archive_project,
     create_project,
@@ -13,7 +11,9 @@ from redi.api.project import (
     unarchive_project,
     update_project,
 )
-import sys
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete_with_identifier
+from redi.i18n import messages
 
 
 def add_project_parser(

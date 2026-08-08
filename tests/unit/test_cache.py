@@ -1,8 +1,9 @@
 import json
 import time
 
-from redi import cache, config
 import pytest
+
+from redi import cache, config
 
 
 class TestSave:
