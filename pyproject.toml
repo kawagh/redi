@@ -46,8 +46,6 @@ module-name = "redi"
 [tool.ruff.lint]
 # ruff 0.16 で拡張されたデフォルトルールのうち、既存コードに適合しないものを除外する
 ignore = [
-  "PLR1722", # exit() の使用を許容する
-  "I001",    # import の並び順を強制しない
   "DTZ",     # tz を持たない date/datetime の生成を許容する
   "SIM114",  # 同一処理となる分岐の統合を必須としない
   "FURB122", # ループ内の write() を writelines() にまとめない
