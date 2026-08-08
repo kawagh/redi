@@ -777,6 +777,22 @@ class Ja(MessagesProto):
     # ---- argparse helps (search) ----
     arg_help_search_command = "検索"
     arg_help_search_query = "検索クエリ"
+    arg_help_search_project_id = "検索対象のプロジェクト(未指定なら全プロジェクト)"
+    arg_help_search_scope = "検索範囲(subprojects は --project_id が必要、それ以外は --project_id と併用不可)"
+    arg_help_search_no_all_words = (
+        "クエリのいずれかの単語を含むものを検索する(デフォルトは全単語)"
+    )
+    arg_help_search_titles_only = "タイトルのみを検索する"
+    arg_help_search_open_issues = "未完了のチケットのみを検索する"
+    arg_help_search_attachments = "添付ファイルの検索方法(0: 説明のみ, 1: 説明と添付ファイル, only: 添付ファイルのみ)"
+    arg_help_search_type = "検索対象の種別をカンマ区切りで指定（{choices}）"
+    error_invalid_search_type = "不明な検索種別です: {values}（指定可能: {choices}）"
+    error_search_scope_requires_project = (
+        "--scope {scope} には --project_id の指定が必要です"
+    )
+    error_search_scope_conflicts_project = (
+        "--scope {scope} は --project_id と併用できません"
+    )
 
     # ---- argparse helps (news) ----
     arg_help_news_command = "ニュース一覧"

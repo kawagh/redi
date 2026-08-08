@@ -766,6 +766,26 @@ class En(MessagesProto):
     # ---- argparse helps (search) ----
     arg_help_search_command = "Search"
     arg_help_search_query = "Search query"
+    arg_help_search_project_id = (
+        "Search within the project (searches all projects if omitted)"
+    )
+    arg_help_search_scope = (
+        "Search scope (subprojects requires --project_id, "
+        "the others cannot be combined with it)"
+    )
+    arg_help_search_no_all_words = "Match any word in the query (default: all words)"
+    arg_help_search_titles_only = "Search titles only"
+    arg_help_search_open_issues = "Search open issues only"
+    arg_help_search_attachments = (
+        "Search attachments (0: description only, "
+        "1: description and attachments, only: attachments only)"
+    )
+    arg_help_search_type = "Object types to search, comma separated ({choices})"
+    error_invalid_search_type = "Unknown search type: {values} (available: {choices})"
+    error_search_scope_requires_project = "--scope {scope} requires --project_id"
+    error_search_scope_conflicts_project = (
+        "--scope {scope} cannot be used with --project_id"
+    )
 
     # ---- argparse helps (news) ----
     arg_help_news_command = "List news"
