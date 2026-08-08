@@ -398,7 +398,7 @@ def update_issue(
     estimated_hours: float | None = None,
     notes: str = "",
     custom_fields: str | None = None,
-    attachments: list[str] = [],
+    attachments: list[str] | None = None,
 ) -> None:
     """イシューを更新する
 
