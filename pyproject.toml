@@ -47,7 +47,6 @@ module-name = "redi"
 # ruff 0.16 で拡張されたデフォルトルールのうち、既存コードに適合しないものを除外する
 ignore = [
   "DTZ",     # tz を持たない date/datetime の生成を許容する
-  "SIM114",  # 同一処理となる分岐の統合を必須としない
 ]
 
 [tool.pytest.ini_options]
