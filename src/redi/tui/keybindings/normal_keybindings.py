@@ -3,14 +3,19 @@
 from prompt_toolkit.key_binding import KeyBindings
 
 from redi.i18n import messages
+from redi.tui.issue.filter_modal import open_filter_modal as open_issue_filter_modal
 from redi.tui.keybindings.keybinding_conditions import (
     Conditions,
     clear_temporary_state,
     reset_preview_scroll,
     scroll_preview,
 )
+from redi.tui.project_modal import open_project_modal
 from redi.tui.state import TuiState
 from redi.tui.tabs import TABS
+from redi.tui.time_entry.filter_modal import (
+    open_filter_modal as open_time_entry_filter_modal,
+)
 from redi.tui.time_entry.time_entry_tab import (
     request_delete as time_entry_request_delete,
 )
@@ -192,3 +197,16 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     def _(event):
         clear_temporary_state(state)
         state.show_help = True
+
+    @kb.add("f", filter=normal_mode)
+    def _(event):
+        clear_temporary_state(state)
+        if state.tab == "issues":
+            open_issue_filter_modal(state)
+        elif state.tab == "time_entries":
+            open_time_entry_filter_modal(state)
+
+    @kb.add("p", filter=normal_mode)
+    def _(event):
+        clear_temporary_state(state)
+        open_project_modal(state)
