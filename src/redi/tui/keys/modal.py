@@ -16,7 +16,7 @@ from redi.tui.keys.shared import (
     clear_temporary_state,
     reset_preview_scroll,
 )
-from redi.tui.project import apply_project_switch, open_project_modal
+from redi.tui.project_modal import apply_project_switch, open_project_modal
 from redi.tui.state import IssueFilter, TimeEntryFilter, TuiState
 from redi.tui.time_entry.time_entry_tab import (
     reload_with_filter as time_entry_reload_with_filter,
