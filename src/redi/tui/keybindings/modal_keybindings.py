@@ -11,7 +11,7 @@ from redi.tui.choices import (
     build_user_choices,
 )
 from redi.tui.issue.issue_tab import reload_with_filter
-from redi.tui.keys.shared import (
+from redi.tui.keybindings.keybinding_conditions import (
     Conditions,
     clear_temporary_state,
     reset_preview_scroll,

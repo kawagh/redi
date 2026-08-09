@@ -1,6 +1,6 @@
-"""modal を開かないモード (コメント選択/削除確認/検索) のキーバインド。
+"""通常モードから入るサブモード (コメント選択/削除確認/検索) のキーバインド。
 
-一覧の表示はそのままに、キーの解釈だけが変わるものをここにまとめる。
+modal は開かず、一覧の表示はそのままにキーの解釈だけが変わるものをまとめる。
 """
 
 from prompt_toolkit.key_binding import KeyBindings
@@ -13,7 +13,11 @@ from redi.tui.issue.issue_tab import (
     exit_comment_select_mode,
     request_comment_delete,
 )
-from redi.tui.keys.shared import Conditions, reset_preview_scroll, scroll_preview
+from redi.tui.keybindings.keybinding_conditions import (
+    Conditions,
+    reset_preview_scroll,
+    scroll_preview,
+)
 from redi.tui.state import TuiState
 from redi.tui.tabs import TABS
 from redi.tui.time_entry.time_entry_tab import (

@@ -3,7 +3,7 @@
 from prompt_toolkit.key_binding import KeyBindings
 
 from redi.i18n import messages
-from redi.tui.keys.shared import (
+from redi.tui.keybindings.keybinding_conditions import (
     Conditions,
     clear_temporary_state,
     reset_preview_scroll,
