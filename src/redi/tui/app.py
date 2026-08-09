@@ -28,7 +28,6 @@ from redi.api.project import fetch_projects, sort_projects_by_id_desc
 from redi.i18n import messages
 from redi.tui.issue.filter_modal import build_filter_float
 from redi.tui.issue.issue_tab import (
-    ISSUE_TAB,
     comment_select_cursor_down,
     comment_select_cursor_up,
     confirm_comment_delete,
@@ -49,15 +48,11 @@ from redi.tui.state import (
     TuiPosition,
     TuiResult,
     TuiState,
-    TuiTab,
     WikiTabState,
 )
-from redi.tui.tab import TabView
+from redi.tui.tabs import TABS
 from redi.tui.time_entry.filter_modal import (
     build_filter_float as build_time_entry_filter_float,
-)
-from redi.tui.time_entry.time_entry_tab import (
-    TIME_ENTRY_TAB,
 )
 from redi.tui.time_entry.time_entry_tab import (
     confirm_delete as time_entry_confirm_delete,
@@ -68,13 +63,6 @@ from redi.tui.time_entry.time_entry_tab import (
 from redi.tui.time_entry.time_entry_tab import (
     request_delete as time_entry_request_delete,
 )
-from redi.tui.wiki.wiki_tab import WIKI_TAB
-
-TABS: dict[TuiTab, TabView] = {
-    "issues": ISSUE_TAB,
-    "time_entries": TIME_ENTRY_TAB,
-    "wiki": WIKI_TAB,
-}
 
 
 def dump_rendered_screen(app: Application) -> dict:
