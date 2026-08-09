@@ -5,7 +5,6 @@ import requests
 from redi.api.wiki import fetch_wiki, fetch_wikis, flatten_wiki_tree
 from redi.config import redmine_url
 from redi.i18n import messages
-from redi.tui.render import highlight_segments, render_meta_table
 from redi.tui.state import (
     Renderable,
     TuiAction,
@@ -14,6 +13,7 @@ from redi.tui.state import (
     TuiState,
 )
 from redi.tui.tab import TabView, noop, noop_jump
+from redi.tui.text_format import highlight_segments, render_meta_table
 
 
 def _wiki_project(state: TuiState) -> str | None:

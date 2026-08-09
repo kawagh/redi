@@ -9,7 +9,6 @@ from redi.api.issue import (
 )
 from redi.config import redmine_url
 from redi.i18n import messages
-from redi.tui.render import highlight_segments, render_meta_table
 from redi.tui.state import (
     CommentSelectState,
     Renderable,
@@ -19,6 +18,7 @@ from redi.tui.state import (
     TuiState,
 )
 from redi.tui.tab import TabView, noop
+from redi.tui.text_format import highlight_segments, render_meta_table
 
 
 def load_journals(issue: Issue) -> None:

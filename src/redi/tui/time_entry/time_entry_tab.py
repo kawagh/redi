@@ -10,9 +10,9 @@ from redi.api.time_entry import (
 from redi.client import client
 from redi.config import redmine_url
 from redi.i18n import messages
-from redi.tui.render import highlight_segments, render_meta_table
 from redi.tui.state import Renderable, TuiPosition, TuiResult, TuiState
 from redi.tui.tab import TabView, noop, noop_jump
+from redi.tui.text_format import highlight_segments, render_meta_table
 
 
 def _fetch_page_with_subjects(state: TuiState, offset: int) -> dict:

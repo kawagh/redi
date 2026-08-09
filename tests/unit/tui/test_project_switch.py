@@ -9,7 +9,7 @@ from redi import config
 from redi.api.project import Project
 from redi.api.time_entry import TimeEntry
 from redi.i18n import messages
-from redi.tui import app, project_modal
+from redi.tui import app_render, project_modal
 from redi.tui.issue import issue_tab
 from redi.tui.state import IssueFilter, TimeEntryFilter, TuiState
 from redi.tui.tab import TabView, noop, noop_jump
@@ -217,13 +217,13 @@ class TestApplyProjectSwitch:
 
 
 class TestRenderTabs:
-    """_render_tabs() は現在のプロジェクトを常に表示する"""
+    """render_tabs() は現在のプロジェクトを常に表示する"""
 
     def test_shows_config_project_when_unswitched(self, monkeypatch):
         monkeypatch.setattr(config, "default_project_id", "redidemo")
         state = TuiState()
 
-        rendered = "".join(text for _style, text in app._render_tabs(state))
+        rendered = "".join(text for _style, text in app_render.render_tabs(state))
 
         assert "[project: redidemo]" in rendered
 
@@ -231,7 +231,7 @@ class TestRenderTabs:
         monkeypatch.setattr(config, "default_project_id", "redidemo")
         state = TuiState(project_id="2", project_label="Beta")
 
-        rendered = "".join(text for _style, text in app._render_tabs(state))
+        rendered = "".join(text for _style, text in app_render.render_tabs(state))
 
         assert "[project: Beta]" in rendered
         assert "redidemo" not in rendered
@@ -240,7 +240,7 @@ class TestRenderTabs:
         monkeypatch.setattr(config, "default_project_id", None)
         state = TuiState()
 
-        rendered = "".join(text for _style, text in app._render_tabs(state))
+        rendered = "".join(text for _style, text in app_render.render_tabs(state))
 
         assert "[project:" not in rendered
 
