@@ -1,13 +1,17 @@
 import argparse
 import sys
 
+from prompt_toolkit import prompt
+
 from redi.cli.alias import resolve_alias
-from redi.cli.picker import inline_choice
+from redi.cli.picker import inline_checkbox, inline_choice, inline_choice_with_action
+from redi.cli.validator import RequiredValidator, UrlValidator
 from redi.config import (
     SUPPORTED_LANGUAGES,
     create_profile,
     get_default_profile,
     list_profile_names,
+    read_profile_values,
     set_default_profile,
     show_config,
     update_config,
@@ -77,7 +81,11 @@ def add_config_parser(
     )
 
 
-def _interactive_select_default_profile() -> None:
+def _interactive_select_profile(args: argparse.Namespace) -> bool:
+    """プロファイル一覧を表示し、Enter でデフォルト設定 / u で項目更新へ分岐する。
+
+    args に更新値を詰めて後続の更新フローへ流す場合 True を返す。
+    """
     profile_names = list_profile_names()
     if not profile_names:
         print(messages.no_profiles_available)
@@ -88,16 +96,92 @@ def _interactive_select_default_profile() -> None:
         for name in profile_names
     ]
     try:
-        selected = inline_choice(
-            messages.prompt_select_default_profile_to_set,
+        action, selected = inline_choice_with_action(
+            messages.prompt_select_profile,
             options,
             default=current_default,
+            action_keys={"u": "update"},
         )
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
+    if action == "update":
+        return _interactive_fill_config_update_args(args, selected)
     if set_default_profile(selected):
         print(messages.default_profile_set.format(name=selected))
+    return False
+
+
+def _interactive_fill_config_update_args(
+    args: argparse.Namespace, profile: str
+) -> bool:
+    """更新する項目を選ばせて値を入力し、args に反映する。
+
+    後続の更新フローへ流す場合 True を返す。キャンセル時は False。
+    """
+    current = read_profile_values(profile)
+    field_values: list[tuple[str, str]] = [
+        ("url", messages.field_redmine_url),
+        ("api_key", messages.field_redmine_api_key),
+        ("project_id", messages.field_default_project_id),
+        ("wiki_project_id", messages.field_wiki_project_id),
+        ("editor", messages.field_editor),
+        ("language", messages.field_language),
+    ]
+    try:
+        selected = inline_checkbox(messages.prompt_select_update_items, field_values)
+    except KeyboardInterrupt:
+        print(messages.canceled)
+        return False
+    if not selected:
+        print(messages.canceled_no_items_selected)
+        return False
+    labels = dict(field_values)
+    print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
+    # 後続の更新フローは falsy な値をスキップするため、選択した項目は必須入力とする
+    try:
+        if "url" in selected:
+            args.url = prompt(
+                messages.prompt_redmine_url,
+                default=current.get("redmine_url", ""),
+                validator=UrlValidator(),
+            ).strip()
+        if "api_key" in selected:
+            # 現在値は秘匿するため default には出さない
+            args.api_key = prompt(
+                messages.prompt_redmine_api_key,
+                validator=RequiredValidator(),
+                is_password=True,
+            ).strip()
+        if "project_id" in selected:
+            args.project_id = prompt(
+                messages.prompt_default_project_id,
+                default=current.get("default_project_id", ""),
+                validator=RequiredValidator(),
+            ).strip()
+        if "wiki_project_id" in selected:
+            args.wiki_project_id = prompt(
+                messages.prompt_wiki_project_id,
+                default=current.get("wiki_project_id", ""),
+                validator=RequiredValidator(),
+            ).strip()
+        if "editor" in selected:
+            args.editor = prompt(
+                messages.prompt_editor,
+                default=current.get("editor", ""),
+                validator=RequiredValidator(),
+            ).strip()
+        if "language" in selected:
+            args.language = inline_choice(
+                messages.prompt_select_language,
+                [(v, v) for v in SUPPORTED_LANGUAGES],
+                default=current.get("language"),
+            )
+    except (KeyboardInterrupt, EOFError):
+        print(messages.canceled)
+        return False
+    args.profile_name = profile
+    return True
 
 
 def handle_config(args: argparse.Namespace) -> None:
@@ -135,8 +219,7 @@ def handle_config(args: argparse.Namespace) -> None:
         or args.url
         or args.default_profile
     )
-    if no_args_provided:
-        _interactive_select_default_profile()
+    if no_args_provided and not _interactive_select_profile(args):
         return
     updated = False
     profile = args.profile_name

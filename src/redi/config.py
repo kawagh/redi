@@ -208,6 +208,24 @@ def get_default_profile(config_path: Path | None = None) -> str | None:
     return str(value) if value is not None else None
 
 
+def read_profile_values(
+    profile_name: str, config_path: Path | None = None
+) -> dict[str, str]:
+    """指定プロファイルの設定値を返す。存在しない場合は空 dict を返す。
+
+    prompt() の default に渡せるよう値は文字列に正規化する。
+    """
+    path = config_path or CONFIG_PATH
+    if not path.exists():
+        return {}
+    with open(path, "rb") as f:
+        doc = tomllib.load(f)
+    value = doc.get(profile_name)
+    if not isinstance(value, dict):
+        return {}
+    return {k: str(v) for k, v in value.items()}
+
+
 def show_config(full: bool = False, config_path: Path | None = None) -> None:
     if full:
         show_all_profiles(config_path=config_path)

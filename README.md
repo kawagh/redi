@@ -99,6 +99,7 @@ redi --tui
 redi config
 redi config create <profile_name> --url <url> --api_key <key> # create new profile
 redi config create <profile_name> --url <url> --api_key <key> --set_default
+redi config update # interactive: Enter to switch profile, u to update fields of the profile
 redi config update --default_profile <profile_name> # switch profile
 redi config update <profile_name> --editor nvim # update profile
 redi config update --language ja # switch language ("en" or "ja")

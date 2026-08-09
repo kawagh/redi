@@ -356,8 +356,12 @@ class MessagesProto(Protocol):
     prompt_select_sharing: str
     prompt_select_version_to_update: str
     prompt_select_issue_to_update: str
-    prompt_select_default_profile_to_set: str
-    """デフォルトプロファイルとして設定するプロファイルを選択"""
+    prompt_select_profile: str
+    """プロファイル一覧の見出し。Enter でデフォルト設定 / u で項目更新の案内を含む"""
+    prompt_default_project_id: str
+    prompt_wiki_project_id: str
+    prompt_editor: str
+    prompt_select_language: str
     prompt_start_date: str
     prompt_due_date: str
     prompt_estimated_hours: str
@@ -431,6 +435,12 @@ class MessagesProto(Protocol):
     field_spent_on: str
     field_comments: str
     field_issue_id: str
+    field_redmine_url: str
+    field_redmine_api_key: str
+    field_default_project_id: str
+    field_wiki_project_id: str
+    field_editor: str
+    field_language: str
 
     # ---- sharing options ----
     sharing_none: str

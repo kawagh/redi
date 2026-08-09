@@ -419,6 +419,46 @@ class TestGetDefaultProfile:
         assert config.get_default_profile(config_path=tmp_path / "missing.toml") is None
 
 
+class TestReadProfileValues:
+    """read_profile_values()は指定プロファイルの設定値を文字列dictで返す"""
+
+    def test_returns_values_as_str(self, tmp_path):
+        """数値も文字列に正規化して返す"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://redmine.example.com"
+            default_project_id = 42
+            editor = "vim"
+        """)
+        )
+
+        assert config.read_profile_values("main", config_path=config_path) == {
+            "redmine_url": "https://redmine.example.com",
+            "default_project_id": "42",
+            "editor": "vim",
+        }
+
+    def test_returns_empty_dict_when_profile_missing(self, tmp_path):
+        """プロファイルが存在しない場合は空dictを返す"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://redmine.example.com"
+        """)
+        )
+
+        assert config.read_profile_values("sub", config_path=config_path) == {}
+
+    def test_returns_empty_dict_when_file_missing(self, tmp_path):
+        """ファイルが存在しない場合は空dictを返す"""
+        assert config.read_profile_values("main", config_path=tmp_path / "x.toml") == {}
+
+
 class TestShowAllProfiles:
     """show_all_profiles()はconfig_path指定時にそのファイルの全プロファイルを表示する"""
 
