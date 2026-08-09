@@ -4,6 +4,7 @@ from prompt_toolkit.key_binding import KeyBindings
 
 from redi.i18n import messages
 from redi.tui.conditions import Conditions
+from redi.tui.issue.delete_modal import open_delete_modal as open_issue_delete_modal
 from redi.tui.issue.filter_modal import open_filter_modal as open_issue_filter_modal
 from redi.tui.keybindings.keybinding_actions import (
     clear_temporary_state,
@@ -175,11 +176,12 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     @kb.add("D", filter=normal_mode)
     def _(event):
         clear_temporary_state(state)
-        if state.tab != "time_entries":
-            return
-        prompt = time_entry_request_delete(state)
-        if prompt is not None:
-            state.confirm_delete_prompt = prompt
+        if state.tab == "time_entries":
+            prompt = time_entry_request_delete(state)
+            if prompt is not None:
+                state.confirm_delete_prompt = prompt
+        elif state.tab == "issues":
+            open_issue_delete_modal(state)
 
     @kb.add("R", filter=normal_mode)
     def _(event):

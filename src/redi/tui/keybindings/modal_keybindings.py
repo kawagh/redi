@@ -3,6 +3,18 @@
 from prompt_toolkit.key_binding import KeyBindings
 
 from redi.tui.conditions import Conditions
+from redi.tui.issue.delete_modal import (
+    backspace as issue_delete_backspace,
+)
+from redi.tui.issue.delete_modal import (
+    close_delete_modal as issue_close_delete_modal,
+)
+from redi.tui.issue.delete_modal import (
+    confirm_delete as issue_confirm_delete,
+)
+from redi.tui.issue.delete_modal import (
+    input_digit as issue_delete_input_digit,
+)
 from redi.tui.issue.issue_tab import reload_with_filter
 from redi.tui.keybindings.keybinding_actions import reset_preview_scroll
 from redi.tui.project_modal import apply_project_switch
@@ -18,6 +30,7 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     show_time_entry_filter_modal = conditions.time_entry_filter_modal
     show_error_modal = conditions.error_modal
     show_project_modal = conditions.project_modal
+    show_issue_delete_modal = conditions.issue_delete_modal
 
     @kb.add("<any>", filter=show_help_modal)
     def _(event):
@@ -163,3 +176,23 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     @kb.add("q", filter=show_time_entry_filter_modal)
     def _(event):
         state.time_entry_tab.filter_modal.show = False
+
+    @kb.add("enter", filter=show_issue_delete_modal)
+    def _(event):
+        issue_confirm_delete(state)
+
+    @kb.add("escape", filter=show_issue_delete_modal)
+    @kb.add("c-c", filter=show_issue_delete_modal)
+    def _(event):
+        issue_close_delete_modal(state)
+
+    @kb.add("backspace", filter=show_issue_delete_modal)
+    def _(event):
+        issue_delete_backspace(state)
+
+    # id 入力欄なので数字だけ受け付ける。q や Esc 以外のキーで modal が
+    # 閉じないよう <any> で握りつぶす。
+    @kb.add("<any>", filter=show_issue_delete_modal)
+    def _(event):
+        if event.data:
+            issue_delete_input_digit(state, event.data)

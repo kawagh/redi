@@ -18,6 +18,7 @@ class Conditions:
     confirm_delete: Condition
     help_modal: Condition
     issue_filter_modal: Condition
+    issue_delete_modal: Condition
     time_entry_filter_modal: Condition
     error_modal: Condition
     project_modal: Condition
@@ -32,6 +33,7 @@ def build_conditions(state: TuiState) -> Conditions:
                 and state.confirm_delete_prompt is None
                 and not state.show_help
                 and not state.issue_tab.filter_modal.show
+                and not state.issue_tab.delete_modal.show
                 and not state.time_entry_tab.filter_modal.show
                 and state.error_modal is None
                 and not state.issue_tab.comment_select.active
@@ -42,6 +44,7 @@ def build_conditions(state: TuiState) -> Conditions:
         confirm_delete=Condition(lambda: state.confirm_delete_prompt is not None),
         help_modal=Condition(lambda: state.show_help),
         issue_filter_modal=Condition(lambda: state.issue_tab.filter_modal.show),
+        issue_delete_modal=Condition(lambda: state.issue_tab.delete_modal.show),
         time_entry_filter_modal=Condition(
             lambda: state.time_entry_tab.filter_modal.show
         ),

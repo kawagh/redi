@@ -431,6 +431,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  c / u", messages.tui_help_issue_create_or_update),
     ("  n", messages.tui_help_issue_add_comment),
     ("  t", messages.tui_help_issue_create_time_entry),
+    ("  D", messages.tui_help_issue_delete),
     ("  v / <N>V", messages.tui_help_issue_open_web_or_n),
     ("  R", messages.tui_help_reload),
     (messages.tui_help_section_other, ""),

@@ -628,6 +628,16 @@ class MessagesProto(Protocol):
     """{error}"""
     tui_time_entry_delete_prompt: str
     """{summary}"""
+    tui_issue_delete_failed: str
+    """{error}"""
+    tui_issue_delete_modal_title: str
+    tui_issue_delete_modal_target: str
+    """{id}, {subject}"""
+    tui_issue_delete_modal_prompt: str
+    """{expected}"""
+    tui_issue_delete_modal_input_label: str
+    tui_issue_delete_modal_mismatch: str
+    tui_issue_delete_modal_hint: str
 
     # ---- argparse helps (root) ----
     arg_help_root_description: str
@@ -972,6 +982,7 @@ class MessagesProto(Protocol):
     tui_help_issue_open_web_or_n: str
     tui_help_issue_comment_select_in_mode: str
     """選択モード中の jk/Enter/Esc 操作 (Enter でモードに入る)"""
+    tui_help_issue_delete: str
 
     # ---- TUI help labels (wiki tab) ----
     tui_help_wiki_load_text: str
