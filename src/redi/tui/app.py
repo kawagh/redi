@@ -23,7 +23,7 @@ from redi.api.me import fetch_my_user_id
 from redi.i18n import messages
 from redi.tui.issue.filter_modal import build_filter_float
 from redi.tui.issue.issue_tab import fetch_issues_with_filter, load_journals
-from redi.tui.keys import modal, normal
+from redi.tui.keys import modal, mode, normal
 from redi.tui.keys.shared import build_conditions
 from redi.tui.project_modal import build_project_float
 from redi.tui.state import (
@@ -235,6 +235,7 @@ def run_issue_tui(
     kb = KeyBindings()
     normal.register(kb, state, conditions)
     modal.register(kb, state, conditions)
+    mode.register(kb, state, conditions)
 
     preview_window = Window(
         FormattedTextControl(lambda: _render_preview_current(state)),

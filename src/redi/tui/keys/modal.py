@@ -1,4 +1,4 @@
-"""modal 表示中と、通常モード以外の各モード (コメント選択/削除確認/検索) のキーバインド。
+"""modal 表示中のキーバインド。
 
 modal を開く `f` / `p` も、開いたあとの操作と近い場所に置きたいのでここで登録する。
 """
@@ -10,27 +10,14 @@ from redi.tui.choices import (
     build_status_choices,
     build_user_choices,
 )
-from redi.tui.issue.issue_tab import (
-    comment_select_cursor_down,
-    comment_select_cursor_up,
-    confirm_comment_delete,
-    confirm_comment_edit,
-    exit_comment_select_mode,
-    reload_with_filter,
-    request_comment_delete,
-)
+from redi.tui.issue.issue_tab import reload_with_filter
 from redi.tui.keys.shared import (
     Conditions,
     clear_temporary_state,
     reset_preview_scroll,
-    scroll_preview,
 )
 from redi.tui.project import apply_project_switch, open_project_modal
 from redi.tui.state import IssueFilter, TimeEntryFilter, TuiState
-from redi.tui.tabs import TABS
-from redi.tui.time_entry.time_entry_tab import (
-    confirm_delete as time_entry_confirm_delete,
-)
 from redi.tui.time_entry.time_entry_tab import (
     reload_with_filter as time_entry_reload_with_filter,
 )
@@ -38,73 +25,11 @@ from redi.tui.time_entry.time_entry_tab import (
 
 def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     normal_mode = conditions.normal
-    search_mode = conditions.search
-    confirm_delete_mode = conditions.confirm_delete
     show_help_modal = conditions.help_modal
     show_filter_modal = conditions.issue_filter_modal
     show_time_entry_filter_modal = conditions.time_entry_filter_modal
     show_error_modal = conditions.error_modal
     show_project_modal = conditions.project_modal
-    comment_select_mode = conditions.comment_select
-
-    # issueTab;コメント選択モード
-    @kb.add("up", filter=comment_select_mode)
-    @kb.add("k", filter=comment_select_mode)
-    @kb.add("c-p", filter=comment_select_mode)
-    def _(event):
-        comment_select_cursor_up(state)
-
-    @kb.add("down", filter=comment_select_mode)
-    @kb.add("j", filter=comment_select_mode)
-    @kb.add("c-n", filter=comment_select_mode)
-    def _(event):
-        comment_select_cursor_down(state)
-
-    @kb.add("c-d", filter=comment_select_mode)
-    def _(event):
-        scroll_preview(state, max(1, state.page_size // 2))
-
-    @kb.add("c-u", filter=comment_select_mode)
-    def _(event):
-        scroll_preview(state, -max(1, state.page_size // 2))
-
-    @kb.add("u", filter=comment_select_mode)
-    def _(event):
-        result = confirm_comment_edit(state)
-        if result is not None:
-            exit_comment_select_mode(state)
-            event.app.exit(result=result)
-
-    @kb.add("D", filter=comment_select_mode)
-    def _(event):
-        prompt = request_comment_delete(state)
-        if prompt is not None:
-            state.confirm_delete_prompt = prompt
-
-    @kb.add("enter", filter=comment_select_mode)
-    def _(event):
-        pass
-
-    @kb.add("escape", filter=comment_select_mode)
-    @kb.add("q", filter=comment_select_mode)
-    def _(event):
-        exit_comment_select_mode(state)
-
-    @kb.add("y", filter=confirm_delete_mode)
-    @kb.add("Y", filter=confirm_delete_mode)
-    def _(event):
-        state.confirm_delete_prompt = None
-        if state.tab == "time_entries":
-            time_entry_confirm_delete(state)
-        elif state.tab == "issues" and state.issue_tab.comment_select.active:
-            result = confirm_comment_delete(state)
-            if result is not None:
-                exit_comment_select_mode(state)
-                event.app.exit(result=result)
-
-    @kb.add("<any>", filter=confirm_delete_mode)
-    def _(event):
-        state.confirm_delete_prompt = None
 
     @kb.add("<any>", filter=show_help_modal)
     def _(event):
@@ -294,29 +219,3 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     @kb.add("q", filter=show_time_entry_filter_modal)
     def _(event):
         state.time_entry_tab.filter_modal.show = False
-
-    @kb.add("enter", filter=search_mode)
-    def _(event):
-        if state.search_query:
-            reset_preview_scroll(state)
-            TABS[state.tab].on_search(state, state.search_query)
-        state.search_mode = False
-
-    @kb.add("escape", filter=search_mode)
-    @kb.add("c-c", filter=search_mode)
-    def _(event):
-        state.search_mode = False
-        state.search_query = ""
-
-    @kb.add("backspace", filter=search_mode)
-    def _(event):
-        if state.search_query:
-            state.search_query = state.search_query[:-1]
-        else:
-            state.search_mode = False
-
-    @kb.add("<any>", filter=search_mode)
-    def _(event):
-        data = event.data
-        if data and len(data) == 1 and data.isprintable():
-            state.search_query += data
