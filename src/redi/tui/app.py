@@ -3,10 +3,8 @@ from datetime import datetime
 from importlib.metadata import version
 from pathlib import Path
 
-import requests
 from prompt_toolkit import Application
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import (
@@ -21,47 +19,23 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.utils import get_cwidth
 from prompt_toolkit.widgets import Frame
 
-from redi.api.issue_status import fetch_issue_statuses
 from redi.api.me import fetch_my_user_id
-from redi.api.membership import fetch_project_users
-from redi.api.project import fetch_projects, sort_projects_by_id_desc
 from redi.i18n import messages
 from redi.tui.issue.filter_modal import build_filter_float
-from redi.tui.issue.issue_tab import (
-    comment_select_cursor_down,
-    comment_select_cursor_up,
-    confirm_comment_delete,
-    confirm_comment_edit,
-    exit_comment_select_mode,
-    fetch_issues_with_filter,
-    load_journals,
-    reload_with_filter,
-    request_comment_delete,
-)
+from redi.tui.issue.issue_tab import fetch_issues_with_filter, load_journals
+from redi.tui.keys import modal, normal
+from redi.tui.keys.shared import build_conditions
 from redi.tui.project_modal import build_project_float
 from redi.tui.state import (
     FIXED_ROWS,
-    IssueFilter,
     Renderable,
-    TimeEntryFilter,
-    TimeEntryTabState,
     TuiPosition,
     TuiResult,
     TuiState,
-    WikiTabState,
 )
 from redi.tui.tabs import TABS
 from redi.tui.time_entry.filter_modal import (
     build_filter_float as build_time_entry_filter_float,
-)
-from redi.tui.time_entry.time_entry_tab import (
-    confirm_delete as time_entry_confirm_delete,
-)
-from redi.tui.time_entry.time_entry_tab import (
-    reload_with_filter as time_entry_reload_with_filter,
-)
-from redi.tui.time_entry.time_entry_tab import (
-    request_delete as time_entry_request_delete,
 )
 
 
@@ -153,122 +127,11 @@ def _skip_lines(parts: Renderable, n: int) -> Renderable:
     return result
 
 
-def _count_logical_lines(parts: Renderable) -> int:
-    if not parts:
-        return 0
-    return sum(text.count("\n") for _, text in parts) + 1
-
-
 def _render_preview_current(state: TuiState) -> Renderable:
     parts = TABS[state.tab].render_preview(state)
     if state.preview_scroll <= 0:
         return parts
     return _skip_lines(parts, state.preview_scroll)
-
-
-def _build_status_choices() -> list[tuple[str | None, str]]:
-    """フィルタモーダルのステータス選択肢。先頭の3つは Redmine の特殊指定。"""
-    choices: list[tuple[str | None, str]] = [
-        (None, messages.tui_filter_status_open_default),
-        ("*", messages.tui_filter_status_all),
-        ("closed", messages.tui_filter_status_closed_only),
-    ]
-    for s in fetch_issue_statuses():
-        choices.append((str(s["id"]), s.get("name", "")))
-    return choices
-
-
-def _build_assignee_choices(
-    project_id: str | None, me_id: str | None = None
-) -> list[tuple[str | None, str]]:
-    """フィルタモーダルの担当者選択肢。先頭は特殊指定 (未設定/me/未割当)。
-
-    `me_id` が指定されていれば、`fetch_project_users` の結果から自身を除外して
-    「自分」項目との重複表示を避ける。
-    """
-    choices: list[tuple[str | None, str]] = [
-        (None, messages.tui_filter_assignee_none),
-        ("me", messages.tui_filter_assignee_me),
-        ("!*", messages.tui_filter_assignee_unassigned),
-    ]
-    if project_id:
-        for u in fetch_project_users(project_id):
-            uid = str(u["id"])
-            if me_id is not None and uid == me_id:
-                continue
-            choices.append((uid, u.get("name", "")))
-    return choices
-
-
-def _build_user_choices(
-    project_id: str | None, me_id: str | None = None
-) -> list[tuple[str | None, str]]:
-    """time_entry フィルタモーダルのユーザー選択肢。先頭は特殊指定 (未設定/自分)。
-
-    `me_id` が指定されていれば、`fetch_project_users` の結果から自身を除外して
-    「自分」項目との重複表示を避ける。
-    """
-    choices: list[tuple[str | None, str]] = [
-        (None, messages.tui_filter_assignee_none),
-        ("me", messages.tui_filter_assignee_me),
-    ]
-    if project_id:
-        for u in fetch_project_users(project_id):
-            uid = str(u["id"])
-            if me_id is not None and uid == me_id:
-                continue
-            choices.append((uid, u.get("name", "")))
-    return choices
-
-
-def open_project_modal(state: TuiState) -> None:
-    """プロジェクト切替モーダルを開く。一覧取得に失敗したら error modal に流す。"""
-    modal = state.project_modal
-    try:
-        projects = sort_projects_by_id_desc(fetch_projects())
-    except requests.exceptions.RequestException as e:
-        state.error_modal = messages.tui_project_load_failed.format(error=e)
-        return
-    modal.choices = [(str(p["id"]), p.get("name", "")) for p in projects]
-    modal.cursor = 0
-    # config には id のほか identifier も設定できるので両方で現在プロジェクトを
-    # 探し、id へ解決して保持する (`*` 表示とカーソル初期位置に使う)。
-    modal.active_id = None
-    current = state.effective_project_id()
-    if current is not None:
-        for idx, p in enumerate(projects):
-            if str(p["id"]) == str(current) or p.get("identifier") == current:
-                modal.active_id = str(p["id"])
-                modal.cursor = idx
-                break
-    modal.show = True
-
-
-def apply_project_switch(state: TuiState, project_id: str, label: str) -> None:
-    """セッション内のプロジェクトを切り替え、全タブを新プロジェクトで取り直す。"""
-    state.project_id = project_id
-    state.project_label = label
-    state.project_modal.show = False
-    # 数値 id のフィルタは旧プロジェクトのユーザーを指すのでクリアする。
-    # プロジェクト非依存の特殊値 (未設定/me/未割当) と status は保持する。
-    issue_filter = state.issue_tab.filter
-    if issue_filter.assigned_to_id not in (None, "me", "!*"):
-        issue_filter.assigned_to_id = None
-        issue_filter.assigned_to_label = messages.tui_filter_assignee_none
-    te_filter = state.time_entry_tab.filter
-    if te_filter.user_id not in (None, "me"):
-        te_filter = TimeEntryFilter()
-    # time_entry / wiki は state を作り直して遅延再取得に任せる。
-    # wiki の texts はタイトルのみがキーなので、残すと別プロジェクトの同名
-    # ページに旧本文が表示されてしまう。
-    state.time_entry_tab = TimeEntryTabState(filter=te_filter)
-    state.wiki_tab = WikiTabState()
-    state.preview_scroll = 0
-    # issues タブは on_activate が noop で遅延再取得できないため即時取り直す。
-    reload_with_filter(state)
-    if state.tab in ("time_entries", "wiki"):
-        TABS[state.tab].on_activate(state)
-    state.flash_message = messages.tui_flash_project_switched.format(name=label)
 
 
 def _help_version_label() -> str:
@@ -368,497 +231,10 @@ def run_issue_tui(
             max_cursor = max(0, len(state.time_entry_tab.entries) - 1)
             state.time_entry_tab.cursor = min(last.position.cursor, max_cursor)
 
+    conditions = build_conditions(state)
     kb = KeyBindings()
-    normal_mode = Condition(
-        lambda: (
-            not state.search_mode
-            and state.confirm_delete_prompt is None
-            and not state.show_help
-            and not state.issue_tab.filter_modal.show
-            and not state.time_entry_tab.filter_modal.show
-            and state.error_modal is None
-            and not state.issue_tab.comment_select.active
-            and not state.project_modal.show
-        )
-    )
-    search_mode = Condition(lambda: state.search_mode)
-    confirm_delete_mode = Condition(lambda: state.confirm_delete_prompt is not None)
-    show_help_modal = Condition(lambda: state.show_help)
-    show_filter_modal = Condition(lambda: state.issue_tab.filter_modal.show)
-    show_time_entry_filter_modal = Condition(
-        lambda: state.time_entry_tab.filter_modal.show
-    )
-    show_error_modal = Condition(lambda: state.error_modal is not None)
-    show_project_modal = Condition(lambda: state.project_modal.show)
-    comment_select_mode = Condition(
-        lambda: (
-            state.issue_tab.comment_select.active
-            and state.confirm_delete_prompt is None
-        )
-    )
-
-    def _clear_temporary_state() -> None:
-        state.number_buffer = ""
-        state.flash_message = None
-
-    def _reset_preview_scroll() -> None:
-        state.preview_scroll = 0
-
-    def _scroll_preview(delta: int) -> None:
-        new_scroll = max(0, state.preview_scroll + delta)
-        # 最低 1 行は表示が残るように、クランプは「論理行数 - 1」まで。
-        # wrap_lines=True で実視覚行は logical を超え得るが、簡易クランプとして許容。
-        total = _count_logical_lines(TABS[state.tab].render_preview(state))
-        new_scroll = min(new_scroll, max(0, total - 1))
-        state.preview_scroll = new_scroll
-
-    @kb.add("tab", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        _reset_preview_scroll()
-        tab_keys = list(TABS.keys())
-        idx = tab_keys.index(state.tab)
-        state.tab = tab_keys[(idx + 1) % len(tab_keys)]
-        TABS[state.tab].on_activate(state)
-
-    @kb.add("s-tab", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        _reset_preview_scroll()
-        tab_keys = list(TABS.keys())
-        idx = tab_keys.index(state.tab)
-        state.tab = tab_keys[(idx - 1) % len(tab_keys)]
-        TABS[state.tab].on_activate(state)
-
-    @kb.add("up", filter=normal_mode)
-    @kb.add("k", filter=normal_mode)
-    @kb.add("c-p", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        _reset_preview_scroll()
-        TABS[state.tab].on_up(state)
-
-    @kb.add("down", filter=normal_mode)
-    @kb.add("j", filter=normal_mode)
-    @kb.add("c-n", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        _reset_preview_scroll()
-        TABS[state.tab].on_down(state)
-
-    @kb.add("g", "g", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        _reset_preview_scroll()
-        TABS[state.tab].on_goto_top(state)
-
-    @kb.add("G", filter=normal_mode)
-    def _(event):
-        if state.number_buffer:
-            try:
-                target_id = int(state.number_buffer)
-            except ValueError:
-                target_id = None
-            _clear_temporary_state()
-            _reset_preview_scroll()
-            if target_id is not None:
-                TABS[state.tab].on_jump_to_id(state, target_id)
-        else:
-            _reset_preview_scroll()
-            TABS[state.tab].on_goto_bottom(state)
-
-    for digit in "0123456789":
-
-        @kb.add(digit, filter=normal_mode)
-        def _(event, digit=digit):
-            # 先頭 0 は無視 (多桁数字の中では許容)。
-            if not state.number_buffer and digit == "0":
-                return
-            state.number_buffer += digit
-
-    @kb.add("right", filter=normal_mode)
-    @kb.add("l", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        _reset_preview_scroll()
-        TABS[state.tab].on_page_forward(state)
-
-    @kb.add("left", filter=normal_mode)
-    @kb.add("h", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        _reset_preview_scroll()
-        TABS[state.tab].on_page_backward(state)
-
-    @kb.add("c-e", filter=normal_mode)
-    def _(event):
-        _scroll_preview(1)
-
-    @kb.add("c-y", filter=normal_mode)
-    def _(event):
-        _scroll_preview(-1)
-
-    @kb.add("c-d", filter=normal_mode)
-    def _(event):
-        _scroll_preview(max(1, state.page_size // 2))
-
-    @kb.add("c-u", filter=normal_mode)
-    def _(event):
-        _scroll_preview(-max(1, state.page_size // 2))
-
-    @kb.add("enter", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        TABS[state.tab].on_enter(state)
-
-    @kb.add("v", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        TABS[state.tab].on_open_web(state)
-
-    @kb.add("V", filter=normal_mode)
-    def _(event):
-        if state.number_buffer:
-            try:
-                target_id = int(state.number_buffer)
-            except ValueError:
-                target_id = None
-            _clear_temporary_state()
-            if target_id is not None:
-                TABS[state.tab].on_open_web_by_id(state, target_id)
-
-    for action_key in ("u", "c", "t"):
-
-        @kb.add(action_key, filter=normal_mode)
-        def _(event, action_key=action_key):
-            _clear_temporary_state()
-            result = TABS[state.tab].on_action_key(state, action_key)
-            if result is not None:
-                event.app.exit(result=result)
-
-    # issueTab;コメント選択モード
-    @kb.add("up", filter=comment_select_mode)
-    @kb.add("k", filter=comment_select_mode)
-    @kb.add("c-p", filter=comment_select_mode)
-    def _(event):
-        comment_select_cursor_up(state)
-
-    @kb.add("down", filter=comment_select_mode)
-    @kb.add("j", filter=comment_select_mode)
-    @kb.add("c-n", filter=comment_select_mode)
-    def _(event):
-        comment_select_cursor_down(state)
-
-    @kb.add("c-d", filter=comment_select_mode)
-    def _(event):
-        _scroll_preview(max(1, state.page_size // 2))
-
-    @kb.add("c-u", filter=comment_select_mode)
-    def _(event):
-        _scroll_preview(-max(1, state.page_size // 2))
-
-    @kb.add("u", filter=comment_select_mode)
-    def _(event):
-        result = confirm_comment_edit(state)
-        if result is not None:
-            exit_comment_select_mode(state)
-            event.app.exit(result=result)
-
-    @kb.add("D", filter=comment_select_mode)
-    def _(event):
-        prompt = request_comment_delete(state)
-        if prompt is not None:
-            state.confirm_delete_prompt = prompt
-
-    @kb.add("enter", filter=comment_select_mode)
-    def _(event):
-        pass
-
-    @kb.add("escape", filter=comment_select_mode)
-    @kb.add("q", filter=comment_select_mode)
-    def _(event):
-        exit_comment_select_mode(state)
-
-    @kb.add("n", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        if state.search_query:
-            _reset_preview_scroll()
-            TABS[state.tab].on_search(state, state.search_query, forward=True)
-            return
-        result = TABS[state.tab].on_action_key(state, "n")
-        if result is not None:
-            event.app.exit(result=result)
-
-    @kb.add("N", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        if state.search_query:
-            _reset_preview_scroll()
-            TABS[state.tab].on_search(state, state.search_query, forward=False)
-
-    @kb.add("/", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        state.search_mode = True
-        state.search_query = ""
-
-    @kb.add("D", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        if state.tab != "time_entries":
-            return
-        prompt = time_entry_request_delete(state)
-        if prompt is not None:
-            state.confirm_delete_prompt = prompt
-
-    @kb.add("R", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        _reset_preview_scroll()
-        TABS[state.tab].on_reload(state)
-        state.flash_message = messages.tui_flash_reloaded
-
-    @kb.add("y", filter=confirm_delete_mode)
-    @kb.add("Y", filter=confirm_delete_mode)
-    def _(event):
-        state.confirm_delete_prompt = None
-        if state.tab == "time_entries":
-            time_entry_confirm_delete(state)
-        elif state.tab == "issues" and state.issue_tab.comment_select.active:
-            result = confirm_comment_delete(state)
-            if result is not None:
-                exit_comment_select_mode(state)
-                event.app.exit(result=result)
-
-    @kb.add("<any>", filter=confirm_delete_mode)
-    def _(event):
-        state.confirm_delete_prompt = None
-
-    @kb.add("q", filter=normal_mode)
-    @kb.add("c-c", filter=normal_mode)
-    def _(event):
-        event.app.exit(result=None)
-
-    @kb.add("?", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        state.show_help = True
-
-    @kb.add("<any>", filter=show_help_modal)
-    def _(event):
-        state.show_help = False
-
-    @kb.add("q", filter=show_error_modal)
-    def _(event):
-        state.error_modal = None
-
-    def _open_filter_modal() -> None:
-        modal = state.issue_tab.filter_modal
-        modal.status_choices = _build_status_choices()
-        modal.assignee_choices = _build_assignee_choices(
-            state.effective_project_id(), state.me_id
-        )
-        modal.status_cursor = 0
-        for idx, (api_val, _label) in enumerate(modal.status_choices):
-            if api_val == state.issue_tab.filter.status_id:
-                modal.status_cursor = idx
-                break
-        modal.assignee_cursor = 0
-        for idx, (api_val, _label) in enumerate(modal.assignee_choices):
-            if api_val == state.issue_tab.filter.assigned_to_id:
-                modal.assignee_cursor = idx
-                break
-        modal.focus = "status"
-        modal.show = True
-
-    def _open_time_entry_filter_modal() -> None:
-        modal = state.time_entry_tab.filter_modal
-        modal.user_choices = _build_user_choices(
-            state.effective_project_id(), state.me_id
-        )
-        modal.user_cursor = 0
-        for idx, (api_val, _label) in enumerate(modal.user_choices):
-            if api_val == state.time_entry_tab.filter.user_id:
-                modal.user_cursor = idx
-                break
-        modal.show = True
-
-    @kb.add("f", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        if state.tab == "issues":
-            _open_filter_modal()
-        elif state.tab == "time_entries":
-            _open_time_entry_filter_modal()
-
-    @kb.add("p", filter=normal_mode)
-    def _(event):
-        _clear_temporary_state()
-        open_project_modal(state)
-
-    @kb.add("j", filter=show_project_modal)
-    @kb.add("down", filter=show_project_modal)
-    @kb.add("c-n", filter=show_project_modal)
-    def _project_modal_cursor_down(event):
-        modal = state.project_modal
-        modal.cursor = min(len(modal.choices) - 1, modal.cursor + 1)
-
-    @kb.add("k", filter=show_project_modal)
-    @kb.add("up", filter=show_project_modal)
-    @kb.add("c-p", filter=show_project_modal)
-    def _project_modal_cursor_up(event):
-        modal = state.project_modal
-        modal.cursor = max(0, modal.cursor - 1)
-
-    @kb.add("enter", filter=show_project_modal)
-    def _(event):
-        modal = state.project_modal
-        if not modal.choices:
-            return
-        pid, label = modal.choices[modal.cursor]
-        _reset_preview_scroll()
-        apply_project_switch(state, pid, label)
-
-    @kb.add("escape", filter=show_project_modal)
-    @kb.add("p", filter=show_project_modal)
-    @kb.add("q", filter=show_project_modal)
-    def _(event):
-        state.project_modal.show = False
-
-    @kb.add("tab", filter=show_filter_modal)
-    @kb.add("s-tab", filter=show_filter_modal)
-    @kb.add("h", filter=show_filter_modal)
-    @kb.add("l", filter=show_filter_modal)
-    @kb.add("left", filter=show_filter_modal)
-    @kb.add("right", filter=show_filter_modal)
-    def _(event):
-        modal = state.issue_tab.filter_modal
-        modal.focus = "assignee" if modal.focus == "status" else "status"
-
-    @kb.add("j", filter=show_filter_modal)
-    @kb.add("down", filter=show_filter_modal)
-    @kb.add("c-n", filter=show_filter_modal)
-    def _issue_filter_modal_cursor_down(event):
-        modal = state.issue_tab.filter_modal
-        if modal.focus == "status":
-            modal.status_cursor = min(
-                len(modal.status_choices) - 1, modal.status_cursor + 1
-            )
-        else:
-            modal.assignee_cursor = min(
-                len(modal.assignee_choices) - 1, modal.assignee_cursor + 1
-            )
-
-    @kb.add("k", filter=show_filter_modal)
-    @kb.add("up", filter=show_filter_modal)
-    @kb.add("c-p", filter=show_filter_modal)
-    def _issue_filter_modal_cursor_up(event):
-        modal = state.issue_tab.filter_modal
-        if modal.focus == "status":
-            modal.status_cursor = max(0, modal.status_cursor - 1)
-        else:
-            modal.assignee_cursor = max(0, modal.assignee_cursor - 1)
-
-    @kb.add("enter", filter=show_filter_modal)
-    def _(event):
-        modal = state.issue_tab.filter_modal
-        if modal.focus == "status":
-            if not modal.status_choices:
-                return
-            api_val, label = modal.status_choices[modal.status_cursor]
-            state.issue_tab.filter.status_id = api_val
-            state.issue_tab.filter.status_label = label
-        else:
-            if not modal.assignee_choices:
-                return
-            api_val, label = modal.assignee_choices[modal.assignee_cursor]
-            state.issue_tab.filter.assigned_to_id = api_val
-            state.issue_tab.filter.assigned_to_label = label
-        _reset_preview_scroll()
-        reload_with_filter(state)
-
-    @kb.add("c", filter=show_filter_modal)
-    def _(event):
-        state.issue_tab.filter = IssueFilter()
-        modal = state.issue_tab.filter_modal
-        modal.status_cursor = 0
-        modal.assignee_cursor = 0
-        _reset_preview_scroll()
-        reload_with_filter(state)
-
-    @kb.add("escape", filter=show_filter_modal)
-    @kb.add("f", filter=show_filter_modal)
-    @kb.add("q", filter=show_filter_modal)
-    def _(event):
-        state.issue_tab.filter_modal.show = False
-
-    @kb.add("j", filter=show_time_entry_filter_modal)
-    @kb.add("down", filter=show_time_entry_filter_modal)
-    @kb.add("c-n", filter=show_time_entry_filter_modal)
-    def _time_entry_filter_modal_cursor_down(event):
-        modal = state.time_entry_tab.filter_modal
-        modal.user_cursor = min(len(modal.user_choices) - 1, modal.user_cursor + 1)
-
-    @kb.add("k", filter=show_time_entry_filter_modal)
-    @kb.add("up", filter=show_time_entry_filter_modal)
-    @kb.add("c-p", filter=show_time_entry_filter_modal)
-    def _time_entry_filter_modal_cursor_up(event):
-        modal = state.time_entry_tab.filter_modal
-        modal.user_cursor = max(0, modal.user_cursor - 1)
-
-    @kb.add("enter", filter=show_time_entry_filter_modal)
-    def _(event):
-        modal = state.time_entry_tab.filter_modal
-        if not modal.user_choices:
-            return
-        api_val, label = modal.user_choices[modal.user_cursor]
-        state.time_entry_tab.filter.user_id = api_val
-        if api_val is not None:
-            state.time_entry_tab.filter.user_label = label
-        _reset_preview_scroll()
-        time_entry_reload_with_filter(state)
-        modal.show = False
-
-    @kb.add("c", filter=show_time_entry_filter_modal)
-    def _(event):
-        state.time_entry_tab.filter = TimeEntryFilter(user_id=None, user_label="")
-        modal = state.time_entry_tab.filter_modal
-        modal.user_cursor = 0
-        _reset_preview_scroll()
-        time_entry_reload_with_filter(state)
-
-    @kb.add("escape", filter=show_time_entry_filter_modal)
-    @kb.add("f", filter=show_time_entry_filter_modal)
-    @kb.add("q", filter=show_time_entry_filter_modal)
-    def _(event):
-        state.time_entry_tab.filter_modal.show = False
-
-    @kb.add("enter", filter=search_mode)
-    def _(event):
-        if state.search_query:
-            _reset_preview_scroll()
-            TABS[state.tab].on_search(state, state.search_query)
-        state.search_mode = False
-
-    @kb.add("escape", filter=search_mode)
-    @kb.add("c-c", filter=search_mode)
-    def _(event):
-        state.search_mode = False
-        state.search_query = ""
-
-    @kb.add("backspace", filter=search_mode)
-    def _(event):
-        if state.search_query:
-            state.search_query = state.search_query[:-1]
-        else:
-            state.search_mode = False
-
-    @kb.add("<any>", filter=search_mode)
-    def _(event):
-        data = event.data
-        if data and len(data) == 1 and data.isprintable():
-            state.search_query += data
+    normal.register(kb, state, conditions)
+    modal.register(kb, state, conditions)
 
     preview_window = Window(
         FormattedTextControl(lambda: _render_preview_current(state)),
@@ -916,17 +292,17 @@ def run_issue_tui(
                     Window(width=1, char=" "),
                 ]
             ),
-            filter=show_help_modal,
+            filter=conditions.help_modal,
         ),
     )
 
-    filter_float = build_filter_float(state, show_filter_modal)
+    filter_float = build_filter_float(state, conditions.issue_filter_modal)
 
     time_entry_filter_float = build_time_entry_filter_float(
-        state, show_time_entry_filter_modal
+        state, conditions.time_entry_filter_modal
     )
 
-    project_float = build_project_float(state, show_project_modal)
+    project_float = build_project_float(state, conditions.project_modal)
 
     error_float = Float(
         content=ConditionalContainer(
@@ -945,7 +321,7 @@ def run_issue_tui(
                     Window(width=1, char=" "),
                 ]
             ),
-            filter=show_error_modal,
+            filter=conditions.error_modal,
         ),
     )
 
