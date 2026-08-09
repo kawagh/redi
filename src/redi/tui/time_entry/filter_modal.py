@@ -14,6 +14,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Frame
 
 from redi.i18n import messages
+from redi.tui.choices import build_user_choices
 from redi.tui.state import Renderable, TimeEntryFilterModalState, TuiState
 
 
@@ -91,3 +92,15 @@ def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
             filter=show,
         ),
     )
+
+
+def open_filter_modal(state: TuiState) -> None:
+    """フィルタ modal を開く。選択肢を取り直し、現在の絞り込みにカーソルを合わせる。"""
+    modal = state.time_entry_tab.filter_modal
+    modal.user_choices = build_user_choices(state.effective_project_id(), state.me_id)
+    modal.user_cursor = 0
+    for idx, (api_val, _label) in enumerate(modal.user_choices):
+        if api_val == state.time_entry_tab.filter.user_id:
+            modal.user_cursor = idx
+            break
+    modal.show = True

@@ -19,6 +19,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Frame
 
 from redi.i18n import messages
+from redi.tui.choices import build_assignee_choices, build_status_choices
 from redi.tui.state import (
     FilterField,
     FilterModalState,
@@ -147,3 +148,24 @@ def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
             filter=show,
         ),
     )
+
+
+def open_filter_modal(state: TuiState) -> None:
+    """フィルタ modal を開く。選択肢を取り直し、現在の絞り込みにカーソルを合わせる。"""
+    modal = state.issue_tab.filter_modal
+    modal.status_choices = build_status_choices()
+    modal.assignee_choices = build_assignee_choices(
+        state.effective_project_id(), state.me_id
+    )
+    modal.status_cursor = 0
+    for idx, (api_val, _label) in enumerate(modal.status_choices):
+        if api_val == state.issue_tab.filter.status_id:
+            modal.status_cursor = idx
+            break
+    modal.assignee_cursor = 0
+    for idx, (api_val, _label) in enumerate(modal.assignee_choices):
+        if api_val == state.issue_tab.filter.assigned_to_id:
+            modal.assignee_cursor = idx
+            break
+    modal.focus = "status"
+    modal.show = True
