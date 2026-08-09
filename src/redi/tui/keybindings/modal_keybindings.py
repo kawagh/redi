@@ -2,11 +2,9 @@
 
 from prompt_toolkit.key_binding import KeyBindings
 
+from redi.tui.conditions import Conditions
 from redi.tui.issue.issue_tab import reload_with_filter
-from redi.tui.keybindings.keybinding_conditions import (
-    Conditions,
-    reset_preview_scroll,
-)
+from redi.tui.keybindings.keybinding_actions import reset_preview_scroll
 from redi.tui.project_modal import apply_project_switch
 from redi.tui.state import IssueFilter, TimeEntryFilter, TuiState
 from redi.tui.time_entry.time_entry_tab import (

@@ -5,6 +5,7 @@ modal は開かず、一覧の表示はそのままにキーの解釈だけが�
 
 from prompt_toolkit.key_binding import KeyBindings
 
+from redi.tui.conditions import Conditions
 from redi.tui.issue.issue_tab import (
     comment_select_cursor_down,
     comment_select_cursor_up,
@@ -13,8 +14,7 @@ from redi.tui.issue.issue_tab import (
     exit_comment_select_mode,
     request_comment_delete,
 )
-from redi.tui.keybindings.keybinding_conditions import (
-    Conditions,
+from redi.tui.keybindings.keybinding_actions import (
     reset_preview_scroll,
     scroll_preview,
 )

@@ -3,9 +3,9 @@
 from prompt_toolkit.key_binding import KeyBindings
 
 from redi.i18n import messages
+from redi.tui.conditions import Conditions
 from redi.tui.issue.filter_modal import open_filter_modal as open_issue_filter_modal
-from redi.tui.keybindings.keybinding_conditions import (
-    Conditions,
+from redi.tui.keybindings.keybinding_actions import (
     clear_temporary_state,
     reset_preview_scroll,
     scroll_preview,

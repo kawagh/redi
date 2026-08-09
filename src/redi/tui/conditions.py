@@ -1,21 +1,18 @@
-"""キーバインドのモード判定と、モード間で共有する state 操作。"""
+"""表示・入力モードの判定。
+
+キーバインドの filter とレイアウトの ConditionalContainer の両方が同じ条件を
+見るため、`run_issue_tui` で 1 度作って共有する。
+"""
 
 from dataclasses import dataclass
 
 from prompt_toolkit.filters import Condition
 
-from redi.tui.state import Renderable, TuiState
-from redi.tui.tabs import TABS
+from redi.tui.state import TuiState
 
 
 @dataclass(frozen=True)
 class Conditions:
-    """キーバインドの filter に渡すモード判定。
-
-    modal の表示条件はレイアウトの ConditionalContainer でも使うため、
-    `run_issue_tui` で 1 度作って両者で共有する。
-    """
-
     normal: Condition
     search: Condition
     confirm_delete: Condition
@@ -57,27 +54,3 @@ def build_conditions(state: TuiState) -> Conditions:
             )
         ),
     )
-
-
-def clear_temporary_state(state: TuiState) -> None:
-    state.number_buffer = ""
-    state.flash_message = None
-
-
-def reset_preview_scroll(state: TuiState) -> None:
-    state.preview_scroll = 0
-
-
-def _count_logical_lines(parts: Renderable) -> int:
-    if not parts:
-        return 0
-    return sum(text.count("\n") for _, text in parts) + 1
-
-
-def scroll_preview(state: TuiState, delta: int) -> None:
-    new_scroll = max(0, state.preview_scroll + delta)
-    # 最低 1 行は表示が残るように、クランプは「論理行数 - 1」まで。
-    # wrap_lines=True で実視覚行は logical を超え得るが、簡易クランプとして許容。
-    total = _count_logical_lines(TABS[state.tab].render_preview(state))
-    new_scroll = min(new_scroll, max(0, total - 1))
-    state.preview_scroll = new_scroll

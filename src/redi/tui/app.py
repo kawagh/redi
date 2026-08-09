@@ -21,6 +21,7 @@ from prompt_toolkit.widgets import Frame
 
 from redi.api.me import fetch_my_user_id
 from redi.i18n import messages
+from redi.tui.conditions import build_conditions
 from redi.tui.issue.filter_modal import build_filter_float
 from redi.tui.issue.issue_tab import fetch_issues_with_filter, load_journals
 from redi.tui.keybindings import (
@@ -28,7 +29,6 @@ from redi.tui.keybindings import (
     normal_keybindings,
     submode_keybindings,
 )
-from redi.tui.keybindings.keybinding_conditions import build_conditions
 from redi.tui.project_modal import build_project_float
 from redi.tui.state import (
     FIXED_ROWS,
