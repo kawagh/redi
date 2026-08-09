@@ -18,14 +18,12 @@ from redi.tui.state import FIXED_ROWS, TuiPosition, TuiResult, TuiState
 from redi.tui.tabs import TABS
 
 
-def run_issue_tui(
-    state: TuiState | None = None,
-    debug_log_path: Path | None = None,
-) -> TuiResult | None:
-    if state is None:
-        state = TuiState()
-    if state.me_id is None:
-        state.me_id = fetch_my_user_id()
+def _restore_session(state: TuiState) -> None:
+    """前回の `TuiResult` からタブ・位置・journal を復元し、初回のデータを取る。
+
+    TUI は編集のたびに一度終了して外部エディタへ抜けるため、戻ってきたときに
+    直前の見え方へ復帰させる必要がある。
+    """
     last = state.last_result
     if last:
         state.tab = last.tab
@@ -67,6 +65,17 @@ def run_issue_tui(
         if last and last.tab == "time_entries":
             max_cursor = max(0, len(state.time_entry_tab.entries) - 1)
             state.time_entry_tab.cursor = min(last.position.cursor, max_cursor)
+
+
+def run_issue_tui(
+    state: TuiState | None = None,
+    debug_log_path: Path | None = None,
+) -> TuiResult | None:
+    if state is None:
+        state = TuiState()
+    if state.me_id is None:
+        state.me_id = fetch_my_user_id()
+    _restore_session(state)
 
     conditions = build_conditions(state)
     kb = KeyBindings()
