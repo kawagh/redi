@@ -199,9 +199,7 @@ def handle_config(args: argparse.Namespace) -> None:
         if not result.created:
             sys.exit(1)
         print(messages.profile_created.format(name=args.profile_name))
-        # or で統合できるが、副作用のある set_default_profile() を
-        # 条件式に埋めない方が可読性が高い
-        if result.set_as_default:  # noqa: SIM114
+        if result.set_as_default:
             print(messages.default_profile_set.format(name=args.profile_name))
         elif args.set_default and set_default_profile(args.profile_name):
             print(messages.default_profile_set.format(name=args.profile_name))
