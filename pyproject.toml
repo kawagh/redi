@@ -48,6 +48,8 @@ ignore = [
   # タイムゾーンを意識した実装はしないので許容する
   "DTZ005", # datetime.now() を tz なしで呼ぶことを許容する
   "DTZ011", # date.today() の使用を許容する
+  # 条件をまとめると意図が読み取りにくくなるため許容する
+  "SIM102", # ネストした if を and でまとめることを強制しない
 ]
 
 [tool.pytest.ini_options]

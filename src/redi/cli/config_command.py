@@ -219,8 +219,9 @@ def handle_config(args: argparse.Namespace) -> None:
         or args.url
         or args.default_profile
     )
-    if no_args_provided and not _interactive_select_profile(args):
-        return
+    if no_args_provided:
+        if not _interactive_select_profile(args):
+            return
     updated = False
     profile = args.profile_name
     profile_suffix = (
