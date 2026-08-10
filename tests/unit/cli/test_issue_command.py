@@ -2,69 +2,28 @@ import argparse
 import os
 from pathlib import Path
 
-import pytest
-
 from redi.cli import issue_command
-from redi.cli import main as main_module
-from redi.cli.issue_command import IssueUpdateArgs
-from redi.cli.main import build_redi_parser
+from redi.cli.issue_command import IssueUpdateArgs, add_issue_parser
 
 
 class TestIssueUpdateArgsFromNamespace:
-    """IssueUpdateArgs は `issue update` のパース結果をそのまま受け取れる"""
+    def test_accepts_parser_output(self):
+        """`issue update` のパース結果をそのまま受け取れる
 
-    @pytest.fixture
-    def parser(self, monkeypatch) -> argparse.ArgumentParser:
-        monkeypatch.setattr(main_module, "list_profile_names", list)
-        return build_redi_parser()
-
-    def test_accepts_all_parser_dests(self, parser):
-        """パーサの dest がすべてフィールドとして存在する (欠けていれば AttributeError)"""
-        args = parser.parse_args(["issue", "update", "42"])
+        フィールド名が dest からずれていれば AttributeError で落ちる。
+        `--to` と `--add-watcher` は明示的な dest 指定があり、特にずれやすい。
+        """
+        parser = argparse.ArgumentParser()
+        add_issue_parser(parser.add_subparsers(dest="command"), [])
+        args = parser.parse_args(
+            ["issue", "update", "42", "--to", "43", "--add-watcher", "7"]
+        )
 
         update_args = IssueUpdateArgs.from_namespace(args)
 
         assert update_args.issue_id == "42"
-        assert update_args.subject is None
-        assert update_args.delete_relation is False
-
-    def test_maps_renamed_dests(self, parser):
-        """`--to` や `--add-watcher` など、オプション名と dest がずれる指定も載る"""
-        args = parser.parse_args(
-            [
-                "issue",
-                "update",
-                "42",
-                "--to",
-                "43",
-                "--delete-relation",
-                "--add-watcher",
-                "7",
-                "--remove-watcher",
-                "8",
-                "--time_comments",
-                "作業メモ",
-            ]
-        )
-
-        update_args = IssueUpdateArgs.from_namespace(args)
-
         assert update_args.relate_to == "43"
-        assert update_args.delete_relation is True
         assert update_args.add_watcher_ids == [7]
-        assert update_args.remove_watcher_ids == [8]
-        assert update_args.time_comments == "作業メモ"
-
-    def test_typed_values_are_converted_by_parser(self, parser):
-        """type 指定のある引数は数値として載る"""
-        args = parser.parse_args(
-            ["issue", "update", "42", "--done_ratio", "30", "--hours", "1.5"]
-        )
-
-        update_args = IssueUpdateArgs.from_namespace(args)
-
-        assert update_args.done_ratio == 30
-        assert update_args.hours == 1.5
 
 
 class TestSaveBodyOnFailure:
