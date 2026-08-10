@@ -103,11 +103,17 @@ def inline_checkbox(
     return app.run()
 
 
-def inline_choice(
+def inline_choice_with_action(
     message: str,
     options: list[tuple[str, str]],
     default: str | None = None,
-) -> str:
+    action_keys: dict[str, str] | None = None,
+) -> tuple[str, str]:
+    """カーソル行の値と、確定に使われたアクション名を返す。
+
+    Enter は "select" を返す。action_keys に {キー: アクション名} を渡すと
+    そのキー押下でカーソル行の値と対応するアクション名を返す。
+    """
     keys = [v for v, _ in options]
     cursor = keys.index(default) if default is not None and default in keys else 0
 
@@ -146,7 +152,13 @@ def inline_choice(
 
     @kb.add("enter")
     def _accept(event):
-        event.app.exit(result=options[cursor][0])
+        event.app.exit(result=("select", options[cursor][0]))
+
+    for key, action in (action_keys or {}).items():
+        # action はループ変数なのでデフォルト引数で束縛する
+        @kb.add(key)
+        def _action(event, action=action):
+            event.app.exit(result=(action, options[cursor][0]))
 
     @kb.add("c-c")
     def _cancel(event):
@@ -173,7 +185,7 @@ def inline_choice(
             ]
         ),
     )
-    app: Application[str] = Application(
+    app: Application[tuple[str, str]] = Application(
         layout=layout,
         key_bindings=kb,
         full_screen=False,
@@ -181,3 +193,11 @@ def inline_choice(
         erase_when_done=True,
     )
     return app.run()
+
+
+def inline_choice(
+    message: str,
+    options: list[tuple[str, str]],
+    default: str | None = None,
+) -> str:
+    return inline_choice_with_action(message, options, default)[1]

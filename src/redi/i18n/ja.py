@@ -249,9 +249,13 @@ class Ja(MessagesProto):
     prompt_select_sharing = "共有設定"
     prompt_select_version_to_update = "更新するバージョンを選択"
     prompt_select_issue_to_update = "更新するイシューを選択"
-    prompt_select_default_profile_to_set = (
-        "デフォルトプロファイルとして設定するプロファイルを選択"
+    prompt_select_profile = (
+        "プロファイルを選択 (Enter: デフォルトに設定 / u: 項目を更新)"
     )
+    prompt_default_project_id = "default_project_id: "
+    prompt_wiki_project_id = "wiki_project_id: "
+    prompt_editor = "editor: "
+    prompt_select_language = "言語を選択"
     prompt_start_date = "開始日（YYYY-MM-DD、省略可）: "
     prompt_due_date = "期日（YYYY-MM-DD、省略可）: "
     prompt_estimated_hours = "予定工数（例: 1.5 (h)）: "
@@ -318,6 +322,12 @@ class Ja(MessagesProto):
     field_spent_on = "作業日 (spent_on)"
     field_comments = "コメント (comments)"
     field_issue_id = "イシュー (issue_id)"
+    field_redmine_url = "Redmine URL (redmine_url)"
+    field_redmine_api_key = "Redmine APIキー (redmine_api_key)"
+    field_default_project_id = "既定プロジェクト (default_project_id)"
+    field_wiki_project_id = "Wikiプロジェクト (wiki_project_id)"
+    field_editor = "エディタ (editor)"
+    field_language = "言語 (language)"
 
     # ---- sharing options ----
     sharing_none = "none (共有しない)"
