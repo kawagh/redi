@@ -824,7 +824,7 @@ class Ja(MessagesProto):
     arg_help_news_view = "ニュース詳細"
     arg_help_news_view_id = "ニュースID"
     arg_help_news_create = "ニュース作成"
-    arg_help_news_title = "ニュースのタイトル"
+    arg_help_news_create_title = "ニュースのタイトル（省略で対話的に入力）"
     arg_help_news_title_opt = "ニュースのタイトル"
     arg_help_news_summary = "ニュースのサマリー"
     arg_help_news_description = "説明（値省略でエディタ起動）"

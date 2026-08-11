@@ -188,6 +188,7 @@ redi membership view <membership_id>
 redi news -p <project_id>
 redi news view <news_id>
 redi news view <news_id> --web # open in browser
+redi news create -p <project_id> # interactive: enter the title, then the description in an editor
 redi news create "title" -p <project_id> # opens editor for the description
 redi news create "title" -d "description" --summary "summary" -p <project_id>
 redi news update <news_id> # interactive: pick the items to update

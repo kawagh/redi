@@ -947,7 +947,7 @@ class MessagesProto(Protocol):
     arg_help_news_view: str
     arg_help_news_view_id: str
     arg_help_news_create: str
-    arg_help_news_title: str
+    arg_help_news_create_title: str
     arg_help_news_title_opt: str
     arg_help_news_summary: str
     arg_help_news_description: str

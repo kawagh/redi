@@ -16,6 +16,7 @@ from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor
 from redi.cli.picker import inline_checkbox
+from redi.cli.validator import RequiredValidator
 from redi.config import default_project_id
 from redi.i18n import messages
 
@@ -95,7 +96,9 @@ def add_news_parser(
     n_create_parser = n_subparsers.add_parser(
         "create", aliases=["c"], help=messages.arg_help_news_create, parents=parents
     )
-    n_create_parser.add_argument("title", help=messages.arg_help_news_title)
+    n_create_parser.add_argument(
+        "title", nargs="?", help=messages.arg_help_news_create_title
+    )
     n_create_parser.add_argument(
         "--project_id",
         "-p",
@@ -148,13 +151,22 @@ def handle_news(args: argparse.Namespace) -> None:
         if not project_id:
             print(messages.project_id_required)
             sys.exit(1)
+        title = args.title
+        if title is None:
+            try:
+                title = prompt(
+                    messages.prompt_title, validator=RequiredValidator()
+                ).strip()
+            except (KeyboardInterrupt, EOFError):
+                print(messages.canceled)
+                sys.exit(1)
         description = args.description or open_editor()
         if not description:
             print(messages.canceled_empty_text)
             sys.exit(1)
         create_news(
             project_id=project_id,
-            title=args.title,
+            title=title,
             description=description,
             summary=args.summary,
         )

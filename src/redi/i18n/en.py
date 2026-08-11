@@ -817,7 +817,7 @@ class En(MessagesProto):
     arg_help_news_view = "News details"
     arg_help_news_view_id = "News ID"
     arg_help_news_create = "Create news"
-    arg_help_news_title = "News title"
+    arg_help_news_create_title = "News title (omit to enter interactively)"
     arg_help_news_title_opt = "News title"
     arg_help_news_summary = "News summary"
     arg_help_news_description = "Description (no value opens editor)"
