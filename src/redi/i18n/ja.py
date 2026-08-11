@@ -26,6 +26,11 @@ class Ja(MessagesProto):
     canceled_no_items_selected = "更新する項目が選択されていないためキャンセルしました"
     canceled_no_project = "プロジェクトが特定できないためキャンセルしました"
     canceled_field_mismatch = "{field}が一致しません。キャンセルしました"
+    non_interactive_input_required = (
+        "非対話環境のため入力を受け付けられません: {message}\n"
+        "引数・オプションで指定して再実行してください"
+    )
+    prompt_editor_input = "エディタでの入力"
 
     # ---- common indicators ----
     project_id_required = "project_idを指定するか、default_project_idを設定してください"

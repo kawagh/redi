@@ -6,8 +6,6 @@ from dataclasses import dataclass, fields
 from datetime import date
 from typing import Self
 
-from prompt_toolkit import prompt
-
 from redi.api.custom_field import (
     CustomField,
     fetch_custom_fields,
@@ -23,6 +21,7 @@ from redi.cli.custom_field_prompt import (
     prompt_custom_field_value,
 )
 from redi.cli.editor import open_editor, save_body_on_failure, shorten_to_oneline
+from redi.cli.interactive import prompt
 from redi.cli.issue_command.field_prompt import (
     parse_iso_date,
     prompt_assignee,
@@ -193,7 +192,7 @@ def _interactive_fill_optional_create_fields(args: IssueCreateArgs) -> None:
             messages.prompt_select_create_optional_items,
             field_options,
         )
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
     if not selected:
@@ -258,7 +257,7 @@ def _interactive_select_issue_template(
     template_map = {str(t["id"]): t for t in templates}
     try:
         selected = inline_choice(messages.prompt_select_template, options)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
     if not selected:
@@ -300,7 +299,7 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
                 args.tracker_id = inline_choice(
                     messages.prompt_select_tracker, tracker_options
                 )
-            except KeyboardInterrupt:
+            except (KeyboardInterrupt, EOFError):
                 print(messages.canceled)
                 sys.exit(1)
             print(messages.tracker_label.format(value=labels[args.tracker_id]))
@@ -352,7 +351,7 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
             )
             try:
                 action = inline_choice(messages.prompt_what_next, action_options)
-            except KeyboardInterrupt:
+            except (KeyboardInterrupt, EOFError):
                 print(messages.canceled)
                 sys.exit(1)
             if action == "optional":

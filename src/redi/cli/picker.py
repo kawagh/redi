@@ -4,6 +4,8 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import HSplit, Layout, ScrollOffsets, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 
+from redi.cli.interactive import ensure_interactive
+
 
 def inline_checkbox(
     message: str,
@@ -11,6 +13,7 @@ def inline_checkbox(
     initial_value: str | None = None,
     initial_checked: list[str] | None = None,
 ) -> list[str]:
+    ensure_interactive(message)
     keys = [v for v, _ in values]
     cursor = (
         keys.index(initial_value)
@@ -114,6 +117,7 @@ def inline_choice_with_action(
     Enter は "select" を返す。action_keys に {キー: アクション名} を渡すと
     そのキー押下でカーソル行の値と対応するアクション名を返す。
     """
+    ensure_interactive(message)
     keys = [v for v, _ in options]
     cursor = keys.index(default) if default is not None and default in keys else 0
 

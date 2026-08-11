@@ -31,6 +31,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - 引数が不足する場合は対話的に入力させる
 - ただしエージェントやCIが非TTY環境で実行できるよう、引数だけで完結する形も用意する
+- 非TTY環境で引数が不足した場合は、対話に入らず何の入力を求めたかを示して exit 1 する
+    - `redi.cli.interactive` の `prompt` / `ensure_interactive` を経由させる
+    - `inline_choice` / `inline_checkbox` / `open_editor` は内部で `ensure_interactive` を呼んでいる
 
 ## i18n
 

@@ -1,7 +1,6 @@
 import argparse
 import sys
 
-from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding.key_processor import KeyPress
 from prompt_toolkit.keys import Keys
@@ -19,6 +18,7 @@ from redi.api.version import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
+from redi.cli.interactive import ensure_interactive, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.config import default_project_id
 from redi.i18n import messages
@@ -117,7 +117,7 @@ def _interactive_select_version_id(project_id: str) -> str:
     labels = dict(options)
     try:
         selected = inline_choice(messages.prompt_select_version_to_update, options)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
     print(messages.update_target_version.format(label=labels[selected]))
@@ -135,7 +135,7 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
     ]
     try:
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
     if not selected:
@@ -234,6 +234,7 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
     def _move_down(event):
         event.app.key_processor.feed(KeyPress(Keys.Down))
 
+    ensure_interactive(messages.prompt_select_sharing)
     try:
         sharing_input = choice(
             messages.prompt_select_sharing,
@@ -241,7 +242,7 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
             default="none",
             key_bindings=choice_kb,
         )
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
     sharing = sharing_input if sharing_input != "none" else None

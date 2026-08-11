@@ -1,7 +1,6 @@
 import argparse
 import sys
 
-from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.validation import Validator
 
@@ -18,6 +17,7 @@ from redi.api.time_entry import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
+from redi.cli.interactive import prompt
 from redi.cli.keybinding import (
     date_key_bindings,
     digit_and_period_key_bindings,
@@ -226,7 +226,7 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
     ]
     try:
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
     if not selected:

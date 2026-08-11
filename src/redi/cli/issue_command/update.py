@@ -4,8 +4,6 @@ from dataclasses import dataclass, fields
 from datetime import date
 from typing import Self, cast
 
-from prompt_toolkit import prompt
-
 from redi.api.custom_field import (
     CustomField,
     fetch_custom_fields,
@@ -30,6 +28,7 @@ from redi.cli.custom_field_prompt import (
     prompt_custom_field_value,
 )
 from redi.cli.editor import open_editor, save_body_on_failure
+from redi.cli.interactive import prompt
 from redi.cli.issue_command.field_prompt import (
     parse_iso_date,
     prompt_assignee,
@@ -96,7 +95,7 @@ def _interactive_select_issue_id() -> str:
     labels = dict(options)
     try:
         issue_id = inline_choice(messages.prompt_select_issue_to_update, options)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
     print(messages.update_target_issue.format(label=labels[issue_id]))
@@ -149,7 +148,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
             field_values,
             initial_value="description",
         )
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
     if not selected:

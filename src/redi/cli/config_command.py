@@ -1,9 +1,8 @@
 import argparse
 import sys
 
-from prompt_toolkit import prompt
-
 from redi.cli.alias import resolve_alias
+from redi.cli.interactive import prompt
 from redi.cli.picker import inline_checkbox, inline_choice, inline_choice_with_action
 from redi.cli.validator import RequiredValidator, UrlValidator
 from redi.config import (
@@ -130,7 +129,7 @@ def _interactive_fill_config_update_args(
     ]
     try:
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         return False
     if not selected:

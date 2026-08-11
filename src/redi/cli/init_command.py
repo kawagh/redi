@@ -3,10 +3,10 @@ import sys
 import tomllib
 
 import requests
-from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
 
 from redi.api.project import Project, fetch_projects
+from redi.cli.interactive import prompt
 from redi.cli.picker import inline_choice
 from redi.cli.validator import UrlValidator
 from redi.client import RedmineClient
