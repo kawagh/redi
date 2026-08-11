@@ -22,6 +22,25 @@ from redi.config import default_project_id
 from redi.i18n import messages
 
 
+def _edit_description(initial_text: str = "") -> str:
+    """エディタで説明を入力させ、入力内容を 1 行に畳んで表示する。
+
+    エディタを閉じると入力内容が見えなくなるため表示する。
+    空のまま閉じられた場合はキャンセルして終了する。
+    """
+    description = open_editor(initial_text)
+    if not description:
+        print(messages.canceled_empty_text)
+        sys.exit(1)
+    print(
+        messages.prompt_field_value.format(
+            name=messages.field_description,
+            value=shorten_to_oneline(description),
+        )
+    )
+    return description
+
+
 def _interactive_select_news_id(
     project_id: str | None,
     prompt_message: str,
@@ -89,10 +108,7 @@ def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, s
         print(messages.canceled)
         sys.exit(1)
     if "description" in selected:
-        description = open_editor(news["description"])
-        if not description:
-            print(messages.canceled_empty_text)
-            sys.exit(1)
+        description = _edit_description(news["description"])
     return title, summary, description
 
 
@@ -197,19 +213,7 @@ def handle_news(args: argparse.Namespace) -> None:
             except (KeyboardInterrupt, EOFError):
                 print(messages.canceled)
                 sys.exit(1)
-        description = args.description
-        if not description:
-            description = open_editor()
-            if description:
-                print(
-                    messages.prompt_field_value.format(
-                        name=messages.field_description,
-                        value=shorten_to_oneline(description),
-                    )
-                )
-        if not description:
-            print(messages.canceled_empty_text)
-            sys.exit(1)
+        description = args.description or _edit_description()
         create_news(
             project_id=project_id,
             title=title,
@@ -232,11 +236,7 @@ def handle_news(args: argparse.Namespace) -> None:
                 fetch_news(news_id)
             )
         elif description == "":
-            current = fetch_news(news_id)
-            description = open_editor(current["description"])
-            if not description:
-                print(messages.canceled_empty_text)
-                sys.exit(1)
+            description = _edit_description(fetch_news(news_id)["description"])
         update_news(
             news_id=news_id,
             title=title,
