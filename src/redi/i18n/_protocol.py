@@ -223,7 +223,7 @@ class MessagesProto(Protocol):
     category_deleted: str
     """{id}"""
     news_created: str
-    """{title}"""
+    """{url}"""
     news_updated: str
     """{id}"""
     news_deleted: str

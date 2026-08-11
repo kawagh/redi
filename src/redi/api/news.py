@@ -124,6 +124,19 @@ def read_news(news_id: str, full: bool = False, web: bool = False) -> None:
     print("\n".join(lines))
 
 
+def fetch_latest_news_id(project_id: str) -> int:
+    """プロジェクトの最新のニュースの id を返す。
+
+    作成 API は 204 を返し body を持たないため、レスポンスからは
+    作成したニュースの id を取れない。一覧は作成日時の降順で返るので、
+    作成直後に先頭を引くことで id を得る。
+    """
+    response = client.get(f"/projects/{project_id}/news.json", params={"limit": 1})
+    response.raise_for_status()
+    news_list = cast("list[News]", response.json()["news"])
+    return news_list[0]["id"]
+
+
 def create_news(
     project_id: str,
     title: str,
@@ -144,8 +157,8 @@ def create_news(
         print_http_error_body(e)
         print(messages.news_create_failed)
         sys.exit(1)
-    # 作成 API は 204 を返し本文を持たないため、作成した id は表示できない
-    print(messages.news_created.format(title=title))
+    news_id = fetch_latest_news_id(project_id)
+    print(messages.news_created.format(url=f"{redmine_url}/news/{news_id}"))
 
 
 def update_news(

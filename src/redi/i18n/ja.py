@@ -138,7 +138,7 @@ class Ja(MessagesProto):
     category_created = "カテゴリを作成しました: {id} {name}"
     category_updated = "カテゴリを更新しました: {id}"
     category_deleted = "カテゴリを削除しました: {id}"
-    news_created = "ニュースを作成しました: {title}"
+    news_created = "ニュースを作成しました: {url}"
     news_updated = "ニュースを更新しました: {id}"
     news_deleted = "ニュースを削除しました: {id}"
 
