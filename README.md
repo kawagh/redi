@@ -222,6 +222,10 @@ redi query # list custom queries (alias: q)
 redi --version
 ```
 
+## Redmine version
+
+`redi` is developed against Redmine 6.1.
+
 ## Development
 
 ### install
