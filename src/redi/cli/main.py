@@ -41,8 +41,8 @@ from redi.cli.issue_category_command import (
 )
 from redi.cli.issue_command import (
     add_issue_parser,
+    create_issue_interactively,
     handle_issue,
-    handle_issue_create,
     update_issue_interactively,
 )
 from redi.cli.issue_journal_command import (
@@ -194,24 +194,9 @@ def main() -> None:
                 if tui_result.action == "update" and tui_result.tab == "issues":
                     update_issue_interactively(tui_result.issue_id)
                 elif tui_result.action == "create" and tui_result.tab == "issues":
-                    handle_issue_create(
-                        argparse.Namespace(
-                            subject=None,
-                            # TUI 内で切り替えたプロジェクトに作成する。
-                            # None なら従来どおり default_project_id に落ちる。
-                            project_id=tui_state.project_id,
-                            tracker_id=None,
-                            priority_id=None,
-                            assigned_to_id=None,
-                            fixed_version_id=None,
-                            parent_issue_id=None,
-                            start_date=None,
-                            due_date=None,
-                            estimated_hours=None,
-                            description=None,
-                            custom_fields=None,
-                        )
-                    )
+                    # TUI 内で切り替えたプロジェクトに作成する。
+                    # None なら従来どおり default_project_id に落ちる。
+                    create_issue_interactively(tui_state.project_id)
                 elif tui_result.action == "comment":
                     if tui_result.issue_id is None:
                         continue
