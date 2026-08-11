@@ -97,6 +97,33 @@ class IssueUpdateArgs:
         return cls(**{f.name: getattr(args, f.name) for f in fields(cls)})
 
 
+@dataclass
+class IssueCreateArgs:
+    """`issue create` の入力値。
+
+    フィールド名は `add_issue_parser` が定義する `dest` と一致させること。
+    argparse 経由なら `from_namespace` で、TUI からは必要な項目だけ指定して生成する。
+    """
+
+    subject: str | None = None
+    project_id: str | None = None
+    tracker_id: str | None = None
+    priority_id: str | None = None
+    assigned_to_id: str | None = None
+    fixed_version_id: str | None = None
+    parent_issue_id: str | None = None
+    start_date: str | None = None
+    due_date: str | None = None
+    estimated_hours: float | None = None
+    description: str | None = None
+    custom_fields: str | None = None
+
+    @classmethod
+    def from_namespace(cls, args: argparse.Namespace) -> Self:
+        # dest 名がずれていたら AttributeError で気付けるよう getattr は防御しない
+        return cls(**{f.name: getattr(args, f.name) for f in fields(cls)})
+
+
 def add_issue_parser(
     subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
 ) -> None:
@@ -304,43 +331,33 @@ def add_issue_parser(
     )
 
 
-def _build_create_issue_url(
-    project_id: str,
-    subject: str = "",
-    description: str = "",
-    tracker_id: str | None = None,
-    priority_id: str | None = None,
-    assigned_to_id: str | None = None,
-    fixed_version_id: str | None = None,
-    parent_issue_id: str | None = None,
-    start_date: str | None = None,
-    due_date: str | None = None,
-    estimated_hours: float | None = None,
-    custom_fields: str | None = None,
-) -> str:
+def _build_create_issue_url(args: IssueCreateArgs) -> str:
+    # 呼び出し側で project_id は解決済み
+    assert args.project_id is not None
+    project_id = args.project_id
     params: list[tuple[str, str]] = []
-    if subject:
-        params.append(("issue[subject]", subject))
-    if description:
-        params.append(("issue[description]", description))
-    if tracker_id:
-        params.append(("issue[tracker_id]", tracker_id))
-    if priority_id:
-        params.append(("issue[priority_id]", priority_id))
-    if assigned_to_id:
-        params.append(("issue[assigned_to_id]", assigned_to_id))
-    if fixed_version_id:
-        params.append(("issue[fixed_version_id]", fixed_version_id))
-    if parent_issue_id:
-        params.append(("issue[parent_issue_id]", parent_issue_id))
-    if start_date:
-        params.append(("issue[start_date]", start_date))
-    if due_date:
-        params.append(("issue[due_date]", due_date))
-    if estimated_hours is not None:
-        params.append(("issue[estimated_hours]", str(estimated_hours)))
-    if custom_fields:
-        for cf in parse_custom_fields(custom_fields):
+    if args.subject:
+        params.append(("issue[subject]", args.subject))
+    if args.description:
+        params.append(("issue[description]", args.description))
+    if args.tracker_id:
+        params.append(("issue[tracker_id]", args.tracker_id))
+    if args.priority_id:
+        params.append(("issue[priority_id]", args.priority_id))
+    if args.assigned_to_id:
+        params.append(("issue[assigned_to_id]", args.assigned_to_id))
+    if args.fixed_version_id:
+        params.append(("issue[fixed_version_id]", args.fixed_version_id))
+    if args.parent_issue_id:
+        params.append(("issue[parent_issue_id]", args.parent_issue_id))
+    if args.start_date:
+        params.append(("issue[start_date]", args.start_date))
+    if args.due_date:
+        params.append(("issue[due_date]", args.due_date))
+    if args.estimated_hours is not None:
+        params.append(("issue[estimated_hours]", str(args.estimated_hours)))
+    if args.custom_fields:
+        for cf in parse_custom_fields(args.custom_fields):
             value = cf["value"]
             if isinstance(value, list):
                 for v in value:
@@ -836,18 +853,15 @@ def _interactive_fill_required_custom_fields(
     return ",".join(added), browser_only
 
 
-def _interactive_fill_optional_create_fields(
-    args: argparse.Namespace,
-    project_id: str,
-    tracker_id: str | None,
-    custom_fields: str | None,
-) -> str | None:
+def _interactive_fill_optional_create_fields(args: IssueCreateArgs) -> None:
     """アクションメニューから「任意項目を入力する」を選んだときの入力フロー。
 
     標準項目（担当者・対象バージョン・親チケット・開始日・期日・予定工数）に加えて
-    任意のカスタムフィールドも選択肢に並べる。入力された CF 値を含めた更新後の
-    custom_fields 文字列を返す。
+    任意のカスタムフィールドも選択肢に並べ、入力結果を args へ書き戻す。
     """
+    # 呼び出し側で project_id は解決済み
+    assert args.project_id is not None
+    project_id = args.project_id
     field_options: list[tuple[str, str]] = [
         ("assigned_to", messages.field_assignee),
         ("fixed_version", messages.field_fixed_version),
@@ -860,14 +874,14 @@ def _interactive_fill_optional_create_fields(
     all_cfs = fetch_custom_fields()
     if all_cfs is not None:
         existing_ids: set[int] = set()
-        if custom_fields:
-            for pair in custom_fields.split(","):
+        if args.custom_fields:
+            for pair in args.custom_fields.split(","):
                 existing_ids.add(int(pair.split("=")[0]))
         project_cf_ids = fetch_project_issue_custom_field_ids(project_id)
         optional_cfs = [
             cf
             for cf in filter_optional_issue_custom_fields(
-                all_cfs, project_cf_ids, tracker_id
+                all_cfs, project_cf_ids, args.tracker_id
             )
             if cf["id"] not in existing_ids
         ]
@@ -882,7 +896,7 @@ def _interactive_fill_optional_create_fields(
         print(messages.canceled)
         sys.exit(1)
     if not selected:
-        return custom_fields
+        return
     added_cfs: list[str] = []
     try:
         if "assigned_to" in selected:
@@ -964,10 +978,11 @@ def _interactive_fill_optional_create_fields(
         print(messages.canceled)
         sys.exit(1)
     if not added_cfs:
-        return custom_fields
-    if custom_fields:
-        return custom_fields + "," + ",".join(added_cfs)
-    return ",".join(added_cfs)
+        return
+    if args.custom_fields:
+        args.custom_fields = args.custom_fields + "," + ",".join(added_cfs)
+    else:
+        args.custom_fields = ",".join(added_cfs)
 
 
 def _interactive_select_issue_template(
@@ -1006,18 +1021,27 @@ def _save_body_on_failure(text: str | None) -> None:
 
 
 def handle_issue_create(args: argparse.Namespace) -> None:
+    """argparse アダプタ。Namespace を読むのはここまでに閉じる。"""
+    _run_issue_create(IssueCreateArgs.from_namespace(args))
+
+
+def create_issue_interactively(project_id: str | None = None) -> None:
+    """題名・説明を対話で入力する入口。TUI から使う。"""
+    _run_issue_create(IssueCreateArgs(project_id=project_id))
+
+
+def _run_issue_create(args: IssueCreateArgs) -> None:
     project_id = args.project_id or default_project_id
     if not project_id:
         print(messages.project_id_required)
         sys.exit(1)
-    subject = args.subject
-    tracker_id = args.tracker_id
-    custom_fields = args.custom_fields
-    interactive = subject is None or args.description is None
+    args.project_id = project_id
+    # 対話フローに入るかは args を書き換える前に決める
+    interactive = args.subject is None or args.description is None
     browser_only = False
     template_description = ""
-    if subject is None:
-        if tracker_id is None:
+    if args.subject is None:
+        if args.tracker_id is None:
             project = fetch_project(project_id, include="trackers")
             trackers = project.get("trackers") or []
             tracker_options: list[tuple[str, str]] = [
@@ -1025,44 +1049,44 @@ def handle_issue_create(args: argparse.Namespace) -> None:
             ]
             labels = dict(tracker_options)
             try:
-                tracker_id = inline_choice(
+                args.tracker_id = inline_choice(
                     messages.prompt_select_tracker, tracker_options
                 )
             except KeyboardInterrupt:
                 print(messages.canceled)
                 sys.exit(1)
-            print(messages.tracker_label.format(value=labels[tracker_id]))
+            print(messages.tracker_label.format(value=labels[args.tracker_id]))
         # テンプレートを選択し、題名・説明の初期値として反映させる
-        template = _interactive_select_issue_template(project_id, tracker_id)
+        template = _interactive_select_issue_template(project_id, args.tracker_id)
         subject_default = ""
         if template is not None:
             subject_default = template["issue_title"]
             template_description = template["description"]
         try:
-            subject = prompt(messages.prompt_subject, default=subject_default).strip()
+            args.subject = prompt(
+                messages.prompt_subject, default=subject_default
+            ).strip()
         except (KeyboardInterrupt, EOFError):
             print(messages.canceled)
             sys.exit(1)
-        if not subject:
+        if not args.subject:
             print(messages.canceled_empty_subject)
             sys.exit(1)
         # 必要なカスタムフィールドを対話的に入力
-        custom_fields, browser_only = _interactive_fill_required_custom_fields(
+        args.custom_fields, browser_only = _interactive_fill_required_custom_fields(
             project_id=project_id,
-            tracker_id=tracker_id,
+            tracker_id=args.tracker_id,
             existing=args.custom_fields,
         )
     if args.description is None:
-        description = open_editor(initial_text=template_description)
-        if description:
+        args.description = open_editor(initial_text=template_description)
+        if args.description:
             print(
                 messages.prompt_field_value.format(
                     name=messages.field_description,
-                    value=_shorten_to_oneline(description),
+                    value=_shorten_to_oneline(args.description),
                 )
             )
-    else:
-        description = args.description
     if interactive:
         # 添付ファイル必須など redi で送信できないケースは「ブラウザで編集」のみ提示する
         while True:
@@ -1084,34 +1108,18 @@ def handle_issue_create(args: argparse.Namespace) -> None:
                 print(messages.canceled)
                 sys.exit(1)
             if action == "optional":
-                custom_fields = _interactive_fill_optional_create_fields(
-                    args, project_id, tracker_id, custom_fields
-                )
+                _interactive_fill_optional_create_fields(args)
                 continue
             if action == "browser":
-                url = _build_create_issue_url(
-                    project_id=project_id,
-                    subject=subject,
-                    description=description,
-                    tracker_id=tracker_id,
-                    priority_id=args.priority_id,
-                    assigned_to_id=args.assigned_to_id,
-                    fixed_version_id=args.fixed_version_id,
-                    parent_issue_id=args.parent_issue_id,
-                    start_date=args.start_date,
-                    due_date=args.due_date,
-                    estimated_hours=args.estimated_hours,
-                    custom_fields=custom_fields,
-                )
-                webbrowser.open(url)
+                webbrowser.open(_build_create_issue_url(args))
                 return
             break
     try:
         create_issue(
             project_id=project_id,
-            subject=subject,
-            description=description,
-            tracker_id=tracker_id,
+            subject=args.subject,
+            description=args.description,
+            tracker_id=args.tracker_id,
             priority_id=args.priority_id,
             assigned_to_id=args.assigned_to_id,
             fixed_version_id=args.fixed_version_id,
@@ -1119,10 +1127,10 @@ def handle_issue_create(args: argparse.Namespace) -> None:
             start_date=args.start_date,
             due_date=args.due_date,
             estimated_hours=args.estimated_hours,
-            custom_fields=custom_fields,
+            custom_fields=args.custom_fields,
         )
     except Exception:
-        _save_body_on_failure(description)
+        _save_body_on_failure(args.description)
         raise
 
 
