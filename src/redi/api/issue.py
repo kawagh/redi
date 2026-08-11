@@ -418,7 +418,8 @@ def update_issue(
         issue_data["priority_id"] = priority_id
     if assigned_to_id is not None:
         issue_data["assigned_to_id"] = assigned_to_id
-    if fixed_version_id:
+    # 空文字は「対象バージョンを外す」意味なので assigned_to_id と同じく送る
+    if fixed_version_id is not None:
         issue_data["fixed_version_id"] = fixed_version_id
     if parent_issue_id is not None:
         issue_data["parent_issue_id"] = parent_issue_id
