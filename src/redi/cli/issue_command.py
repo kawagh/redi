@@ -4,7 +4,7 @@ import urllib.parse
 import webbrowser
 from dataclasses import dataclass, fields
 from datetime import date
-from typing import cast
+from typing import Self, cast
 
 from prompt_toolkit import prompt
 
@@ -92,7 +92,7 @@ class IssueUpdateArgs:
     remove_watcher_ids: list[int] | None = None
 
     @classmethod
-    def from_namespace(cls, args: argparse.Namespace) -> "IssueUpdateArgs":
+    def from_namespace(cls, args: argparse.Namespace) -> Self:
         # dest 名がずれていたら AttributeError で気付けるよう getattr は防御しない
         return cls(**{f.name: getattr(args, f.name) for f in fields(cls)})
 
