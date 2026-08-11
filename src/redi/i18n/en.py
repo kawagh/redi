@@ -135,7 +135,7 @@ class En(MessagesProto):
     category_updated = "Updated category: {id}"
     category_deleted = "Deleted category: {id}"
     news_created = "Created news: {url}"
-    news_updated = "Updated news: {id}"
+    news_updated = "Updated news: {url}"
     news_deleted = "Deleted news: {id}"
 
     # ---- failures ----

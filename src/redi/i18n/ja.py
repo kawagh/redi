@@ -139,7 +139,7 @@ class Ja(MessagesProto):
     category_updated = "カテゴリを更新しました: {id}"
     category_deleted = "カテゴリを削除しました: {id}"
     news_created = "ニュースを作成しました: {url}"
-    news_updated = "ニュースを更新しました: {id}"
+    news_updated = "ニュースを更新しました: {url}"
     news_deleted = "ニュースを削除しました: {id}"
 
     # ---- failures ----

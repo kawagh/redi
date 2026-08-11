@@ -188,7 +188,7 @@ def update_news(
         print_http_error_body(e)
         print(messages.news_update_failed)
         sys.exit(1)
-    print(messages.news_updated.format(id=news_id))
+    print(messages.news_updated.format(url=f"{redmine_url}/news/{news_id}"))
 
 
 def delete_news(news_id: str) -> None:

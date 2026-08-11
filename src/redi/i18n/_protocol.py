@@ -225,7 +225,7 @@ class MessagesProto(Protocol):
     news_created: str
     """{url}"""
     news_updated: str
-    """{id}"""
+    """{url}"""
     news_deleted: str
     """{id}"""
 
