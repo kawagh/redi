@@ -120,6 +120,7 @@ class MessagesProto(Protocol):
     no_versions_available: str
     """選択可能なバージョンがない"""
     no_issues_available: str
+    no_news_available: str
     """選択可能なイシューがない"""
     no_profiles_available: str
     """選択可能なプロファイルがない"""
@@ -301,6 +302,8 @@ class MessagesProto(Protocol):
     """{label}"""
     update_target_issue: str
     """{label}"""
+    update_target_news: str
+    """{label}"""
     update_items: str
     """{items}"""
     status_label: str
@@ -369,6 +372,7 @@ class MessagesProto(Protocol):
     prompt_select_sharing: str
     prompt_select_version_to_update: str
     prompt_select_issue_to_update: str
+    prompt_select_news_to_update: str
     prompt_select_profile: str
     """プロファイル一覧の見出し。Enter でデフォルト設定 / u で項目更新の案内を含む"""
     prompt_default_project_id: str

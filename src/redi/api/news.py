@@ -46,17 +46,27 @@ class News(TypedDict):
     comments: NotRequired[list[NewsComment]]
 
 
-def list_news(project_id: str | None = None, full: bool = False) -> None:
+def fetch_news_list(
+    project_id: str | None = None, limit: int | None = None
+) -> list[News]:
+    """ニュースを作成日時の降順で返す。project_id 省略時は全プロジェクトが対象。"""
     if project_id:
         path = f"/projects/{project_id}/news.json"
     else:
         path = "/news.json"
-    response = client.get(path)
+    params: dict = {}
+    if limit is not None:
+        params["limit"] = limit
+    response = client.get(path, params=params)
     if response.status_code == 404:
         print(messages.project_not_found.format(id=project_id))
         sys.exit(1)
     response.raise_for_status()
-    news_list = cast("list[News]", response.json()["news"])
+    return cast("list[News]", response.json()["news"])
+
+
+def list_news(project_id: str | None = None, full: bool = False) -> None:
+    news_list = fetch_news_list(project_id)
     if full:
         print(json.dumps(news_list, ensure_ascii=False))
         return
@@ -131,10 +141,7 @@ def fetch_latest_news_id(project_id: str) -> int:
     作成したニュースの id を取れない。一覧は作成日時の降順で返るので、
     作成直後に先頭を引くことで id を得る。
     """
-    response = client.get(f"/projects/{project_id}/news.json", params={"limit": 1})
-    response.raise_for_status()
-    news_list = cast("list[News]", response.json()["news"])
-    return news_list[0]["id"]
+    return fetch_news_list(project_id, limit=1)[0]["id"]
 
 
 def create_news(

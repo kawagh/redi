@@ -8,6 +8,7 @@ from redi.api.news import (
     create_news,
     delete_news,
     fetch_news,
+    fetch_news_list,
     list_news,
     read_news,
     update_news,
@@ -15,10 +16,29 @@ from redi.api.news import (
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor
-from redi.cli.picker import inline_checkbox
+from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.validator import RequiredValidator
 from redi.config import default_project_id
 from redi.i18n import messages
+
+
+def _interactive_select_news_id(project_id: str | None) -> str:
+    """更新対象のニュースを選ばせて id を返す。"""
+    news_list = fetch_news_list(project_id)
+    if not news_list:
+        print(messages.no_news_available)
+        sys.exit(1)
+    options: list[tuple[str, str]] = [
+        (str(n["id"]), f"{n['id']} {n['title']}") for n in news_list
+    ]
+    labels = dict(options)
+    try:
+        news_id = inline_choice(messages.prompt_select_news_to_update, options)
+    except KeyboardInterrupt:
+        print(messages.canceled)
+        sys.exit(1)
+    print(messages.update_target_news.format(label=labels[news_id]))
+    return news_id
 
 
 def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, str]:
@@ -120,7 +140,9 @@ def add_news_parser(
     n_update_parser = n_subparsers.add_parser(
         "update", aliases=["u"], help=messages.arg_help_news_update, parents=parents
     )
-    n_update_parser.add_argument("news_id", help=messages.arg_help_news_update_id)
+    n_update_parser.add_argument(
+        "news_id", nargs="?", help=messages.arg_help_news_update_id
+    )
     n_update_parser.add_argument("--title", "-t", help=messages.arg_help_news_title_opt)
     n_update_parser.add_argument(
         "--description",
@@ -172,22 +194,25 @@ def handle_news(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "update":
+        news_id = args.news_id or _interactive_select_news_id(
+            args.project_id or default_project_id
+        )
         title = args.title
         summary = args.summary
         description = args.description
         if title is None and summary is None and description is None:
             # 更新項目が 1 つも指定されていないので対話で選ばせる
             title, summary, description = _interactive_fill_news_update(
-                fetch_news(args.news_id)
+                fetch_news(news_id)
             )
         elif description == "":
-            current = fetch_news(args.news_id)
+            current = fetch_news(news_id)
             description = open_editor(current["description"])
             if not description:
                 print(messages.canceled_empty_text)
                 sys.exit(1)
         update_news(
-            news_id=args.news_id,
+            news_id=news_id,
             title=title,
             description=description or None,
             summary=summary,

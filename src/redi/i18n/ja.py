@@ -71,6 +71,7 @@ class Ja(MessagesProto):
     issue_not_found_simple = "イシューが見つかりません"
     no_versions_available = "選択可能なバージョンがありません"
     no_issues_available = "選択可能なイシューがありません"
+    no_news_available = "選択可能なニュースがありません"
     no_profiles_available = (
         "選択可能なプロファイルがありません。redi init を実行してください"
     )
@@ -202,6 +203,7 @@ class Ja(MessagesProto):
     edit_target_page = "編集するページ: {label}"
     update_target_version = "更新するバージョン: {label}"
     update_target_issue = "更新するイシュー: {label}"
+    update_target_news = "更新するニュース: {label}"
     update_items = "更新する項目: {items}"
     status_label = "ステータス: {value}"
     sharing_label = "共有設定: {value}"
@@ -258,6 +260,7 @@ class Ja(MessagesProto):
     prompt_select_sharing = "共有設定"
     prompt_select_version_to_update = "更新するバージョンを選択"
     prompt_select_issue_to_update = "更新するイシューを選択"
+    prompt_select_news_to_update = "更新するニュースを選択"
     prompt_select_profile = (
         "プロファイルを選択 (Enter: デフォルトに設定 / u: 項目を更新)"
     )
@@ -829,7 +832,7 @@ class Ja(MessagesProto):
     arg_help_news_summary = "ニュースのサマリー"
     arg_help_news_description = "説明（値省略でエディタ起動）"
     arg_help_news_update = "ニュース更新"
-    arg_help_news_update_id = "ニュースID"
+    arg_help_news_update_id = "ニュースID（省略で対話的に選択）"
     arg_help_news_delete = "ニュース削除"
     arg_help_news_delete_id = "ニュースID"
 

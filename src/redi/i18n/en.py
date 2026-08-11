@@ -67,6 +67,7 @@ class En(MessagesProto):
     issue_not_found_simple = "Issue not found"
     no_versions_available = "No versions available"
     no_issues_available = "No issues available"
+    no_news_available = "No news available"
     no_profiles_available = (
         "No profiles available. To create first profile, run `redi init`"
     )
@@ -200,6 +201,7 @@ class En(MessagesProto):
     edit_target_page = "Editing page: {label}"
     update_target_version = "Updating version: {label}"
     update_target_issue = "Updating issue: {label}"
+    update_target_news = "Updating news: {label}"
     update_items = "Items to update: {items}"
     status_label = "Status: {value}"
     sharing_label = "Sharing: {value}"
@@ -257,6 +259,7 @@ class En(MessagesProto):
     prompt_select_sharing = "Sharing"
     prompt_select_version_to_update = "Select version to update"
     prompt_select_issue_to_update = "Select issue to update"
+    prompt_select_news_to_update = "Select news to update"
     prompt_select_profile = "Select profile (Enter: set as default / u: update fields)"
     prompt_default_project_id = "default_project_id: "
     prompt_wiki_project_id = "wiki_project_id: "
@@ -822,7 +825,7 @@ class En(MessagesProto):
     arg_help_news_summary = "News summary"
     arg_help_news_description = "Description (no value opens editor)"
     arg_help_news_update = "Update news"
-    arg_help_news_update_id = "News ID"
+    arg_help_news_update_id = "News ID (omit to select interactively)"
     arg_help_news_delete = "Delete news"
     arg_help_news_delete_id = "News ID"
 
