@@ -1,11 +1,11 @@
 services:
   redmine-for-test:
-    image: redmine
+    image: redmine:6.1
     ports:
       - 3000:3000
 
   redmine-for-dogfooding:
-    image: redmine
+    image: redmine:6.1
     profiles:
       - dogfooding
     restart: always
@@ -18,7 +18,7 @@ services:
   redmine-for-demo:
     profiles:
       - demo
-    image: redmine
+    image: redmine:6.1
     ports:
       - 3002:3000
 
