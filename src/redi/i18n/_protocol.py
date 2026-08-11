@@ -111,6 +111,8 @@ class MessagesProto(Protocol):
     """グループまたはユーザーが見つからない。{group_id} / {user_id}"""
     category_not_found: str
     """カテゴリが見つからない。{id}"""
+    news_not_found: str
+    """ニュースが見つからない。{id}"""
     no_search_results: str
     """検索結果が見つからない"""
     issue_not_found_simple: str
@@ -118,6 +120,7 @@ class MessagesProto(Protocol):
     no_versions_available: str
     """選択可能なバージョンがない"""
     no_issues_available: str
+    no_news_available: str
     """選択可能なイシューがない"""
     no_profiles_available: str
     """選択可能なプロファイルがない"""
@@ -220,6 +223,12 @@ class MessagesProto(Protocol):
     """{id}"""
     category_deleted: str
     """{id}"""
+    news_created: str
+    """{url}"""
+    news_updated: str
+    """{url}"""
+    news_deleted: str
+    """{id}"""
 
     # ---- failures ----
     user_create_failed: str
@@ -274,6 +283,9 @@ class MessagesProto(Protocol):
     category_create_failed: str
     category_update_failed: str
     category_delete_failed: str
+    news_create_failed: str
+    news_update_failed: str
+    news_delete_failed: str
     project_list_fetch_failed: str
     """{error}"""
     connection_failed_http: str
@@ -289,6 +301,8 @@ class MessagesProto(Protocol):
     update_target_version: str
     """{label}"""
     update_target_issue: str
+    """{label}"""
+    update_target_news: str
     """{label}"""
     update_items: str
     """{items}"""
@@ -336,6 +350,8 @@ class MessagesProto(Protocol):
     prompt_confirm_delete_with_identifier: str
     """{label}, {expected}"""
     prompt_subject: str
+    prompt_title: str
+    prompt_summary: str
     prompt_comment: str
     prompt_page_title: str
     prompt_parent_page: str
@@ -356,6 +372,8 @@ class MessagesProto(Protocol):
     prompt_select_sharing: str
     prompt_select_version_to_update: str
     prompt_select_issue_to_update: str
+    prompt_select_news_to_update: str
+    prompt_select_news_to_delete: str
     prompt_select_profile: str
     """プロファイル一覧の見出し。Enter でデフォルト設定 / u で項目更新の案内を含む"""
     prompt_default_project_id: str
@@ -416,6 +434,8 @@ class MessagesProto(Protocol):
     # ---- field labels (interactive selection items) ----
     field_tracker: str
     field_subject: str
+    field_title: str
+    field_summary: str
     field_description: str
     field_status: str
     field_priority: str
@@ -471,6 +491,8 @@ class MessagesProto(Protocol):
     """{id}, {notes}"""
     delete_target_category: str
     """{id}, {name}"""
+    delete_target_news: str
+    """{id}, {title}"""
     delete_target_group: str
     """{id}, {name}"""
     delete_target_time_entry: str
@@ -513,6 +535,9 @@ class MessagesProto(Protocol):
     """{value}"""
     label_description_field: str
     """{value}"""
+    label_summary_field: str
+    """{value}"""
+    label_news_comments_header: str
     label_url_field: str
     """{value}"""
     label_roles_header: str
@@ -923,6 +948,18 @@ class MessagesProto(Protocol):
 
     # ---- argparse helps (news) ----
     arg_help_news_command: str
+    arg_help_news_list: str
+    arg_help_news_view: str
+    arg_help_news_view_id: str
+    arg_help_news_create: str
+    arg_help_news_create_title: str
+    arg_help_news_title_opt: str
+    arg_help_news_summary: str
+    arg_help_news_description: str
+    arg_help_news_update: str
+    arg_help_news_update_id: str
+    arg_help_news_delete: str
+    arg_help_news_delete_id: str
 
     # ---- argparse helps (enumerations) ----
     arg_help_tracker_command: str

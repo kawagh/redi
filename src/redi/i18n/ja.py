@@ -66,10 +66,12 @@ class Ja(MessagesProto):
         "グループまたはユーザーが見つかりません: #{group_id} / #{user_id}"
     )
     category_not_found = "カテゴリが見つかりません: {id}"
+    news_not_found = "ニュースが見つかりません: {id}"
     no_search_results = "検索結果が見つかりませんでした"
     issue_not_found_simple = "イシューが見つかりません"
     no_versions_available = "選択可能なバージョンがありません"
     no_issues_available = "選択可能なイシューがありません"
+    no_news_available = "選択可能なニュースがありません"
     no_profiles_available = (
         "選択可能なプロファイルがありません。redi init を実行してください"
     )
@@ -137,6 +139,9 @@ class Ja(MessagesProto):
     category_created = "カテゴリを作成しました: {id} {name}"
     category_updated = "カテゴリを更新しました: {id}"
     category_deleted = "カテゴリを削除しました: {id}"
+    news_created = "ニュースを作成しました: {url}"
+    news_updated = "ニュースを更新しました: {url}"
+    news_deleted = "ニュースを削除しました: {id}"
 
     # ---- failures ----
     user_create_failed = "ユーザーの作成に失敗しました"
@@ -186,6 +191,9 @@ class Ja(MessagesProto):
     category_create_failed = "カテゴリの作成に失敗しました"
     category_update_failed = "カテゴリの更新に失敗しました"
     category_delete_failed = "カテゴリの削除に失敗しました"
+    news_create_failed = "ニュースの作成に失敗しました"
+    news_update_failed = "ニュースの更新に失敗しました"
+    news_delete_failed = "ニュースの削除に失敗しました"
     project_list_fetch_failed = "プロジェクト一覧の取得に失敗しました: {error}"
     connection_failed_http = "接続失敗: {status} {reason}"
     connection_failed_other = "接続失敗: {error}"
@@ -195,6 +203,7 @@ class Ja(MessagesProto):
     edit_target_page = "編集するページ: {label}"
     update_target_version = "更新するバージョン: {label}"
     update_target_issue = "更新するイシュー: {label}"
+    update_target_news = "更新するニュース: {label}"
     update_items = "更新する項目: {items}"
     status_label = "ステータス: {value}"
     sharing_label = "共有設定: {value}"
@@ -227,6 +236,8 @@ class Ja(MessagesProto):
         '削除するには{label} "{expected}" を入力してください: '
     )
     prompt_subject = "題名: "
+    prompt_title = "タイトル: "
+    prompt_summary = "サマリー（省略可）: "
     prompt_comment = "コメント: "
     prompt_page_title = "ページタイトル: "
     prompt_parent_page = "親ページ"
@@ -249,6 +260,8 @@ class Ja(MessagesProto):
     prompt_select_sharing = "共有設定"
     prompt_select_version_to_update = "更新するバージョンを選択"
     prompt_select_issue_to_update = "更新するイシューを選択"
+    prompt_select_news_to_update = "更新するニュースを選択"
+    prompt_select_news_to_delete = "削除するニュースを選択"
     prompt_select_profile = (
         "プロファイルを選択 (Enter: デフォルトに設定 / u: 項目を更新)"
     )
@@ -303,6 +316,8 @@ class Ja(MessagesProto):
     # ---- field labels ----
     field_tracker = "トラッカー (tracker)"
     field_subject = "題名 (subject)"
+    field_title = "タイトル (title)"
+    field_summary = "サマリー (summary)"
     field_description = "説明 (description)"
     field_status = "ステータス (status)"
     field_priority = "優先度 (priority)"
@@ -350,6 +365,7 @@ class Ja(MessagesProto):
     overwrite_target_file = "既に存在するファイル: {path}"
     delete_target_issue_journal = "削除するイシューのジャーナル: #{id} {notes}"
     delete_target_category = "削除するイシューカテゴリ: {id} {name}"
+    delete_target_news = "削除するニュース: {id} {title}"
     delete_target_group = "削除するグループ: {id} {name}"
     delete_target_time_entry = "削除する作業時間: {id} {hours}h {activity} ({spent_on})"
 
@@ -375,6 +391,8 @@ class Ja(MessagesProto):
     label_kind = "種別: {value}"
     label_author = "作成者: {value}"
     label_description_field = "説明: {value}"
+    label_summary_field = "サマリー: {value}"
+    label_news_comments_header = "コメント:"
     label_url_field = "URL: {value}"
     label_roles_header = "ロール:"
     label_inherited_suffix = " (継承)"
@@ -805,7 +823,19 @@ class Ja(MessagesProto):
     )
 
     # ---- argparse helps (news) ----
-    arg_help_news_command = "ニュース一覧"
+    arg_help_news_command = arg_help_crud_subcommands
+    arg_help_news_list = "ニュース一覧"
+    arg_help_news_view = "ニュース詳細"
+    arg_help_news_view_id = "ニュースID"
+    arg_help_news_create = "ニュース作成"
+    arg_help_news_create_title = "ニュースのタイトル（省略で対話的に入力）"
+    arg_help_news_title_opt = "ニュースのタイトル"
+    arg_help_news_summary = "ニュースのサマリー"
+    arg_help_news_description = "説明（値省略でエディタ起動）"
+    arg_help_news_update = "ニュース更新"
+    arg_help_news_update_id = "ニュースID（省略で対話的に選択）"
+    arg_help_news_delete = "ニュース削除"
+    arg_help_news_delete_id = "ニュースID（省略で対話的に選択）"
 
     # ---- argparse helps (enumerations) ----
     arg_help_tracker_command = "トラッカー一覧"

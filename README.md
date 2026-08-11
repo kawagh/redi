@@ -186,6 +186,17 @@ redi membership view <membership_id>
 
 # news (alias: n)
 redi news -p <project_id>
+redi news view <news_id>
+redi news view <news_id> --web # open in browser
+redi news create -p <project_id> # interactive: title, summary (optional), then the description in an editor
+redi news create "title" -p <project_id> # opens editor for the description
+redi news create "title" -d "description" --summary "summary" -p <project_id>
+redi news update # interactive: pick the news, then the items to update
+redi news update <news_id> # interactive: pick the items to update
+redi news update <news_id> --title "new title" -d "new description"
+redi news update <news_id> -d # opens editor with the current description
+redi news delete # interactive: pick the news to delete
+redi news delete <news_id>
 
 # issue_category (alias: ic)
 redi issue_category -p <project_id>

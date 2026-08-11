@@ -62,10 +62,12 @@ class En(MessagesProto):
     group_not_found = "Group not found: #{id}"
     group_or_user_not_found = "Group or user not found: #{group_id} / #{user_id}"
     category_not_found = "Category not found: {id}"
+    news_not_found = "News not found: {id}"
     no_search_results = "No search results found"
     issue_not_found_simple = "Issue not found"
     no_versions_available = "No versions available"
     no_issues_available = "No issues available"
+    no_news_available = "No news available"
     no_profiles_available = (
         "No profiles available. To create first profile, run `redi init`"
     )
@@ -133,6 +135,9 @@ class En(MessagesProto):
     category_created = "Created category: {id} {name}"
     category_updated = "Updated category: {id}"
     category_deleted = "Deleted category: {id}"
+    news_created = "Created news: {url}"
+    news_updated = "Updated news: {url}"
+    news_deleted = "Deleted news: {id}"
 
     # ---- failures ----
     user_create_failed = "Failed to create user"
@@ -184,6 +189,9 @@ class En(MessagesProto):
     category_create_failed = "Failed to create category"
     category_update_failed = "Failed to update category"
     category_delete_failed = "Failed to delete category"
+    news_create_failed = "Failed to create news"
+    news_update_failed = "Failed to update news"
+    news_delete_failed = "Failed to delete news"
     project_list_fetch_failed = "Failed to fetch project list: {error}"
     connection_failed_http = "Connection failed: {status} {reason}"
     connection_failed_other = "Connection failed: {error}"
@@ -193,6 +201,7 @@ class En(MessagesProto):
     edit_target_page = "Editing page: {label}"
     update_target_version = "Updating version: {label}"
     update_target_issue = "Updating issue: {label}"
+    update_target_news = "Updating news: {label}"
     update_items = "Items to update: {items}"
     status_label = "Status: {value}"
     sharing_label = "Sharing: {value}"
@@ -225,6 +234,8 @@ class En(MessagesProto):
         'Type {label} "{expected}" to confirm deletion: '
     )
     prompt_subject = "Subject: "
+    prompt_title = "Title: "
+    prompt_summary = "Summary (optional): "
     prompt_comment = "Comment: "
     prompt_page_title = "Page title: "
     prompt_parent_page = "Parent page"
@@ -248,6 +259,8 @@ class En(MessagesProto):
     prompt_select_sharing = "Sharing"
     prompt_select_version_to_update = "Select version to update"
     prompt_select_issue_to_update = "Select issue to update"
+    prompt_select_news_to_update = "Select news to update"
+    prompt_select_news_to_delete = "Select news to delete"
     prompt_select_profile = "Select profile (Enter: set as default / u: update fields)"
     prompt_default_project_id = "default_project_id: "
     prompt_wiki_project_id = "wiki_project_id: "
@@ -300,6 +313,8 @@ class En(MessagesProto):
     # ---- field labels ----
     field_tracker = "tracker"
     field_subject = "subject"
+    field_title = "title"
+    field_summary = "summary"
     field_description = "description"
     field_status = "status"
     field_priority = "priority"
@@ -349,6 +364,7 @@ class En(MessagesProto):
     overwrite_target_file = "File already exists: {path}"
     delete_target_issue_journal = "Issue journal to delete: #{id} {notes}"
     delete_target_category = "Issue category to delete: {id} {name}"
+    delete_target_news = "News to delete: {id} {title}"
     delete_target_group = "Group to delete: {id} {name}"
     delete_target_time_entry = (
         "Time entry to delete: {id} {hours}h {activity} ({spent_on})"
@@ -376,6 +392,8 @@ class En(MessagesProto):
     label_kind = "Type: {value}"
     label_author = "Author: {value}"
     label_description_field = "Description: {value}"
+    label_summary_field = "Summary: {value}"
+    label_news_comments_header = "Comments:"
     label_url_field = "URL: {value}"
     label_roles_header = "Roles:"
     label_inherited_suffix = " (inherited)"
@@ -798,7 +816,19 @@ class En(MessagesProto):
     )
 
     # ---- argparse helps (news) ----
-    arg_help_news_command = "List news"
+    arg_help_news_command = arg_help_crud_subcommands
+    arg_help_news_list = "List news"
+    arg_help_news_view = "News details"
+    arg_help_news_view_id = "News ID"
+    arg_help_news_create = "Create news"
+    arg_help_news_create_title = "News title (omit to enter interactively)"
+    arg_help_news_title_opt = "News title"
+    arg_help_news_summary = "News summary"
+    arg_help_news_description = "Description (no value opens editor)"
+    arg_help_news_update = "Update news"
+    arg_help_news_update_id = "News ID (omit to select interactively)"
+    arg_help_news_delete = "Delete news"
+    arg_help_news_delete_id = "News ID (omit to select interactively)"
 
     # ---- argparse helps (enumerations) ----
     arg_help_tracker_command = "List trackers"

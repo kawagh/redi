@@ -27,6 +27,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     * demo:            generate demo
     ```
 
+## CLI 設計方針
+
+- 引数が不足する場合は対話的に入力させる
+- ただしエージェントやCIが非TTY環境で実行できるよう、引数だけで完結する形も用意する
+
 ## i18n
 
 - 英語と日本語の二言語に対応している(デフォルトは英語)
