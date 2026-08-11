@@ -15,7 +15,7 @@ from redi.api.news import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.editor import open_editor
+from redi.cli.editor import open_editor, shorten_to_oneline
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.validator import RequiredValidator
 from redi.config import default_project_id
@@ -197,7 +197,16 @@ def handle_news(args: argparse.Namespace) -> None:
             except (KeyboardInterrupt, EOFError):
                 print(messages.canceled)
                 sys.exit(1)
-        description = args.description or open_editor()
+        description = args.description
+        if not description:
+            description = open_editor()
+            if description:
+                print(
+                    messages.prompt_field_value.format(
+                        name=messages.field_description,
+                        value=shorten_to_oneline(description),
+                    )
+                )
         if not description:
             print(messages.canceled_empty_text)
             sys.exit(1)
