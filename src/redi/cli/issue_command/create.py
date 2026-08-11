@@ -17,24 +17,25 @@ from redi.api.custom_field import (
 )
 from redi.api.issue import create_issue, parse_custom_fields
 from redi.api.issue_template import IssueTemplate, fetch_enabled_issue_templates
-from redi.api.membership import fetch_project_users
 from redi.api.project import fetch_project
-from redi.api.version import fetch_versions
 from redi.cli.custom_field_prompt import (
     SKIP_UNSUPPORTED_FIELD,
     prompt_custom_field_value,
 )
 from redi.cli.editor import open_editor, save_body_on_failure, shorten_to_oneline
+from redi.cli.issue_command.field_prompt import (
+    parse_iso_date,
+    prompt_assignee,
+    prompt_due_date,
+    prompt_estimated_hours,
+    prompt_fixed_version,
+    prompt_start_date,
+)
 from redi.cli.keybinding import (
-    date_key_bindings,
-    digit_and_period_key_bindings,
     digit_only_key_bindings,
 )
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.validator import (
-    DateValidator,
-    DueDateValidator,
-    HourValidator,
     IntValidator,
 )
 from redi.config import default_project_id, redmine_url
@@ -200,33 +201,9 @@ def _interactive_fill_optional_create_fields(args: IssueCreateArgs) -> None:
     added_cfs: list[str] = []
     try:
         if "assigned_to" in selected:
-            users = fetch_project_users(project_id)
-            assignee_options: list[tuple[str, str]] = [
-                ("", messages.prompt_select_assignee_none)
-            ] + [(str(u["id"]), u.get("name", "")) for u in users]
-            assignee_labels = dict(assignee_options)
-            args.assigned_to_id = inline_choice(
-                messages.prompt_select_assignee, assignee_options
-            )
-            print(
-                messages.assignee_label.format(
-                    value=assignee_labels[args.assigned_to_id]
-                )
-            )
+            args.assigned_to_id = prompt_assignee(project_id)
         if "fixed_version" in selected:
-            versions = fetch_versions(project_id)
-            version_options: list[tuple[str, str]] = [
-                ("", messages.prompt_select_fixed_version_none)
-            ] + [(str(v["id"]), f"{v['name']} ({v['status']})") for v in versions]
-            version_labels = dict(version_options)
-            args.fixed_version_id = inline_choice(
-                messages.prompt_select_fixed_version, version_options
-            )
-            print(
-                messages.fixed_version_label.format(
-                    value=version_labels[args.fixed_version_id]
-                )
-            )
+            args.fixed_version_id = prompt_fixed_version(project_id)
         if "parent_issue" in selected:
             value = prompt(
                 messages.prompt_parent_issue_id,
@@ -235,34 +212,13 @@ def _interactive_fill_optional_create_fields(args: IssueCreateArgs) -> None:
             ).strip()
             args.parent_issue_id = value or None
         if "start_date" in selected:
-            value = prompt(
-                messages.prompt_start_date,
-                default=date.today().isoformat(),
-                validator=DateValidator(allow_empty=True),
-                key_bindings=date_key_bindings(),
-            ).strip()
-            args.start_date = value or None
+            args.start_date = prompt_start_date(date.today().isoformat()) or None
         if "due_date" in selected:
-            start_date_obj: date | None = None
-            if args.start_date:
-                try:
-                    start_date_obj = date.fromisoformat(args.start_date)
-                except ValueError:
-                    start_date_obj = None
-            value = prompt(
-                messages.prompt_due_date,
-                validator=DueDateValidator(start_date_obj),
-                key_bindings=date_key_bindings(),
-            ).strip()
-            args.due_date = value or None
+            args.due_date = prompt_due_date(parse_iso_date(args.start_date)) or None
         if "estimated_hours" in selected:
-            value = prompt(
-                messages.prompt_estimated_hours,
-                validator=HourValidator(allow_empty=True),
-                key_bindings=digit_and_period_key_bindings(),
-            ).strip()
-            if value:
-                args.estimated_hours = float(value)
+            estimated_hours = prompt_estimated_hours()
+            if estimated_hours is not None:
+                args.estimated_hours = estimated_hours
         for cf in optional_cfs:
             if f"cf_{cf['id']}" not in selected:
                 continue

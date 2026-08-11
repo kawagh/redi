@@ -23,18 +23,24 @@ from redi.api.issue import (
 )
 from redi.api.issue_relation import create_relation, delete_relation
 from redi.api.issue_status import fetch_issue_statuses
-from redi.api.membership import fetch_project_users
 from redi.api.project import fetch_project
 from redi.api.time_entry import create_time_entry
-from redi.api.version import fetch_versions
 from redi.cli.custom_field_prompt import (
     SKIP_UNSUPPORTED_FIELD,
     prompt_custom_field_value,
 )
 from redi.cli.editor import open_editor, save_body_on_failure
+from redi.cli.issue_command.field_prompt import (
+    parse_iso_date,
+    prompt_assignee,
+    prompt_due_date,
+    prompt_estimated_hours,
+    prompt_fixed_version,
+    prompt_start_date,
+)
 from redi.cli.keybinding import date_key_bindings
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.validator import DateValidator, DueDateValidator, HourValidator
+from redi.cli.validator import DateValidator, HourValidator
 from redi.config import default_project_id
 from redi.i18n import messages
 
@@ -200,66 +206,39 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
             if not project_id:
                 print(messages.canceled_no_project)
                 sys.exit(1)
-            users = fetch_project_users(str(project_id))
-            assignee_options: list[tuple[str, str]] = [
-                ("", messages.prompt_select_assignee_none)
-            ] + [(str(u["id"]), u["name"]) for u in users]
-            assignee_labels = dict(assignee_options)
             current_assignee_id = (current.get("assigned_to") or {}).get("id")
             default_assignee = (
                 str(current_assignee_id) if current_assignee_id is not None else ""
             )
-            args.assigned_to_id = inline_choice(
-                messages.prompt_select_assignee,
-                assignee_options,
-                default=default_assignee,
-            )
-            print(
-                messages.assignee_label.format(
-                    value=assignee_labels[args.assigned_to_id]
-                )
+            args.assigned_to_id = prompt_assignee(
+                str(project_id), default=default_assignee
             )
         if "fixed_version" in selected:
             project_id = (current.get("project") or {}).get("id")
             if not project_id:
                 print(messages.canceled_no_project)
                 sys.exit(1)
-            versions = fetch_versions(str(project_id))
-            version_options: list[tuple[str, str]] = [
-                (str(v["id"]), f"{v['name']} ({v['status']})") for v in versions
-            ]
-            version_labels = dict(version_options)
-            args.fixed_version_id = inline_choice(
-                messages.prompt_select_fixed_version, version_options
+            current_version_id = (current.get("fixed_version") or {}).get("id")
+            default_version = (
+                str(current_version_id) if current_version_id is not None else ""
             )
-            print(
-                messages.fixed_version_label.format(
-                    value=version_labels[args.fixed_version_id]
-                )
+            args.fixed_version_id = prompt_fixed_version(
+                str(project_id), default=default_version
             )
         if "start_date" in selected:
-            args.start_date = prompt(
-                messages.prompt_start_date,
-                default=current.get("start_date") or date.today().isoformat(),
-                validator=DateValidator(allow_empty=True),
-            ).strip()
+            args.start_date = prompt_start_date(
+                current.get("start_date") or date.today().isoformat()
+            )
         if "due_date" in selected:
             effective_start = (
                 args.start_date
                 if "start_date" in selected
                 else current.get("start_date")
             )
-            start_date: date | None = None
-            if effective_start:
-                try:
-                    start_date = date.fromisoformat(effective_start)
-                except ValueError:
-                    start_date = None
-            args.due_date = prompt(
-                messages.prompt_due_date,
+            args.due_date = prompt_due_date(
+                parse_iso_date(effective_start),
                 default=current.get("due_date") or date.today().isoformat(),
-                validator=DueDateValidator(start_date),
-            ).strip()
+            )
         if "done_ratio" in selected:
             ratio_options: list[tuple[str, str]] = [
                 (str(r), f"{r}%") for r in range(0, 101, 10)
@@ -279,14 +258,10 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
             default_estimated = (
                 str(current_estimated) if current_estimated is not None else ""
             )
-            args.estimated_hours = float(
-                prompt(
-                    messages.prompt_estimated_hours,
-                    default=default_estimated,
-                    validator=HourValidator(),
-                ).strip()
-            )
-            print(messages.estimated_hours_label.format(value=args.estimated_hours))
+            estimated_hours = prompt_estimated_hours(default_estimated)
+            if estimated_hours is not None:
+                args.estimated_hours = estimated_hours
+                print(messages.estimated_hours_label.format(value=estimated_hours))
         if "notes" in selected:
             args.notes = prompt(messages.prompt_comment).strip()
         if "time_entry" in selected:
@@ -371,7 +346,7 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
         or args.status_id
         or args.priority_id
         or args.assigned_to_id is not None
-        or args.fixed_version_id
+        or args.fixed_version_id is not None
         or args.parent_issue_id is not None
         or args.start_date is not None
         or args.due_date is not None
@@ -400,7 +375,7 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
         or args.status_id
         or args.priority_id
         or args.assigned_to_id is not None
-        or args.fixed_version_id
+        or args.fixed_version_id is not None
         or args.parent_issue_id is not None
         or args.start_date is not None
         or args.due_date is not None
