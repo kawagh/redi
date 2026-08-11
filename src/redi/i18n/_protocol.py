@@ -111,6 +111,8 @@ class MessagesProto(Protocol):
     """グループまたはユーザーが見つからない。{group_id} / {user_id}"""
     category_not_found: str
     """カテゴリが見つからない。{id}"""
+    news_not_found: str
+    """ニュースが見つからない。{id}"""
     no_search_results: str
     """検索結果が見つからない"""
     issue_not_found_simple: str
@@ -220,6 +222,12 @@ class MessagesProto(Protocol):
     """{id}"""
     category_deleted: str
     """{id}"""
+    news_created: str
+    """{title}"""
+    news_updated: str
+    """{id}"""
+    news_deleted: str
+    """{id}"""
 
     # ---- failures ----
     user_create_failed: str
@@ -274,6 +282,9 @@ class MessagesProto(Protocol):
     category_create_failed: str
     category_update_failed: str
     category_delete_failed: str
+    news_create_failed: str
+    news_update_failed: str
+    news_delete_failed: str
     project_list_fetch_failed: str
     """{error}"""
     connection_failed_http: str
@@ -471,6 +482,8 @@ class MessagesProto(Protocol):
     """{id}, {notes}"""
     delete_target_category: str
     """{id}, {name}"""
+    delete_target_news: str
+    """{id}, {title}"""
     delete_target_group: str
     """{id}, {name}"""
     delete_target_time_entry: str
@@ -513,6 +526,9 @@ class MessagesProto(Protocol):
     """{value}"""
     label_description_field: str
     """{value}"""
+    label_summary_field: str
+    """{value}"""
+    label_news_comments_header: str
     label_url_field: str
     """{value}"""
     label_roles_header: str
@@ -923,6 +939,18 @@ class MessagesProto(Protocol):
 
     # ---- argparse helps (news) ----
     arg_help_news_command: str
+    arg_help_news_list: str
+    arg_help_news_view: str
+    arg_help_news_view_id: str
+    arg_help_news_create: str
+    arg_help_news_title: str
+    arg_help_news_title_opt: str
+    arg_help_news_summary: str
+    arg_help_news_description: str
+    arg_help_news_update: str
+    arg_help_news_update_id: str
+    arg_help_news_delete: str
+    arg_help_news_delete_id: str
 
     # ---- argparse helps (enumerations) ----
     arg_help_tracker_command: str

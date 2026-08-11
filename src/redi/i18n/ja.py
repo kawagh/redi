@@ -66,6 +66,7 @@ class Ja(MessagesProto):
         "グループまたはユーザーが見つかりません: #{group_id} / #{user_id}"
     )
     category_not_found = "カテゴリが見つかりません: {id}"
+    news_not_found = "ニュースが見つかりません: {id}"
     no_search_results = "検索結果が見つかりませんでした"
     issue_not_found_simple = "イシューが見つかりません"
     no_versions_available = "選択可能なバージョンがありません"
@@ -137,6 +138,9 @@ class Ja(MessagesProto):
     category_created = "カテゴリを作成しました: {id} {name}"
     category_updated = "カテゴリを更新しました: {id}"
     category_deleted = "カテゴリを削除しました: {id}"
+    news_created = "ニュースを作成しました: {title}"
+    news_updated = "ニュースを更新しました: {id}"
+    news_deleted = "ニュースを削除しました: {id}"
 
     # ---- failures ----
     user_create_failed = "ユーザーの作成に失敗しました"
@@ -186,6 +190,9 @@ class Ja(MessagesProto):
     category_create_failed = "カテゴリの作成に失敗しました"
     category_update_failed = "カテゴリの更新に失敗しました"
     category_delete_failed = "カテゴリの削除に失敗しました"
+    news_create_failed = "ニュースの作成に失敗しました"
+    news_update_failed = "ニュースの更新に失敗しました"
+    news_delete_failed = "ニュースの削除に失敗しました"
     project_list_fetch_failed = "プロジェクト一覧の取得に失敗しました: {error}"
     connection_failed_http = "接続失敗: {status} {reason}"
     connection_failed_other = "接続失敗: {error}"
@@ -350,6 +357,7 @@ class Ja(MessagesProto):
     overwrite_target_file = "既に存在するファイル: {path}"
     delete_target_issue_journal = "削除するイシューのジャーナル: #{id} {notes}"
     delete_target_category = "削除するイシューカテゴリ: {id} {name}"
+    delete_target_news = "削除するニュース: {id} {title}"
     delete_target_group = "削除するグループ: {id} {name}"
     delete_target_time_entry = "削除する作業時間: {id} {hours}h {activity} ({spent_on})"
 
@@ -375,6 +383,8 @@ class Ja(MessagesProto):
     label_kind = "種別: {value}"
     label_author = "作成者: {value}"
     label_description_field = "説明: {value}"
+    label_summary_field = "サマリー: {value}"
+    label_news_comments_header = "コメント:"
     label_url_field = "URL: {value}"
     label_roles_header = "ロール:"
     label_inherited_suffix = " (継承)"
@@ -805,7 +815,19 @@ class Ja(MessagesProto):
     )
 
     # ---- argparse helps (news) ----
-    arg_help_news_command = "ニュース一覧"
+    arg_help_news_command = arg_help_crud_subcommands
+    arg_help_news_list = "ニュース一覧"
+    arg_help_news_view = "ニュース詳細"
+    arg_help_news_view_id = "ニュースID"
+    arg_help_news_create = "ニュース作成"
+    arg_help_news_title = "ニュースのタイトル"
+    arg_help_news_title_opt = "ニュースのタイトル"
+    arg_help_news_summary = "ニュースのサマリー"
+    arg_help_news_description = "説明（値省略でエディタ起動）"
+    arg_help_news_update = "ニュース更新"
+    arg_help_news_update_id = "ニュースID"
+    arg_help_news_delete = "ニュース削除"
+    arg_help_news_delete_id = "ニュースID"
 
     # ---- argparse helps (enumerations) ----
     arg_help_tracker_command = "トラッカー一覧"

@@ -186,6 +186,12 @@ redi membership view <membership_id>
 
 # news (alias: n)
 redi news -p <project_id>
+redi news view <news_id>
+redi news create "title" -p <project_id> # opens editor for the description
+redi news create "title" -d "description" --summary "summary" -p <project_id>
+redi news update <news_id> --title "new title" -d "new description"
+redi news update <news_id> -d # opens editor with the current description
+redi news delete <news_id>
 
 # issue_category (alias: ic)
 redi issue_category -p <project_id>
