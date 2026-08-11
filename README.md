@@ -187,6 +187,7 @@ redi membership view <membership_id>
 # news (alias: n)
 redi news -p <project_id>
 redi news view <news_id>
+redi news view <news_id> --web # open in browser
 redi news create "title" -p <project_id> # opens editor for the description
 redi news create "title" -d "description" --summary "summary" -p <project_id>
 redi news update <news_id> --title "new title" -d "new description"

@@ -38,6 +38,9 @@ def add_news_parser(
     n_view_parser.add_argument(
         "--full", action="store_true", help=messages.arg_help_full_json
     )
+    n_view_parser.add_argument(
+        "--web", "-w", action="store_true", help=messages.arg_help_open_web
+    )
 
     n_create_parser = n_subparsers.add_parser(
         "create", aliases=["c"], help=messages.arg_help_news_create, parents=parents
@@ -88,7 +91,7 @@ def add_news_parser(
 def handle_news(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.news_command)
     if cmd == "view":
-        read_news(args.news_id, full=args.full)
+        read_news(args.news_id, full=args.full, web=args.web)
         return
     if cmd == "create":
         project_id = args.project_id or default_project_id

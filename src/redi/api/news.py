@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+import webbrowser
 from typing import NotRequired, TypedDict, cast
 
 import requests
@@ -9,6 +10,7 @@ import requests
 from redi.api.exceptions import print_http_error_body
 from redi.api.types import Attachment, IdName
 from redi.client import client
+from redi.config import redmine_url
 from redi.i18n import messages
 
 
@@ -82,7 +84,12 @@ def fetch_news(news_id: str) -> News:
     return cast("News", response.json()["news"])
 
 
-def read_news(news_id: str, full: bool = False) -> None:
+def read_news(news_id: str, full: bool = False, web: bool = False) -> None:
+    if web:
+        url = f"{redmine_url}/news/{news_id}"
+        print(url)
+        webbrowser.open(url)
+        return
     news = fetch_news(news_id)
     if full:
         print(json.dumps(news, ensure_ascii=False))
