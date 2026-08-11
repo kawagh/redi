@@ -185,11 +185,15 @@ def handle_news(args: argparse.Namespace) -> None:
             print(messages.project_id_required)
             sys.exit(1)
         title = args.title
+        summary = args.summary
         if title is None:
             try:
                 title = prompt(
                     messages.prompt_title, validator=RequiredValidator()
                 ).strip()
+                if summary is None:
+                    # 任意項目なので空のまま確定したら設定しない
+                    summary = prompt(messages.prompt_summary).strip() or None
             except (KeyboardInterrupt, EOFError):
                 print(messages.canceled)
                 sys.exit(1)
@@ -201,7 +205,7 @@ def handle_news(args: argparse.Namespace) -> None:
             project_id=project_id,
             title=title,
             description=description,
-            summary=args.summary,
+            summary=summary,
         )
         return
     if cmd == "update":

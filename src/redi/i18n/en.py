@@ -235,7 +235,7 @@ class En(MessagesProto):
     )
     prompt_subject = "Subject: "
     prompt_title = "Title: "
-    prompt_summary = "Summary: "
+    prompt_summary = "Summary (optional): "
     prompt_comment = "Comment: "
     prompt_page_title = "Page title: "
     prompt_parent_page = "Parent page"

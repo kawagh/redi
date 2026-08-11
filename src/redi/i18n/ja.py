@@ -237,7 +237,7 @@ class Ja(MessagesProto):
     )
     prompt_subject = "題名: "
     prompt_title = "タイトル: "
-    prompt_summary = "サマリー: "
+    prompt_summary = "サマリー（省略可）: "
     prompt_comment = "コメント: "
     prompt_page_title = "ページタイトル: "
     prompt_parent_page = "親ページ"
