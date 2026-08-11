@@ -1,7 +1,29 @@
+import argparse
 import os
 from pathlib import Path
 
 from redi.cli import issue_command
+from redi.cli.issue_command import IssueUpdateArgs, add_issue_parser
+
+
+class TestIssueUpdateArgsFromNamespace:
+    def test_accepts_parser_output(self):
+        """`issue update` のパース結果をそのまま受け取れる
+
+        フィールド名が dest からずれていれば AttributeError で落ちる。
+        `--to` と `--add-watcher` は明示的な dest 指定があり、特にずれやすい。
+        """
+        parser = argparse.ArgumentParser()
+        add_issue_parser(parser.add_subparsers(dest="command"), [])
+        args = parser.parse_args(
+            ["issue", "update", "42", "--to", "43", "--add-watcher", "7"]
+        )
+
+        update_args = IssueUpdateArgs.from_namespace(args)
+
+        assert update_args.issue_id == "42"
+        assert update_args.relate_to == "43"
+        assert update_args.add_watcher_ids == [7]
 
 
 class TestSaveBodyOnFailure:

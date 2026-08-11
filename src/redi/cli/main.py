@@ -43,7 +43,7 @@ from redi.cli.issue_command import (
     add_issue_parser,
     handle_issue,
     handle_issue_create,
-    handle_issue_update,
+    update_issue_interactively,
 )
 from redi.cli.issue_journal_command import (
     add_issue_journal_parser,
@@ -192,35 +192,7 @@ def main() -> None:
             tui_state = tui_state.carry_over(tui_result)
             try:
                 if tui_result.action == "update" and tui_result.tab == "issues":
-                    handle_issue_update(
-                        argparse.Namespace(
-                            issue_id=tui_result.issue_id,
-                            subject=None,
-                            description=None,
-                            tracker_id=None,
-                            status_id=None,
-                            priority_id=None,
-                            assigned_to_id=None,
-                            fixed_version_id=None,
-                            parent_issue_id=None,
-                            start_date=None,
-                            due_date=None,
-                            done_ratio=None,
-                            estimated_hours=None,
-                            notes=None,
-                            custom_fields=None,
-                            relate=None,
-                            relate_to=None,
-                            delete_relation=False,
-                            attach=None,
-                            hours=None,
-                            activity_id=None,
-                            spent_on=None,
-                            time_comments=None,
-                            add_watcher_ids=None,
-                            remove_watcher_ids=None,
-                        )
-                    )
+                    update_issue_interactively(tui_result.issue_id)
                 elif tui_result.action == "create" and tui_result.tab == "issues":
                     handle_issue_create(
                         argparse.Namespace(

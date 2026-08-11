@@ -2,8 +2,9 @@ import argparse
 import sys
 import urllib.parse
 import webbrowser
+from dataclasses import dataclass, fields
 from datetime import date
-from typing import cast
+from typing import Self, cast
 
 from prompt_toolkit import prompt
 
@@ -54,6 +55,46 @@ from redi.cli.validator import (
 )
 from redi.config import default_project_id, redmine_url
 from redi.i18n import messages
+
+
+@dataclass
+class IssueUpdateArgs:
+    """`issue update` の入力値。
+
+    フィールド名は `add_issue_parser` が定義する `dest` と一致させること。
+    argparse 経由なら `from_namespace` で、TUI からは必要な項目だけ指定して生成する。
+    """
+
+    issue_id: str | None = None
+    subject: str | None = None
+    description: str | None = None
+    tracker_id: str | None = None
+    status_id: str | None = None
+    priority_id: str | None = None
+    assigned_to_id: str | None = None
+    fixed_version_id: str | None = None
+    parent_issue_id: str | None = None
+    start_date: str | None = None
+    due_date: str | None = None
+    done_ratio: int | None = None
+    estimated_hours: float | None = None
+    notes: str | None = None
+    custom_fields: str | None = None
+    relate: str | None = None
+    relate_to: str | None = None
+    delete_relation: bool = False
+    attach: list[str] | None = None
+    hours: float | None = None
+    activity_id: str | None = None
+    spent_on: str | None = None
+    time_comments: str | None = None
+    add_watcher_ids: list[int] | None = None
+    remove_watcher_ids: list[int] | None = None
+
+    @classmethod
+    def from_namespace(cls, args: argparse.Namespace) -> Self:
+        # dest 名がずれていたら AttributeError で気付けるよう getattr は防御しない
+        return cls(**{f.name: getattr(args, f.name) for f in fields(cls)})
 
 
 def add_issue_parser(
@@ -330,7 +371,9 @@ def _interactive_select_issue_id() -> str:
     return issue_id
 
 
-def _interactive_fill_issue_update_args(args: argparse.Namespace) -> None:
+def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
+    # 呼び出し側で issue_id は解決済み
+    assert args.issue_id is not None
     current = fetch_issue(args.issue_id)
     field_values: list[tuple[str, str]] = [
         ("tracker", messages.field_tracker),
@@ -954,7 +997,7 @@ def _interactive_select_issue_template(
     return template
 
 
-def _save_body_on_failure(text: str) -> None:
+def _save_body_on_failure(text: str | None) -> None:
     """送信失敗時に、エディタで記載した本文を一時ファイルへ退避する。"""
     if not text:
         return
@@ -1084,6 +1127,16 @@ def handle_issue_create(args: argparse.Namespace) -> None:
 
 
 def handle_issue_update(args: argparse.Namespace) -> None:
+    """argparse アダプタ。Namespace を読むのはここまでに閉じる。"""
+    _run_issue_update(IssueUpdateArgs.from_namespace(args))
+
+
+def update_issue_interactively(issue_id: str | None = None) -> None:
+    """更新項目を対話で選ばせる入口。TUI から使う。"""
+    _run_issue_update(IssueUpdateArgs(issue_id=issue_id))
+
+
+def _run_issue_update(args: IssueUpdateArgs) -> None:
     if not args.issue_id:
         args.issue_id = _interactive_select_issue_id()
     no_args_provided = not (
