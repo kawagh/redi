@@ -232,6 +232,8 @@ class En(MessagesProto):
         'Type {label} "{expected}" to confirm deletion: '
     )
     prompt_subject = "Subject: "
+    prompt_title = "Title: "
+    prompt_summary = "Summary: "
     prompt_comment = "Comment: "
     prompt_page_title = "Page title: "
     prompt_parent_page = "Parent page"
@@ -307,6 +309,8 @@ class En(MessagesProto):
     # ---- field labels ----
     field_tracker = "tracker"
     field_subject = "subject"
+    field_title = "title"
+    field_summary = "summary"
     field_description = "description"
     field_status = "status"
     field_priority = "priority"

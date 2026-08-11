@@ -190,6 +190,7 @@ redi news view <news_id>
 redi news view <news_id> --web # open in browser
 redi news create "title" -p <project_id> # opens editor for the description
 redi news create "title" -d "description" --summary "summary" -p <project_id>
+redi news update <news_id> # interactive: pick the items to update
 redi news update <news_id> --title "new title" -d "new description"
 redi news update <news_id> -d # opens editor with the current description
 redi news delete <news_id>

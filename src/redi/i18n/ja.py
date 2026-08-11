@@ -234,6 +234,8 @@ class Ja(MessagesProto):
         '削除するには{label} "{expected}" を入力してください: '
     )
     prompt_subject = "題名: "
+    prompt_title = "タイトル: "
+    prompt_summary = "サマリー: "
     prompt_comment = "コメント: "
     prompt_page_title = "ページタイトル: "
     prompt_parent_page = "親ページ"
@@ -310,6 +312,8 @@ class Ja(MessagesProto):
     # ---- field labels ----
     field_tracker = "トラッカー (tracker)"
     field_subject = "題名 (subject)"
+    field_title = "タイトル (title)"
+    field_summary = "サマリー (summary)"
     field_description = "説明 (description)"
     field_status = "ステータス (status)"
     field_priority = "優先度 (priority)"

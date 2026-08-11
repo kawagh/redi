@@ -1,7 +1,10 @@
 import argparse
 import sys
 
+from prompt_toolkit import prompt
+
 from redi.api.news import (
+    News,
     create_news,
     delete_news,
     fetch_news,
@@ -12,8 +15,55 @@ from redi.api.news import (
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor
+from redi.cli.picker import inline_checkbox
 from redi.config import default_project_id
 from redi.i18n import messages
+
+
+def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, str]:
+    """更新する項目を選ばせて (title, summary, description) を返す。
+
+    選ばれなかった項目は None(更新しない)。description は選ばれなければ空文字。
+    issue update と同じく、更新項目が 1 つも指定されずに呼ばれたときに使う。
+    """
+    field_values: list[tuple[str, str]] = [
+        ("title", messages.field_title),
+        ("summary", messages.field_summary),
+        ("description", messages.field_description),
+    ]
+    try:
+        selected = inline_checkbox(
+            messages.prompt_select_update_items,
+            field_values,
+            initial_value="description",
+        )
+    except KeyboardInterrupt:
+        print(messages.canceled)
+        sys.exit(1)
+    if not selected:
+        print(messages.canceled_no_items_selected)
+        sys.exit(1)
+    labels = dict(field_values)
+    print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
+    title: str | None = None
+    summary: str | None = None
+    description = ""
+    try:
+        if "title" in selected:
+            title = prompt(messages.prompt_title, default=news["title"]).strip()
+        if "summary" in selected:
+            summary = prompt(
+                messages.prompt_summary, default=news.get("summary") or ""
+            ).strip()
+    except (KeyboardInterrupt, EOFError):
+        print(messages.canceled)
+        sys.exit(1)
+    if "description" in selected:
+        description = open_editor(news["description"])
+        if not description:
+            print(messages.canceled_empty_text)
+            sys.exit(1)
+    return title, summary, description
 
 
 def add_news_parser(
@@ -110,8 +160,15 @@ def handle_news(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "update":
+        title = args.title
+        summary = args.summary
         description = args.description
-        if description == "":
+        if title is None and summary is None and description is None:
+            # 更新項目が 1 つも指定されていないので対話で選ばせる
+            title, summary, description = _interactive_fill_news_update(
+                fetch_news(args.news_id)
+            )
+        elif description == "":
             current = fetch_news(args.news_id)
             description = open_editor(current["description"])
             if not description:
@@ -119,9 +176,9 @@ def handle_news(args: argparse.Namespace) -> None:
                 sys.exit(1)
         update_news(
             news_id=args.news_id,
-            title=args.title,
-            description=description,
-            summary=args.summary,
+            title=title,
+            description=description or None,
+            summary=summary,
         )
         return
     if cmd == "delete":

@@ -347,6 +347,8 @@ class MessagesProto(Protocol):
     prompt_confirm_delete_with_identifier: str
     """{label}, {expected}"""
     prompt_subject: str
+    prompt_title: str
+    prompt_summary: str
     prompt_comment: str
     prompt_page_title: str
     prompt_parent_page: str
@@ -427,6 +429,8 @@ class MessagesProto(Protocol):
     # ---- field labels (interactive selection items) ----
     field_tracker: str
     field_subject: str
+    field_title: str
+    field_summary: str
     field_description: str
     field_status: str
     field_priority: str
