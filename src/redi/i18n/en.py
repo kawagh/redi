@@ -260,6 +260,7 @@ class En(MessagesProto):
     prompt_select_version_to_update = "Select version to update"
     prompt_select_issue_to_update = "Select issue to update"
     prompt_select_news_to_update = "Select news to update"
+    prompt_select_news_to_delete = "Select news to delete"
     prompt_select_profile = "Select profile (Enter: set as default / u: update fields)"
     prompt_default_project_id = "default_project_id: "
     prompt_wiki_project_id = "wiki_project_id: "
@@ -827,7 +828,7 @@ class En(MessagesProto):
     arg_help_news_update = "Update news"
     arg_help_news_update_id = "News ID (omit to select interactively)"
     arg_help_news_delete = "Delete news"
-    arg_help_news_delete_id = "News ID"
+    arg_help_news_delete_id = "News ID (omit to select interactively)"
 
     # ---- argparse helps (enumerations) ----
     arg_help_tracker_command = "List trackers"

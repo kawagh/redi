@@ -373,6 +373,7 @@ class MessagesProto(Protocol):
     prompt_select_version_to_update: str
     prompt_select_issue_to_update: str
     prompt_select_news_to_update: str
+    prompt_select_news_to_delete: str
     prompt_select_profile: str
     """プロファイル一覧の見出し。Enter でデフォルト設定 / u で項目更新の案内を含む"""
     prompt_default_project_id: str

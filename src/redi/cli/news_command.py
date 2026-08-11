@@ -22,8 +22,16 @@ from redi.config import default_project_id
 from redi.i18n import messages
 
 
-def _interactive_select_news_id(project_id: str | None) -> str:
-    """更新対象のニュースを選ばせて id を返す。"""
+def _interactive_select_news_id(
+    project_id: str | None,
+    prompt_message: str,
+    selected_message: str | None = None,
+) -> str:
+    """ニュースを選ばせて id を返す。
+
+    selected_message を渡すと選んだニュースを `{label}` に埋めて表示する。
+    削除のように後段で対象を表示する場合は省略する。
+    """
     news_list = fetch_news_list(project_id)
     if not news_list:
         print(messages.no_news_available)
@@ -33,11 +41,12 @@ def _interactive_select_news_id(project_id: str | None) -> str:
     ]
     labels = dict(options)
     try:
-        news_id = inline_choice(messages.prompt_select_news_to_update, options)
+        news_id = inline_choice(prompt_message, options)
     except KeyboardInterrupt:
         print(messages.canceled)
         sys.exit(1)
-    print(messages.update_target_news.format(label=labels[news_id]))
+    if selected_message is not None:
+        print(selected_message.format(label=labels[news_id]))
     return news_id
 
 
@@ -157,7 +166,9 @@ def add_news_parser(
     n_delete_parser = n_subparsers.add_parser(
         "delete", aliases=["d"], help=messages.arg_help_news_delete, parents=parents
     )
-    n_delete_parser.add_argument("news_id", help=messages.arg_help_news_delete_id)
+    n_delete_parser.add_argument(
+        "news_id", nargs="?", help=messages.arg_help_news_delete_id
+    )
     n_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
@@ -195,7 +206,9 @@ def handle_news(args: argparse.Namespace) -> None:
         return
     if cmd == "update":
         news_id = args.news_id or _interactive_select_news_id(
-            args.project_id or default_project_id
+            args.project_id or default_project_id,
+            messages.prompt_select_news_to_update,
+            messages.update_target_news,
         )
         title = args.title
         summary = args.summary
@@ -219,12 +232,16 @@ def handle_news(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "delete":
+        news_id = args.news_id or _interactive_select_news_id(
+            args.project_id or default_project_id,
+            messages.prompt_select_news_to_delete,
+        )
         if not args.yes:
-            news = fetch_news(args.news_id)
+            news = fetch_news(news_id)
             confirm_delete(
                 messages.delete_target_news.format(id=news["id"], title=news["title"])
             )
-        delete_news(args.news_id)
+        delete_news(news_id)
         return
     if cmd == "list" or cmd is None:
         project_id = args.project_id or default_project_id

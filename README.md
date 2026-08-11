@@ -195,6 +195,7 @@ redi news update # interactive: pick the news, then the items to update
 redi news update <news_id> # interactive: pick the items to update
 redi news update <news_id> --title "new title" -d "new description"
 redi news update <news_id> -d # opens editor with the current description
+redi news delete # interactive: pick the news to delete
 redi news delete <news_id>
 
 # issue_category (alias: ic)
