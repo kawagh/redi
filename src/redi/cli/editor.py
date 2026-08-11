@@ -3,6 +3,7 @@ import subprocess
 import tempfile
 
 from redi.config import editor
+from redi.i18n import messages
 
 
 def open_editor(initial_text: str = "") -> str:
@@ -35,3 +36,19 @@ def save_text_to_tempfile(text: str) -> str:
     ) as f:
         f.write(text)
         return f.name
+
+
+def shorten_to_oneline(text: str, max_len: int = 80) -> str:
+    """改行をスペースに畳んで 1 行化し、長すぎたら省略する。"""
+    one_line = " ".join(text.splitlines())
+    if len(one_line) > max_len:
+        return one_line[: max_len - 1] + "…"
+    return one_line
+
+
+def save_body_on_failure(text: str | None) -> None:
+    """送信失敗時に、エディタで記載した本文を一時ファイルへ退避する。"""
+    if not text:
+        return
+    path = save_text_to_tempfile(text)
+    print(messages.body_saved_to_tempfile.format(path=path))
