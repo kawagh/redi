@@ -39,11 +39,7 @@ jobs:
       # 片方のバージョンで落ちても他方の結果を得たい
       fail-fast: false
       matrix:
-        include:
-          - redmine: "6.1"
-            suffix: "61"
-          - redmine: "7.0"
-            suffix: "70"
+        redmine: ["6.1", "7.0"]
     steps:
       - uses: actions/checkout@v6
 
@@ -68,4 +64,4 @@ jobs:
       - name: Run e2e tests
         run: uv run pytest -m e2e
         env:
-          REDI_E2E_PROFILE: sandbox_admin_${{ matrix.suffix }}
+          REDI_E2E_PROFILE: sandbox_admin_${{ matrix.redmine }}

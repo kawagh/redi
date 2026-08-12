@@ -6,17 +6,17 @@ set -e
 # 他バージョンのコンテナを落とさずに初期化できる
 REDMINE_VERSION="${1:-6.1}"
 case "$REDMINE_VERSION" in
-6.1) VERSION_SUFFIX=61 ;;
-7.0) VERSION_SUFFIX=70 ;;
+6.1) PORT=3061 ;;
+7.0) PORT=3070 ;;
 *)
     echo "not a target redmine version: $REDMINE_VERSION (target: 6.1, 7.0)" >&2
     exit 1
     ;;
 esac
-SERVICE="redmine-for-test-${VERSION_SUFFIX}"
-URL="http://localhost:30${VERSION_SUFFIX}"
-ADMIN_PROFILE="sandbox_admin_${VERSION_SUFFIX}"
-DEVELOPER_PROFILE="sandbox_developer_${VERSION_SUFFIX}"
+SERVICE="redmine-for-test-${REDMINE_VERSION}"
+URL="http://localhost:${PORT}"
+ADMIN_PROFILE="sandbox_admin_${REDMINE_VERSION}"
+DEVELOPER_PROFILE="sandbox_developer_${REDMINE_VERSION}"
 
 docker compose down "$SERVICE"
 docker compose up -d "$SERVICE"

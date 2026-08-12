@@ -1,12 +1,12 @@
 name: redi
 
 services:
-  redmine-for-test-61:
+  redmine-for-test-6.1:
     image: redmine:6.1
     ports:
       - 3061:3000
 
-  redmine-for-test-70:
+  redmine-for-test-7.0:
     image: redmine:7.0
     ports:
       - 3070:3000
