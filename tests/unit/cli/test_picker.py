@@ -7,6 +7,9 @@ from redi.cli.picker import inline_choice, inline_choice_with_action
 
 OPTIONS = [("main", "main (default)"), ("sub", "sub")]
 
+# 対話部品そのものを検証するので非TTYガードは通す
+pytestmark = pytest.mark.usefixtures("tty_stdin")
+
 
 def _run(keys: str, **kwargs):
     """pipe input にキー列を流して inline_choice_with_action を実行する"""

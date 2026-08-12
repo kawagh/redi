@@ -4,12 +4,11 @@
 issue 固有の要素は持たないので、他リソースの CF 対応を足すときもここを使える。
 """
 
-from prompt_toolkit import prompt
-
 from redi.api.custom_field import CustomField
 from redi.api.membership import fetch_project_users
 from redi.api.version import fetch_versions
 from redi.cli.editor import open_editor, shorten_to_oneline
+from redi.cli.interactive import prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.validator import (
     DateValidator,

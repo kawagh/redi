@@ -1,7 +1,6 @@
 import sys
 
-from prompt_toolkit import prompt
-
+from redi.cli.interactive import prompt
 from redi.i18n import messages
 
 

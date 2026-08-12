@@ -9,10 +9,9 @@ issue 非依存のカスタムフィールド入力は cli/custom_field_prompt.p
 
 from datetime import date
 
-from prompt_toolkit import prompt
-
 from redi.api.membership import fetch_project_users
 from redi.api.version import fetch_versions
+from redi.cli.interactive import prompt
 from redi.cli.keybinding import date_key_bindings, digit_and_period_key_bindings
 from redi.cli.picker import inline_choice
 from redi.cli.validator import DateValidator, DueDateValidator, HourValidator

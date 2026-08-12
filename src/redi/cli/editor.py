@@ -2,11 +2,13 @@ import os
 import subprocess
 import tempfile
 
+from redi.cli.interactive import ensure_interactive
 from redi.config import editor
 from redi.i18n import messages
 
 
 def open_editor(initial_text: str = "") -> str:
+    ensure_interactive(messages.prompt_editor_input)
     with tempfile.NamedTemporaryFile(suffix=".md", mode="w+", delete=False) as f:
         if initial_text:
             f.write(initial_text)

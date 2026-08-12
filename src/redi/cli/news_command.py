@@ -1,8 +1,6 @@
 import argparse
 import sys
 
-from prompt_toolkit import prompt
-
 from redi.api.news import (
     News,
     create_news,
@@ -16,6 +14,7 @@ from redi.api.news import (
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor, shorten_to_oneline
+from redi.cli.interactive import prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.validator import RequiredValidator
 from redi.config import default_project_id
@@ -61,7 +60,7 @@ def _interactive_select_news_id(
     labels = dict(options)
     try:
         news_id = inline_choice(prompt_message, options)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
     if selected_message is not None:
@@ -86,7 +85,7 @@ def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, s
             field_values,
             initial_value="description",
         )
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
     if not selected:

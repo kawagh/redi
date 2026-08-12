@@ -24,6 +24,11 @@ class En(MessagesProto):
     canceled_no_items_selected = "No items selected; canceled"
     canceled_no_project = "Project unspecified; canceled"
     canceled_field_mismatch = "{field} does not match; canceled"
+    non_interactive_input_required = (
+        "Cannot read input in a non-interactive environment: {message}\n"
+        "Rerun with the required arguments or options"
+    )
+    prompt_editor_input = "input in the editor"
 
     # ---- common indicators ----
     project_id_required = "Specify project_id or set default_project_id"
