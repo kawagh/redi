@@ -34,6 +34,8 @@ class WikiPage(TypedDict):
     text: NotRequired[str]
     author: NotRequired[IdName]
     comments: NotRequired[str]
+    # Redmine 7.0 以降、個別ページ取得時のみ存在
+    project: NotRequired[IdName]
     # include=attachments 指定時のみ存在
     attachments: NotRequired[list[Attachment]]
 

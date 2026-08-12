@@ -56,7 +56,7 @@ tasks:
     internal: true
     cmds:
       - ./script/init-redmine.sh {{.REDMINE_VERSION}}
-      - REDI_E2E_PROFILE=sandbox_admin_{{.REDMINE_VERSION}} uv run pytest -m e2e
+      - REDI_E2E_REDMINE_VERSION={{.REDMINE_VERSION}} uv run pytest -m e2e
 
   release:
     desc: release next version

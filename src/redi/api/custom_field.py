@@ -36,6 +36,8 @@ class CustomField(TypedDict):
     min_length: int | None
     max_length: int | None
     is_required: bool
+    # Redmine 7.0 以降で返る
+    is_for_all: NotRequired[bool]
     is_filter: bool
     searchable: bool
     multiple: bool
@@ -43,6 +45,8 @@ class CustomField(TypedDict):
     visible: bool
     editable: bool
     possible_values: NotRequired[list[dict]]
+    # Redmine 7.0 以降で返る。is_for_all が false のとき対象プロジェクトが入る
+    projects: NotRequired[list[dict]]
     trackers: list[dict]
     roles: list[dict]
 

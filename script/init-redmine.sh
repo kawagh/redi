@@ -18,6 +18,9 @@ URL="http://localhost:${PORT}"
 ADMIN_PROFILE="sandbox_admin_${REDMINE_VERSION}"
 DEVELOPER_PROFILE="sandbox_developer_${REDMINE_VERSION}"
 
+# 作り直した Redmine に対して古いキャッシュを参照しないよう消す
+rm -rf "$HOME/.cache/redi/localhost_${PORT}"
+
 docker compose down "$SERVICE"
 docker compose up -d "$SERVICE"
 sleep 5
@@ -59,6 +62,17 @@ API_KEYS_OUTPUT=$(docker compose exec -T "$SERVICE" rails runner - <<RUBY
       cf.tracker_ids = bug_tracker_ids
       cf.save!
     end
+
+    # reditest プロジェクトにのみ適用するカスタムフィールドを作成
+    # (redmine 7.0 の custom field API が返す projects の検証に使う)
+    project_cf = IssueCustomField.find_or_initialize_by(name: 'プロジェクト限定メモ')
+    project_cf.field_format = 'string'
+    project_cf.description = 'reditest プロジェクトにのみ適用されるカスタムフィールド'
+    project_cf.is_for_all = false
+    project_cf.is_required = false
+    project_cf.tracker_ids = bug_tracker_ids
+    project_cf.project_ids = [project.id]
+    project_cf.save!
 
     # sandbox_developer ユーザーを作成
     developer = User.find_or_initialize_by(login: 'sandbox_developer')

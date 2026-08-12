@@ -64,4 +64,4 @@ jobs:
       - name: Run e2e tests
         run: uv run pytest -m e2e
         env:
-          REDI_E2E_PROFILE: sandbox_admin_${{ matrix.redmine }}
+          REDI_E2E_REDMINE_VERSION: ${{ matrix.redmine }}
