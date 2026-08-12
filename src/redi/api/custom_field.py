@@ -3,6 +3,7 @@ import sys
 from typing import Literal, NotRequired, TypedDict, cast
 
 from redi import cache
+from redi.api.types import IdName
 from redi.client import client
 from redi.i18n import messages
 
@@ -46,7 +47,7 @@ class CustomField(TypedDict):
     editable: bool
     possible_values: NotRequired[list[dict]]
     # Redmine 7.0 以降で返る。is_for_all が false のとき対象プロジェクトが入る
-    projects: NotRequired[list[dict]]
+    projects: NotRequired[list[IdName]]
     trackers: list[dict]
     roles: list[dict]
 
