@@ -11,7 +11,7 @@
 ## Quickstart
 
 ```sh
-redi init                # interactive: enter Redmine URL and API key
+redi init                # interactive: select language, then enter Redmine URL and API key
 redi --tui               # launch the TUI
 redi issue               # or list issues
 ```
@@ -37,6 +37,9 @@ To use redi, you need to set the Redmine URL and API key in one of the ways belo
 ```sh
 redi init
 ```
+
+`redi init` first asks which language to use (`en` / `ja`), and the rest of the setup is shown in the selected language.
+You can change it later with `redi config update --language <en|ja>`.
 
 Then, profile will be created in `~/.config/redi/config.toml` like below format.
 You can also create profile by `redi config create`, and update profile by `redi config update` (and also by manual edit).
@@ -117,7 +120,7 @@ redi <resource> <action> [<resource_id>] [options]
 
 ```sh
 # init
-redi init # interactive
+redi init # interactive: select language, then Redmine URL / API key / projects
 
 # run TUI
 redi --tui

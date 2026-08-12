@@ -11,6 +11,9 @@ CONFIG_PATH = Path.home() / ".config" / "redi" / "config.toml"
 
 SUPPORTED_LANGUAGES = ("en", "ja")
 
+# 言語未確定の場面で表示するため、翻訳せず各言語の自称表記を使う
+LANGUAGE_LABELS = {"en": "English (en)", "ja": "日本語 (ja)"}
+
 _default_config = {
     "redmine_url": "",
     "redmine_api_key": "",
