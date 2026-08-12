@@ -22,7 +22,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     * lint:            lint
     * typecheck:       typecheck
     * test:            run tests (except E2E)
-    * test:e2e:        run E2E tests
+    * test:e2e:        run E2E tests (all target Redmine versions)
+    * test:e2e:6.1:    run E2E tests against Redmine 6.1
+    * test:e2e:7.0:    run E2E tests against Redmine 7.0
     * release:         release next version
     * demo:            generate demo
     ```

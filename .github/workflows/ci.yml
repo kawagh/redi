@@ -35,6 +35,11 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    strategy:
+      # 片方のバージョンで落ちても他方の結果を得たい
+      fail-fast: false
+      matrix:
+        redmine: ["6.1", "7.0"]
     steps:
       - uses: actions/checkout@v6
 
@@ -54,7 +59,9 @@ jobs:
         # https://docs.github.com/ja/actions/reference/workflows-and-actions/workflow-commands#example-of-adding-a-system-path
 
       - name: Initialize Redmine for test
-        run: ./script/init-redmine.sh
+        run: ./script/init-redmine.sh ${{ matrix.redmine }}
 
       - name: Run e2e tests
         run: uv run pytest -m e2e
+        env:
+          REDI_E2E_PROFILE: sandbox_admin_${{ matrix.redmine }}
