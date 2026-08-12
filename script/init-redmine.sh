@@ -1,10 +1,27 @@
 #!/bin/bash
 set -e
 
-docker compose down redmine-for-test
-docker compose up -d redmine-for-test
+# 引数で対象の Redmine バージョンを選ぶ (例: ./script/init-redmine.sh 7.0)
+# バージョンごとにサービス・ポート・profile を分けているため、
+# 他バージョンのコンテナを落とさずに初期化できる
+REDMINE_VERSION="${1:-6.1}"
+case "$REDMINE_VERSION" in
+6.1) VERSION_SUFFIX=61 ;;
+7.0) VERSION_SUFFIX=70 ;;
+*)
+    echo "not a target redmine version: $REDMINE_VERSION (target: 6.1, 7.0)" >&2
+    exit 1
+    ;;
+esac
+SERVICE="redmine-for-test-${VERSION_SUFFIX}"
+URL="http://localhost:30${VERSION_SUFFIX}"
+ADMIN_PROFILE="sandbox_admin_${VERSION_SUFFIX}"
+DEVELOPER_PROFILE="sandbox_developer_${VERSION_SUFFIX}"
+
+docker compose down "$SERVICE"
+docker compose up -d "$SERVICE"
 sleep 5
-API_KEYS_OUTPUT=$(docker compose exec -T redmine-for-test rails runner - <<RUBY
+API_KEYS_OUTPUT=$(docker compose exec -T "$SERVICE" rails runner - <<RUBY
     # 初期生成される管理者のパスワードを変更
     admin = User.find_by(login: 'admin')
     admin.password = 'adminadmin'
@@ -69,16 +86,16 @@ RUBY
 ADMIN_API_KEY=$(echo "$API_KEYS_OUTPUT" | grep '^ADMIN_KEY=' | tail -1 | cut -d= -f2)
 DEVELOPER_API_KEY=$(echo "$API_KEYS_OUTPUT" | grep '^DEVELOPER_KEY=' | tail -1 | cut -d= -f2)
 
-redi config create sandbox_admin || true # profile作成がべき等でないので失敗するのを当座で防ぐ
-redi config update --default_profile sandbox_admin
-redi config update sandbox_admin \
-    --url "http://localhost:3000" \
+redi config create "$ADMIN_PROFILE" || true # profile作成がべき等でないので失敗するのを当座で防ぐ
+redi config update --default_profile "$ADMIN_PROFILE"
+redi config update "$ADMIN_PROFILE" \
+    --url "$URL" \
     --api_key "$ADMIN_API_KEY" \
     --project_id "reditest"
 
-redi config create sandbox_developer || true
-redi config update sandbox_developer \
-    --url "http://localhost:3000" \
+redi config create "$DEVELOPER_PROFILE" || true
+redi config update "$DEVELOPER_PROFILE" \
+    --url "$URL" \
     --api_key "$DEVELOPER_API_KEY" \
     --project_id "reditest"
 

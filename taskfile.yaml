@@ -35,10 +35,28 @@ tasks:
       - uv run pytest -v --cov=src/redi
 
   test:e2e:
-    desc: run E2E tests
+    desc: run E2E tests (all target Redmine versions)
     cmds:
-      - ./script/init-redmine.sh
-      - uv run pytest -m e2e
+      - task: test:e2e:6.1
+      - task: test:e2e:7.0
+
+  test:e2e:6.1:
+    desc: run E2E tests against Redmine 6.1
+    cmds:
+      - task: e2e
+        vars: { REDMINE_VERSION: '6.1', VERSION_SUFFIX: '61' }
+
+  test:e2e:7.0:
+    desc: run E2E tests against Redmine 7.0
+    cmds:
+      - task: e2e
+        vars: { REDMINE_VERSION: '7.0', VERSION_SUFFIX: '70' }
+
+  e2e:
+    internal: true
+    cmds:
+      - ./script/init-redmine.sh {{.REDMINE_VERSION}}
+      - REDI_E2E_PROFILE=sandbox_admin_{{.VERSION_SUFFIX}} uv run pytest -m e2e
 
   release:
     desc: release next version

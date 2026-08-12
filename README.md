@@ -285,6 +285,8 @@ task format      # uv run ruff format
 task lint        # uv run ruff check
 task typecheck   # uv run ty check
 task test        # uv run pytest -v
+task test:e2e    # E2E tests against every target Redmine version
+task test:e2e:7.0 # E2E tests against Redmine 7.0 only (also: task test:e2e:6.1)
 ```
 
 ### Debug

@@ -1,8 +1,15 @@
 services:
-  redmine-for-test:
+  # テスト対象の Redmine はバージョンごとにサービスを分ける
+  # ローカルでは同時に起動してバージョン間の差分を比較できる
+  redmine-for-test-61:
     image: redmine:6.1
     ports:
-      - 3000:3000
+      - 3061:3000
+
+  redmine-for-test-70:
+    image: redmine:7.0
+    ports:
+      - 3070:3000
 
   redmine-for-dogfooding:
     image: redmine:6.1
