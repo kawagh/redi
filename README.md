@@ -75,6 +75,33 @@ uv tool install argcomplete
 echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
 ```
 
+### Agent skill
+
+`redmine-redi` is a skill that lets coding agents (Claude Code, Codex) know to
+reach for `redi` when a task involves Redmine.
+
+Install it globally (user scope) so that it is available in every project.
+`curl` needs no extra tooling:
+
+```sh
+# Claude Code
+mkdir -p ~/.claude/skills/redmine-redi && \
+  curl -sL https://raw.githubusercontent.com/kawagh/redi/main/skills/redmine-redi/SKILL.md \
+    -o ~/.claude/skills/redmine-redi/SKILL.md
+
+# Codex
+mkdir -p ~/.agents/skills/redmine-redi && \
+  curl -sL https://raw.githubusercontent.com/kawagh/redi/main/skills/redmine-redi/SKILL.md \
+    -o ~/.agents/skills/redmine-redi/SKILL.md
+```
+
+Or with a skill manager:
+
+```sh
+npx skills add kawagh/redi --skill redmine-redi -g
+gh skill install kawagh/redi redmine-redi --scope user  # requires gh v2.90+ and a GitHub account
+```
+
 ## Usage (examples)
 
 Most commands follow the form:
