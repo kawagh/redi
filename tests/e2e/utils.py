@@ -4,19 +4,25 @@ import os
 import subprocess
 import uuid
 
+import pytest
+
+# テスト対象の Redmine バージョン (taskfile / CI から渡す)
+REDMINE_VERSION = os.environ.get("REDI_E2E_REDMINE_VERSION")
+
 
 def run_redi(*args: str) -> subprocess.CompletedProcess[str]:
     """`redi <args...>` を subprocess で実行する (例: `run_redi("project", "list")`)。
 
-    `REDI_E2E_PROFILE` が設定されていれば `--profile` を付けて実行し、
-    テスト対象の Redmine バージョンを切り替えられるようにする。
+    `REDI_E2E_REDMINE_VERSION` が設定されていれば、そのバージョン向けに
+    script/init-redmine.sh が作った profile を `--profile` で指定する。
     未設定の場合は default_profile が使われる。
 
     異常終了を見逃さないよう `check=True` で実行する。
     異常終了を検証する場合は `subprocess.CalledProcessError` を捕捉する。
     """
-    profile = os.environ.get("REDI_E2E_PROFILE")
-    profile_options = ["--profile", profile] if profile else []
+    profile_options = (
+        ["--profile", f"sandbox_admin_{REDMINE_VERSION}"] if REDMINE_VERSION else []
+    )
     return subprocess.run(
         ["redi", *profile_options, *args],
         capture_output=True,
@@ -28,3 +34,13 @@ def run_redi(*args: str) -> subprocess.CompletedProcess[str]:
 def unique_identifier(prefix: str) -> str:
     """`<prefix>-<uuid8>` 形式で衝突しにくい識別子を返す。"""
     return f"{prefix}-{uuid.uuid4().hex[:8]}"
+
+
+def _version_tuple(version: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in version.split("."))
+
+
+requires_redmine_7_0 = pytest.mark.skipif(
+    REDMINE_VERSION is None or _version_tuple(REDMINE_VERSION) < (7, 0),
+    reason="Redmine 7.0 以降で拡張されたレスポンスの検証",
+)
