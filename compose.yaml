@@ -1,6 +1,6 @@
+name: redi
+
 services:
-  # テスト対象の Redmine はバージョンごとにサービスを分ける
-  # ローカルでは同時に起動してバージョン間の差分を比較できる
   redmine-for-test-61:
     image: redmine:6.1
     ports:
