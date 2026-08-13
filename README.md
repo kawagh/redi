@@ -235,6 +235,7 @@ redi issue_category create "category" -p <project_id>
 # issue_template (alias: it)
 # This command requires redmine_issue_templates plugin ( https://www.redmine.org/plugins/redmine_issue_templates )
 redi issue_template # list issue_templates
+redi issue_template -t <tracker_id> # list issue_templates for the tracker
 
 # search (alias: s)
 redi search "keyword" # search all projects
