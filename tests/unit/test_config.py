@@ -53,12 +53,14 @@ class TestCreateProfile:
 
         result = config.create_profile(
             "main",
-            redmine_url="https://redmine.example.com",
-            redmine_api_key="secret",
-            default_project_id="1",
-            wiki_project_id="2",
-            editor="nvim",
-            language="ja",
+            config.Profile(
+                redmine_url="https://redmine.example.com",
+                redmine_api_key="secret",
+                default_project_id="1",
+                wiki_project_id="2",
+                editor="nvim",
+                language="ja",
+            ),
             config_path=config_path,
         )
 
@@ -79,7 +81,9 @@ class TestCreateProfile:
         config_path = tmp_path / "config.toml"
 
         config.create_profile(
-            "main", redmine_url="https://redmine.example.com", config_path=config_path
+            "main",
+            config.Profile(redmine_url="https://redmine.example.com"),
+            config_path=config_path,
         )
 
         with open(config_path, "rb") as f:
@@ -90,7 +94,7 @@ class TestCreateProfile:
         """親ディレクトリが存在しなくても自動作成する"""
         config_path = tmp_path / "nested" / "config.toml"
 
-        config.create_profile("main", config_path=config_path)
+        config.create_profile("main", config.Profile(), config_path=config_path)
 
         assert config_path.exists()
 
@@ -108,7 +112,7 @@ class TestCreateProfile:
 
         config.create_profile(
             "sub",
-            redmine_url="https://redmine.example.com/sub",
+            config.Profile(redmine_url="https://redmine.example.com/sub"),
             config_path=config_path,
         )
 
@@ -130,7 +134,7 @@ class TestCreateProfile:
 
         result = config.create_profile(
             "main",
-            redmine_url="https://redmine.example.com/overwrite",
+            config.Profile(redmine_url="https://redmine.example.com/overwrite"),
             config_path=config_path,
         )
 
@@ -145,7 +149,9 @@ class TestCreateProfile:
         config_path = tmp_path / "config.toml"
 
         result = config.create_profile(
-            "main", redmine_url="https://redmine.example.com", config_path=config_path
+            "main",
+            config.Profile(redmine_url="https://redmine.example.com"),
+            config_path=config_path,
         )
 
         assert result.set_as_default is True
@@ -167,7 +173,7 @@ class TestCreateProfile:
 
         result = config.create_profile(
             "sub",
-            redmine_url="https://redmine.example.com/sub",
+            config.Profile(redmine_url="https://redmine.example.com/sub"),
             config_path=config_path,
         )
 

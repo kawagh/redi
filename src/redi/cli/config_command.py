@@ -7,6 +7,7 @@ from redi.cli.picker import inline_checkbox, inline_choice, inline_choice_with_a
 from redi.cli.validator import RequiredValidator, UrlValidator
 from redi.config import (
     SUPPORTED_LANGUAGES,
+    Profile,
     create_profile,
     get_default_profile,
     list_profile_names,
@@ -198,12 +199,14 @@ def handle_config(args: argparse.Namespace) -> None:
     if cmd == "create":
         result = create_profile(
             profile_name=args.profile_name,
-            redmine_url=args.url,
-            redmine_api_key=args.api_key,
-            default_project_id=args.project_id,
-            wiki_project_id=args.wiki_project_id,
-            editor=args.editor,
-            language=args.language,
+            profile=Profile(
+                redmine_url=args.url,
+                redmine_api_key=args.api_key,
+                default_project_id=args.project_id,
+                wiki_project_id=args.wiki_project_id,
+                editor=args.editor,
+                language=args.language,
+            ),
         )
         if not result.created:
             sys.exit(1)

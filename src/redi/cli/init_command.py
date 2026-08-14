@@ -14,6 +14,7 @@ from redi.config import (
     CONFIG_PATH,
     LANGUAGE_LABELS,
     SUPPORTED_LANGUAGES,
+    Profile,
     create_profile,
 )
 from redi.i18n import MessagesProto, messages, select_messages
@@ -154,11 +155,13 @@ def _init_profile(language: str) -> None:
 
     result = create_profile(
         profile_name=PROFILE_NAME,
-        redmine_url=url,
-        redmine_api_key=api_key,
-        default_project_id=default_project_id,
-        wiki_project_id=wiki_project_id,
-        language=language,
+        profile=Profile(
+            redmine_url=url,
+            redmine_api_key=api_key,
+            default_project_id=default_project_id,
+            wiki_project_id=wiki_project_id,
+            language=language,
+        ),
     )
     if not result.created:
         sys.exit(1)

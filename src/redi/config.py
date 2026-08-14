@@ -213,12 +213,7 @@ class CreateProfileResult(NamedTuple):
 
 def create_profile(
     profile_name: str,
-    redmine_url: str | None = None,
-    redmine_api_key: str | None = None,
-    default_project_id: str | None = None,
-    wiki_project_id: str | None = None,
-    editor: str | None = None,
-    language: str | None = None,
+    profile: Profile,
     config_path: Path | None = None,
 ) -> CreateProfileResult:
     path = config_path or CONFIG_PATH
@@ -236,18 +231,8 @@ def create_profile(
         return CreateProfileResult(created=False, set_as_default=False)
 
     table = tomlkit.table()
-    if redmine_url is not None:
-        table["redmine_url"] = redmine_url
-    if redmine_api_key is not None:
-        table["redmine_api_key"] = redmine_api_key
-    if default_project_id is not None:
-        table["default_project_id"] = default_project_id
-    if wiki_project_id is not None:
-        table["wiki_project_id"] = wiki_project_id
-    if editor is not None:
-        table["editor"] = editor
-    if language is not None:
-        table["language"] = language
+    for key, value in profile.to_dict().items():
+        table[key] = value
     doc[profile_name] = table
 
     profile_names = [k for k, v in doc.items() if isinstance(v, Table)]
