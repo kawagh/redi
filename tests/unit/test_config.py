@@ -691,3 +691,31 @@ class TestProfileHasCredentials:
         assert (
             config.profile_has_credentials("missing", config_path=two_profiles) is False
         )
+
+    def test_false_when_url_is_invalid(self, tmp_path, no_redmine_env):
+        """値が揃っていてもスキーマとして無効ならFalse"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "main.example.com"
+            redmine_api_key = "secret-main"
+        """)
+        )
+
+        assert config.profile_has_credentials("main", config_path=config_path) is False
+
+    def test_true_when_only_warnings(self, tmp_path, no_redmine_env):
+        """WARNING 止まりの問題では切替を妨げない"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://main.example.com"
+            redmine_api_key = "secret-main"
+            language = "jp"
+            redmine_ur = "typo"
+        """)
+        )
+
+        assert config.profile_has_credentials("main", config_path=config_path) is True
