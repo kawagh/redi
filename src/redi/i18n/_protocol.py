@@ -348,6 +348,21 @@ class MessagesProto(Protocol):
     init_profile_already_exists: str
     """既存プロファイルあり。{path}"""
 
+    # ---- config check ----
+    check_must_be_string: str
+    check_must_not_be_empty: str
+    check_required_missing: str
+    check_supplied_by_env: str
+    """{name}"""
+    check_invalid_url: str
+    check_unknown_language: str
+    """{value}, {expected}"""
+    check_project_id_should_be_string: str
+    check_unknown_key: str
+    check_unknown_top_level_key: str
+    check_default_profile_not_found: str
+    """{name}"""
+
     # ---- prompts (interactive input messages) ----
     prompt_confirm_delete: str
     prompt_confirm_overwrite: str

@@ -234,6 +234,21 @@ class Ja(MessagesProto):
         "追加するプロファイルは `redi config create` で作成してください"
     )
 
+    # ---- config check ----
+    check_must_be_string = "文字列である必要があります"
+    check_must_not_be_empty = "空にできません"
+    check_required_missing = "必須のキーがありません"
+    check_supplied_by_env = "プロファイルに未設定です(実行時は ${name} で補われます)"
+    check_invalid_url = "http:// または https:// で始まる必要があります"
+    check_unknown_language = '不明な値 "{value}" です(有効な値: {expected})'
+    check_project_id_should_be_string = '文字列で記述してください(例: "1")'
+    check_unknown_key = "不明なキーです"
+    check_unknown_top_level_key = (
+        "プロファイルに属さないトップレベルのキーです"
+        "(最初のテーブルより前に書いたキーはどのプロファイルにも属しません)"
+    )
+    check_default_profile_not_found = 'プロファイル "{name}" が定義されていません'
+
     # ---- prompts ----
     prompt_confirm_delete = "削除してもよろしいですか? (yes/No): "
     prompt_confirm_overwrite = "上書きしてもよろしいですか? (yes/No): "
