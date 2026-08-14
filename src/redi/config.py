@@ -178,12 +178,12 @@ def check_config() -> None:
         sys.exit(1)
 
 
-def update_config(
-    key: str,
-    value: str,
+def update_profile(
+    values: Profile,
     profile: str | None = None,
     config_path: Path | None = None,
 ) -> None:
+    """既存プロファイルのうち、values で設定済みの項目だけを書き換える。"""
     path = config_path or CONFIG_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists():
@@ -201,7 +201,8 @@ def update_config(
         print(f"profile '{target_profile}' not found in {path}")
         sys.exit(1)
 
-    profile_table[key] = value
+    for key, value in values.to_dict().items():
+        profile_table[key] = value
     with open(path, "w") as f:
         tomlkit.dump(doc, f)
 

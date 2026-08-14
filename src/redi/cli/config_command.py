@@ -14,7 +14,7 @@ from redi.config import (
     read_profile,
     set_default_profile,
     show_config,
-    update_config,
+    update_profile,
 )
 from redi.i18n import messages, select_messages
 
@@ -237,43 +237,43 @@ def handle_config(args: argparse.Namespace) -> None:
     profile_suffix = (
         messages.config_profile_suffix.format(name=profile) if profile else ""
     )
+    # 指定された項目をまとめて書き込み、結果は項目ごとに知らせる
+    values = Profile(
+        redmine_url=args.url,
+        redmine_api_key=args.api_key,
+        default_project_id=args.project_id,
+        wiki_project_id=args.wiki_project_id,
+        editor=args.editor,
+        language=args.language,
+    )
+    if values.to_dict():
+        update_profile(values, profile)
+        updated = True
     if args.project_id:
-        update_config("default_project_id", args.project_id, profile)
         print(
             messages.default_project_id_set.format(
                 value=args.project_id, suffix=profile_suffix
             )
         )
-        updated = True
     if args.wiki_project_id:
-        update_config("wiki_project_id", args.wiki_project_id, profile)
         print(
             messages.wiki_project_id_set.format(
                 value=args.wiki_project_id, suffix=profile_suffix
             )
         )
-        updated = True
     if args.editor:
-        update_config("editor", args.editor, profile)
         print(messages.editor_set.format(value=args.editor, suffix=profile_suffix))
-        updated = True
     if args.language:
-        update_config("language", args.language, profile)
         new_lang_messages = select_messages(args.language)
         print(
             new_lang_messages.language_set.format(
                 value=args.language, suffix=profile_suffix
             )
         )
-        updated = True
     if args.api_key:
-        update_config("redmine_api_key", args.api_key, profile)
         print(messages.redmine_api_key_set.format(suffix=profile_suffix))
-        updated = True
     if args.url:
-        update_config("redmine_url", args.url, profile)
         print(messages.redmine_url_set.format(value=args.url, suffix=profile_suffix))
-        updated = True
     if args.default_profile:
         if set_default_profile(args.default_profile):
             print(messages.default_profile_set.format(name=args.default_profile))

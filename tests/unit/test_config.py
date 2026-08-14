@@ -210,8 +210,8 @@ class TestLoadToml:
         assert config.load_toml(config_path=config_path) == {}
 
 
-class TestUpdateConfig:
-    """update_config()はconfig_path指定時にそのファイルを更新する"""
+class TestUpdateProfile:
+    """update_profile()はconfig_path指定時にそのファイルを更新する"""
 
     def test_updates_default_profile_value(self, tmp_path):
         """default_profileで指定されたプロファイルのキーを更新する"""
@@ -225,16 +225,17 @@ class TestUpdateConfig:
         """)
         )
 
-        config.update_config(
-            "redmine_url", "https://redmine.example.com/new", config_path=config_path
+        config.update_profile(
+            config.Profile(redmine_url="https://redmine.example.com/new"),
+            config_path=config_path,
         )
 
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
         assert doc["main"]["redmine_url"] == "https://redmine.example.com/new"
 
-    def test_updates_language(self, tmp_path):
-        """language キーを更新できる"""
+    def test_updates_multiple_keys(self, tmp_path):
+        """設定済みの項目をまとめて更新する"""
         config_path = tmp_path / "config.toml"
         config_path.write_text(
             textwrap.dedent("""\
@@ -246,11 +247,14 @@ class TestUpdateConfig:
         """)
         )
 
-        config.update_config("language", "ja", config_path=config_path)
+        config.update_profile(
+            config.Profile(language="ja", editor="nvim"), config_path=config_path
+        )
 
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
         assert doc["main"]["language"] == "ja"
+        assert doc["main"]["editor"] == "nvim"
 
     def test_updates_specified_profile(self, tmp_path):
         """profile引数で指定したプロファイルを更新する"""
@@ -267,9 +271,8 @@ class TestUpdateConfig:
         """)
         )
 
-        config.update_config(
-            "redmine_url",
-            "https://redmine.example.com/sub-new",
+        config.update_profile(
+            config.Profile(redmine_url="https://redmine.example.com/sub-new"),
             profile="sub",
             config_path=config_path,
         )
@@ -290,7 +293,9 @@ class TestUpdateConfig:
         )
 
         with pytest.raises(SystemExit) as e:
-            config.update_config("redmine_url", "v", config_path=config_path)
+            config.update_profile(
+                config.Profile(redmine_url="v"), config_path=config_path
+            )
         assert e.value.code == 1
 
     def test_exits_when_profile_not_found(self, tmp_path):
@@ -304,8 +309,10 @@ class TestUpdateConfig:
         )
 
         with pytest.raises(SystemExit) as e:
-            config.update_config(
-                "redmine_url", "v", profile="missing", config_path=config_path
+            config.update_profile(
+                config.Profile(redmine_url="v"),
+                profile="missing",
+                config_path=config_path,
             )
         assert e.value.code == 1
 
