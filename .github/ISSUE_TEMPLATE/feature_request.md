@@ -12,3 +12,7 @@ assignees: ''
 ## Why do you want it? / そのようにしたいのは何故か?
 
 ## Proposed solution (optional) / どうしたら解決すると思うか?(任意)
+
+## redi version / 使用している redi のバージョン
+
+<!-- redi --version -->
