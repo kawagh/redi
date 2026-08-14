@@ -5,6 +5,7 @@ import tomllib
 import requests
 from prompt_toolkit.validation import Validator
 
+from redi.api.account import verify_connection
 from redi.api.project import Project, fetch_projects
 from redi.cli.interactive import prompt
 from redi.cli.picker import inline_choice
@@ -28,29 +29,6 @@ def add_init_parser(subparsers: argparse._SubParsersAction) -> None:
         "init",
         help=messages.arg_help_init_command,
     )
-
-
-def _verify_connection(url: str, api_key: str, messages: MessagesProto) -> dict | None:
-    try:
-        response = requests.get(
-            f"{url}/my/account.json",
-            headers={"X-Redmine-API-Key": api_key},
-            timeout=10,
-        )
-        response.raise_for_status()
-        return response.json().get("user")
-    except requests.exceptions.HTTPError as e:
-        if e.response is not None:
-            print(
-                messages.connection_failed_http.format(
-                    status=e.response.status_code, reason=e.response.reason
-                )
-            )
-        else:
-            print(messages.connection_failed_other.format(error=e))
-    except requests.exceptions.RequestException as e:
-        print(messages.connection_failed_other.format(error=e))
-    return None
 
 
 def _fetch_projects(url: str, api_key: str, messages: MessagesProto) -> list[Project]:
@@ -123,9 +101,11 @@ def _init_profile(language: str) -> None:
         sys.exit(1)
 
     print(messages.checking_connection)
-    user = _verify_connection(url, api_key, messages)
-    if user is None:
+    result = verify_connection(url, api_key, messages)
+    if not result.ok or result.user is None:
+        print(result.error)
         sys.exit(1)
+    user = result.user
     name = " ".join(filter(None, [user.get("firstname"), user.get("lastname")]))
     print(messages.connection_success.format(login=user.get("login", ""), name=name))
 
