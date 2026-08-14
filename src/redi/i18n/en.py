@@ -345,6 +345,7 @@ class En(MessagesProto):
     field_wiki_project_id = "wiki_project_id"
     field_editor = "editor"
     field_language = "language"
+    field_set_default_profile = "set as default_profile"
 
     # ---- sharing options ----
     sharing_none = "none (not shared)"
