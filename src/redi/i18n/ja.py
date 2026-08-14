@@ -348,6 +348,7 @@ class Ja(MessagesProto):
     field_wiki_project_id = "Wikiプロジェクト (wiki_project_id)"
     field_editor = "エディタ (editor)"
     field_language = "言語 (language)"
+    field_set_default_profile = "デフォルトプロファイルにする (default_profile)"
 
     # ---- sharing options ----
     sharing_none = "none (共有しない)"

@@ -111,14 +111,8 @@ def _interactive_select_profile(args: argparse.Namespace) -> bool:
     return False
 
 
-def _interactive_fill_config_update_args(
-    args: argparse.Namespace, profile: str
-) -> bool:
-    """更新する項目を選ばせて値を入力し、args に反映する。
-
-    後続の更新フローへ流す場合 True を返す。キャンセル時は False。
-    """
-    current = read_profile_values(profile)
+def _update_field_values(profile: str) -> list[tuple[str, str]]:
+    """更新項目の選択肢を返す。既にデフォルトのプロファイルには set_default を出さない。"""
     field_values: list[tuple[str, str]] = [
         ("url", messages.field_redmine_url),
         ("api_key", messages.field_redmine_api_key),
@@ -127,6 +121,20 @@ def _interactive_fill_config_update_args(
         ("editor", messages.field_editor),
         ("language", messages.field_language),
     ]
+    if profile != get_default_profile():
+        field_values.append(("set_default", messages.field_set_default_profile))
+    return field_values
+
+
+def _interactive_fill_config_update_args(
+    args: argparse.Namespace, profile: str
+) -> bool:
+    """更新する項目を選ばせて値を入力し、args に反映する。
+
+    後続の更新フローへ流す場合 True を返す。キャンセル時は False。
+    """
+    current = read_profile_values(profile)
+    field_values = _update_field_values(profile)
     try:
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
     except (KeyboardInterrupt, EOFError):
@@ -179,6 +187,8 @@ def _interactive_fill_config_update_args(
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         return False
+    if "set_default" in selected:
+        args.default_profile = profile
     args.profile_name = profile
     return True
 

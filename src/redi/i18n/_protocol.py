@@ -465,6 +465,7 @@ class MessagesProto(Protocol):
     field_wiki_project_id: str
     field_editor: str
     field_language: str
+    field_set_default_profile: str
 
     # ---- sharing options ----
     sharing_none: str
