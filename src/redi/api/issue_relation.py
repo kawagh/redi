@@ -3,9 +3,9 @@ import sys
 
 import requests
 
+from redi import config
 from redi.api.exceptions import print_http_error_body
 from redi.client import client
-from redi.config import redmine_url
 from redi.i18n import messages
 
 
@@ -23,8 +23,8 @@ def read_relation(relation_id: str, full: bool = False) -> None:
     if full:
         print(json.dumps(relation, ensure_ascii=False))
         return
-    issue_url = f"{redmine_url}/issues/{relation['issue_id']}"
-    issue_to_url = f"{redmine_url}/issues/{relation['issue_to_id']}"
+    issue_url = f"{config.redmine_url}/issues/{relation['issue_id']}"
+    issue_to_url = f"{config.redmine_url}/issues/{relation['issue_to_id']}"
     print(
         f"{relation['id']} #{relation['issue_id']} --[{relation['relation_type']}]--> #{relation['issue_to_id']}"
     )

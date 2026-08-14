@@ -2,8 +2,8 @@ import webbrowser
 
 import requests
 
+from redi import config
 from redi.api.wiki import fetch_wiki, fetch_wikis, flatten_wiki_tree
-from redi.config import redmine_url
 from redi.i18n import messages
 from redi.tui.state import (
     Renderable,
@@ -216,7 +216,7 @@ def _on_open_web(state: TuiState) -> None:
         return
     title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
     if title:
-        webbrowser.open(f"{redmine_url}/projects/{project}/wiki/{title}")
+        webbrowser.open(f"{config.redmine_url}/projects/{project}/wiki/{title}")
 
 
 _HELP_LINES: list[tuple[str, str]] = [
@@ -232,6 +232,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  n / N", messages.tui_help_next_prev_match),
     (messages.tui_help_section_filter, ""),
     ("  p", messages.tui_help_switch_project),
+    ("  P", messages.tui_help_switch_profile),
     (messages.tui_help_section_actions, ""),
     ("  Enter", messages.tui_help_wiki_load_text),
     ("  c", messages.tui_help_wiki_create_child),

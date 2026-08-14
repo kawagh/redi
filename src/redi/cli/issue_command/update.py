@@ -4,6 +4,7 @@ from dataclasses import dataclass, fields
 from datetime import date
 from typing import Self, cast
 
+from redi import config
 from redi.api.custom_field import (
     CustomField,
     fetch_custom_fields,
@@ -40,7 +41,6 @@ from redi.cli.issue_command.field_prompt import (
 from redi.cli.keybinding import date_key_bindings
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.validator import DateValidator, HourValidator
-from redi.config import default_project_id
 from redi.i18n import messages
 
 
@@ -85,7 +85,7 @@ class IssueUpdateArgs:
 
 
 def _interactive_select_issue_id() -> str:
-    issues = fetch_issues(project_id=default_project_id)
+    issues = fetch_issues(project_id=config.default_project_id)
     if not issues:
         print(messages.no_issues_available)
         sys.exit(1)

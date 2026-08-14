@@ -602,6 +602,16 @@ class MessagesProto(Protocol):
     """{name}"""
     tui_project_load_failed: str
     """{error}"""
+    tui_profile_modal_title: str
+    tui_profile_modal_hint: str
+    tui_current_profile: str
+    """{name}"""
+    tui_flash_profile_switched: str
+    """{name}"""
+    tui_profile_switch_invalid: str
+    """切替先に redmine_url / redmine_api_key が揃っていない。{name} を埋め込む。"""
+    tui_no_profiles: str
+    """config.toml にプロファイルが1つも無い。"""
     tui_help_title: str
     """{label}"""
     tui_error_modal_title: str
@@ -1001,6 +1011,7 @@ class MessagesProto(Protocol):
     tui_help_filter_status_assignee: str
     tui_help_filter_user: str
     tui_help_switch_project: str
+    tui_help_switch_profile: str
     tui_help_reload: str
     tui_help_show_or_close: str
     tui_help_quit: str

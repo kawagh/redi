@@ -8,11 +8,11 @@ from typing import NotRequired, TypedDict, cast
 
 import requests
 
+from redi import config
 from redi.api.attachment import upload_file
 from redi.api.exceptions import RedmineValidationException, print_http_error_body
 from redi.api.types import IdName
 from redi.client import client
-from redi.config import redmine_url
 from redi.i18n import messages
 
 
@@ -172,7 +172,7 @@ def list_issues(
     else:
         for issue in issues:
             print(
-                f"{issue['id']} {issue['subject']} {redmine_url}/issues/{issue['id']}"
+                f"{issue['id']} {issue['subject']} {config.redmine_url}/issues/{issue['id']}"
             )
 
 
@@ -192,7 +192,7 @@ def read_issue(
     issue_id: str, include: str = "", full: bool = False, web: bool = False
 ) -> None:
     if web:
-        url = f"{redmine_url}/issues/{issue_id}"
+        url = f"{config.redmine_url}/issues/{issue_id}"
         print(url)
         webbrowser.open(url)
         return
@@ -255,7 +255,7 @@ def read_issue(
                 else:
                     # unknown rel_type
                     label = rel_type
-                lines.append(f"  [{label}] {redmine_url}/issues/{other}")
+                lines.append(f"  [{label}] {config.redmine_url}/issues/{other}")
         attachments = issue.get("attachments") or []
         if attachments:
             lines.append("")
@@ -378,7 +378,7 @@ def create_issue(
         print(messages.issue_create_failed)
         sys.exit(1)
     created = response.json()["issue"]
-    url = f"{redmine_url}/issues/{created['id']}"
+    url = f"{config.redmine_url}/issues/{created['id']}"
     print(messages.issue_created.format(url=url))
 
 
@@ -450,7 +450,7 @@ def update_issue(
         print_http_error_body(e)
         print(messages.issue_update_failed)
         sys.exit(1)
-    url = f"{redmine_url}/issues/{issue_id}"
+    url = f"{config.redmine_url}/issues/{issue_id}"
     print(messages.issue_updated.format(url=url))
 
 
@@ -513,7 +513,7 @@ def add_note(issue_id: str, notes: str) -> None:
     journals = issue_response.json()["issue"].get("journals", [])
     if journals:
         note_number = len(journals)
-        url = f"{redmine_url}/issues/{issue_id}#note-{note_number}"
+        url = f"{config.redmine_url}/issues/{issue_id}#note-{note_number}"
     else:
-        url = f"{redmine_url}/issues/{issue_id}"
+        url = f"{config.redmine_url}/issues/{issue_id}"
     print(messages.comment_added.format(url=url))

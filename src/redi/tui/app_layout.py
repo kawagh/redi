@@ -24,6 +24,7 @@ from redi.tui.app_render import (
 )
 from redi.tui.conditions import Conditions
 from redi.tui.issue.filter_modal import build_filter_float
+from redi.tui.profile_modal import build_profile_float
 from redi.tui.project_modal import build_project_float
 from redi.tui.state import TuiState
 from redi.tui.tabs import TABS
@@ -101,6 +102,8 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
 
     project_float = build_project_float(state, conditions.project_modal)
 
+    profile_float = build_profile_float(state, conditions.profile_modal)
+
     error_float = Float(
         content=ConditionalContainer(
             content=VSplit(
@@ -130,6 +133,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
                 filter_float,
                 time_entry_filter_float,
                 project_float,
+                profile_float,
                 error_float,
             ],
         )

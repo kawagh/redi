@@ -4,6 +4,7 @@ import sys
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.validation import Validator
 
+from redi import config
 from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.issue import fetch_issue
 from redi.api.project import fetch_projects
@@ -25,7 +26,6 @@ from redi.cli.keybinding import (
 )
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.validator import DateValidator, HourValidator
-from redi.config import default_project_id
 from redi.i18n import messages
 
 
@@ -176,7 +176,7 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
                 )
                 project_id = prompt(
                     messages.prompt_project_id_or_name,
-                    default=default_project_id or "",
+                    default=config.default_project_id or "",
                     validator=project_validator,
                     completer=completer,
                 ).strip()
@@ -297,7 +297,7 @@ def handle_time_entry(args: argparse.Namespace) -> None:
     if cmd == "create":
         if args.hours is None:
             _interactive_fill_time_entry_create_args(args)
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         create_time_entry(
             issue_id=args.issue_id,
             project_id=project_id,
@@ -341,7 +341,7 @@ def handle_time_entry(args: argparse.Namespace) -> None:
             )
         delete_time_entry(args.time_entry_id)
     elif cmd == "list" or cmd is None:
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         list_time_entries(
             project_id=project_id,
             user_id=args.user_id,

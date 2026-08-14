@@ -7,10 +7,10 @@ from typing import NotRequired, TypedDict, cast
 
 import requests
 
+from redi import config
 from redi.api.exceptions import print_http_error_body
 from redi.api.types import Attachment, IdName
 from redi.client import client
-from redi.config import redmine_url
 from redi.i18n import messages
 
 
@@ -96,7 +96,7 @@ def fetch_news(news_id: str) -> News:
 
 def read_news(news_id: str, full: bool = False, web: bool = False) -> None:
     if web:
-        url = f"{redmine_url}/news/{news_id}"
+        url = f"{config.redmine_url}/news/{news_id}"
         print(url)
         webbrowser.open(url)
         return
@@ -165,7 +165,7 @@ def create_news(
         print(messages.news_create_failed)
         sys.exit(1)
     news_id = fetch_latest_news_id(project_id)
-    print(messages.news_created.format(url=f"{redmine_url}/news/{news_id}"))
+    print(messages.news_created.format(url=f"{config.redmine_url}/news/{news_id}"))
 
 
 def update_news(
@@ -195,7 +195,7 @@ def update_news(
         print_http_error_body(e)
         print(messages.news_update_failed)
         sys.exit(1)
-    print(messages.news_updated.format(url=f"{redmine_url}/news/{news_id}"))
+    print(messages.news_updated.format(url=f"{config.redmine_url}/news/{news_id}"))
 
 
 def delete_news(news_id: str) -> None:

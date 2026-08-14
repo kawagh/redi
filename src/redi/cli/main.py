@@ -7,6 +7,7 @@ from importlib.metadata import version
 
 import argcomplete
 
+from redi import config
 from redi.api.custom_field import list_custom_fields
 from redi.api.enumeration import (
     list_document_categories,
@@ -64,6 +65,7 @@ from redi.cli.time_entry_command import add_time_entry_parser, handle_time_entry
 from redi.cli.user_command import add_user_parser, handle_user
 from redi.cli.version_command import add_version_parser, handle_version
 from redi.cli.wiki_command import add_wiki_parser, handle_wiki
+from redi.client import client
 from redi.config import CONFIG_PATH, check_config, list_profile_names
 from redi.i18n import messages
 from redi.tui import TuiState, run_issue_tui
@@ -189,6 +191,17 @@ def main() -> None:
             tui_result = run_issue_tui(state=tui_state, debug_log_path=debug_log_path)
             if tui_result is None:
                 return
+            if tui_result.action == "switch_profile" and tui_result.profile_name:
+                config.apply_profile(tui_result.profile_name)
+                client.reconfigure(config.redmine_url, config.redmine_api_key)
+                # 前のプロファイルの state は一切引き継がない (issue #290)。
+                # carry_over はフィルタとプロジェクトを引き継ぐのでここでは通さない。
+                tui_state = TuiState(
+                    flash_message=messages.tui_flash_profile_switched.format(
+                        name=tui_result.profile_name
+                    )
+                )
+                continue
             tui_state = tui_state.carry_over(tui_result)
             try:
                 if tui_result.action == "update" and tui_result.tab == "issues":

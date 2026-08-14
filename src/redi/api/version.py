@@ -4,9 +4,9 @@ import webbrowser
 
 import requests
 
+from redi import config
 from redi.api.exceptions import print_http_error_body
 from redi.client import client
-from redi.config import redmine_url
 from redi.i18n import messages
 
 
@@ -42,7 +42,7 @@ def create_version(
         messages.version_created.format(
             id=created["id"],
             name=created["name"],
-            url=f"{redmine_url}/versions/{created['id']}",
+            url=f"{config.redmine_url}/versions/{created['id']}",
         )
     )
 
@@ -81,7 +81,7 @@ def update_version(
         sys.exit(1)
     print(
         messages.version_updated.format(
-            id=version_id, url=f"{redmine_url}/versions/{version_id}"
+            id=version_id, url=f"{config.redmine_url}/versions/{version_id}"
         )
     )
 
@@ -97,7 +97,7 @@ def fetch_version(version_id: str) -> dict:
 
 def read_version(version_id: str, full: bool = False, web: bool = False) -> None:
     if web:
-        url = f"{redmine_url}/versions/{version_id}"
+        url = f"{config.redmine_url}/versions/{version_id}"
         print(url)
         webbrowser.open(url)
         return
@@ -108,7 +108,7 @@ def read_version(version_id: str, full: bool = False, web: bool = False) -> None
 
     lines = []
     lines.append(
-        f"{version['id']} {version['name']} ({version['status']}) {redmine_url}/versions/{version['id']}"
+        f"{version['id']} {version['name']} ({version['status']}) {config.redmine_url}/versions/{version['id']}"
     )
     project = version.get("project")
     if project:
@@ -155,5 +155,5 @@ def list_versions(project_id: str, full: bool = False) -> None:
     else:
         for version in versions:
             print(
-                f"{version['id']} {version['name']} ({version['status']}) {redmine_url}/versions/{version['id']}"
+                f"{version['id']} {version['name']} ({version['status']}) {config.redmine_url}/versions/{version['id']}"
             )

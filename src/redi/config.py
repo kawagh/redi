@@ -52,34 +52,76 @@ def resolve_profile_name(toml: dict, argv: list[str]) -> tuple[str | None, bool]
     return toml.get("default_profile"), False
 
 
-# 設定値の上書き
-merged_config = _default_config
-toml = load_toml()
-selected_profile_name, _profile_explicit = resolve_profile_name(toml, sys.argv)
-if selected_profile_name:
-    if selected_profile_name in toml and isinstance(toml[selected_profile_name], dict):
-        toml_config = toml[selected_profile_name]
-        for k, v in toml_config.items():
+# 設定値。下の起動時解決で `apply_profile()` が入れる。
+current_profile: str | None = None
+redmine_url: str = ""
+redmine_api_key: str = ""
+default_project_id: str | None = None
+wiki_project_id: str | None = None
+editor: str = ""
+language: str = ""
+
+
+def resolve_merged_config(profile_name: str | None, toml_doc: dict) -> dict:
+    """プロファイルと環境変数をマージした設定値を返す。
+
+    優先順位は デフォルト < プロファイル < 環境変数。プロファイル側の falsy な値は
+    「未設定」とみなして無視する。
+    """
+    # 実行中にプロファイルを切り替えると複数回呼ばれるため、`_default_config` を
+    # 破壊しないよう必ずコピーする。共有すると前のプロファイルの値が残ってしまう。
+    merged = dict(_default_config)
+    profile_table = toml_doc.get(profile_name) if profile_name else None
+    if isinstance(profile_table, dict):
+        for k, v in profile_table.items():
             if v:
-                merged_config[k] = v
-    elif _profile_explicit:
-        print(
-            f"profile '{selected_profile_name}' not found in {CONFIG_PATH}",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+                merged[k] = v
+    for k, v in load_env_config().items():
+        if v:
+            merged[k] = v
+    return merged
 
-env_config = load_env_config()
-for k, v in env_config.items():
-    if v:
-        merged_config[k] = v
 
-redmine_url = merged_config["redmine_url"]
-redmine_api_key = merged_config["redmine_api_key"]
-default_project_id: str | None = merged_config.get("default_project_id")
-wiki_project_id: str | None = merged_config.get("wiki_project_id")
-editor: str = merged_config["editor"]
-language: str = merged_config["language"]
+def apply_profile(profile_name: str | None, config_path: Path | None = None) -> None:
+    """プロファイルを適用して設定値を貼り替える。起動時も実行時の切替もここを通る。
+
+    各モジュールは `config.X` で都度参照するので貼り替えるだけで伝わるが、`client` は
+    接続先を抱えているので呼び出し側で `reconfigure()` も呼ぶこと。
+    """
+    global current_profile, redmine_url, redmine_api_key
+    global default_project_id, wiki_project_id, editor, language
+
+    merged = resolve_merged_config(profile_name, load_toml(config_path))
+    current_profile = profile_name
+    redmine_url = merged["redmine_url"]
+    redmine_api_key = merged["redmine_api_key"]
+    default_project_id = merged.get("default_project_id")
+    wiki_project_id = merged.get("wiki_project_id")
+    editor = merged["editor"]
+    language = merged["language"]
+
+
+def profile_has_credentials(profile_name: str, config_path: Path | None = None) -> bool:
+    """接続に必要な設定が揃ったプロファイルかを返す。
+
+    `check_config()` は sys.exit するため、TUI からの切り替え前チェックには使えない。
+    """
+    merged = resolve_merged_config(profile_name, load_toml(config_path))
+    return bool(merged["redmine_url"]) and bool(merged["redmine_api_key"])
+
+
+# 起動時のプロファイル解決。`redi.i18n` が import 時に `language` を読むなど、
+# 設定値は import された時点で確定していることを前提にしている。
+_toml = load_toml()
+_profile_name, _profile_explicit = resolve_profile_name(_toml, sys.argv)
+if (
+    _profile_name
+    and _profile_explicit
+    and not isinstance(_toml.get(_profile_name), dict)
+):
+    print(f"profile '{_profile_name}' not found in {CONFIG_PATH}", file=sys.stderr)
+    sys.exit(1)
+apply_profile(_profile_name)
 
 
 def check_config() -> None:

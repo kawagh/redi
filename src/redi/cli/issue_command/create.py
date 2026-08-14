@@ -6,6 +6,7 @@ from dataclasses import dataclass, fields
 from datetime import date
 from typing import Self
 
+from redi import config
 from redi.api.custom_field import (
     CustomField,
     fetch_custom_fields,
@@ -37,7 +38,6 @@ from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.validator import (
     IntValidator,
 )
-from redi.config import default_project_id, redmine_url
 from redi.i18n import messages
 
 
@@ -101,7 +101,7 @@ def _build_create_issue_url(args: IssueCreateArgs) -> str:
                     params.append((f"issue[custom_field_values][{cf['id']}][]", str(v)))
             else:
                 params.append((f"issue[custom_field_values][{cf['id']}]", str(value)))
-    base = f"{redmine_url}/projects/{project_id}/issues/new"
+    base = f"{config.redmine_url}/projects/{project_id}/issues/new"
     if not params:
         return base
     return f"{base}?{urllib.parse.urlencode(params)}"
@@ -278,7 +278,7 @@ def create_issue_interactively(project_id: str | None = None) -> None:
 
 
 def _run_issue_create(args: IssueCreateArgs) -> None:
-    project_id = args.project_id or default_project_id
+    project_id = args.project_id or config.default_project_id
     if not project_id:
         print(messages.project_id_required)
         sys.exit(1)

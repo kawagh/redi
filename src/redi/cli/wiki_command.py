@@ -3,6 +3,7 @@ import sys
 
 from prompt_toolkit.validation import ValidationError, Validator
 
+from redi import config
 from redi.api.wiki import (
     WikiPage,
     build_children_map,
@@ -20,7 +21,6 @@ from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor
 from redi.cli.interactive import prompt
 from redi.cli.picker import inline_choice
-from redi.config import default_project_id, wiki_project_id
 from redi.i18n import messages
 
 
@@ -127,7 +127,7 @@ def add_wiki_parser(
 
 
 def handle_wiki(args: argparse.Namespace) -> None:
-    project_id = args.project_id or wiki_project_id or default_project_id
+    project_id = args.project_id or config.wiki_project_id or config.default_project_id
     if not project_id:
         print(messages.wiki_project_id_required)
         sys.exit(1)

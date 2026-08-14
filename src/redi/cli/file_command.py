@@ -1,9 +1,9 @@
 import argparse
 import sys
 
+from redi import config
 from redi.api.file import create_file, list_files
 from redi.cli.alias import resolve_alias
-from redi.config import default_project_id
 from redi.i18n import messages
 
 
@@ -37,7 +37,7 @@ def add_file_parser(
 
 
 def handle_file(args: argparse.Namespace) -> None:
-    project_id = args.project_id or default_project_id
+    project_id = args.project_id or config.default_project_id
     if not project_id:
         print(messages.project_id_required)
         sys.exit(1)

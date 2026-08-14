@@ -6,10 +6,10 @@ from pathlib import Path
 
 import requests
 
+from redi import config
 from redi.api.exceptions import print_http_error_body
 from redi.api.types import Attachment
 from redi.client import client
-from redi.config import redmine_url
 from redi.i18n import messages
 
 DOWNLOAD_CHUNK_SIZE = 1024 * 1024
@@ -62,12 +62,12 @@ def resolve_download_path(attachment: Attachment, output: str | None) -> Path:
 
 
 def resolve_download_url_path(attachment: Attachment) -> str:
-    # API キーを他ホストへ送らないよう、redmine_url 配下でない content_url は使わない
+    # API キーを他ホストへ送らないよう、config.redmine_url 配下でない content_url は使わない
     content_url = attachment.get("content_url") or ""
-    if not redmine_url or not content_url.startswith(redmine_url):
+    if not config.redmine_url or not content_url.startswith(config.redmine_url):
         print(messages.attachment_content_url_unexpected.format(url=content_url))
         sys.exit(1)
-    return content_url[len(redmine_url) :]
+    return content_url[len(config.redmine_url) :]
 
 
 def download_attachment(attachment: Attachment, path: Path) -> None:
@@ -161,6 +161,6 @@ def update_attachment(
         sys.exit(1)
     print(
         messages.attachment_updated.format(
-            url=f"{redmine_url}/attachments/{attachment_id}"
+            url=f"{config.redmine_url}/attachments/{attachment_id}"
         )
     )

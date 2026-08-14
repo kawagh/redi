@@ -1,6 +1,7 @@
 import argparse
 import sys
 
+from redi import config
 from redi.api.news import (
     News,
     create_news,
@@ -17,7 +18,6 @@ from redi.cli.editor import open_editor, shorten_to_oneline
 from redi.cli.interactive import prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.validator import RequiredValidator
-from redi.config import default_project_id
 from redi.i18n import messages
 
 
@@ -195,7 +195,7 @@ def handle_news(args: argparse.Namespace) -> None:
         read_news(args.news_id, full=args.full, web=args.web)
         return
     if cmd == "create":
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
             sys.exit(1)
@@ -222,7 +222,7 @@ def handle_news(args: argparse.Namespace) -> None:
         return
     if cmd == "update":
         news_id = args.news_id or _interactive_select_news_id(
-            args.project_id or default_project_id,
+            args.project_id or config.default_project_id,
             messages.prompt_select_news_to_update,
             messages.update_target_news,
         )
@@ -245,7 +245,7 @@ def handle_news(args: argparse.Namespace) -> None:
         return
     if cmd == "delete":
         news_id = args.news_id or _interactive_select_news_id(
-            args.project_id or default_project_id,
+            args.project_id or config.default_project_id,
             messages.prompt_select_news_to_delete,
         )
         if not args.yes:
@@ -256,5 +256,5 @@ def handle_news(args: argparse.Namespace) -> None:
         delete_news(news_id)
         return
     if cmd == "list" or cmd is None:
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         list_news(project_id=project_id, full=args.full)
