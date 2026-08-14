@@ -2,7 +2,7 @@ import os
 import sys
 import tomllib
 from collections.abc import Mapping
-from dataclasses import asdict, dataclass, fields
+from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any, NamedTuple
 
@@ -21,8 +21,8 @@ LANGUAGE_LABELS = {"en": "English (en)", "ja": "日本語 (ja)"}
 class Profile:
     """config.toml の 1 プロファイル(`[profile_name]` テーブル)が持つ設定値。
 
-    フィールド名は TOML のキー名と一致させる。デフォルト値はプロファイルに項目が
-    無いときに使われる値で、`_default_config` もここから導出する。
+    フィールド名は TOML のキー名と一致させる。フィールドのデフォルト値は、
+    プロファイルにも環境変数にも項目が無いときに使われる値を兼ねる。
     """
 
     redmine_url: str = ""
@@ -60,11 +60,6 @@ class Profile:
             for name in self.field_names()
             if (value := getattr(self, name)) is not None and value != ""
         }
-
-
-# プロファイルにも環境変数にも無いときの既定値。Profile のデフォルト値を唯一の
-# 情報源にするため、未設定を表す None のフィールドだけ落として作る。
-_default_config = {k: v for k, v in asdict(Profile()).items() if v is not None}
 
 
 def load_toml(config_path: Path | None = None) -> dict:
@@ -107,24 +102,17 @@ editor: str = ""
 language: str = ""
 
 
-def resolve_merged_config(profile_name: str | None, toml_doc: dict) -> dict:
+def resolve_merged_config(profile_name: str | None, toml_doc: dict) -> Profile:
     """プロファイルと環境変数をマージした設定値を返す。
 
     優先順位は デフォルト < プロファイル < 環境変数。プロファイル側の falsy な値は
-    「未設定」とみなして無視する。
+    `Profile.from_dict()` が「未設定」とみなすためデフォルト値が残る。
     """
-    # 実行中にプロファイルを切り替えると複数回呼ばれるため、`_default_config` を
-    # 破壊しないよう必ずコピーする。共有すると前のプロファイルの値が残ってしまう。
-    merged = dict(_default_config)
     profile_table = toml_doc.get(profile_name) if profile_name else None
-    if isinstance(profile_table, dict):
-        for k, v in profile_table.items():
-            if v:
-                merged[k] = v
-    for k, v in load_env_config().items():
-        if v:
-            merged[k] = v
-    return merged
+    values = dict(profile_table) if isinstance(profile_table, dict) else {}
+    # 未設定の環境変数で上書きしないよう、値のあるものだけを重ねる
+    values.update({k: v for k, v in load_env_config().items() if v})
+    return Profile.from_dict(values)
 
 
 def apply_profile(profile_name: str | None, config_path: Path | None = None) -> None:
@@ -136,14 +124,14 @@ def apply_profile(profile_name: str | None, config_path: Path | None = None) -> 
     global current_profile, redmine_url, redmine_api_key
     global default_project_id, wiki_project_id, editor, language
 
-    merged = resolve_merged_config(profile_name, load_toml(config_path))
+    profile = resolve_merged_config(profile_name, load_toml(config_path))
     current_profile = profile_name
-    redmine_url = merged["redmine_url"]
-    redmine_api_key = merged["redmine_api_key"]
-    default_project_id = merged.get("default_project_id")
-    wiki_project_id = merged.get("wiki_project_id")
-    editor = merged["editor"]
-    language = merged["language"]
+    redmine_url = profile.redmine_url
+    redmine_api_key = profile.redmine_api_key
+    default_project_id = profile.default_project_id
+    wiki_project_id = profile.wiki_project_id
+    editor = profile.editor
+    language = profile.language
 
 
 def profile_has_credentials(profile_name: str, config_path: Path | None = None) -> bool:
@@ -151,8 +139,8 @@ def profile_has_credentials(profile_name: str, config_path: Path | None = None) 
 
     `check_config()` は sys.exit するため、TUI からの切り替え前チェックには使えない。
     """
-    merged = resolve_merged_config(profile_name, load_toml(config_path))
-    return bool(merged["redmine_url"]) and bool(merged["redmine_api_key"])
+    profile = resolve_merged_config(profile_name, load_toml(config_path))
+    return bool(profile.redmine_url) and bool(profile.redmine_api_key)
 
 
 # 起動時のプロファイル解決。`redi.i18n` が import 時に `language` を読むなど、

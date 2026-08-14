@@ -590,19 +590,19 @@ class TestResolveMergedConfig:
         """指定したプロファイルの値が反映される"""
         merged = config.resolve_merged_config("main", config.load_toml(two_profiles))
 
-        assert merged["redmine_url"] == "https://main.example.com"
-        assert merged["redmine_api_key"] == "secret-main"
-        assert merged["default_project_id"] == "10"
-        assert merged["editor"] == "nvim"
-        assert merged["language"] == "ja"
+        assert merged.redmine_url == "https://main.example.com"
+        assert merged.redmine_api_key == "secret-main"
+        assert merged.default_project_id == "10"
+        assert merged.editor == "nvim"
+        assert merged.language == "ja"
 
     def test_falls_back_to_defaults(self, two_profiles, no_redmine_env):
         """プロファイルに無い項目はデフォルト値になる"""
         merged = config.resolve_merged_config("sub", config.load_toml(two_profiles))
 
-        assert merged["editor"] == "vim"
-        assert merged["language"] == "en"
-        assert merged.get("default_project_id") is None
+        assert merged.editor == "vim"
+        assert merged.language == "en"
+        assert merged.default_project_id is None
 
     def test_env_overrides_profile(self, two_profiles, monkeypatch):
         """環境変数はプロファイルより優先される"""
@@ -610,19 +610,19 @@ class TestResolveMergedConfig:
 
         merged = config.resolve_merged_config("main", config.load_toml(two_profiles))
 
-        assert merged["redmine_url"] == "https://env.example.com"
+        assert merged.redmine_url == "https://env.example.com"
 
     def test_does_not_leak_between_calls(self, two_profiles, no_redmine_env):
         """前回の呼び出しの値が次の呼び出しに残らない
 
-        _default_config を共有していると main の値が sub に漏れてしまう。
+        マージ結果を使い回すと main の値が sub に漏れてしまう。
         """
         config.resolve_merged_config("main", config.load_toml(two_profiles))
         merged = config.resolve_merged_config("sub", config.load_toml(two_profiles))
 
-        assert merged["redmine_url"] == "https://sub.example.com"
-        assert merged["editor"] == "vim"
-        assert merged.get("default_project_id") is None
+        assert merged.redmine_url == "https://sub.example.com"
+        assert merged.editor == "vim"
+        assert merged.default_project_id is None
 
 
 @pytest.fixture
