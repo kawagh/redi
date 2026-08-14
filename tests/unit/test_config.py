@@ -463,11 +463,11 @@ class TestGetDefaultProfile:
         assert config.get_default_profile(config_path=tmp_path / "missing.toml") is None
 
 
-class TestReadProfileValues:
-    """read_profile_values()は指定プロファイルの設定値を文字列dictで返す"""
+class TestReadProfile:
+    """read_profile()は指定プロファイルに書かれている設定値をProfileで返す"""
 
-    def test_returns_values_as_str(self, tmp_path):
-        """数値も文字列に正規化して返す"""
+    def test_returns_written_values(self, tmp_path):
+        """書かれていない項目は未設定のままで、デフォルト値は補わない"""
         config_path = tmp_path / "config.toml"
         config_path.write_text(
             textwrap.dedent("""\
@@ -476,18 +476,15 @@ class TestReadProfileValues:
             [main]
             redmine_url = "https://redmine.example.com"
             default_project_id = 42
-            editor = "vim"
         """)
         )
 
-        assert config.read_profile_values("main", config_path=config_path) == {
-            "redmine_url": "https://redmine.example.com",
-            "default_project_id": "42",
-            "editor": "vim",
-        }
+        assert config.read_profile("main", config_path=config_path) == config.Profile(
+            redmine_url="https://redmine.example.com", default_project_id="42"
+        )
 
-    def test_returns_empty_dict_when_profile_missing(self, tmp_path):
-        """プロファイルが存在しない場合は空dictを返す"""
+    def test_returns_empty_profile_when_profile_missing(self, tmp_path):
+        """プロファイルが存在しない場合は全項目が未設定のProfileを返す"""
         config_path = tmp_path / "config.toml"
         config_path.write_text(
             textwrap.dedent("""\
@@ -496,11 +493,14 @@ class TestReadProfileValues:
         """)
         )
 
-        assert config.read_profile_values("sub", config_path=config_path) == {}
+        assert config.read_profile("sub", config_path=config_path) == config.Profile()
 
-    def test_returns_empty_dict_when_file_missing(self, tmp_path):
-        """ファイルが存在しない場合は空dictを返す"""
-        assert config.read_profile_values("main", config_path=tmp_path / "x.toml") == {}
+    def test_returns_empty_profile_when_file_missing(self, tmp_path):
+        """ファイルが存在しない場合は全項目が未設定のProfileを返す"""
+        assert (
+            config.read_profile("main", config_path=tmp_path / "x.toml")
+            == config.Profile()
+        )
 
 
 class TestShowAllProfiles:

@@ -11,7 +11,7 @@ from redi.config import (
     create_profile,
     get_default_profile,
     list_profile_names,
-    read_profile_values,
+    read_profile,
     set_default_profile,
     show_config,
     update_config,
@@ -134,7 +134,7 @@ def _interactive_fill_config_update_args(
 
     後続の更新フローへ流す場合 True を返す。キャンセル時は False。
     """
-    current = read_profile_values(profile)
+    current = read_profile(profile)
     field_values = _update_field_values(profile)
     try:
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
@@ -151,7 +151,7 @@ def _interactive_fill_config_update_args(
         if "url" in selected:
             args.url = prompt(
                 messages.prompt_redmine_url,
-                default=current.get("redmine_url", ""),
+                default=current.redmine_url or "",
                 validator=UrlValidator(),
             ).strip()
         if "api_key" in selected:
@@ -164,26 +164,26 @@ def _interactive_fill_config_update_args(
         if "project_id" in selected:
             args.project_id = prompt(
                 messages.prompt_default_project_id,
-                default=current.get("default_project_id", ""),
+                default=current.default_project_id or "",
                 validator=RequiredValidator(),
             ).strip()
         if "wiki_project_id" in selected:
             args.wiki_project_id = prompt(
                 messages.prompt_wiki_project_id,
-                default=current.get("wiki_project_id", ""),
+                default=current.wiki_project_id or "",
                 validator=RequiredValidator(),
             ).strip()
         if "editor" in selected:
             args.editor = prompt(
                 messages.prompt_editor,
-                default=current.get("editor", ""),
+                default=current.editor or "",
                 validator=RequiredValidator(),
             ).strip()
         if "language" in selected:
             args.language = inline_choice(
                 messages.prompt_select_language,
                 [(v, v) for v in SUPPORTED_LANGUAGES],
-                default=current.get("language"),
+                default=current.language,
             )
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
