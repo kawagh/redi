@@ -6,6 +6,38 @@ import pytest
 from redi import config
 
 
+class TestProfile:
+    """Profileはconfig.tomlの1プロファイル分の設定値を表す"""
+
+    def test_from_dict_takes_known_keys(self):
+        """Profileが持つキーだけを取り込み、TOMLの数値は文字列に正規化する"""
+        profile = config.Profile.from_dict(
+            {
+                "redmine_url": "https://redmine.example.com",
+                "default_project_id": 42,
+                "unknown": "x",
+            }
+        )
+
+        assert profile == config.Profile(
+            redmine_url="https://redmine.example.com", default_project_id="42"
+        )
+
+    def test_from_dict_keeps_defaults_for_empty_values(self):
+        """falsyな値は未設定とみなしてデフォルト値を残す"""
+        assert config.Profile.from_dict({"editor": ""}).editor == "vim"
+
+    def test_to_dict_omits_unset(self):
+        """未設定の項目はconfig.tomlに空値を残さないようキーごと省く"""
+        profile = config.Profile(redmine_url="https://redmine.example.com")
+
+        assert profile.to_dict() == {
+            "redmine_url": "https://redmine.example.com",
+            "editor": "vim",
+            "language": "en",
+        }
+
+
 class TestCreateProfile:
     """create_profile()はconfig.tomlに新しいプロファイルセクションを追加する"""
 

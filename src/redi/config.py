@@ -1,8 +1,10 @@
 import os
 import sys
 import tomllib
+from collections.abc import Mapping
+from dataclasses import asdict, dataclass, fields
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import tomlkit
 from tomlkit.items import Table
@@ -14,12 +16,55 @@ SUPPORTED_LANGUAGES = ("en", "ja")
 # 言語未確定の場面で表示するため、翻訳せず各言語の自称表記を使う
 LANGUAGE_LABELS = {"en": "English (en)", "ja": "日本語 (ja)"}
 
-_default_config = {
-    "redmine_url": "",
-    "redmine_api_key": "",
-    "editor": "vim",
-    "language": "en",
-}
+
+@dataclass(frozen=True)
+class Profile:
+    """config.toml の 1 プロファイル(`[profile_name]` テーブル)が持つ設定値。
+
+    フィールド名は TOML のキー名と一致させる。デフォルト値はプロファイルに項目が
+    無いときに使われる値で、`_default_config` もここから導出する。
+    """
+
+    redmine_url: str = ""
+    redmine_api_key: str = ""
+    default_project_id: str | None = None
+    wiki_project_id: str | None = None
+    editor: str = "vim"
+    language: str = "en"
+
+    @classmethod
+    def field_names(cls) -> tuple[str, ...]:
+        return tuple(f.name for f in fields(cls))
+
+    @classmethod
+    def from_dict(cls, values: Mapping[str, Any]) -> "Profile":
+        """TOML から読んだ dict を Profile にする。
+
+        Profile が持たないキーは無視する。falsy な値は「未設定」とみなしてデフォルト
+        値を残す。TOML では数値も書けてしまうため、値は文字列に正規化する。
+        """
+        known = {
+            name: str(values[name])
+            for name in cls.field_names()
+            if values.get(name)  # 空文字や None は未設定扱い
+        }
+        return cls(**known)
+
+    def to_dict(self) -> dict[str, str]:
+        """設定済みの項目だけを TOML 書き込み用の dict にする。
+
+        未設定(空文字 / None)の項目はキーごと省き、config.toml に空値を残さない。
+        """
+        return {
+            name: value
+            for name in self.field_names()
+            if (value := getattr(self, name)) is not None and value != ""
+        }
+
+
+# プロファイルにも環境変数にも無いときの既定値。Profile のデフォルト値を唯一の
+# 情報源にするため、未設定を表す None のフィールドだけ落として作る。
+_default_config = {k: v for k, v in asdict(Profile()).items() if v is not None}
 
 
 def load_toml(config_path: Path | None = None) -> dict:
