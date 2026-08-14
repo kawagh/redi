@@ -1,20 +1,34 @@
 import argparse
 import sys
 
+from redi import config
+from redi.api.account import verify_connection
 from redi.cli.alias import resolve_alias
 from redi.cli.interactive import prompt
 from redi.cli.picker import inline_checkbox, inline_choice, inline_choice_with_action
 from redi.cli.validator import RequiredValidator, UrlValidator
 from redi.config import (
+    CONFIG_PATH,
     SUPPORTED_LANGUAGES,
     Profile,
     create_profile,
     get_default_profile,
     list_profile_names,
+    load_toml,
     read_profile,
     set_default_profile,
     show_config,
     update_profile,
+)
+from redi.config_schema import (
+    Issue,
+    Severity,
+    active_env_overrides,
+    credentials_of,
+    has_error,
+    profile_names_of,
+    validate_profile,
+    validate_top_level,
 )
 from redi.i18n import messages, select_messages
 
@@ -78,6 +92,23 @@ def add_config_parser(
         "--set_default",
         action="store_true",
         help=messages.arg_help_config_set_default_flag,
+    )
+    c_check_parser = c_subparsers.add_parser(
+        "check", help=messages.arg_help_config_check, parents=parents
+    )
+    c_check_parser.add_argument(
+        "profile_name",
+        nargs="?",
+        help=messages.arg_help_config_check_profile_name,
+    )
+    c_check_parser.add_argument(
+        "--all", action="store_true", help=messages.arg_help_config_check_all
+    )
+    c_check_parser.add_argument(
+        "--no-connection",
+        dest="no_connection",
+        action="store_true",
+        help=messages.arg_help_config_check_no_connection,
     )
 
 
@@ -194,8 +225,87 @@ def _interactive_fill_config_update_args(
     return True
 
 
+def _print_issues(issues: list[Issue]) -> None:
+    for issue in issues:
+        prefix = f"{issue.key}: " if issue.key else ""
+        print(f"  {issue.severity.value.ljust(7)} {prefix}{issue.message}")
+
+
+def _check_profile(name: str, values: dict, check_connection: bool) -> bool:
+    """プロファイル1つを検証して結果を表示する。ERROR があれば True を返す。"""
+    issues = validate_profile(name, values)
+    print(f"{name}:")
+    _print_issues(issues)
+    if has_error(issues):
+        # 接続先が確定しないので疎通確認まで進めない
+        if check_connection:
+            print(f"  {messages.check_connection_skipped}")
+        return True
+    if not check_connection:
+        print(f"  {messages.check_profile_valid}")
+        return False
+    credentials = credentials_of(values)
+    if credentials is None:
+        print(f"  {messages.check_connection_skipped}")
+        return False
+    result = verify_connection(*credentials, messages)
+    if not result.ok:
+        # verify_connection が返す文言が既に失敗の理由になっているのでそのまま出す
+        _print_issues([Issue(Severity.ERROR, name, None, result.error or "")])
+        return True
+    login = (result.user or {}).get("login", "")
+    print(f"  {messages.check_profile_ok.format(login=login)}")
+    return False
+
+
+def _handle_config_check(args: argparse.Namespace) -> None:
+    """プロファイルが有効かを検証する。
+
+    検証するのは config.toml に書かれた生の値で、環境変数はマージしない。
+    たまたま設定されている環境変数で結果が変わると、プロファイル単体が妥当かを
+    知りたいという目的に合わなくなるため。ただし疎通確認だけは実行時と同じ値で
+    行いたいので、必須キーが欠けている場合に限り環境変数で補う。
+    """
+    doc = load_toml()
+    profile_names = profile_names_of(doc)
+    if not profile_names:
+        print(messages.no_profiles_available)
+        sys.exit(1)
+
+    if args.all:
+        targets = profile_names
+    else:
+        name = args.profile_name or config.current_profile
+        if not name:
+            print(messages.check_no_target_profile)
+            sys.exit(1)
+        if name not in profile_names:
+            print(messages.check_profile_not_found.format(name=name, path=CONFIG_PATH))
+            sys.exit(1)
+        targets = [name]
+
+    top_level_issues = validate_top_level(doc)
+    if top_level_issues:
+        print(f"{CONFIG_PATH}:")
+        _print_issues(top_level_issues)
+    failed = has_error(top_level_issues)
+
+    for name in targets:
+        # 複数プロファイルを1つでも落とさず全部見せたいので or の短絡を避ける
+        failed = _check_profile(name, doc[name], not args.no_connection) or failed
+
+    overrides = active_env_overrides()
+    if overrides:
+        print(messages.check_env_override_note.format(names=", ".join(overrides)))
+    if failed:
+        sys.exit(1)
+
+
 def handle_config(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.config_command)
+    if cmd == "check":
+        _handle_config_check(args)
+        return
     if cmd == "create":
         result = create_profile(
             profile_name=args.profile_name,

@@ -172,6 +172,22 @@ def has_error(issues: list[Issue]) -> bool:
     return any(issue.severity is Severity.ERROR for issue in issues)
 
 
+def credentials_of(values: dict) -> tuple[str, str] | None:
+    """疎通確認に使う URL と API キーを返す。揃わなければ None。
+
+    必須キーは環境変数で補われることがあるので、実行時と同じ解決をする。
+    """
+    url = values.get("redmine_url") or os.environ.get(ENV_FALLBACK["redmine_url"])
+    api_key = values.get("redmine_api_key") or os.environ.get(
+        ENV_FALLBACK["redmine_api_key"]
+    )
+    if not isinstance(url, str) or not isinstance(api_key, str):
+        return None
+    if not url or not api_key:
+        return None
+    return url, api_key
+
+
 def active_env_overrides() -> list[str]:
     """プロファイルを上書きしている環境変数名を返す。"""
     return [name for name in ENV_FALLBACK.values() if os.environ.get(name)]

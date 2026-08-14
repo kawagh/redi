@@ -246,6 +246,16 @@ class En(MessagesProto):
         "(a key written before the first profile table belongs to no profile)"
     )
     check_default_profile_not_found = 'profile "{name}" is not defined'
+    check_profile_ok = "\033[32m✓\033[0m OK (connected as {login})"
+    check_profile_valid = "\033[32m✓\033[0m OK"
+    check_connection_skipped = "connection check skipped"
+    check_profile_not_found = 'profile "{name}" not found in {path}'
+    check_no_target_profile = (
+        "no profile to check: specify a profile name, use --all, or set default_profile"
+    )
+    check_env_override_note = (
+        "note: {names} set in the environment overrides profiles at runtime"
+    )
 
     # ---- prompts ----
     prompt_confirm_delete = "Are you sure you want to delete? (yes/No): "
@@ -695,6 +705,14 @@ class En(MessagesProto):
     arg_help_config_editor = "Editor"
     arg_help_config_language = "Language (en or ja)"
     arg_help_config_set_default_flag = "Set the created profile as default_profile"
+    arg_help_config_check = "Check whether the profile is valid"
+    arg_help_config_check_profile_name = (
+        "Profile name (omit to check the profile in use)"
+    )
+    arg_help_config_check_all = "Check every profile"
+    arg_help_config_check_no_connection = (
+        "Skip the connection check and validate the schema only"
+    )
 
     # ---- argparse helps (init) ----
     arg_help_init_command = "Initial setup (verify URL/API key then create profile)"

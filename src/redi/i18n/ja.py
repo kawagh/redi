@@ -248,6 +248,18 @@ class Ja(MessagesProto):
         "(最初のテーブルより前に書いたキーはどのプロファイルにも属しません)"
     )
     check_default_profile_not_found = 'プロファイル "{name}" が定義されていません'
+    check_profile_ok = "\033[32m✓\033[0m OK ({login} として接続できました)"
+    check_profile_valid = "\033[32m✓\033[0m OK"
+    check_connection_skipped = "接続確認をスキップしました"
+    check_profile_not_found = 'プロファイル "{name}" が {path} にありません'
+    check_no_target_profile = (
+        "検証対象のプロファイルがありません。"
+        "プロファイル名を指定するか、--all を使うか、default_profile を設定してください"
+    )
+    check_env_override_note = (
+        "note: 環境変数 {names} が設定されているため、"
+        "実行時はプロファイルより優先されます"
+    )
 
     # ---- prompts ----
     prompt_confirm_delete = "削除してもよろしいですか? (yes/No): "
@@ -707,6 +719,10 @@ class Ja(MessagesProto):
     arg_help_config_editor = "エディタ"
     arg_help_config_language = "言語 (en または ja)"
     arg_help_config_set_default_flag = "作成したプロファイルをdefault_profileに設定"
+    arg_help_config_check = "プロファイルが有効かを検証"
+    arg_help_config_check_profile_name = "プロファイル名（省略で使用中のプロファイル）"
+    arg_help_config_check_all = "全プロファイルを検証"
+    arg_help_config_check_no_connection = "接続確認をスキップしてスキーマのみ検証"
 
     # ---- argparse helps (init) ----
     arg_help_init_command = (
