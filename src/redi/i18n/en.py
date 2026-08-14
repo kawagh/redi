@@ -448,6 +448,14 @@ class En(MessagesProto):
     tui_current_project = "  [project: {name}]"
     tui_flash_project_switched = "Switched project to {name}"
     tui_project_load_failed = "Failed to load projects: {error}"
+    tui_profile_modal_title = "Switch profile (Esc/P to close)"
+    tui_profile_modal_hint = "jk:move Enter:switch Esc/P:close"
+    tui_current_profile = "  [profile: {name}]"
+    tui_flash_profile_switched = "Switched profile to {name}"
+    tui_profile_switch_invalid = (
+        "profile '{name}' has no redmine_url or redmine_api_key"
+    )
+    tui_no_profiles = "No profiles found in config.toml"
     tui_help_title = "Help - {label} tab (any key to close)"
     tui_error_modal_title = "Error (q to close)"
     tui_status_hint_issues = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
@@ -874,6 +882,7 @@ class En(MessagesProto):
     tui_help_filter_status_assignee = "Filter by status/assignee (floating)"
     tui_help_filter_user = "Filter by user (floating)"
     tui_help_switch_project = "Switch project (floating)"
+    tui_help_switch_profile = "Switch profile (floating)"
     tui_help_reload = "Reload the current tab"
     tui_help_show_or_close = "Show / close this help"
     tui_help_quit = "Quit"

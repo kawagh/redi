@@ -8,6 +8,7 @@ from importlib.metadata import version
 
 from prompt_toolkit.utils import get_cwidth
 
+from redi import config
 from redi.i18n import messages
 from redi.tui.state import Renderable, TuiState
 from redi.tui.tabs import TABS
@@ -21,6 +22,13 @@ def render_tabs(state: TuiState) -> Renderable:
         style = "reverse" if state.tab == key else ""
         parts.append((style, f" {tab.label} "))
     parts.append(("", messages.tui_tab_switch_hint))
+    if config.current_profile:
+        parts.append(
+            (
+                "bold fg:ansimagenta",
+                messages.tui_current_profile.format(name=config.current_profile),
+            )
+        )
     # 未切替時は名前解決の API を呼ばず config の設定値 (id/identifier) を出す。
     project = state.project_label or state.effective_project_id()
     if project:

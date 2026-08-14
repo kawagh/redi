@@ -447,6 +447,14 @@ class Ja(MessagesProto):
     tui_current_project = "  [project: {name}]"
     tui_flash_project_switched = "プロジェクトを {name} に切り替えました"
     tui_project_load_failed = "プロジェクト一覧の取得に失敗しました: {error}"
+    tui_profile_modal_title = "プロファイル切替 (Esc/P で閉じる)"
+    tui_profile_modal_hint = "jk:移動 Enter:切替 Esc/P:閉じる"
+    tui_current_profile = "  [profile: {name}]"
+    tui_flash_profile_switched = "プロファイルを {name} に切り替えました"
+    tui_profile_switch_invalid = (
+        "profile '{name}' に redmine_url または redmine_api_key がありません"
+    )
+    tui_no_profiles = "config.toml にプロファイルがありません"
     tui_help_title = "ヘルプ - {label} タブ (任意のキーで閉じる)"
     tui_error_modal_title = "エラー (q で閉じる)"
     tui_status_hint_issues = (
@@ -882,6 +890,7 @@ class Ja(MessagesProto):
     tui_help_filter_status_assignee = "ステータス/担当者でフィルタ (フローティング)"
     tui_help_filter_user = "ユーザーでフィルタ (フローティング)"
     tui_help_switch_project = "プロジェクトを切り替え (フローティング)"
+    tui_help_switch_profile = "プロファイルを切り替え (フローティング)"
     tui_help_reload = "現在のタブを再読込"
     tui_help_show_or_close = "このヘルプを表示 / 閉じる"
     tui_help_quit = "終了"

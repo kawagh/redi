@@ -21,6 +21,7 @@ class Conditions:
     time_entry_filter_modal: Condition
     error_modal: Condition
     project_modal: Condition
+    profile_modal: Condition
     comment_select: Condition
 
 
@@ -36,6 +37,7 @@ def build_conditions(state: TuiState) -> Conditions:
                 and state.error_modal is None
                 and not state.issue_tab.comment_select.active
                 and not state.project_modal.show
+                and not state.profile_modal.show
             )
         ),
         search=Condition(lambda: state.search_mode),
@@ -47,6 +49,7 @@ def build_conditions(state: TuiState) -> Conditions:
         ),
         error_modal=Condition(lambda: state.error_modal is not None),
         project_modal=Condition(lambda: state.project_modal.show),
+        profile_modal=Condition(lambda: state.profile_modal.show),
         comment_select=Condition(
             lambda: (
                 state.issue_tab.comment_select.active
