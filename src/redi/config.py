@@ -21,16 +21,16 @@ LANGUAGE_LABELS = {"en": "English (en)", "ja": "日本語 (ja)"}
 class Profile:
     """config.toml の 1 プロファイル(`[profile_name]` テーブル)が持つ設定値。
 
-    フィールド名は TOML のキー名と一致させる。フィールドのデフォルト値は、
-    プロファイルにも環境変数にも項目が無いときに使われる値を兼ねる。
+    フィールド名は TOML のキー名と一致させる。未設定の項目は None で表し、
+    「書かれていない」ことを保てるようにする(デフォルト値は DEFAULT_PROFILE)。
     """
 
-    redmine_url: str = ""
-    redmine_api_key: str = ""
+    redmine_url: str | None = None
+    redmine_api_key: str | None = None
     default_project_id: str | None = None
     wiki_project_id: str | None = None
-    editor: str = "vim"
-    language: str = "en"
+    editor: str | None = None
+    language: str | None = None
 
     @classmethod
     def field_names(cls) -> tuple[str, ...]:
@@ -40,26 +40,33 @@ class Profile:
     def from_dict(cls, values: Mapping[str, Any]) -> "Profile":
         """TOML から読んだ dict を Profile にする。
 
-        Profile が持たないキーは無視する。falsy な値は「未設定」とみなしてデフォルト
-        値を残す。TOML では数値も書けてしまうため、値は文字列に正規化する。
+        Profile が持たないキーは無視する。falsy な値は未設定とみなす。TOML では
+        数値も書けてしまうため、値は文字列に正規化する。
         """
-        known = {
-            name: str(values[name])
-            for name in cls.field_names()
-            if values.get(name)  # 空文字や None は未設定扱い
-        }
-        return cls(**known)
+        return cls(
+            **{
+                name: str(values[name])
+                for name in cls.field_names()
+                if values.get(name)
+            }
+        )
 
     def to_dict(self) -> dict[str, str]:
         """設定済みの項目だけを TOML 書き込み用の dict にする。
 
-        未設定(空文字 / None)の項目はキーごと省き、config.toml に空値を残さない。
+        未設定の項目はキーごと省き、config.toml に空の項目を残さない。
         """
         return {
-            name: value
-            for name in self.field_names()
-            if (value := getattr(self, name)) is not None and value != ""
+            name: value for name in self.field_names() if (value := getattr(self, name))
         }
+
+    def merge(self, other: "Profile") -> "Profile":
+        """other の設定済み項目を自分に重ねた Profile を返す。"""
+        return Profile.from_dict({**self.to_dict(), **other.to_dict()})
+
+
+# プロファイルにも環境変数にも項目が無いときに使う値
+DEFAULT_PROFILE = Profile(editor="vim", language="en")
 
 
 def load_toml(config_path: Path | None = None) -> dict:
@@ -71,12 +78,14 @@ def load_toml(config_path: Path | None = None) -> dict:
         return {}
 
 
-def load_env_config() -> dict:
-    return {
-        "redmine_url": os.environ.get("REDMINE_URL"),
-        "redmine_api_key": os.environ.get("REDMINE_API_KEY"),
-        "editor": os.environ.get("REDI_EDITOR"),
-    }
+def load_env_config() -> Profile:
+    return Profile.from_dict(
+        {
+            "redmine_url": os.environ.get("REDMINE_URL"),
+            "redmine_api_key": os.environ.get("REDMINE_API_KEY"),
+            "editor": os.environ.get("REDI_EDITOR"),
+        }
+    )
 
 
 def resolve_profile_name(toml: dict, argv: list[str]) -> tuple[str | None, bool]:
@@ -105,14 +114,16 @@ language: str = ""
 def resolve_merged_config(profile_name: str | None, toml_doc: dict) -> Profile:
     """プロファイルと環境変数をマージした設定値を返す。
 
-    優先順位は デフォルト < プロファイル < 環境変数。プロファイル側の falsy な値は
-    `Profile.from_dict()` が「未設定」とみなすためデフォルト値が残る。
+    優先順位は デフォルト < プロファイル < 環境変数。未設定の項目は重ねても
+    上書きしないため、下位の値がそのまま残る。
     """
     profile_table = toml_doc.get(profile_name) if profile_name else None
-    values = dict(profile_table) if isinstance(profile_table, dict) else {}
-    # 未設定の環境変数で上書きしないよう、値のあるものだけを重ねる
-    values.update({k: v for k, v in load_env_config().items() if v})
-    return Profile.from_dict(values)
+    profile = (
+        Profile.from_dict(profile_table)
+        if isinstance(profile_table, dict)
+        else Profile()
+    )
+    return DEFAULT_PROFILE.merge(profile).merge(load_env_config())
 
 
 def apply_profile(profile_name: str | None, config_path: Path | None = None) -> None:
@@ -126,12 +137,13 @@ def apply_profile(profile_name: str | None, config_path: Path | None = None) -> 
 
     profile = resolve_merged_config(profile_name, load_toml(config_path))
     current_profile = profile_name
-    redmine_url = profile.redmine_url
-    redmine_api_key = profile.redmine_api_key
+    # 未設定は None だが、参照側が常に文字列を前提にしているため空文字に均す
+    redmine_url = profile.redmine_url or ""
+    redmine_api_key = profile.redmine_api_key or ""
     default_project_id = profile.default_project_id
     wiki_project_id = profile.wiki_project_id
-    editor = profile.editor
-    language = profile.language
+    editor = profile.editor or ""
+    language = profile.language or ""
 
 
 def profile_has_credentials(profile_name: str, config_path: Path | None = None) -> bool:

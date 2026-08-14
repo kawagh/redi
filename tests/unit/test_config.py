@@ -23,19 +23,25 @@ class TestProfile:
             redmine_url="https://redmine.example.com", default_project_id="42"
         )
 
-    def test_from_dict_keeps_defaults_for_empty_values(self):
-        """falsyな値は未設定とみなしてデフォルト値を残す"""
-        assert config.Profile.from_dict({"editor": ""}).editor == "vim"
+    def test_from_dict_treats_empty_value_as_unset(self):
+        """falsyな値は未設定とみなす"""
+        assert config.Profile.from_dict({"editor": ""}).editor is None
 
     def test_to_dict_omits_unset(self):
         """未設定の項目はconfig.tomlに空値を残さないようキーごと省く"""
         profile = config.Profile(redmine_url="https://redmine.example.com")
 
-        assert profile.to_dict() == {
-            "redmine_url": "https://redmine.example.com",
-            "editor": "vim",
-            "language": "en",
-        }
+        assert profile.to_dict() == {"redmine_url": "https://redmine.example.com"}
+
+    def test_merge_overlays_set_values_only(self):
+        """設定済みの項目だけが上書きされる"""
+        base = config.Profile(redmine_url="https://base.example.com", editor="vim")
+
+        merged = base.merge(config.Profile(editor="nvim"))
+
+        assert merged == config.Profile(
+            redmine_url="https://base.example.com", editor="nvim"
+        )
 
 
 class TestCreateProfile:
