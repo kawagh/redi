@@ -1,5 +1,6 @@
 import argparse
 
+from redi import config
 from redi.cli import config_command
 
 
@@ -28,7 +29,7 @@ class TestInteractiveFillConfigUpdateArgs:
 
     def test_set_default_selected(self, monkeypatch):
         """set_default を選ぶと default_profile に対象プロファイルが入る"""
-        monkeypatch.setattr(config_command, "read_profile_values", lambda _: {})
+        monkeypatch.setattr(config_command, "read_profile", lambda _: config.Profile())
         monkeypatch.setattr(config_command, "get_default_profile", lambda: "main")
         monkeypatch.setattr(
             config_command, "inline_checkbox", lambda *_: ["set_default"]
@@ -42,7 +43,7 @@ class TestInteractiveFillConfigUpdateArgs:
 
     def test_set_default_not_selected(self, monkeypatch):
         """set_default を選ばなければ default_profile は変わらない"""
-        monkeypatch.setattr(config_command, "read_profile_values", lambda _: {})
+        monkeypatch.setattr(config_command, "read_profile", lambda _: config.Profile())
         monkeypatch.setattr(config_command, "get_default_profile", lambda: "main")
         monkeypatch.setattr(config_command, "inline_checkbox", lambda *_: ["editor"])
         monkeypatch.setattr(config_command, "prompt", lambda *_, **__: "vim")
