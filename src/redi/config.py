@@ -4,7 +4,7 @@ import tomllib
 from collections.abc import Mapping
 from dataclasses import dataclass, fields
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, Self
 
 import tomlkit
 from tomlkit.items import Table
@@ -37,7 +37,7 @@ class Profile:
         return tuple(f.name for f in fields(cls))
 
     @classmethod
-    def from_dict(cls, values: Mapping[str, Any]) -> "Profile":
+    def from_dict(cls, values: Mapping[str, Any]) -> Self:
         """TOML から読んだ dict を Profile にする。
 
         Profile が持たないキーは無視する。falsy な値は未設定とみなす。TOML では
@@ -60,9 +60,9 @@ class Profile:
             name: value for name in self.field_names() if (value := getattr(self, name))
         }
 
-    def merge(self, other: "Profile") -> "Profile":
+    def merge(self, other: Self) -> Self:
         """other の設定済み項目を自分に重ねた Profile を返す。"""
-        return Profile.from_dict({**self.to_dict(), **other.to_dict()})
+        return self.from_dict({**self.to_dict(), **other.to_dict()})
 
 
 # プロファイルにも環境変数にも項目が無いときに使う値
