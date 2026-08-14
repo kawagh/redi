@@ -246,6 +246,8 @@ def _check_profile(name: str, values: dict, check_connection: bool) -> bool:
         return False
     credentials = credentials_of(values)
     if credentials is None:
+        # ERROR が無ければ必須キーは解決できているはずで、ここには来ない。
+        # 検証と接続先の解決が食い違ったときに黙って素通りさせないための保険。
         print(f"  {messages.check_connection_skipped}")
         return False
     result = verify_connection(*credentials, messages)

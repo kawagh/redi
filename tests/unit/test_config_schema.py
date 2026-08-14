@@ -130,6 +130,14 @@ class TestValueChecks:
         assert _keys(issues) == [key]
         assert issues[0].severity is Severity.WARNING
 
+    @pytest.mark.parametrize("key", ["redmine_url", "language"])
+    def test_type_is_checked_before_value(self, key):
+        """値の妥当性より先に型を見る(URL や言語コードの判定が壊れないように)"""
+        issues = config_schema.validate_profile("main", _valid_profile() | {key: 1})
+
+        assert _keys(issues) == [key]
+        assert issues[0].severity is Severity.ERROR
+
     def test_unknown_key_is_warning(self):
         """未知のキーは将来のキー追加に備えて WARNING に留める"""
         issues = config_schema.validate_profile(
@@ -209,6 +217,39 @@ class TestHelpers:
         assert (
             config_schema.has_error(config_schema.validate_profile("main", values))
             is True
+        )
+
+    def test_credentials_of_prefers_profile(self, monkeypatch):
+        """プロファイルに値があれば環境変数より優先する"""
+        monkeypatch.setenv("REDMINE_URL", "https://other.example.com")
+
+        assert config_schema.credentials_of(_valid_profile()) == (
+            "https://redmine.example.com",
+            "secret",
+        )
+
+    def test_credentials_of_falls_back_to_env(self, monkeypatch):
+        """プロファイルに無い必須キーは環境変数で補う"""
+        monkeypatch.setenv("REDMINE_API_KEY", "from-env")
+        values = _valid_profile()
+        del values["redmine_api_key"]
+
+        assert config_schema.credentials_of(values) == (
+            "https://redmine.example.com",
+            "from-env",
+        )
+
+    def test_credentials_of_returns_none_when_unresolved(self):
+        """どちらにも無ければ None"""
+        values = _valid_profile()
+        del values["redmine_api_key"]
+
+        assert config_schema.credentials_of(values) is None
+
+    def test_credentials_of_returns_none_for_non_string(self):
+        """文字列でない値は接続先として使えない"""
+        assert (
+            config_schema.credentials_of(_valid_profile() | {"redmine_url": 1}) is None
         )
 
     def test_active_env_overrides_lists_set_variables(self, monkeypatch):
