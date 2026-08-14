@@ -3,9 +3,9 @@ import sys
 
 import requests
 
+from redi import config
 from redi.api.exceptions import print_http_error_body
 from redi.client import client
-from redi.config import redmine_url
 from redi.i18n import messages
 
 
@@ -55,7 +55,7 @@ def create_user(
         messages.user_created.format(
             id=created["id"],
             login=created["login"],
-            url=f"{redmine_url}/users/{created['id']}",
+            url=f"{config.redmine_url}/users/{created['id']}",
         )
     )
 

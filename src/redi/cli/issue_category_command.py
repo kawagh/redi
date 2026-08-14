@@ -1,6 +1,7 @@
 import argparse
 import sys
 
+from redi import config
 from redi.api.issue_category import (
     create_issue_category,
     delete_issue_category,
@@ -11,7 +12,6 @@ from redi.api.issue_category import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.config import default_project_id
 from redi.i18n import messages
 
 
@@ -108,7 +108,7 @@ def handle_issue_category(args: argparse.Namespace) -> None:
         read_issue_category(args.category_id, full=args.full)
         return
     if cmd == "create":
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
             sys.exit(1)
@@ -139,7 +139,7 @@ def handle_issue_category(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "list" or cmd is None:
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
             sys.exit(1)

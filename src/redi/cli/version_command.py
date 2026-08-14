@@ -7,6 +7,7 @@ from prompt_toolkit.keys import Keys
 from prompt_toolkit.shortcuts import choice
 from prompt_toolkit.validation import Validator
 
+from redi import config
 from redi.api.version import (
     create_version,
     delete_version,
@@ -20,7 +21,6 @@ from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.interactive import ensure_interactive, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.config import default_project_id
 from redi.i18n import messages
 
 
@@ -261,7 +261,7 @@ def handle_version(args: argparse.Namespace) -> None:
     if cmd == "view":
         read_version(args.version_id, full=args.full, web=args.web)
     elif cmd == "create":
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
             sys.exit(1)
@@ -287,7 +287,7 @@ def handle_version(args: argparse.Namespace) -> None:
         delete_version(args.version_id)
     elif cmd == "update":
         if not args.version_id:
-            project_id = args.project_id or default_project_id
+            project_id = args.project_id or config.default_project_id
             if not project_id:
                 print(messages.project_id_required)
                 sys.exit(1)
@@ -310,7 +310,7 @@ def handle_version(args: argparse.Namespace) -> None:
             sharing=args.sharing,
         )
     elif cmd == "list" or cmd is None:
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
             sys.exit(1)

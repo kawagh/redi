@@ -1,5 +1,6 @@
 import argparse
 
+from redi import config
 from redi.api.issue import (
     add_note,
     delete_issue,
@@ -12,7 +13,6 @@ from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor
 from redi.cli.issue_command.create import handle_issue_create
 from redi.cli.issue_command.update import handle_issue_update
-from redi.config import default_project_id
 from redi.i18n import messages
 
 
@@ -49,7 +49,7 @@ def handle_issue(args: argparse.Namespace) -> None:
         delete_issue(args.issue_id)
     elif cmd == "list" or cmd is None:
         list_issues(
-            project_id=args.project_id or default_project_id,
+            project_id=args.project_id or config.default_project_id,
             fixed_version_id=args.version,
             assigned_to=args.assigned_to,
             status_id=args.status_id,

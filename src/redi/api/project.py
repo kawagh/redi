@@ -7,10 +7,10 @@ from typing import NotRequired, TypedDict, cast
 
 import requests
 
+from redi import config
 from redi.api.exceptions import print_http_error_body
 from redi.api.types import IdName
 from redi.client import RedmineClient, client
-from redi.config import redmine_url
 from redi.i18n import messages
 
 # Redmine の一覧 API が 1 リクエストで返せる上限
@@ -219,7 +219,7 @@ def read_project(
     project_id: str, include: str = "", full: bool = False, web: bool = False
 ) -> None:
     if web:
-        url = f"{redmine_url}/projects/{project_id}"
+        url = f"{config.redmine_url}/projects/{project_id}"
         print(url)
         webbrowser.open(url)
         return

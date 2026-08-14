@@ -2,8 +2,8 @@ import os
 import subprocess
 import tempfile
 
+from redi import config
 from redi.cli.interactive import ensure_interactive
-from redi.config import editor
 from redi.i18n import messages
 
 
@@ -14,11 +14,11 @@ def open_editor(initial_text: str = "") -> str:
             f.write(initial_text)
         tmp_path = f.name
     try:
-        if editor == "code":
+        if config.editor == "code":
             # wait to close file
             editor_command = ["code", "--wait"]
         else:
-            editor_command = [editor]
+            editor_command = [config.editor]
 
         subprocess.run([*editor_command, tmp_path], check=True)
         with open(tmp_path) as f:

@@ -517,3 +517,126 @@ class TestShowAllProfiles:
 
         out = capsys.readouterr().out
         assert "not found" in out
+
+
+@pytest.fixture
+def no_redmine_env(monkeypatch):
+    """環境変数がプロファイルより優先されるため、既定では取り除いておく。"""
+    for name in ("REDMINE_URL", "REDMINE_API_KEY", "REDI_EDITOR"):
+        monkeypatch.delenv(name, raising=False)
+
+
+@pytest.fixture
+def two_profiles(tmp_path):
+    config_path = tmp_path / "config.toml"
+    config_path.write_text(
+        textwrap.dedent("""\
+        default_profile = "main"
+
+        [main]
+        redmine_url = "https://main.example.com"
+        redmine_api_key = "secret-main"
+        default_project_id = "10"
+        editor = "nvim"
+        language = "ja"
+
+        [sub]
+        redmine_url = "https://sub.example.com"
+        redmine_api_key = "secret-sub"
+
+        [broken]
+        redmine_url = "https://broken.example.com"
+    """)
+    )
+    return config_path
+
+
+class TestResolveMergedConfig:
+    """resolve_merged_config()はデフォルト<プロファイル<環境変数の順にマージする"""
+
+    def test_applies_profile_values(self, two_profiles, no_redmine_env):
+        """指定したプロファイルの値が反映される"""
+        merged = config.resolve_merged_config("main", config.load_toml(two_profiles))
+
+        assert merged["redmine_url"] == "https://main.example.com"
+        assert merged["redmine_api_key"] == "secret-main"
+        assert merged["default_project_id"] == "10"
+        assert merged["editor"] == "nvim"
+        assert merged["language"] == "ja"
+
+    def test_falls_back_to_defaults(self, two_profiles, no_redmine_env):
+        """プロファイルに無い項目はデフォルト値になる"""
+        merged = config.resolve_merged_config("sub", config.load_toml(two_profiles))
+
+        assert merged["editor"] == "vim"
+        assert merged["language"] == "en"
+        assert merged.get("default_project_id") is None
+
+    def test_env_overrides_profile(self, two_profiles, monkeypatch):
+        """環境変数はプロファイルより優先される"""
+        monkeypatch.setenv("REDMINE_URL", "https://env.example.com")
+
+        merged = config.resolve_merged_config("main", config.load_toml(two_profiles))
+
+        assert merged["redmine_url"] == "https://env.example.com"
+
+    def test_does_not_leak_between_calls(self, two_profiles, no_redmine_env):
+        """前回の呼び出しの値が次の呼び出しに残らない
+
+        _default_config を共有していると main の値が sub に漏れてしまう。
+        """
+        config.resolve_merged_config("main", config.load_toml(two_profiles))
+        merged = config.resolve_merged_config("sub", config.load_toml(two_profiles))
+
+        assert merged["redmine_url"] == "https://sub.example.com"
+        assert merged["editor"] == "vim"
+        assert merged.get("default_project_id") is None
+
+
+@pytest.fixture
+def restore_config():
+    """apply_profile() は設定値のグローバルを書き換えるので、テスト後に元へ戻す"""
+    original_profile = config.current_profile
+    yield
+    config.apply_profile(original_profile)
+
+
+@pytest.mark.usefixtures("restore_config")
+class TestApplyProfile:
+    """apply_profile()は実行中のプロファイルを切り替える"""
+
+    def test_rebinds_config_globals(self, two_profiles, no_redmine_env):
+        """設定値のグローバルと現在プロファイル名が切替先のものになる"""
+        config.apply_profile("sub", config_path=two_profiles)
+
+        assert config.current_profile == "sub"
+        assert config.redmine_url == "https://sub.example.com"
+        assert config.redmine_api_key == "secret-sub"
+
+    def test_clears_previous_profile_values(self, two_profiles, no_redmine_env):
+        """前のプロファイルにしか無い項目は切替後に残らない"""
+        config.apply_profile("main", config_path=two_profiles)
+        config.apply_profile("sub", config_path=two_profiles)
+
+        assert config.default_project_id is None
+        assert config.editor == "vim"
+
+
+class TestProfileHasCredentials:
+    """profile_has_credentials()は切替先として使えるプロファイルかを判定する"""
+
+    def test_true_when_url_and_key_are_present(self, two_profiles, no_redmine_env):
+        """redmine_urlとredmine_api_keyが揃っていればTrue"""
+        assert config.profile_has_credentials("main", config_path=two_profiles) is True
+
+    def test_false_when_api_key_is_missing(self, two_profiles, no_redmine_env):
+        """redmine_api_keyが無ければFalse"""
+        assert (
+            config.profile_has_credentials("broken", config_path=two_profiles) is False
+        )
+
+    def test_false_for_unknown_profile(self, two_profiles, no_redmine_env):
+        """存在しないプロファイル名ならFalse"""
+        assert (
+            config.profile_has_credentials("missing", config_path=two_profiles) is False
+        )
