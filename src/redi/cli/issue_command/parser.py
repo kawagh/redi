@@ -105,6 +105,9 @@ def add_issue_parser(
         "--custom_fields",
         help=messages.arg_help_custom_fields,
     )
+    i_create_parser.add_argument(
+        "--full", action="store_true", help=messages.arg_help_full_json
+    )
     i_update_parser = i_subparsers.add_parser(
         "update", aliases=["u"], help=messages.arg_help_issue_update, parents=parents
     )

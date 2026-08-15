@@ -41,3 +41,11 @@ class TestIssueCreateArgsFromNamespace:
 
         assert create_args.subject == "題名"
         assert create_args.project_id == "demo"
+
+    def test_accepts_full_flag(self):
+        """`issue create --full` を受け取れる"""
+        args = parse_issue_args(["issue", "create", "題名", "-p", "demo", "--full"])
+
+        create_args = IssueCreateArgs.from_namespace(args)
+
+        assert create_args.full is True

@@ -337,6 +337,7 @@ def create_issue(
     due_date: str | None = None,
     estimated_hours: float | None = None,
     custom_fields: str | None = None,
+    full: bool = False,
 ) -> None:
     """イシューを作成する
 
@@ -378,8 +379,11 @@ def create_issue(
         print(messages.issue_create_failed)
         sys.exit(1)
     created = response.json()["issue"]
+    if full:
+        print(json.dumps(created, ensure_ascii=False))
+        return
     url = f"{config.redmine_url}/issues/{created['id']}"
-    print(messages.issue_created.format(url=url))
+    print(messages.issue_created.format(id=created["id"], url=url))
 
 
 def update_issue(

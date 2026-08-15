@@ -109,7 +109,7 @@ class Ja(MessagesProto):
     project_archived = "プロジェクトをアーカイブしました: {id}"
     project_unarchived = "プロジェクトのアーカイブを解除しました: {id}"
     project_deleted = "プロジェクトを削除しました: {id}"
-    issue_created = "イシューを作成しました: {url}"
+    issue_created = "イシューを作成しました: {id} {url}"
     issue_updated = "イシューを更新しました: {url}"
     issue_deleted = "イシューを削除しました: #{id}"
     comment_added = "コメントを追加しました: {url}"

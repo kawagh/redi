@@ -61,6 +61,7 @@ class IssueCreateArgs:
     estimated_hours: float | None = None
     description: str | None = None
     custom_fields: str | None = None
+    full: bool = False
 
     @classmethod
     def from_namespace(cls, args: argparse.Namespace) -> Self:
@@ -375,6 +376,7 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
             due_date=args.due_date,
             estimated_hours=args.estimated_hours,
             custom_fields=args.custom_fields,
+            full=args.full,
         )
     except Exception:
         save_body_on_failure(args.description)

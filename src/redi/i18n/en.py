@@ -105,7 +105,7 @@ class En(MessagesProto):
     project_archived = "Archived project: {id}"
     project_unarchived = "Unarchived project: {id}"
     project_deleted = "Deleted project: {id}"
-    issue_created = "Created issue: {url}"
+    issue_created = "Created issue: {id} {url}"
     issue_updated = "Updated issue: {url}"
     issue_deleted = "Deleted issue: #{id}"
     comment_added = "Added comment: {url}"
