@@ -1,4 +1,5 @@
 import json
+import subprocess
 
 import pytest
 
@@ -57,10 +58,9 @@ class TestRelationView:
 
     def test_fails_for_nonexistent_relation(self):
         """存在しない relation_id を view するとエラーになる"""
-        result = run_redi("relation", "view", "999999")
-        assert result.returncode != 0, (
-            f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-        )
-        assert "Relation not found" in result.stdout, (
-            f"想定外のエラー\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        with pytest.raises(subprocess.CalledProcessError) as error_info:
+            run_redi("relation", "view", "999999")
+        error = error_info.value
+        assert "Relation not found" in error.stdout, (
+            f"想定外のエラー\nstdout:\n{error.stdout}\nstderr:\n{error.stderr}"
         )

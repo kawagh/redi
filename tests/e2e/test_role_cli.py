@@ -1,3 +1,5 @@
+import subprocess
+
 import pytest
 
 from tests.e2e.utils import run_redi
@@ -33,10 +35,9 @@ class TestRoleView:
 
     def test_fails_for_nonexistent_role(self):
         """存在しないロール id を view するとエラーになる"""
-        result = run_redi("role", "view", "999999")
-        assert result.returncode != 0, (
-            f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-        )
-        assert "Role not found" in result.stdout, (
-            f"想定外のエラー\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        with pytest.raises(subprocess.CalledProcessError) as error_info:
+            run_redi("role", "view", "999999")
+        error = error_info.value
+        assert "Role not found" in error.stdout, (
+            f"想定外のエラー\nstdout:\n{error.stdout}\nstderr:\n{error.stderr}"
         )

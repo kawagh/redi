@@ -1,3 +1,5 @@
+import subprocess
+
 import pytest
 
 from tests.e2e.utils import run_redi, unique_identifier
@@ -107,10 +109,9 @@ class TestIssueDelete:
             f"stdout:\n{delete_result.stdout}\nstderr:\n{delete_result.stderr}"
         )
 
-        view_result = run_redi("issue", "view", issue_id)
-        assert view_result.returncode != 0, (
-            f"削除後 view が成功してしまった\nstdout:\n{view_result.stdout}\nstderr:\n{view_result.stderr}"
-        )
-        assert "Issue not found" in view_result.stdout, (
-            f"想定外のエラーで view が失敗\nstdout:\n{view_result.stdout}\nstderr:\n{view_result.stderr}"
+        with pytest.raises(subprocess.CalledProcessError) as view_error_info:
+            run_redi("issue", "view", issue_id)
+        view_error = view_error_info.value
+        assert "Issue not found" in view_error.stdout, (
+            f"想定外のエラーで view が失敗\nstdout:\n{view_error.stdout}\nstderr:\n{view_error.stderr}"
         )
