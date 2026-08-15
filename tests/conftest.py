@@ -1,3 +1,18 @@
+import sys
+
+import pytest
+
+
+@pytest.fixture
+def tty_stdin(monkeypatch):
+    """標準入力をTTYに見せかける。
+
+    pytest 実行中の標準入力は非TTYのため、そのままだと対話入力が
+    ensure_interactive() に弾かれる。対話部品自体を検証したいテストで使う。
+    """
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+
+
 def pytest_itemcollected(item):
     """テストの表示名をdocstringの日本語に差し替える"""
     doc = item.obj.__doc__

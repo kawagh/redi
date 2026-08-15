@@ -32,17 +32,38 @@ tasks:
   test:
     desc: run tests (except E2E)
     cmds:
-      - uv run pytest -v
+      - uv run pytest -v --cov=src/redi
 
   test:e2e:
-    desc: run E2E tests
+    desc: run E2E tests (all target Redmine versions)
     cmds:
-      - uv run pytest -m e2e
+      - task: test:e2e:6.1
+      - task: test:e2e:7.0
+
+  test:e2e:6.1:
+    desc: run E2E tests against Redmine 6.1
+    cmds:
+      - task: e2e
+        vars: { REDMINE_VERSION: '6.1' }
+
+  test:e2e:7.0:
+    desc: run E2E tests against Redmine 7.0
+    cmds:
+      - task: e2e
+        vars: { REDMINE_VERSION: '7.0' }
+
+  e2e:
+    internal: true
+    cmds:
+      - ./script/init-redmine.sh {{.REDMINE_VERSION}}
+      - REDI_E2E_REDMINE_VERSION={{.REDMINE_VERSION}} uv run pytest -m e2e
 
   release:
     desc: release next version
     prompt: リリースしますか?
     cmds:
+      - git switch develop
+      - git pull
       - task: check
       - git diff --quiet # 未ステージ
       - git diff --cached --quiet # 未コミット
@@ -52,3 +73,17 @@ tasks:
       - git tag "$(uv version --short)"
       - git push
       - git push --tags
+
+  demo:
+    desc: generate demo
+    summary: |
+      vhs(https://github.com/charmbracelet/vhs)を使って デモ用のgifを生成する
+      ./doc/demo.tape ->  ./doc/demo.gif
+    cmds:
+      - bash ./script/init-redmine-demo.sh
+      - vhs ./doc/demo.tape
+
+  rulesync:
+    desc: sync skills
+    cmds:
+      - rulesync generate -t agentsmd,claudecode -f skills --simulate-skills

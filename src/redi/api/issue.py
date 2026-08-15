@@ -1,12 +1,88 @@
+from __future__ import annotations
+
 import json
+import sys
 import webbrowser
+from collections import defaultdict
+from typing import NotRequired, TypedDict, cast
 
 import requests
 
+from redi import config
 from redi.api.attachment import upload_file
+from redi.api.exceptions import RedmineValidationException, print_http_error_body
+from redi.api.types import IdName
 from redi.client import client
-from redi.config import redmine_url
 from redi.i18n import messages
+
+
+class IssuesPageResponse(TypedDict):
+    """GET /issues.json のレスポンス"""
+
+    issues: list[Issue]
+    total_count: int
+    offset: int
+    limit: int
+
+
+class Issue(TypedDict):
+    """redmine Issue"""
+
+    id: int
+    project: IdName
+    tracker: IdName
+    status: IssueStatus
+    priority: IdName
+    author: IdName
+    # 担当者未割り当て時に存在しない
+    assigned_to: NotRequired[IdName]
+    subject: str
+    description: str
+    start_date: str | None
+    due_date: str | None
+    done_ratio: int
+    is_private: bool
+    estimated_hours: float | None
+    total_estimated_hours: float | None
+    spent_hours: float
+    total_spent_hours: float
+    # GET /issues/{id}では含まれる
+    custom_fields: NotRequired[list[IssueCustomField]]
+    created_on: str
+    updated_on: str
+    closed_on: str | None
+    journals: NotRequired[list[Journal]]
+
+
+class IssueCustomField(TypedDict):
+    id: int
+    name: str
+    # valueがlist[str] の時に True
+    multiple: NotRequired[bool]
+    value: str | list[str]
+
+
+class IssueStatus(TypedDict):
+    id: int
+    name: str
+    is_closed: bool
+
+
+class Journal(TypedDict):
+    id: int
+    user: IdName
+    notes: str
+    created_on: str
+    updated_on: str
+    private_notes: bool
+    details: list[JournalDetail]
+
+
+class JournalDetail(TypedDict):
+    property: str  # ex. attr
+    name: str  # ex. assigned_to_id
+    old_value: str | None
+    new_value: str | None
 
 
 def fetch_issues_page(
@@ -19,7 +95,7 @@ def fetch_issues_page(
     query_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
-) -> dict:
+) -> IssuesPageResponse:
     params: dict = {}
     if project_id:
         params["project_id"] = project_id
@@ -41,7 +117,7 @@ def fetch_issues_page(
         params["offset"] = offset
     response = client.get("/issues.json", params=params)
     response.raise_for_status()
-    return response.json()
+    return cast(IssuesPageResponse, response.json())
 
 
 def fetch_issues(
@@ -54,7 +130,7 @@ def fetch_issues(
     query_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
-) -> list[dict]:
+) -> list[Issue]:
     return fetch_issues_page(
         project_id=project_id,
         fixed_version_id=fixed_version_id,
@@ -96,18 +172,18 @@ def list_issues(
     else:
         for issue in issues:
             print(
-                f"{issue['id']} {issue['subject']} {redmine_url}/issues/{issue['id']}"
+                f"{issue['id']} {issue['subject']} {config.redmine_url}/issues/{issue['id']}"
             )
 
 
-def fetch_issue(issue_id: str, include: str = "") -> dict:
+def fetch_issue(issue_id: str, include: str = "") -> Issue:
     params = {}
     if include:
         params["include"] = include
     response = client.get(f"/issues/{issue_id}.json", params=params)
     if response.status_code == 404:
         print(messages.issue_not_found.format(id=issue_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return response.json()["issue"]
 
@@ -116,7 +192,7 @@ def read_issue(
     issue_id: str, include: str = "", full: bool = False, web: bool = False
 ) -> None:
     if web:
-        url = f"{redmine_url}/issues/{issue_id}"
+        url = f"{config.redmine_url}/issues/{issue_id}"
         print(url)
         webbrowser.open(url)
         return
@@ -179,7 +255,7 @@ def read_issue(
                 else:
                     # unknown rel_type
                     label = rel_type
-                lines.append(f"  [{label}] {redmine_url}/issues/{other}")
+                lines.append(f"  [{label}] {config.redmine_url}/issues/{other}")
         attachments = issue.get("attachments") or []
         if attachments:
             lines.append("")
@@ -233,12 +309,19 @@ def read_issue(
 
 
 def parse_custom_fields(custom_fields_str: str) -> list[dict]:
-    result = []
+    """`id=value` をカンマ区切りでパースする。同一 id が複数回出現した場合は
+    値をリスト化する（複数選択カスタムフィールド対応）。"""
+    by_id: defaultdict[int, list[str]] = defaultdict(list)
     for pair in custom_fields_str.split(","):
         key, _, value = pair.partition("=")
-        if key:
-            result.append({"id": int(key.strip()), "value": value.strip()})
-    return result
+        if not key:
+            continue
+        cf_id = int(key.strip())
+        by_id[cf_id].append(value.strip())
+    return [
+        {"id": cf_id, "value": values if len(values) > 1 else values[0]}
+        for cf_id, values in by_id.items()
+    ]
 
 
 def create_issue(
@@ -248,8 +331,19 @@ def create_issue(
     tracker_id: str | None = None,
     priority_id: str | None = None,
     assigned_to_id: str | None = None,
+    fixed_version_id: str | None = None,
+    parent_issue_id: str | None = None,
+    start_date: str | None = None,
+    due_date: str | None = None,
+    estimated_hours: float | None = None,
     custom_fields: str | None = None,
+    full: bool = False,
 ) -> None:
+    """イシューを作成する
+
+    Raises:
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+    """
     issue_data: dict = {
         "project_id": project_id,
         "subject": subject,
@@ -262,19 +356,34 @@ def create_issue(
         issue_data["priority_id"] = priority_id
     if assigned_to_id:
         issue_data["assigned_to_id"] = assigned_to_id
+    if fixed_version_id:
+        issue_data["fixed_version_id"] = fixed_version_id
+    if parent_issue_id:
+        issue_data["parent_issue_id"] = parent_issue_id
+    if start_date:
+        issue_data["start_date"] = start_date
+    if due_date:
+        issue_data["due_date"] = due_date
+    if estimated_hours is not None:
+        issue_data["estimated_hours"] = estimated_hours
     if custom_fields:
         issue_data["custom_fields"] = parse_custom_fields(custom_fields)
     response = client.post("/issues.json", json={"issue": issue_data})
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("issue", "create", response)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.issue_create_failed)
-        exit(1)
+        sys.exit(1)
     created = response.json()["issue"]
-    url = f"{redmine_url}/issues/{created['id']}"
-    print(messages.issue_created.format(url=url))
+    if full:
+        print(json.dumps(created, ensure_ascii=False))
+        return
+    url = f"{config.redmine_url}/issues/{created['id']}"
+    print(messages.issue_created.format(id=created["id"], url=url))
 
 
 def update_issue(
@@ -293,8 +402,13 @@ def update_issue(
     estimated_hours: float | None = None,
     notes: str = "",
     custom_fields: str | None = None,
-    attachments: list[str] = [],
+    attachments: list[str] | None = None,
 ) -> None:
+    """イシューを更新する
+
+    Raises:
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+    """
     issue_data: dict = {}
     if subject:
         issue_data["subject"] = subject
@@ -308,7 +422,8 @@ def update_issue(
         issue_data["priority_id"] = priority_id
     if assigned_to_id is not None:
         issue_data["assigned_to_id"] = assigned_to_id
-    if fixed_version_id:
+    # 空文字は「対象バージョンを外す」意味なので assigned_to_id と同じく送る
+    if fixed_version_id is not None:
         issue_data["fixed_version_id"] = fixed_version_id
     if parent_issue_id is not None:
         issue_data["parent_issue_id"] = parent_issue_id
@@ -328,16 +443,18 @@ def update_issue(
         issue_data["uploads"] = [upload_file(file_path) for file_path in attachments]
     if len(issue_data) == 0:
         print(messages.update_canceled)
-        exit()
+        sys.exit()
     response = client.put(f"/issues/{issue_id}.json", json={"issue": issue_data})
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("issue", "update", response)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.issue_update_failed)
-        exit(1)
-    url = f"{redmine_url}/issues/{issue_id}"
+        sys.exit(1)
+    url = f"{config.redmine_url}/issues/{issue_id}"
     print(messages.issue_updated.format(url=url))
 
 
@@ -348,14 +465,14 @@ def add_watcher(issue_id: str, user_id: int) -> None:
     )
     if response.status_code == 404:
         print(messages.issue_not_found.format(id=issue_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.watcher_add_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.watcher_added.format(issue_id=issue_id, user_id=user_id))
 
 
@@ -365,14 +482,14 @@ def remove_watcher(issue_id: str, user_id: int) -> None:
         print(
             messages.issue_or_user_not_found.format(issue_id=issue_id, user_id=user_id)
         )
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.watcher_remove_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.watcher_removed.format(issue_id=issue_id, user_id=user_id))
 
 
@@ -380,14 +497,14 @@ def delete_issue(issue_id: str) -> None:
     response = client.delete(f"/issues/{issue_id}.json")
     if response.status_code == 404:
         print(messages.issue_not_found.format(id=issue_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.issue_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.issue_deleted.format(id=issue_id))
 
 
@@ -400,7 +517,7 @@ def add_note(issue_id: str, notes: str) -> None:
     journals = issue_response.json()["issue"].get("journals", [])
     if journals:
         note_number = len(journals)
-        url = f"{redmine_url}/issues/{issue_id}#note-{note_number}"
+        url = f"{config.redmine_url}/issues/{issue_id}#note-{note_number}"
     else:
-        url = f"{redmine_url}/issues/{issue_id}"
+        url = f"{config.redmine_url}/issues/{issue_id}"
     print(messages.comment_added.format(url=url))

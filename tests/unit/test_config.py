@@ -6,6 +6,44 @@ import pytest
 from redi import config
 
 
+class TestProfile:
+    """Profileはconfig.tomlの1プロファイル分の設定値を表す"""
+
+    def test_from_dict_takes_known_keys(self):
+        """Profileが持つキーだけを取り込み、TOMLの数値は文字列に正規化する"""
+        profile = config.Profile.from_dict(
+            {
+                "redmine_url": "https://redmine.example.com",
+                "default_project_id": 42,
+                "unknown": "x",
+            }
+        )
+
+        assert profile == config.Profile(
+            redmine_url="https://redmine.example.com", default_project_id="42"
+        )
+
+    def test_from_dict_treats_empty_value_as_unset(self):
+        """falsyな値は未設定とみなす"""
+        assert config.Profile.from_dict({"editor": ""}).editor is None
+
+    def test_to_dict_omits_unset(self):
+        """未設定の項目はconfig.tomlに空値を残さないようキーごと省く"""
+        profile = config.Profile(redmine_url="https://redmine.example.com")
+
+        assert profile.to_dict() == {"redmine_url": "https://redmine.example.com"}
+
+    def test_merge_overlays_set_values_only(self):
+        """設定済みの項目だけが上書きされる"""
+        base = config.Profile(redmine_url="https://base.example.com", editor="vim")
+
+        merged = base.merge(config.Profile(editor="nvim"))
+
+        assert merged == config.Profile(
+            redmine_url="https://base.example.com", editor="nvim"
+        )
+
+
 class TestCreateProfile:
     """create_profile()はconfig.tomlに新しいプロファイルセクションを追加する"""
 
@@ -15,12 +53,14 @@ class TestCreateProfile:
 
         result = config.create_profile(
             "main",
-            redmine_url="https://redmine.example.com",
-            redmine_api_key="secret",
-            default_project_id="1",
-            wiki_project_id="2",
-            editor="nvim",
-            language="ja",
+            config.Profile(
+                redmine_url="https://redmine.example.com",
+                redmine_api_key="secret",
+                default_project_id="1",
+                wiki_project_id="2",
+                editor="nvim",
+                language="ja",
+            ),
             config_path=config_path,
         )
 
@@ -41,7 +81,9 @@ class TestCreateProfile:
         config_path = tmp_path / "config.toml"
 
         config.create_profile(
-            "main", redmine_url="https://redmine.example.com", config_path=config_path
+            "main",
+            config.Profile(redmine_url="https://redmine.example.com"),
+            config_path=config_path,
         )
 
         with open(config_path, "rb") as f:
@@ -52,7 +94,7 @@ class TestCreateProfile:
         """親ディレクトリが存在しなくても自動作成する"""
         config_path = tmp_path / "nested" / "config.toml"
 
-        config.create_profile("main", config_path=config_path)
+        config.create_profile("main", config.Profile(), config_path=config_path)
 
         assert config_path.exists()
 
@@ -70,7 +112,7 @@ class TestCreateProfile:
 
         config.create_profile(
             "sub",
-            redmine_url="https://redmine.example.com/sub",
+            config.Profile(redmine_url="https://redmine.example.com/sub"),
             config_path=config_path,
         )
 
@@ -92,7 +134,7 @@ class TestCreateProfile:
 
         result = config.create_profile(
             "main",
-            redmine_url="https://redmine.example.com/overwrite",
+            config.Profile(redmine_url="https://redmine.example.com/overwrite"),
             config_path=config_path,
         )
 
@@ -107,7 +149,9 @@ class TestCreateProfile:
         config_path = tmp_path / "config.toml"
 
         result = config.create_profile(
-            "main", redmine_url="https://redmine.example.com", config_path=config_path
+            "main",
+            config.Profile(redmine_url="https://redmine.example.com"),
+            config_path=config_path,
         )
 
         assert result.set_as_default is True
@@ -129,7 +173,7 @@ class TestCreateProfile:
 
         result = config.create_profile(
             "sub",
-            redmine_url="https://redmine.example.com/sub",
+            config.Profile(redmine_url="https://redmine.example.com/sub"),
             config_path=config_path,
         )
 
@@ -166,8 +210,8 @@ class TestLoadToml:
         assert config.load_toml(config_path=config_path) == {}
 
 
-class TestUpdateConfig:
-    """update_config()はconfig_path指定時にそのファイルを更新する"""
+class TestUpdateProfile:
+    """update_profile()はconfig_path指定時にそのファイルを更新する"""
 
     def test_updates_default_profile_value(self, tmp_path):
         """default_profileで指定されたプロファイルのキーを更新する"""
@@ -181,16 +225,17 @@ class TestUpdateConfig:
         """)
         )
 
-        config.update_config(
-            "redmine_url", "https://redmine.example.com/new", config_path=config_path
+        config.update_profile(
+            config.Profile(redmine_url="https://redmine.example.com/new"),
+            config_path=config_path,
         )
 
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
         assert doc["main"]["redmine_url"] == "https://redmine.example.com/new"
 
-    def test_updates_language(self, tmp_path):
-        """language キーを更新できる"""
+    def test_updates_multiple_keys(self, tmp_path):
+        """設定済みの項目をまとめて更新する"""
         config_path = tmp_path / "config.toml"
         config_path.write_text(
             textwrap.dedent("""\
@@ -202,11 +247,14 @@ class TestUpdateConfig:
         """)
         )
 
-        config.update_config("language", "ja", config_path=config_path)
+        config.update_profile(
+            config.Profile(language="ja", editor="nvim"), config_path=config_path
+        )
 
         with open(config_path, "rb") as f:
             doc = tomllib.load(f)
         assert doc["main"]["language"] == "ja"
+        assert doc["main"]["editor"] == "nvim"
 
     def test_updates_specified_profile(self, tmp_path):
         """profile引数で指定したプロファイルを更新する"""
@@ -223,9 +271,8 @@ class TestUpdateConfig:
         """)
         )
 
-        config.update_config(
-            "redmine_url",
-            "https://redmine.example.com/sub-new",
+        config.update_profile(
+            config.Profile(redmine_url="https://redmine.example.com/sub-new"),
             profile="sub",
             config_path=config_path,
         )
@@ -246,7 +293,9 @@ class TestUpdateConfig:
         )
 
         with pytest.raises(SystemExit) as e:
-            config.update_config("redmine_url", "v", config_path=config_path)
+            config.update_profile(
+                config.Profile(redmine_url="v"), config_path=config_path
+            )
         assert e.value.code == 1
 
     def test_exits_when_profile_not_found(self, tmp_path):
@@ -260,8 +309,10 @@ class TestUpdateConfig:
         )
 
         with pytest.raises(SystemExit) as e:
-            config.update_config(
-                "redmine_url", "v", profile="missing", config_path=config_path
+            config.update_profile(
+                config.Profile(redmine_url="v"),
+                profile="missing",
+                config_path=config_path,
             )
         assert e.value.code == 1
 
@@ -360,6 +411,105 @@ class TestResolveProfileName:
         assert explicit is False
 
 
+class TestListProfileNames:
+    """list_profile_names()はconfig.tomlの[section]名一覧を返す"""
+
+    def test_returns_profile_names_in_file_order(self, tmp_path):
+        """テーブルセクションの名前のみをファイル記載順で返す"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+
+            [sub]
+            redmine_url = "https://redmine.example.com/sub"
+        """)
+        )
+
+        assert config.list_profile_names(config_path=config_path) == ["main", "sub"]
+
+    def test_returns_empty_list_when_missing(self, tmp_path):
+        """ファイルが存在しない場合は空リストを返す"""
+        assert config.list_profile_names(config_path=tmp_path / "missing.toml") == []
+
+
+class TestGetDefaultProfile:
+    """get_default_profile()はconfig.tomlのdefault_profileを返す"""
+
+    def test_returns_default_profile_value(self, tmp_path):
+        """default_profileの値を文字列で返す"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://redmine.example.com"
+        """)
+        )
+
+        assert config.get_default_profile(config_path=config_path) == "main"
+
+    def test_returns_none_when_unset(self, tmp_path):
+        """default_profileが設定されていない場合はNoneを返す"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://redmine.example.com"
+        """)
+        )
+
+        assert config.get_default_profile(config_path=config_path) is None
+
+    def test_returns_none_when_file_missing(self, tmp_path):
+        """ファイルが存在しない場合はNoneを返す"""
+        assert config.get_default_profile(config_path=tmp_path / "missing.toml") is None
+
+
+class TestReadProfile:
+    """read_profile()は指定プロファイルに書かれている設定値をProfileで返す"""
+
+    def test_returns_written_values(self, tmp_path):
+        """書かれていない項目は未設定のままで、デフォルト値は補わない"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://redmine.example.com"
+            default_project_id = 42
+        """)
+        )
+
+        assert config.read_profile("main", config_path=config_path) == config.Profile(
+            redmine_url="https://redmine.example.com", default_project_id="42"
+        )
+
+    def test_returns_empty_profile_when_profile_missing(self, tmp_path):
+        """プロファイルが存在しない場合は全項目が未設定のProfileを返す"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://redmine.example.com"
+        """)
+        )
+
+        assert config.read_profile("sub", config_path=config_path) == config.Profile()
+
+    def test_returns_empty_profile_when_file_missing(self, tmp_path):
+        """ファイルが存在しない場合は全項目が未設定のProfileを返す"""
+        assert (
+            config.read_profile("main", config_path=tmp_path / "x.toml")
+            == config.Profile()
+        )
+
+
 class TestShowAllProfiles:
     """show_all_profiles()はconfig_path指定時にそのファイルの全プロファイルを表示する"""
 
@@ -418,3 +568,126 @@ class TestShowAllProfiles:
 
         out = capsys.readouterr().out
         assert "not found" in out
+
+
+@pytest.fixture
+def no_redmine_env(monkeypatch):
+    """環境変数がプロファイルより優先されるため、既定では取り除いておく。"""
+    for name in ("REDMINE_URL", "REDMINE_API_KEY", "REDI_EDITOR"):
+        monkeypatch.delenv(name, raising=False)
+
+
+@pytest.fixture
+def two_profiles(tmp_path):
+    config_path = tmp_path / "config.toml"
+    config_path.write_text(
+        textwrap.dedent("""\
+        default_profile = "main"
+
+        [main]
+        redmine_url = "https://main.example.com"
+        redmine_api_key = "secret-main"
+        default_project_id = "10"
+        editor = "nvim"
+        language = "ja"
+
+        [sub]
+        redmine_url = "https://sub.example.com"
+        redmine_api_key = "secret-sub"
+
+        [broken]
+        redmine_url = "https://broken.example.com"
+    """)
+    )
+    return config_path
+
+
+class TestResolveMergedConfig:
+    """resolve_merged_config()はデフォルト<プロファイル<環境変数の順にマージする"""
+
+    def test_applies_profile_values(self, two_profiles, no_redmine_env):
+        """指定したプロファイルの値が反映される"""
+        merged = config.resolve_merged_config("main", config.load_toml(two_profiles))
+
+        assert merged.redmine_url == "https://main.example.com"
+        assert merged.redmine_api_key == "secret-main"
+        assert merged.default_project_id == "10"
+        assert merged.editor == "nvim"
+        assert merged.language == "ja"
+
+    def test_falls_back_to_defaults(self, two_profiles, no_redmine_env):
+        """プロファイルに無い項目はデフォルト値になる"""
+        merged = config.resolve_merged_config("sub", config.load_toml(two_profiles))
+
+        assert merged.editor == "vim"
+        assert merged.language == "en"
+        assert merged.default_project_id is None
+
+    def test_env_overrides_profile(self, two_profiles, monkeypatch):
+        """環境変数はプロファイルより優先される"""
+        monkeypatch.setenv("REDMINE_URL", "https://env.example.com")
+
+        merged = config.resolve_merged_config("main", config.load_toml(two_profiles))
+
+        assert merged.redmine_url == "https://env.example.com"
+
+    def test_does_not_leak_between_calls(self, two_profiles, no_redmine_env):
+        """前回の呼び出しの値が次の呼び出しに残らない
+
+        マージ結果を使い回すと main の値が sub に漏れてしまう。
+        """
+        config.resolve_merged_config("main", config.load_toml(two_profiles))
+        merged = config.resolve_merged_config("sub", config.load_toml(two_profiles))
+
+        assert merged.redmine_url == "https://sub.example.com"
+        assert merged.editor == "vim"
+        assert merged.default_project_id is None
+
+
+@pytest.fixture
+def restore_config():
+    """apply_profile() は設定値のグローバルを書き換えるので、テスト後に元へ戻す"""
+    original_profile = config.current_profile
+    yield
+    config.apply_profile(original_profile)
+
+
+@pytest.mark.usefixtures("restore_config")
+class TestApplyProfile:
+    """apply_profile()は実行中のプロファイルを切り替える"""
+
+    def test_rebinds_config_globals(self, two_profiles, no_redmine_env):
+        """設定値のグローバルと現在プロファイル名が切替先のものになる"""
+        config.apply_profile("sub", config_path=two_profiles)
+
+        assert config.current_profile == "sub"
+        assert config.redmine_url == "https://sub.example.com"
+        assert config.redmine_api_key == "secret-sub"
+
+    def test_clears_previous_profile_values(self, two_profiles, no_redmine_env):
+        """前のプロファイルにしか無い項目は切替後に残らない"""
+        config.apply_profile("main", config_path=two_profiles)
+        config.apply_profile("sub", config_path=two_profiles)
+
+        assert config.default_project_id is None
+        assert config.editor == "vim"
+
+
+class TestProfileHasCredentials:
+    """profile_has_credentials()は切替先として使えるプロファイルかを判定する"""
+
+    def test_true_when_url_and_key_are_present(self, two_profiles, no_redmine_env):
+        """redmine_urlとredmine_api_keyが揃っていればTrue"""
+        assert config.profile_has_credentials("main", config_path=two_profiles) is True
+
+    def test_false_when_api_key_is_missing(self, two_profiles, no_redmine_env):
+        """redmine_api_keyが無ければFalse"""
+        assert (
+            config.profile_has_credentials("broken", config_path=two_profiles) is False
+        )
+
+    def test_false_for_unknown_profile(self, two_profiles, no_redmine_env):
+        """存在しないプロファイル名ならFalse"""
+        assert (
+            config.profile_has_credentials("missing", config_path=two_profiles) is False
+        )

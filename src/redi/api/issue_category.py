@@ -1,7 +1,9 @@
 import json
+import sys
 
 import requests
 
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.i18n import messages
 
@@ -31,7 +33,7 @@ def fetch_issue_category(category_id: str) -> dict:
     response = client.get(f"/issue_categories/{category_id}.json")
     if response.status_code == 404:
         print(messages.category_not_found.format(id=category_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return response.json()["issue_category"]
 
@@ -75,9 +77,9 @@ def create_issue_category(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.category_create_failed)
-        exit(1)
+        sys.exit(1)
     created = response.json()["issue_category"]
     print(messages.category_created.format(id=created["id"], name=created["name"]))
 
@@ -94,21 +96,21 @@ def update_issue_category(
         data["assigned_to_id"] = assigned_to_id
     if len(data) == 0:
         print(messages.update_canceled)
-        exit()
+        sys.exit()
     response = client.put(
         f"/issue_categories/{category_id}.json",
         json={"issue_category": data},
     )
     if response.status_code == 404:
         print(messages.category_not_found.format(id=category_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.category_update_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.category_updated.format(id=category_id))
 
 
@@ -119,12 +121,12 @@ def delete_issue_category(category_id: str, reassign_to_id: int | None = None) -
     response = client.delete(f"/issue_categories/{category_id}.json", params=params)
     if response.status_code == 404:
         print(messages.category_not_found.format(id=category_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.category_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.category_deleted.format(id=category_id))

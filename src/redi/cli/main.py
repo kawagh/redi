@@ -1,14 +1,29 @@
 # PYTHON_ARGCOMPLETE_OK
 import argparse
 import logging
+import sys
 from datetime import datetime
 from importlib.metadata import version
 
 import argcomplete
 
+from redi import config
+from redi.api.custom_field import list_custom_fields
+from redi.api.enumeration import (
+    list_document_categories,
+    list_issue_priorities,
+    list_time_entry_activities,
+)
+from redi.api.exceptions import RedmineValidationException
+from redi.api.issue import add_note
+from redi.api.issue_journal import delete_issue_journal, update_issue_journal
+from redi.api.issue_status import list_issue_statuses
+from redi.api.query import list_queries
+from redi.api.tracker import list_trackers
+from redi.api.wiki import WikiUpdateConflictException
 from redi.cli.attachment_command import add_attachment_parser, handle_attachment
 from redi.cli.config_command import add_config_parser, handle_config
-from redi.cli.file_command import add_file_parser, handle_file
+from redi.cli.editor import open_editor
 from redi.cli.enumerations_command import (
     add_custom_field_parser,
     add_document_category_parser,
@@ -18,7 +33,7 @@ from redi.cli.enumerations_command import (
     add_time_entry_activity_parser,
     add_tracker_parser,
 )
-from redi.cli._common import open_editor
+from redi.cli.file_command import add_file_parser, handle_file
 from redi.cli.group_command import add_group_parser, handle_group
 from redi.cli.init_command import add_init_parser, handle_init
 from redi.cli.issue_category_command import (
@@ -27,9 +42,17 @@ from redi.cli.issue_category_command import (
 )
 from redi.cli.issue_command import (
     add_issue_parser,
+    create_issue_interactively,
     handle_issue,
-    handle_issue_create,
-    handle_issue_update,
+    update_issue_interactively,
+)
+from redi.cli.issue_journal_command import (
+    add_issue_journal_parser,
+    handle_issue_journal,
+)
+from redi.cli.issue_template_command import (
+    add_issue_template_parser,
+    handle_issue_template,
 )
 from redi.cli.me_command import add_me_parser, handle_me
 from redi.cli.membership_command import add_membership_parser, handle_membership
@@ -42,22 +65,42 @@ from redi.cli.time_entry_command import add_time_entry_parser, handle_time_entry
 from redi.cli.user_command import add_user_parser, handle_user
 from redi.cli.version_command import add_version_parser, handle_version
 from redi.cli.wiki_command import add_wiki_parser, handle_wiki
-from redi.config import CONFIG_PATH, check_config
-from redi.api.custom_field import list_custom_fields
-from redi.api.enumeration import (
-    list_document_categories,
-    list_issue_priorities,
-    list_time_entry_activities,
-)
-from redi.api.issue import add_note
-from redi.api.issue_status import list_issue_statuses
-from redi.api.query import list_queries
-from redi.api.tracker import list_trackers
+from redi.client import client
+from redi.config import CONFIG_PATH, check_config, list_profile_names
 from redi.i18n import messages
 from redi.tui import TuiState, run_issue_tui
 
 
-def _build_parser() -> argparse.ArgumentParser:
+def _format_validation_error(e: RedmineValidationException) -> str:
+    action_label = {
+        "create": messages.action_create,
+        "update": messages.action_update,
+    }[e.action]
+    return messages.validation_failed.format(
+        resource=e.resource,
+        action=action_label,
+        errors="\n".join(f"- {err}" for err in e.errors),
+    )
+
+
+def _profile_parser(profile_names: list[str]) -> argparse.ArgumentParser:
+    """--profile を後置するためのパーサ"""
+    parser = argparse.ArgumentParser(
+        # 親子でヘルプを衝突させない
+        add_help=False,
+    )
+    parser.add_argument(
+        "--profile",
+        # 下流のパーサでprofileが未指定の場合に上流パーサの値を上書きするのを防ぐ
+        default=argparse.SUPPRESS,
+        choices=profile_names or None,
+        metavar="PROFILE",
+        help=messages.arg_help_profile,
+    )
+    return parser
+
+
+def build_redi_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=messages.arg_help_root_description)
     parser.add_argument(
         "-V", "--version", action="version", version=f"redi {version('redtile')}"
@@ -69,41 +112,47 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=messages.arg_help_debug_tui,
     )
+    profile_names = list_profile_names()
     parser.add_argument(
         "--profile",
+        choices=profile_names or None,
+        metavar="PROFILE",
         help=messages.arg_help_profile,
     )
+    parents = [_profile_parser(profile_names)]
     subparsers = parser.add_subparsers(dest="command")
-    add_project_parser(subparsers)
-    add_issue_parser(subparsers)
-    add_version_parser(subparsers)
-    add_wiki_parser(subparsers)
-    add_config_parser(subparsers)
+    add_project_parser(subparsers, parents)
+    add_issue_parser(subparsers, parents)
+    add_version_parser(subparsers, parents)
+    add_wiki_parser(subparsers, parents)
+    add_config_parser(subparsers, parents)
     add_init_parser(subparsers)
-    add_user_parser(subparsers)
-    add_me_parser(subparsers)
-    add_membership_parser(subparsers)
-    add_news_parser(subparsers)
-    add_tracker_parser(subparsers)
-    add_issue_status_parser(subparsers)
-    add_issue_priority_parser(subparsers)
-    add_time_entry_activity_parser(subparsers)
-    add_document_category_parser(subparsers)
-    add_role_parser(subparsers)
-    add_group_parser(subparsers)
-    add_query_parser(subparsers)
-    add_custom_field_parser(subparsers)
-    add_issue_category_parser(subparsers)
-    add_search_parser(subparsers)
-    add_attachment_parser(subparsers)
-    add_relation_parser(subparsers)
-    add_time_entry_parser(subparsers)
-    add_file_parser(subparsers)
+    add_user_parser(subparsers, parents)
+    add_me_parser(subparsers, parents)
+    add_membership_parser(subparsers, parents)
+    add_news_parser(subparsers, parents)
+    add_tracker_parser(subparsers, parents)
+    add_issue_status_parser(subparsers, parents)
+    add_issue_priority_parser(subparsers, parents)
+    add_time_entry_activity_parser(subparsers, parents)
+    add_document_category_parser(subparsers, parents)
+    add_role_parser(subparsers, parents)
+    add_group_parser(subparsers, parents)
+    add_query_parser(subparsers, parents)
+    add_custom_field_parser(subparsers, parents)
+    add_issue_category_parser(subparsers, parents)
+    add_search_parser(subparsers, parents)
+    add_attachment_parser(subparsers, parents)
+    add_relation_parser(subparsers, parents)
+    add_time_entry_parser(subparsers, parents)
+    add_file_parser(subparsers, parents)
+    add_issue_journal_parser(subparsers, parents)
+    add_issue_template_parser(subparsers, parents)
     return parser
 
 
 def main() -> None:
-    parser = _build_parser()
+    parser = build_redi_parser()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
@@ -142,168 +191,185 @@ def main() -> None:
             tui_result = run_issue_tui(state=tui_state, debug_log_path=debug_log_path)
             if tui_result is None:
                 return
-            tui_state = TuiState(last_result=tui_result)
-            if tui_result.action == "update" and tui_result.tab == "issues":
-                update_args = argparse.Namespace(
-                    issue_id=tui_result.issue_id,
-                    subject=None,
-                    description=None,
-                    tracker_id=None,
-                    status_id=None,
-                    priority_id=None,
-                    assigned_to_id=None,
-                    fixed_version_id=None,
-                    parent_issue_id=None,
-                    start_date=None,
-                    due_date=None,
-                    done_ratio=None,
-                    estimated_hours=None,
-                    notes=None,
-                    custom_fields=None,
-                    relate=None,
-                    relate_to=None,
-                    delete_relation=False,
-                    attach=None,
-                    hours=None,
-                    activity_id=None,
-                    spent_on=None,
-                    time_comments=None,
-                    add_watcher_ids=None,
-                    remove_watcher_ids=None,
-                )
-                handle_issue_update(update_args)
-            elif tui_result.action == "create" and tui_result.tab == "issues":
-                create_args = argparse.Namespace(
-                    subject=None,
-                    project_id=None,
-                    tracker_id=None,
-                    priority_id=None,
-                    assigned_to_id=None,
-                    description=None,
-                    custom_fields=None,
-                )
-                handle_issue_create(create_args)
-            elif tui_result.action == "comment":
-                if tui_result.issue_id is None:
-                    continue
-                notes = open_editor()
-                if notes:
-                    add_note(tui_result.issue_id, notes)
-            elif tui_result.action == "create" and tui_result.tab == "wiki":
-                handle_wiki(
-                    argparse.Namespace(
-                        wiki_command="create",
-                        project_id=None,
-                        full=False,
-                        page_title=None,
-                        parent_title=tui_result.parent_wiki_title,
-                        description=None,
+            if tui_result.action == "switch_profile" and tui_result.profile_name:
+                config.apply_profile(tui_result.profile_name)
+                client.reconfigure(config.redmine_url, config.redmine_api_key)
+                # 前のプロファイルの state は一切引き継がない (issue #290)。
+                # carry_over はフィルタとプロジェクトを引き継ぐのでここでは通さない。
+                tui_state = TuiState(
+                    flash_message=messages.tui_flash_profile_switched.format(
+                        name=tui_result.profile_name
                     )
                 )
-            elif tui_result.action == "update" and tui_result.tab == "wiki":
-                handle_wiki(
-                    argparse.Namespace(
-                        wiki_command="update",
-                        project_id=None,
-                        full=False,
-                        page_title=tui_result.wiki_title,
-                        description=None,
+                continue
+            tui_state = tui_state.carry_over(tui_result)
+            try:
+                if tui_result.action == "update" and tui_result.tab == "issues":
+                    update_issue_interactively(tui_result.issue_id)
+                elif tui_result.action == "create" and tui_result.tab == "issues":
+                    # TUI 内で切り替えたプロジェクトに作成する。
+                    # None なら従来どおり default_project_id に落ちる。
+                    create_issue_interactively(tui_state.project_id)
+                elif tui_result.action == "comment":
+                    if tui_result.issue_id is None:
+                        continue
+                    notes = open_editor()
+                    if notes:
+                        add_note(tui_result.issue_id, notes)
+                elif tui_result.action == "edit_comment":
+                    if tui_result.journal_id is None:
+                        continue
+                    new_notes = open_editor(initial_text=tui_result.journal_notes)
+                    if not new_notes:
+                        print(messages.tui_comment_edit_canceled_empty)
+                    else:
+                        update_issue_journal(tui_result.journal_id, new_notes)
+                elif tui_result.action == "delete_comment":
+                    if tui_result.journal_id is None:
+                        continue
+                    delete_issue_journal(tui_result.journal_id)
+                elif tui_result.action == "create" and tui_result.tab == "wiki":
+                    handle_wiki(
+                        argparse.Namespace(
+                            wiki_command="create",
+                            project_id=tui_state.project_id,
+                            full=False,
+                            page_title=None,
+                            parent_title=tui_result.parent_wiki_title,
+                            description=None,
+                            comments="",
+                        )
                     )
-                )
-            elif tui_result.action == "create_time_entry":
-                if not tui_result.issue_id:
-                    continue
-                handle_time_entry(
-                    argparse.Namespace(
-                        time_entry_command="create",
-                        project_id=None,
-                        user_id=None,
-                        full=False,
-                        hours=None,
-                        issue_id=tui_result.issue_id,
-                        activity_id=None,
-                        spent_on=None,
-                        comments=None,
+                elif tui_result.action == "update" and tui_result.tab == "wiki":
+                    handle_wiki(
+                        argparse.Namespace(
+                            wiki_command="update",
+                            project_id=tui_state.project_id,
+                            full=False,
+                            page_title=tui_result.wiki_title,
+                            description=None,
+                            comments="",
+                        )
                     )
-                )
-            elif tui_result.action == "create" and tui_result.tab == "time_entries":
-                handle_time_entry(
-                    argparse.Namespace(
-                        time_entry_command="create",
-                        project_id=None,
-                        user_id=None,
-                        full=False,
-                        hours=None,
-                        issue_id=None,
-                        default_issue_id=tui_result.issue_id,
-                        activity_id=None,
-                        spent_on=None,
-                        comments=None,
+                elif tui_result.action == "create_time_entry":
+                    if not tui_result.issue_id:
+                        continue
+                    handle_time_entry(
+                        argparse.Namespace(
+                            time_entry_command="create",
+                            project_id=tui_state.project_id,
+                            user_id=None,
+                            full=False,
+                            hours=None,
+                            issue_id=tui_result.issue_id,
+                            activity_id=None,
+                            spent_on=None,
+                            comments=None,
+                        )
                     )
-                )
-            elif tui_result.action == "update" and tui_result.tab == "time_entries":
-                if tui_result.time_entry_id is None:
-                    continue
-                handle_time_entry(
-                    argparse.Namespace(
-                        time_entry_command="update",
-                        time_entry_id=tui_result.time_entry_id,
-                        project_id=None,
-                        user_id=None,
-                        full=False,
-                        hours=None,
-                        issue_id=None,
-                        activity_id=None,
-                        spent_on=None,
-                        comments=None,
+                elif tui_result.action == "create" and tui_result.tab == "time_entries":
+                    handle_time_entry(
+                        argparse.Namespace(
+                            time_entry_command="create",
+                            project_id=tui_state.project_id,
+                            user_id=None,
+                            full=False,
+                            hours=None,
+                            issue_id=None,
+                            default_issue_id=tui_result.issue_id,
+                            activity_id=None,
+                            spent_on=None,
+                            comments=None,
+                        )
                     )
+                elif tui_result.action == "update" and tui_result.tab == "time_entries":
+                    if tui_result.time_entry_id is None:
+                        continue
+                    handle_time_entry(
+                        argparse.Namespace(
+                            time_entry_command="update",
+                            time_entry_id=tui_result.time_entry_id,
+                            project_id=None,
+                            user_id=None,
+                            full=False,
+                            hours=None,
+                            issue_id=None,
+                            activity_id=None,
+                            spent_on=None,
+                            comments=None,
+                        )
+                    )
+            except RedmineValidationException as e:
+                tui_state.error_modal = _format_validation_error(e)
+            except WikiUpdateConflictException as e:
+                tui_state.error_modal = messages.wiki_page_update_conflict.format(
+                    title=e.title
                 )
 
     if args.command in ("project", "p"):
         handle_project(args)
     elif args.command in ("issue", "i"):
-        handle_issue(args)
+        try:
+            handle_issue(args)
+        except RedmineValidationException as e:
+            print(_format_validation_error(e))
+            sys.exit(1)
     elif args.command in ("version", "v"):
         handle_version(args)
     elif args.command in ("wiki", "w"):
-        handle_wiki(args)
+        try:
+            handle_wiki(args)
+        except WikiUpdateConflictException as e:
+            print(messages.wiki_page_update_conflict.format(title=e.title))
+            sys.exit(1)
+        except RedmineValidationException as e:
+            print(_format_validation_error(e))
+            sys.exit(1)
     elif args.command in ("user", "u"):
         handle_user(args)
     elif args.command == "me":
         handle_me(args)
     elif args.command in ("membership", "m"):
         handle_membership(args)
-    elif args.command == "news":
+    elif args.command in ("news", "n"):
         handle_news(args)
-    elif args.command == "tracker":
+    elif args.command in ("tracker", "t"):
         list_trackers(full=args.full)
-    elif args.command == "issue_status":
+    elif args.command in ("issue_status", "is"):
         list_issue_statuses(full=args.full)
-    elif args.command == "issue_priority":
+    elif args.command in ("issue_priority", "ip"):
         list_issue_priorities(full=args.full)
-    elif args.command == "time_entry_activity":
+    elif args.command in ("time_entry_activity", "tea"):
         list_time_entry_activities(full=args.full)
-    elif args.command == "document_category":
+    elif args.command in ("document_category", "dc"):
         list_document_categories(full=args.full)
-    elif args.command == "role":
+    elif args.command in ("role", "r"):
         handle_role(args)
-    elif args.command == "group":
+    elif args.command in ("group", "g"):
         handle_group(args)
-    elif args.command == "query":
+    elif args.command in ("query", "q"):
         list_queries(full=args.full)
-    elif args.command == "custom_field":
+    elif args.command in ("custom_field", "cf"):
         list_custom_fields(full=args.full)
-    elif args.command == "issue_category":
+    elif args.command in ("issue_category", "ic"):
         handle_issue_category(args)
-    elif args.command == "search":
+    elif args.command in ("search", "s"):
         handle_search(args)
-    elif args.command == "attachment":
+    elif args.command in ("attachment", "a"):
         handle_attachment(args)
     elif args.command == "relation":
         handle_relation(args)
-    elif args.command == "time_entry":
-        handle_time_entry(args)
-    elif args.command == "file":
+    elif args.command in ("time_entry", "te"):
+        try:
+            handle_time_entry(args)
+        except RedmineValidationException as e:
+            print(_format_validation_error(e))
+            sys.exit(1)
+    elif args.command in ("file", "f"):
         handle_file(args)
+    elif args.command in ("issue_journal", "ij"):
+        handle_issue_journal(args)
+    elif args.command in ("issue_template", "it"):
+        handle_issue_template(args)
     else:
         parser.print_help()

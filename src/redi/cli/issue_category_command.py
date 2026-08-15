@@ -1,8 +1,7 @@
 import argparse
+import sys
 
-from redi.cli._common import confirm_delete, resolve_alias
-from redi.config import default_project_id
-from redi.i18n import messages
+from redi import config
 from redi.api.issue_category import (
     create_issue_category,
     delete_issue_category,
@@ -11,24 +10,34 @@ from redi.api.issue_category import (
     read_issue_category,
     update_issue_category,
 )
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.cli.shared_options import project_option_parser
+from redi.i18n import messages
 
 
-def add_issue_category_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_issue_category_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     ic_parser = subparsers.add_parser(
         "issue_category",
+        aliases=["ic"],
         help=messages.arg_help_issue_category_command,
-    )
-    ic_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
-    ic_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
+        parents=[*parents, project_option_parser()],
     )
     ic_subparsers = ic_parser.add_subparsers(dest="issue_category_command")
     ic_subparsers.add_parser(
-        "list", aliases=["l"], help=messages.arg_help_issue_category_list
+        "list",
+        aliases=["l"],
+        help=messages.arg_help_issue_category_list,
+        parents=[*parents, project_option_parser(postfix=True)],
     )
 
     ic_view_parser = ic_subparsers.add_parser(
-        "view", aliases=["v"], help=messages.arg_help_issue_category_view
+        "view",
+        aliases=["v"],
+        help=messages.arg_help_issue_category_view,
+        parents=parents,
     )
     ic_view_parser.add_argument(
         "category_id", help=messages.arg_help_issue_category_view_id
@@ -38,7 +47,10 @@ def add_issue_category_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     ic_create_parser = ic_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_issue_category_create
+        "create",
+        aliases=["c"],
+        help=messages.arg_help_issue_category_create,
+        parents=parents,
     )
     ic_create_parser.add_argument("name", help=messages.arg_help_issue_category_name)
     ic_create_parser.add_argument(
@@ -51,7 +63,10 @@ def add_issue_category_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     ic_update_parser = ic_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_issue_category_update
+        "update",
+        aliases=["u"],
+        help=messages.arg_help_issue_category_update,
+        parents=parents,
     )
     ic_update_parser.add_argument(
         "category_id", help=messages.arg_help_issue_category_update_id
@@ -66,7 +81,10 @@ def add_issue_category_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     ic_delete_parser = ic_subparsers.add_parser(
-        "delete", aliases=["d"], help=messages.arg_help_issue_category_delete
+        "delete",
+        aliases=["d"],
+        help=messages.arg_help_issue_category_delete,
+        parents=parents,
     )
     ic_delete_parser.add_argument(
         "category_id", help=messages.arg_help_issue_category_delete_id
@@ -87,10 +105,10 @@ def handle_issue_category(args: argparse.Namespace) -> None:
         read_issue_category(args.category_id, full=args.full)
         return
     if cmd == "create":
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
-            exit(1)
+            sys.exit(1)
         create_issue_category(
             project_id=project_id,
             name=args.name,
@@ -118,8 +136,8 @@ def handle_issue_category(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "list" or cmd is None:
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
-            exit(1)
+            sys.exit(1)
         list_issue_categories(project_id, full=args.full)

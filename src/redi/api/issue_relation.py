@@ -1,9 +1,11 @@
 import json
+import sys
 
 import requests
 
+from redi import config
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
-from redi.config import redmine_url
 from redi.i18n import messages
 
 
@@ -11,7 +13,7 @@ def fetch_relation(relation_id: str) -> dict:
     response = client.get(f"/relations/{relation_id}.json")
     if response.status_code == 404:
         print(messages.relation_not_found.format(id=relation_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return response.json()["relation"]
 
@@ -21,8 +23,8 @@ def read_relation(relation_id: str, full: bool = False) -> None:
     if full:
         print(json.dumps(relation, ensure_ascii=False))
         return
-    issue_url = f"{redmine_url}/issues/{relation['issue_id']}"
-    issue_to_url = f"{redmine_url}/issues/{relation['issue_to_id']}"
+    issue_url = f"{config.redmine_url}/issues/{relation['issue_id']}"
+    issue_to_url = f"{config.redmine_url}/issues/{relation['issue_to_id']}"
     print(
         f"{relation['id']} #{relation['issue_id']} --[{relation['relation_type']}]--> #{relation['issue_to_id']}"
     )
@@ -48,9 +50,9 @@ def create_relation(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.relation_create_failed)
-        exit(1)
+        sys.exit(1)
     print(
         messages.relation_created.format(
             from_id=issue_id, type=relation_type, to_id=issue_to_id
@@ -77,13 +79,13 @@ def delete_relation(issue_id: str, issue_to_id: str) -> None:
                 from_id=issue_id, to_id=issue_to_id
             )
         )
-        exit(1)
+        sys.exit(1)
     response = client.delete(f"/relations/{target_relation['id']}.json")
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.relation_delete_failed)
         return
     print(

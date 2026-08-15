@@ -1,9 +1,11 @@
 import json
+import sys
 
 import requests
 
+from redi import config
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
-from redi.config import redmine_url
 from redi.i18n import messages
 
 
@@ -40,20 +42,20 @@ def create_user(
     response = client.post("/users.json", json={"user": user_data})
     if response.status_code == 403:
         print(messages.user_create_admin_required)
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.user_create_failed)
-        exit(1)
+        sys.exit(1)
     created = response.json()["user"]
     print(
         messages.user_created.format(
             id=created["id"],
             login=created["login"],
-            url=f"{redmine_url}/users/{created['id']}",
+            url=f"{config.redmine_url}/users/{created['id']}",
         )
     )
 
@@ -86,10 +88,10 @@ def fetch_user(user_id: str, include: list[str] | None = None) -> dict:
     response = client.get(f"/users/{user_id}.json", params=params)
     if response.status_code == 404:
         print(messages.user_not_found.format(id=user_id))
-        exit(1)
+        sys.exit(1)
     if response.status_code == 403:
         print(messages.user_detail_permission_required)
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return pop_apikey(response.json()["user"])
 
@@ -163,21 +165,21 @@ def update_user(
         data["admin"] = admin
     if not data:
         print(messages.update_canceled_no_changes)
-        exit(1)
+        sys.exit(1)
     response = client.put(f"/users/{user_id}.json", json={"user": data})
     if response.status_code == 404:
         print(messages.user_not_found.format(id=user_id))
-        exit(1)
+        sys.exit(1)
     if response.status_code == 403:
         print(messages.user_update_admin_required)
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.user_update_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.user_updated.format(id=user_id))
 
 
@@ -185,15 +187,15 @@ def delete_user(user_id: str) -> None:
     response = client.delete(f"/users/{user_id}.json")
     if response.status_code == 404:
         print(messages.user_not_found.format(id=user_id))
-        exit(1)
+        sys.exit(1)
     if response.status_code == 403:
         print(messages.user_delete_admin_required)
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.user_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.user_deleted.format(id=user_id))

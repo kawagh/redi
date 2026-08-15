@@ -1,10 +1,12 @@
 import json
+import sys
 import webbrowser
 
 import requests
 
+from redi import config
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
-from redi.config import redmine_url
 from redi.i18n import messages
 
 
@@ -32,15 +34,15 @@ def create_version(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.version_create_failed)
-        exit(1)
+        sys.exit(1)
     created = response.json()["version"]
     print(
         messages.version_created.format(
             id=created["id"],
             name=created["name"],
-            url=f"{redmine_url}/versions/{created['id']}",
+            url=f"{config.redmine_url}/versions/{created['id']}",
         )
     )
 
@@ -66,7 +68,7 @@ def update_version(
         version_data["sharing"] = sharing
     if len(version_data) == 0:
         print(messages.update_canceled)
-        exit()
+        sys.exit()
     response = client.put(
         f"/versions/{version_id}.json", json={"version": version_data}
     )
@@ -74,12 +76,12 @@ def update_version(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.version_update_failed)
-        exit(1)
+        sys.exit(1)
     print(
         messages.version_updated.format(
-            id=version_id, url=f"{redmine_url}/versions/{version_id}"
+            id=version_id, url=f"{config.redmine_url}/versions/{version_id}"
         )
     )
 
@@ -88,14 +90,14 @@ def fetch_version(version_id: str) -> dict:
     response = client.get(f"/versions/{version_id}.json")
     if response.status_code == 404:
         print(messages.version_not_found.format(id=version_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return response.json()["version"]
 
 
 def read_version(version_id: str, full: bool = False, web: bool = False) -> None:
     if web:
-        url = f"{redmine_url}/versions/{version_id}"
+        url = f"{config.redmine_url}/versions/{version_id}"
         print(url)
         webbrowser.open(url)
         return
@@ -106,7 +108,7 @@ def read_version(version_id: str, full: bool = False, web: bool = False) -> None
 
     lines = []
     lines.append(
-        f"{version['id']} {version['name']} ({version['status']}) {redmine_url}/versions/{version['id']}"
+        f"{version['id']} {version['name']} ({version['status']}) {config.redmine_url}/versions/{version['id']}"
     )
     project = version.get("project")
     if project:
@@ -129,14 +131,14 @@ def delete_version(version_id: str) -> None:
     response = client.delete(f"/versions/{version_id}.json")
     if response.status_code == 404:
         print(messages.version_not_found.format(id=version_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.version_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.version_deleted.format(id=version_id))
 
 
@@ -153,5 +155,5 @@ def list_versions(project_id: str, full: bool = False) -> None:
     else:
         for version in versions:
             print(
-                f"{version['id']} {version['name']} ({version['status']}) {redmine_url}/versions/{version['id']}"
+                f"{version['id']} {version['name']} ({version['status']}) {config.redmine_url}/versions/{version['id']}"
             )

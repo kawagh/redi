@@ -1,16 +1,61 @@
 import json
+import sys
+from typing import Literal, NotRequired, TypedDict, cast
 
 from redi import cache
+from redi.api.types import IdName
 from redi.client import client
 from redi.i18n import messages
 
 CACHE_KEY = "custom_fields"
 
 
-def fetch_custom_fields() -> list[dict] | None:
+class CustomField(TypedDict):
+    id: int
+    name: str
+    description: str
+    customized_type: str  # ex. issue
+    field_format: Literal[
+        # キーバリューリスト
+        "enumeration",
+        # テキスト
+        "string",
+        "version",
+        "attachment",
+        "user",
+        "list",
+        "link",
+        "float",
+        "int",
+        "bool",
+        "date",
+        "progressbar",
+        # 長いテキスト
+        "text",
+    ]
+    regexp: str
+    min_length: int | None
+    max_length: int | None
+    is_required: bool
+    # Redmine 7.0 以降で返る
+    is_for_all: NotRequired[bool]
+    is_filter: bool
+    searchable: bool
+    multiple: bool
+    default_value: str | None
+    visible: bool
+    editable: bool
+    possible_values: NotRequired[list[dict]]
+    # Redmine 7.0 以降で返る。is_for_all が false のとき対象プロジェクトが入る
+    projects: NotRequired[list[IdName]]
+    trackers: list[dict]
+    roles: list[dict]
+
+
+def fetch_custom_fields() -> list[CustomField] | None:
     cached = cache.load(CACHE_KEY)
     if cached is not None:
-        return cached
+        return cast(list[CustomField], cached)
     response = client.get("/custom_fields.json")
     if response.status_code == 403:
         # https://www.redmine.org/projects/redmine/wiki/Rest_CustomFields
@@ -19,14 +64,14 @@ def fetch_custom_fields() -> list[dict] | None:
     response.raise_for_status()
     data = response.json()["custom_fields"]
     cache.save(CACHE_KEY, data)
-    return data
+    return cast(list[CustomField], data)
 
 
 def list_custom_fields(full: bool = False) -> None:
     custom_fields = fetch_custom_fields()
     if custom_fields is None:
         print(messages.custom_field_admin_required)
-        exit(1)
+        sys.exit(1)
     if full:
         print(json.dumps(custom_fields, ensure_ascii=False))
     else:
@@ -46,13 +91,12 @@ def fetch_project_issue_custom_field_ids(project_id: str) -> set[int]:
 
 
 def filter_required_issue_custom_fields(
-    custom_fields: list[dict],
+    custom_fields: list[CustomField],
     project_cf_ids: set[int],
     tracker_id: str | None,
-) -> list[dict]:
+) -> list[CustomField]:
     """
-    入力必須・初期値なし・プロジェクト/トラッカーに該当する
-    イシュー用カスタムフィールドを抽出する。
+    入力必須・プロジェクト/トラッカーに該当するイシュー用カスタムフィールドを抽出する。
     """
     result = []
     for cf in custom_fields:
@@ -60,7 +104,30 @@ def filter_required_issue_custom_fields(
             continue
         if not cf.get("is_required"):
             continue
-        if cf.get("default_value"):
+        if cf["id"] not in project_cf_ids:
+            continue
+        trackers = cf.get("trackers") or []
+        if trackers and tracker_id is not None:
+            tracker_ids = {str(t["id"]) for t in trackers}
+            if str(tracker_id) not in tracker_ids:
+                continue
+        result.append(cf)
+    return result
+
+
+def filter_optional_issue_custom_fields(
+    custom_fields: list[CustomField],
+    project_cf_ids: set[int],
+    tracker_id: str | None,
+) -> list[CustomField]:
+    """
+    入力任意・プロジェクト/トラッカーに該当するイシュー用カスタムフィールドを抽出する。
+    """
+    result = []
+    for cf in custom_fields:
+        if cf.get("customized_type") != "issue":
+            continue
+        if cf.get("is_required"):
             continue
         if cf["id"] not in project_cf_ids:
             continue

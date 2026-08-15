@@ -26,6 +26,11 @@ class Ja(MessagesProto):
     canceled_no_items_selected = "更新する項目が選択されていないためキャンセルしました"
     canceled_no_project = "プロジェクトが特定できないためキャンセルしました"
     canceled_field_mismatch = "{field}が一致しません。キャンセルしました"
+    non_interactive_input_required = (
+        "非対話環境のため入力を受け付けられません: {message}\n"
+        "引数・オプションで指定して再実行してください"
+    )
+    prompt_editor_input = "エディタでの入力"
 
     # ---- common indicators ----
     project_id_required = "project_idを指定するか、default_project_idを設定してください"
@@ -35,6 +40,9 @@ class Ja(MessagesProto):
     issue_or_project_id_required = "issue_idまたはproject_idを指定してください"
     delete_relation_requires_to = "--delete-relation には --to が必要です"
     relate_and_to_required = "--relate と --to は両方指定してください"
+    body_saved_to_tempfile = (
+        "送信に失敗したため、本文を一時ファイルに保存しました: {path}"
+    )
 
     # ---- not found ----
     role_not_found = "ロールが見つかりません: #{id}"
@@ -55,6 +63,7 @@ class Ja(MessagesProto):
     parent_page_not_found = "親ページが見つかりません: {title}"
     file_not_found = "ファイルが見つかりません: {path}"
     attachment_not_found = "添付ファイルが見つかりません: #{id}"
+    issue_journal_not_found = "イシューのジャーナルが見つかりません: #{id}"
     time_entry_not_found = "作業時間が見つかりません: {id}"
     version_not_found = "バージョンが見つかりません: {id}"
     group_not_found = "グループが見つかりません: #{id}"
@@ -62,10 +71,15 @@ class Ja(MessagesProto):
         "グループまたはユーザーが見つかりません: #{group_id} / #{user_id}"
     )
     category_not_found = "カテゴリが見つかりません: {id}"
+    news_not_found = "ニュースが見つかりません: {id}"
     no_search_results = "検索結果が見つかりませんでした"
     issue_not_found_simple = "イシューが見つかりません"
     no_versions_available = "選択可能なバージョンがありません"
     no_issues_available = "選択可能なイシューがありません"
+    no_news_available = "選択可能なニュースがありません"
+    no_profiles_available = (
+        "選択可能なプロファイルがありません。redi init を実行してください"
+    )
     no_project_skip_project_id = (
         "プロジェクトが存在しないため project_id の設定をスキップします"
     )
@@ -95,7 +109,7 @@ class Ja(MessagesProto):
     project_archived = "プロジェクトをアーカイブしました: {id}"
     project_unarchived = "プロジェクトのアーカイブを解除しました: {id}"
     project_deleted = "プロジェクトを削除しました: {id}"
-    issue_created = "イシューを作成しました: {url}"
+    issue_created = "イシューを作成しました: {id} {url}"
     issue_updated = "イシューを更新しました: {url}"
     issue_deleted = "イシューを削除しました: #{id}"
     comment_added = "コメントを追加しました: {url}"
@@ -118,6 +132,9 @@ class Ja(MessagesProto):
     time_entry_deleted = "作業時間を削除しました: {id}"
     attachment_deleted = "添付ファイルを削除しました: #{id}"
     attachment_updated = "添付ファイルを更新しました: {url}"
+    attachment_downloaded = "添付ファイルを保存しました: {path}"
+    issue_journal_updated = "イシューのジャーナルを更新しました: #{id}"
+    issue_journal_deleted = "イシューのジャーナルを削除しました: #{id}"
     group_updated = "グループを更新しました: {id}"
     group_deleted = "グループを削除しました: {id}"
     group_user_added = "グループ {group_id} にユーザー {user_id} を追加しました"
@@ -127,6 +144,9 @@ class Ja(MessagesProto):
     category_created = "カテゴリを作成しました: {id} {name}"
     category_updated = "カテゴリを更新しました: {id}"
     category_deleted = "カテゴリを削除しました: {id}"
+    news_created = "ニュースを作成しました: {url}"
+    news_updated = "ニュースを更新しました: {url}"
+    news_deleted = "ニュースを削除しました: {id}"
 
     # ---- failures ----
     user_create_failed = "ユーザーの作成に失敗しました"
@@ -142,6 +162,10 @@ class Ja(MessagesProto):
     watcher_add_failed = "ウォッチャーの追加に失敗しました"
     watcher_remove_failed = "ウォッチャーの削除に失敗しました"
     wiki_page_delete_failed = "Wikiページの削除に失敗しました"
+    wiki_page_update_conflict = "Wikiページが他のユーザーによって更新されているため更新できませんでした: {title}"
+    validation_failed = "{resource}の{action}に失敗しました(入力エラー):\n{errors}"
+    action_create = "作成"
+    action_update = "更新"
     membership_create_failed = "メンバーシップの作成に失敗しました"
     membership_update_failed = "メンバーシップの更新に失敗しました"
     membership_delete_failed = "メンバーシップの削除に失敗しました"
@@ -158,6 +182,12 @@ class Ja(MessagesProto):
     time_entry_delete_failed = "作業時間の削除に失敗しました"
     attachment_delete_failed = "添付ファイルの削除に失敗しました"
     attachment_update_failed = "添付ファイルの更新に失敗しました"
+    attachment_download_failed = "添付ファイルのダウンロードに失敗しました"
+    attachment_content_url_unexpected = (
+        "content_url が redmine_url 配下ではないためダウンロードを中止しました: {url}"
+    )
+    issue_journal_update_failed = "イシューのジャーナルの更新に失敗しました"
+    issue_journal_delete_failed = "イシューのジャーナルの削除に失敗しました"
     group_create_failed = "グループの作成に失敗しました"
     group_update_failed = "グループの更新に失敗しました"
     group_delete_failed = "グループの削除に失敗しました"
@@ -166,6 +196,9 @@ class Ja(MessagesProto):
     category_create_failed = "カテゴリの作成に失敗しました"
     category_update_failed = "カテゴリの更新に失敗しました"
     category_delete_failed = "カテゴリの削除に失敗しました"
+    news_create_failed = "ニュースの作成に失敗しました"
+    news_update_failed = "ニュースの更新に失敗しました"
+    news_delete_failed = "ニュースの削除に失敗しました"
     project_list_fetch_failed = "プロジェクト一覧の取得に失敗しました: {error}"
     connection_failed_http = "接続失敗: {status} {reason}"
     connection_failed_other = "接続失敗: {error}"
@@ -175,6 +208,7 @@ class Ja(MessagesProto):
     edit_target_page = "編集するページ: {label}"
     update_target_version = "更新するバージョン: {label}"
     update_target_issue = "更新するイシュー: {label}"
+    update_target_news = "更新するニュース: {label}"
     update_items = "更新する項目: {items}"
     status_label = "ステータス: {value}"
     sharing_label = "共有設定: {value}"
@@ -186,6 +220,7 @@ class Ja(MessagesProto):
     fixed_version_label = "対象バージョン: {value}"
     done_ratio_label = "進捗率: {value}%"
     estimated_hours_label = "予定工数: {value} h"
+    template_label = "テンプレート: {value}"
 
     # ---- init flow ----
     api_key_url_hint = "APIキーは {url}/my/account で確認できます"
@@ -201,27 +236,46 @@ class Ja(MessagesProto):
 
     # ---- prompts ----
     prompt_confirm_delete = "削除してもよろしいですか? (yes/No): "
+    prompt_confirm_overwrite = "上書きしてもよろしいですか? (yes/No): "
     prompt_confirm_delete_with_identifier = (
         '削除するには{label} "{expected}" を入力してください: '
     )
     prompt_subject = "題名: "
+    prompt_title = "タイトル: "
+    prompt_summary = "サマリー（省略可）: "
     prompt_comment = "コメント: "
     prompt_page_title = "ページタイトル: "
     prompt_parent_page = "親ページ"
     prompt_edit_page = "編集するページ"
     prompt_select_tracker = "トラッカーを選択"
+    prompt_select_template = "テンプレートを選択"
+    prompt_select_template_none = "（テンプレートを使用しない）"
     prompt_select_status = "ステータス"
     prompt_select_priority = "優先度"
     prompt_select_assignee = "担当者"
     prompt_select_assignee_none = "（担当者なし）"
     prompt_select_fixed_version = "対象バージョン"
+    prompt_select_fixed_version_none = "（対象バージョンなし）"
+    prompt_parent_issue_id = "親チケットID（省略可）: "
+    prompt_select_create_optional_items = (
+        "入力する任意項目を選択 (Spaceで選択、Enterで確定、何も選ばずEnterでスキップ)"
+    )
     prompt_select_activity = "作業分類"
     prompt_select_done_ratio = "進捗率"
     prompt_select_sharing = "共有設定"
     prompt_select_version_to_update = "更新するバージョンを選択"
     prompt_select_issue_to_update = "更新するイシューを選択"
-    prompt_start_date = "開始日（YYYY-MM-DD、空文字でクリア）: "
-    prompt_due_date = "期日（YYYY-MM-DD、空文字でクリア）: "
+    prompt_select_news_to_update = "更新するニュースを選択"
+    prompt_select_news_to_delete = "削除するニュースを選択"
+    prompt_select_profile = (
+        "プロファイルを選択 (Enter: デフォルトに設定 / u: 項目を更新)"
+    )
+    prompt_default_project_id = "default_project_id: "
+    prompt_wiki_project_id = "wiki_project_id: "
+    prompt_editor = "editor: "
+    prompt_select_language = "言語を選択"
+    prompt_start_date = "開始日（YYYY-MM-DD、省略可）: "
+    prompt_due_date = "期日（YYYY-MM-DD、省略可）: "
     prompt_estimated_hours = "予定工数（例: 1.5 (h)）: "
     prompt_hours = "作業時間（例: 1.5 (h)）: "
     prompt_spent_on = "作業日（YYYY-MM-DD、省略で今日）: "
@@ -231,6 +285,7 @@ class Ja(MessagesProto):
     prompt_select_update_items = "更新する項目を選択 (Spaceで選択、Enterで確定)"
     prompt_version_name = "バージョン名: "
     prompt_description_optional = "説明（省略可）: "
+    prompt_wiki_comments = "コメント（省略可）: "
     prompt_due_date_optional = "期日（YYYY-MM-DD、省略可）: "
     prompt_issue_id_or_project = "イシューID（省略でプロジェクト指定に切替）: "
     prompt_project_id_or_name = "プロジェクトID または 名前/identifier: "
@@ -243,11 +298,20 @@ class Ja(MessagesProto):
     prompt_required_field = "{name}（必須）"
     prompt_field_value = "{name}: {value}"
     prompt_custom_field_label = "{name}: "
+    label_bool_true = "はい"
+    label_bool_false = "いいえ"
+    prompt_what_next = "次のアクションを選択してください"
+    action_submit = "送信する"
+    action_fill_optional = "任意項目を入力する"
+    action_continue_in_browser = "ブラウザで編集する"
+    attachment_field_unsupported_notice = (
+        "{name}: 添付ファイル型はサポート対象外のためブラウザでの編集が必要です"
+    )
 
     # ---- prompt validators ----
     error_input_required = "入力してください"
     error_url_format = "http:// または https:// で始まるURLを入力してください"
-    error_date_format = "YYYY-MM-DD で入力してください（空文字でクリア）"
+    error_date_format = "YYYY-MM-DD で入力してください"
     error_date_after_start = "開始日 {date} 以降の日付を入力してください"
     error_numeric_required = "数値を入力してください"
     error_page_title_required = "ページタイトルを入力してください"
@@ -257,11 +321,14 @@ class Ja(MessagesProto):
     # ---- field labels ----
     field_tracker = "トラッカー (tracker)"
     field_subject = "題名 (subject)"
+    field_title = "タイトル (title)"
+    field_summary = "サマリー (summary)"
     field_description = "説明 (description)"
     field_status = "ステータス (status)"
     field_priority = "優先度 (priority)"
     field_assignee = "担当者 (assigned_to)"
     field_fixed_version = "対象バージョン (fixed_version)"
+    field_parent_issue = "親チケット (parent_issue)"
     field_start_date = "開始日 (start_date)"
     field_due_date = "期日 (due_date)"
     field_done_ratio = "進捗率 (done_ratio)"
@@ -275,6 +342,13 @@ class Ja(MessagesProto):
     field_spent_on = "作業日 (spent_on)"
     field_comments = "コメント (comments)"
     field_issue_id = "イシュー (issue_id)"
+    field_redmine_url = "Redmine URL (redmine_url)"
+    field_redmine_api_key = "Redmine APIキー (redmine_api_key)"
+    field_default_project_id = "既定プロジェクト (default_project_id)"
+    field_wiki_project_id = "Wikiプロジェクト (wiki_project_id)"
+    field_editor = "エディタ (editor)"
+    field_language = "言語 (language)"
+    field_set_default_profile = "デフォルトプロファイルにする (default_profile)"
 
     # ---- sharing options ----
     sharing_none = "none (共有しない)"
@@ -294,10 +368,12 @@ class Ja(MessagesProto):
     delete_target_wiki_page = "削除するWikiページ: {title}"
     delete_target_membership = "削除するメンバーシップ: {id} [{kind}] {principal_id} {principal_name} - {roles}"
     delete_target_attachment = "削除する添付ファイル: {id} {filename}"
+    overwrite_target_file = "既に存在するファイル: {path}"
+    delete_target_issue_journal = "削除するイシューのジャーナル: #{id} {notes}"
     delete_target_category = "削除するイシューカテゴリ: {id} {name}"
+    delete_target_news = "削除するニュース: {id} {title}"
     delete_target_group = "削除するグループ: {id} {name}"
     delete_target_time_entry = "削除する作業時間: {id} {hours}h {activity} ({spent_on})"
-    delete_confirm_tui = "削除しますか? {summary} [y/N]"
 
     # ---- detail labels ----
     label_assignable = "割り当て可能: {value}"
@@ -321,6 +397,8 @@ class Ja(MessagesProto):
     label_kind = "種別: {value}"
     label_author = "作成者: {value}"
     label_description_field = "説明: {value}"
+    label_summary_field = "サマリー: {value}"
+    label_news_comments_header = "コメント:"
     label_url_field = "URL: {value}"
     label_roles_header = "ロール:"
     label_inherited_suffix = " (継承)"
@@ -331,14 +409,12 @@ class Ja(MessagesProto):
     label_allowed_statuses_header = "遷移可能なステータス:"
     label_revisions_header = "リビジョン:"
     label_journals_header = "コメント/変更履歴:"
-    label_comments_header = "コメント:"
     label_due_date_field = "期日: {value}"
     label_sharing_field = "共有: {value}"
     label_parent_project = "親プロジェクト: {id} {name}"
     label_trackers_header = "トラッカー:"
     label_issue_categories_header = "イシューカテゴリ:"
     label_enabled_modules_header = "有効モジュール:"
-    label_user_field = "  ユーザー: {name} (id={id})"
     label_issue_field = "  イシュー: #{id}"
     label_comments_field = "  コメント: {value}"
     label_user_in_te = "  ユーザー: {name} (id={id})"
@@ -362,16 +438,38 @@ class Ja(MessagesProto):
     tui_tab_switch_hint = "   (Tab:切替)"
     tui_filter_status = "ステータス"
     tui_filter_assignee = "担当者"
-    tui_filter_hint = "\nTab/h/l:列切替 jk:移動 Enter:適用 c:全クリア Esc/f:閉じる"
+    tui_filter_user = "ユーザー"
+    tui_filter_hint = "Tab/h/l:列切替 jk:移動 Enter:適用 c:全クリア Esc/f:閉じる"
+    tui_filter_hint_single = "jk:移動 Enter:適用 c:クリア Esc/f:閉じる"
     tui_filter_title = "フィルタ (Esc/f で閉じる)"
+    tui_filter_title_time_entries = "ユーザーでフィルタ (Esc/f で閉じる)"
+    tui_project_modal_title = "プロジェクト切替 (Esc/p で閉じる)"
+    tui_project_modal_hint = "jk:移動 Enter:切替 Esc/p:閉じる"
+    tui_current_project = "  [project: {name}]"
+    tui_flash_project_switched = "プロジェクトを {name} に切り替えました"
+    tui_project_load_failed = "プロジェクト一覧の取得に失敗しました: {error}"
+    tui_profile_modal_title = "プロファイル切替 (Esc/P で閉じる)"
+    tui_profile_modal_hint = "jk:移動 Enter:切替 Esc/P:閉じる"
+    tui_current_profile = "  [profile: {name}]"
+    tui_flash_profile_switched = "プロファイルを {name} に切り替えました"
+    tui_profile_switch_invalid = (
+        "profile '{name}' に redmine_url または redmine_api_key がありません"
+    )
+    tui_no_profiles = "config.toml にプロファイルがありません"
     tui_help_title = "ヘルプ - {label} タブ (任意のキーで閉じる)"
+    tui_error_modal_title = "エラー (q で閉じる)"
     tui_status_hint_issues = (
-        " {page_label}  jk:移動 /:検索 f:フィルタ c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+        " {page_label}  jk:移動 /:検索 f:フィルタ p:プロジェクト"
+        " c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     )
-    tui_status_hint_wiki = " jk:移動 /:検索 c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+    tui_status_hint_wiki = (
+        " jk:移動 /:検索 p:プロジェクト c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+    )
     tui_status_hint_time_entries = (
-        " jk:移動 /:検索 c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+        " {page_label}  jk:移動 /:検索 f:フィルタ p:プロジェクト"
+        " c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     )
+    tui_flash_reloaded = "再読込しました"
     tui_filter_status_open_default = "open (デフォルト)"
     tui_filter_status_all = "全て (open + closed)"
     tui_filter_status_closed_only = "closed のみ"
@@ -397,6 +495,11 @@ class Ja(MessagesProto):
     tui_meta_activity = "作業分類"
     tui_meta_issue = "イシュー"
     tui_preview_comments_header = "コメント:"
+    tui_comment_select_status_hint = (
+        "コメント選択: jk:移動 u:更新 D:削除 Esc/q:キャンセル"
+    )
+    tui_comment_edit_canceled_empty = "コメントが空のためキャンセル"
+    tui_comment_delete_prompt = "コメントを削除しますか? {summary} [y/N]"
     tui_wiki_no_pages = "Wikiページが見つかりません"
     tui_wiki_loading = "(Wikiを読み込み中...)"
     tui_wiki_load_failed = "Wikiの取得に失敗しました: {error}"
@@ -426,14 +529,13 @@ class Ja(MessagesProto):
     arg_help_skip_confirm = "確認プロンプトをスキップ"
     arg_help_open_web = "ブラウザでRedmineのページを開く"
     arg_help_project_id = "プロジェクトID"
-    arg_help_project_id_filter = "プロジェクトIDでフィルタリング"
-    arg_help_user_id = "ユーザーIDでフィルタリング（'me'も可）"
     arg_help_full_profiles = "全プロファイルを表示"
 
     # ---- argparse helps (subcommand summary) ----
     arg_help_crud_subcommands = "list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除"
     arg_help_role_subcommands = "list(l): 一覧, view(v): 詳細"
     arg_help_file_subcommands = "list(l): 一覧, create(c): アップロード"
+    arg_help_list_only_subcommands = "list(l): 一覧"
 
     # ---- argparse helps (project) ----
     arg_help_project_command = arg_help_crud_subcommands
@@ -539,6 +641,7 @@ class Ja(MessagesProto):
     arg_help_wiki_create_title = "Wikiページタイトル（省略で対話的に入力）"
     arg_help_wiki_parent_title = "親ページタイトル"
     arg_help_wiki_description = "説明（値省略でエディタ起動）"
+    arg_help_wiki_comments = "更新コメント（変更履歴に記録される）"
     arg_help_wiki_delete = "Wikiページ削除"
     arg_help_wiki_update = "Wikiページ更新"
     arg_help_wiki_update_title = "Wikiページタイトル（省略で対話的に選択）"
@@ -655,8 +758,16 @@ class Ja(MessagesProto):
     arg_help_relation_view = "関係性詳細"
     arg_help_relation_view_id = "関係性ID"
 
+    # ---- argparse helps (issue journal) ----
+    arg_help_issue_journal_command = "update(u): 更新, delete(d): 削除"
+    arg_help_issue_journal_update = "イシューのジャーナル(コメント)を更新"
+    arg_help_issue_journal_update_id = "ジャーナルID"
+    arg_help_issue_journal_update_notes = "コメント本文"
+    arg_help_issue_journal_delete = "イシューのジャーナルを削除"
+    arg_help_issue_journal_delete_id = "ジャーナルID"
+
     # ---- argparse helps (attachment) ----
-    arg_help_attachment_command = "添付ファイル詳細/更新/削除"
+    arg_help_attachment_command = "添付ファイル詳細/ダウンロード/更新/削除"
     arg_help_attachment_view = "添付ファイル詳細"
     arg_help_attachment_view_id = "添付ファイルID"
     arg_help_attachment_update = "添付ファイル更新"
@@ -665,10 +776,17 @@ class Ja(MessagesProto):
     arg_help_attachment_description = "説明"
     arg_help_attachment_delete = "添付ファイル削除"
     arg_help_attachment_delete_id = "添付ファイルID"
+    arg_help_attachment_download = "添付ファイルダウンロード"
+    arg_help_attachment_download_id = "添付ファイルID"
+    arg_help_attachment_output = (
+        "保存先パス(省略時はカレントディレクトリに元のファイル名で保存)"
+    )
 
     # ---- argparse helps (time entry) ----
     arg_help_time_entry_command = "list(l): 一覧, view(v): 詳細, create(c): 登録, update(u): 更新, delete(d): 削除"
     arg_help_time_entry_user_id = "ユーザーIDでフィルタリング（'me'も可）"
+    arg_help_time_entry_from = "開始日でフィルタリング（YYYY-MM-DD、以降）"
+    arg_help_time_entry_to = "終了日でフィルタリング（YYYY-MM-DD、以前）"
     arg_help_time_entry_list = "作業時間一覧"
     arg_help_time_entry_create = "作業時間登録"
     arg_help_time_entry_hours = "時間（例: 1.5、省略で対話的に入力）"
@@ -702,18 +820,62 @@ class Ja(MessagesProto):
     # ---- argparse helps (search) ----
     arg_help_search_command = "検索"
     arg_help_search_query = "検索クエリ"
+    arg_help_search_project_id = "検索対象のプロジェクト(未指定なら全プロジェクト)"
+    arg_help_search_scope = "検索範囲(subprojects は --project_id が必要、それ以外は --project_id と併用不可)"
+    arg_help_search_no_all_words = (
+        "クエリのいずれかの単語を含むものを検索する(デフォルトは全単語)"
+    )
+    arg_help_search_titles_only = "タイトルのみを検索する"
+    arg_help_search_open_issues = "未完了のチケットのみを検索する"
+    arg_help_search_attachments = "添付ファイルの検索方法(0: 説明のみ, 1: 説明と添付ファイル, only: 添付ファイルのみ)"
+    arg_help_search_type = "検索対象の種別をカンマ区切りで指定（{choices}）"
+    error_invalid_search_type = "不明な検索種別です: {values}（指定可能: {choices}）"
+    error_search_scope_requires_project = (
+        "--scope {scope} には --project_id の指定が必要です"
+    )
+    error_search_scope_conflicts_project = (
+        "--scope {scope} は --project_id と併用できません"
+    )
 
     # ---- argparse helps (news) ----
-    arg_help_news_command = "ニュース一覧"
+    arg_help_news_command = arg_help_crud_subcommands
+    arg_help_news_list = "ニュース一覧"
+    arg_help_news_view = "ニュース詳細"
+    arg_help_news_view_id = "ニュースID"
+    arg_help_news_create = "ニュース作成"
+    arg_help_news_create_title = "ニュースのタイトル（省略で対話的に入力）"
+    arg_help_news_title_opt = "ニュースのタイトル"
+    arg_help_news_summary = "ニュースのサマリー"
+    arg_help_news_description = "説明（値省略でエディタ起動）"
+    arg_help_news_update = "ニュース更新"
+    arg_help_news_update_id = "ニュースID（省略で対話的に選択）"
+    arg_help_news_delete = "ニュース削除"
+    arg_help_news_delete_id = "ニュースID（省略で対話的に選択）"
 
     # ---- argparse helps (enumerations) ----
-    arg_help_tracker_command = "トラッカー一覧"
-    arg_help_issue_status_command = "ステータス一覧"
-    arg_help_issue_priority_command = "優先度一覧"
-    arg_help_time_entry_activity_command = "作業分類一覧"
-    arg_help_document_category_command = "文書カテゴリ一覧"
-    arg_help_query_command = "カスタムクエリ一覧"
-    arg_help_custom_field_command = "カスタムフィールド一覧"
+    arg_help_tracker_command = arg_help_list_only_subcommands
+    arg_help_tracker_list = "トラッカー一覧"
+    arg_help_issue_status_command = arg_help_list_only_subcommands
+    arg_help_issue_status_list = "ステータス一覧"
+    arg_help_issue_priority_command = arg_help_list_only_subcommands
+    arg_help_issue_priority_list = "優先度一覧"
+    arg_help_time_entry_activity_command = arg_help_list_only_subcommands
+    arg_help_time_entry_activity_list = "作業分類一覧"
+    arg_help_document_category_command = arg_help_list_only_subcommands
+    arg_help_document_category_list = "文書カテゴリ一覧"
+    arg_help_query_command = arg_help_list_only_subcommands
+    arg_help_query_list = "カスタムクエリ一覧"
+    arg_help_custom_field_command = arg_help_list_only_subcommands
+    arg_help_custom_field_list = "カスタムフィールド一覧"
+
+    # ---- argparse helps (issue_template) ----
+    arg_help_issue_template_command = (
+        "チケットテンプレート一覧 (redmine_issue_templates プラグインが必要です)"
+    )
+    issue_template_not_available = (
+        "issue_templates エンドポイントが見つかりません "
+        "(redmine_issue_templates プラグインが必要です)"
+    )
 
     # ---- config_command suffix ----
     config_profile_suffix = "（profile: {name}）"
@@ -735,15 +897,22 @@ class Ja(MessagesProto):
     tui_help_start_search = "検索開始"
     tui_help_next_prev_match = "次 / 前の検索結果"
     tui_help_filter_status_assignee = "ステータス/担当者でフィルタ (フローティング)"
+    tui_help_filter_user = "ユーザーでフィルタ (フローティング)"
+    tui_help_switch_project = "プロジェクトを切り替え (フローティング)"
+    tui_help_switch_profile = "プロファイルを切り替え (フローティング)"
+    tui_help_reload = "現在のタブを再読込"
     tui_help_show_or_close = "このヘルプを表示 / 閉じる"
     tui_help_quit = "終了"
 
     # ---- TUI help labels (issue tab) ----
-    tui_help_issue_load_comments = "選択イシューのコメントを読込"
+    tui_help_issue_load_comments = "コメントを読込んで選択モードに入る"
     tui_help_issue_create_or_update = "イシュー作成 / 更新"
     tui_help_issue_add_comment = "コメント追加 (検索クエリ未設定時)"
     tui_help_issue_create_time_entry = "時間記録の作成"
     tui_help_issue_open_web_or_n = "選択イシューを web で開く / #N を web で開く"
+    tui_help_issue_comment_select_in_mode = (
+        "コメント選択モード中: jk:移動 u:更新 D:削除 Esc/q:抜ける"
+    )
 
     # ---- TUI help labels (wiki tab) ----
     tui_help_wiki_load_text = "選択ページの本文を読込"

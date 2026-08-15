@@ -24,6 +24,11 @@ class En(MessagesProto):
     canceled_no_items_selected = "No items selected; canceled"
     canceled_no_project = "Project unspecified; canceled"
     canceled_field_mismatch = "{field} does not match; canceled"
+    non_interactive_input_required = (
+        "Cannot read input in a non-interactive environment: {message}\n"
+        "Rerun with the required arguments or options"
+    )
+    prompt_editor_input = "input in the editor"
 
     # ---- common indicators ----
     project_id_required = "Specify project_id or set default_project_id"
@@ -35,6 +40,9 @@ class En(MessagesProto):
     issue_or_project_id_required = "Specify issue_id or project_id"
     delete_relation_requires_to = "--delete-relation requires --to"
     relate_and_to_required = "Specify both --relate and --to"
+    body_saved_to_tempfile = (
+        "Submission failed; saved the body to a temporary file: {path}"
+    )
 
     # ---- not found ----
     role_not_found = "Role not found: #{id}"
@@ -53,15 +61,21 @@ class En(MessagesProto):
     parent_page_not_found = "Parent page not found: {title}"
     file_not_found = "File not found: {path}"
     attachment_not_found = "Attachment not found: #{id}"
+    issue_journal_not_found = "Issue journal not found: #{id}"
     time_entry_not_found = "Time entry not found: {id}"
     version_not_found = "Version not found: {id}"
     group_not_found = "Group not found: #{id}"
     group_or_user_not_found = "Group or user not found: #{group_id} / #{user_id}"
     category_not_found = "Category not found: {id}"
+    news_not_found = "News not found: {id}"
     no_search_results = "No search results found"
     issue_not_found_simple = "Issue not found"
     no_versions_available = "No versions available"
     no_issues_available = "No issues available"
+    no_news_available = "No news available"
+    no_profiles_available = (
+        "No profiles available. To create first profile, run `redi init`"
+    )
     no_project_skip_project_id = "No projects exist; skipping project_id setup"
 
     # ---- admin / permission required ----
@@ -91,7 +105,7 @@ class En(MessagesProto):
     project_archived = "Archived project: {id}"
     project_unarchived = "Unarchived project: {id}"
     project_deleted = "Deleted project: {id}"
-    issue_created = "Created issue: {url}"
+    issue_created = "Created issue: {id} {url}"
     issue_updated = "Updated issue: {url}"
     issue_deleted = "Deleted issue: #{id}"
     comment_added = "Added comment: {url}"
@@ -114,6 +128,9 @@ class En(MessagesProto):
     time_entry_deleted = "Deleted time entry: {id}"
     attachment_deleted = "Deleted attachment: #{id}"
     attachment_updated = "Updated attachment: {url}"
+    attachment_downloaded = "Saved attachment: {path}"
+    issue_journal_updated = "Updated issue journal: #{id}"
+    issue_journal_deleted = "Deleted issue journal: #{id}"
     group_updated = "Updated group: {id}"
     group_deleted = "Deleted group: {id}"
     group_user_added = "Added user {user_id} to group {group_id}"
@@ -123,6 +140,9 @@ class En(MessagesProto):
     category_created = "Created category: {id} {name}"
     category_updated = "Updated category: {id}"
     category_deleted = "Deleted category: {id}"
+    news_created = "Created news: {url}"
+    news_updated = "Updated news: {url}"
+    news_deleted = "Deleted news: {id}"
 
     # ---- failures ----
     user_create_failed = "Failed to create user"
@@ -138,6 +158,12 @@ class En(MessagesProto):
     watcher_add_failed = "Failed to add watcher"
     watcher_remove_failed = "Failed to remove watcher"
     wiki_page_delete_failed = "Failed to delete wiki page"
+    wiki_page_update_conflict = (
+        "Failed to update wiki page because it was updated by another user: {title}"
+    )
+    validation_failed = "Failed to {action} {resource} (validation error):\n{errors}"
+    action_create = "create"
+    action_update = "update"
     membership_create_failed = "Failed to create membership"
     membership_update_failed = "Failed to update membership"
     membership_delete_failed = "Failed to delete membership"
@@ -154,6 +180,12 @@ class En(MessagesProto):
     time_entry_delete_failed = "Failed to delete time entry"
     attachment_delete_failed = "Failed to delete attachment"
     attachment_update_failed = "Failed to update attachment"
+    attachment_download_failed = "Failed to download attachment"
+    attachment_content_url_unexpected = (
+        "Aborted download because content_url is not under redmine_url: {url}"
+    )
+    issue_journal_update_failed = "Failed to update issue journal"
+    issue_journal_delete_failed = "Failed to delete issue journal"
     group_create_failed = "Failed to create group"
     group_update_failed = "Failed to update group"
     group_delete_failed = "Failed to delete group"
@@ -162,6 +194,9 @@ class En(MessagesProto):
     category_create_failed = "Failed to create category"
     category_update_failed = "Failed to update category"
     category_delete_failed = "Failed to delete category"
+    news_create_failed = "Failed to create news"
+    news_update_failed = "Failed to update news"
+    news_delete_failed = "Failed to delete news"
     project_list_fetch_failed = "Failed to fetch project list: {error}"
     connection_failed_http = "Connection failed: {status} {reason}"
     connection_failed_other = "Connection failed: {error}"
@@ -171,6 +206,7 @@ class En(MessagesProto):
     edit_target_page = "Editing page: {label}"
     update_target_version = "Updating version: {label}"
     update_target_issue = "Updating issue: {label}"
+    update_target_news = "Updating news: {label}"
     update_items = "Items to update: {items}"
     status_label = "Status: {value}"
     sharing_label = "Sharing: {value}"
@@ -182,6 +218,7 @@ class En(MessagesProto):
     fixed_version_label = "Fixed version: {value}"
     done_ratio_label = "Done ratio: {value}%"
     estimated_hours_label = "Estimated hours: {value} h"
+    template_label = "Template: {value}"
 
     # ---- init flow ----
     api_key_url_hint = "API key can be found at {url}/my/account"
@@ -197,27 +234,45 @@ class En(MessagesProto):
 
     # ---- prompts ----
     prompt_confirm_delete = "Are you sure you want to delete? (yes/No): "
+    prompt_confirm_overwrite = "Are you sure you want to overwrite? (yes/No): "
     prompt_confirm_delete_with_identifier = (
         'Type {label} "{expected}" to confirm deletion: '
     )
     prompt_subject = "Subject: "
+    prompt_title = "Title: "
+    prompt_summary = "Summary (optional): "
     prompt_comment = "Comment: "
     prompt_page_title = "Page title: "
     prompt_parent_page = "Parent page"
     prompt_edit_page = "Page to edit"
     prompt_select_tracker = "Select tracker"
+    prompt_select_template = "Select template"
+    prompt_select_template_none = "(Do not use a template)"
     prompt_select_status = "Status"
     prompt_select_priority = "Priority"
     prompt_select_assignee = "Assignee"
     prompt_select_assignee_none = "(no assignee)"
     prompt_select_fixed_version = "Fixed version"
+    prompt_select_fixed_version_none = "(no fixed version)"
+    prompt_parent_issue_id = "Parent issue ID (optional): "
+    prompt_select_create_optional_items = (
+        "Select optional items to fill in"
+        " (Space to toggle, Enter to confirm, Enter without selecting to skip)"
+    )
     prompt_select_activity = "Activity"
     prompt_select_done_ratio = "Done ratio"
     prompt_select_sharing = "Sharing"
     prompt_select_version_to_update = "Select version to update"
     prompt_select_issue_to_update = "Select issue to update"
-    prompt_start_date = "Start date (YYYY-MM-DD, empty to clear): "
-    prompt_due_date = "Due date (YYYY-MM-DD, empty to clear): "
+    prompt_select_news_to_update = "Select news to update"
+    prompt_select_news_to_delete = "Select news to delete"
+    prompt_select_profile = "Select profile (Enter: set as default / u: update fields)"
+    prompt_default_project_id = "default_project_id: "
+    prompt_wiki_project_id = "wiki_project_id: "
+    prompt_editor = "editor: "
+    prompt_select_language = "Select language"
+    prompt_start_date = "Start date (YYYY-MM-DD, optional): "
+    prompt_due_date = "Due date (YYYY-MM-DD, optional): "
     prompt_estimated_hours = "Estimated hours (e.g. 1.5 (h)): "
     prompt_hours = "Hours (e.g. 1.5 (h)): "
     prompt_spent_on = "Spent on (YYYY-MM-DD, empty for today): "
@@ -229,6 +284,7 @@ class En(MessagesProto):
     )
     prompt_version_name = "Version name: "
     prompt_description_optional = "Description (optional): "
+    prompt_wiki_comments = "Comment (optional): "
     prompt_due_date_optional = "Due date (YYYY-MM-DD, optional): "
     prompt_issue_id_or_project = "Issue ID (empty to switch to project selection): "
     prompt_project_id_or_name = "Project ID or name/identifier: "
@@ -239,11 +295,20 @@ class En(MessagesProto):
     prompt_required_field = "{name} (required)"
     prompt_field_value = "{name}: {value}"
     prompt_custom_field_label = "{name}: "
+    label_bool_true = "Yes"
+    label_bool_false = "No"
+    prompt_what_next = "What's next?"
+    action_submit = "Submit"
+    action_fill_optional = "Fill in optional items"
+    action_continue_in_browser = "Continue in browser"
+    attachment_field_unsupported_notice = (
+        "{name}: attachment-type fields are not supported; please edit in browser"
+    )
 
     # ---- prompt validators ----
     error_input_required = "Required"
     error_url_format = "Enter a URL starting with http:// or https://"
-    error_date_format = "Use YYYY-MM-DD (empty to clear)"
+    error_date_format = "Use YYYY-MM-DD"
     error_date_after_start = "Enter a date on or after start date {date}"
     error_numeric_required = "Enter a number"
     error_page_title_required = "Enter a page title"
@@ -253,11 +318,14 @@ class En(MessagesProto):
     # ---- field labels ----
     field_tracker = "tracker"
     field_subject = "subject"
+    field_title = "title"
+    field_summary = "summary"
     field_description = "description"
     field_status = "status"
     field_priority = "priority"
     field_assignee = "assigned_to"
     field_fixed_version = "fixed_version"
+    field_parent_issue = "parent_issue"
     field_start_date = "start_date"
     field_due_date = "due_date"
     field_done_ratio = "done_ratio"
@@ -271,6 +339,13 @@ class En(MessagesProto):
     field_spent_on = "spent_on"
     field_comments = "comments"
     field_issue_id = "issue_id"
+    field_redmine_url = "redmine_url"
+    field_redmine_api_key = "redmine_api_key"
+    field_default_project_id = "default_project_id"
+    field_wiki_project_id = "wiki_project_id"
+    field_editor = "editor"
+    field_language = "language"
+    field_set_default_profile = "set as default_profile"
 
     # ---- sharing options ----
     sharing_none = "none (not shared)"
@@ -292,12 +367,14 @@ class En(MessagesProto):
         "Membership to delete: {id} [{kind}] {principal_id} {principal_name} - {roles}"
     )
     delete_target_attachment = "Attachment to delete: {id} {filename}"
+    overwrite_target_file = "File already exists: {path}"
+    delete_target_issue_journal = "Issue journal to delete: #{id} {notes}"
     delete_target_category = "Issue category to delete: {id} {name}"
+    delete_target_news = "News to delete: {id} {title}"
     delete_target_group = "Group to delete: {id} {name}"
     delete_target_time_entry = (
         "Time entry to delete: {id} {hours}h {activity} ({spent_on})"
     )
-    delete_confirm_tui = "Delete? {summary} [y/N]"
 
     # ---- detail labels ----
     label_assignable = "Assignable: {value}"
@@ -321,6 +398,8 @@ class En(MessagesProto):
     label_kind = "Type: {value}"
     label_author = "Author: {value}"
     label_description_field = "Description: {value}"
+    label_summary_field = "Summary: {value}"
+    label_news_comments_header = "Comments:"
     label_url_field = "URL: {value}"
     label_roles_header = "Roles:"
     label_inherited_suffix = " (inherited)"
@@ -331,14 +410,12 @@ class En(MessagesProto):
     label_allowed_statuses_header = "Allowed statuses:"
     label_revisions_header = "Revisions:"
     label_journals_header = "Journals/changes:"
-    label_comments_header = "Comments:"
     label_due_date_field = "Due date: {value}"
     label_sharing_field = "Sharing: {value}"
     label_parent_project = "Parent project: {id} {name}"
     label_trackers_header = "Trackers:"
     label_issue_categories_header = "Issue categories:"
     label_enabled_modules_header = "Enabled modules:"
-    label_user_field = "  User: {name} (id={id})"
     label_issue_field = "  Issue: #{id}"
     label_comments_field = "  Comments: {value}"
     label_user_in_te = "  User: {name} (id={id})"
@@ -362,14 +439,32 @@ class En(MessagesProto):
     tui_tab_switch_hint = "   (Tab:switch)"
     tui_filter_status = "Status"
     tui_filter_assignee = "Assignee"
-    tui_filter_hint = "\nTab/h/l:column jk:move Enter:apply c:clear all Esc/f:close"
+    tui_filter_user = "User"
+    tui_filter_hint = "Tab/h/l:column jk:move Enter:apply c:clear all Esc/f:close"
+    tui_filter_hint_single = "jk:move Enter:apply c:clear Esc/f:close"
     tui_filter_title = "Filter (Esc/f to close)"
-    tui_help_title = "Help - {label} tab (any key to close)"
-    tui_status_hint_issues = " {page_label}  jk:move /:search f:filter c:create u:update v:web ?:help q:quit "
-    tui_status_hint_wiki = " jk:move /:search c:create u:update v:web ?:help q:quit "
-    tui_status_hint_time_entries = (
-        " jk:move /:search c:create u:update v:web ?:help q:quit "
+    tui_filter_title_time_entries = "Filter user (Esc/f to close)"
+    tui_project_modal_title = "Switch project (Esc/p to close)"
+    tui_project_modal_hint = "jk:move Enter:switch Esc/p:close"
+    tui_current_project = "  [project: {name}]"
+    tui_flash_project_switched = "Switched project to {name}"
+    tui_project_load_failed = "Failed to load projects: {error}"
+    tui_profile_modal_title = "Switch profile (Esc/P to close)"
+    tui_profile_modal_hint = "jk:move Enter:switch Esc/P:close"
+    tui_current_profile = "  [profile: {name}]"
+    tui_flash_profile_switched = "Switched profile to {name}"
+    tui_profile_switch_invalid = (
+        "profile '{name}' has no redmine_url or redmine_api_key"
     )
+    tui_no_profiles = "No profiles found in config.toml"
+    tui_help_title = "Help - {label} tab (any key to close)"
+    tui_error_modal_title = "Error (q to close)"
+    tui_status_hint_issues = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
+    tui_status_hint_wiki = (
+        " jk:move /:search p:project c:create u:update v:web ?:help q:quit "
+    )
+    tui_status_hint_time_entries = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
+    tui_flash_reloaded = "Reloaded"
     tui_filter_status_open_default = "open (default)"
     tui_filter_status_all = "all (open + closed)"
     tui_filter_status_closed_only = "closed only"
@@ -395,6 +490,11 @@ class En(MessagesProto):
     tui_meta_activity = "Activity"
     tui_meta_issue = "Issue"
     tui_preview_comments_header = "Comments:"
+    tui_comment_select_status_hint = (
+        "Comment select: jk:move u:update D:delete Esc/q:cancel"
+    )
+    tui_comment_edit_canceled_empty = "Canceled (empty comment)"
+    tui_comment_delete_prompt = "Delete comment? {summary} [y/N]"
     tui_wiki_no_pages = "No wiki pages found"
     tui_wiki_loading = "(loading wiki...)"
     tui_wiki_load_failed = "Failed to fetch wiki: {error}"
@@ -422,14 +522,13 @@ class En(MessagesProto):
     arg_help_skip_confirm = "Skip confirmation prompt"
     arg_help_open_web = "Open the Redmine page in a browser"
     arg_help_project_id = "Project ID"
-    arg_help_project_id_filter = "Filter by project ID"
-    arg_help_user_id = "Filter by user ID ('me' allowed)"
     arg_help_full_profiles = "Show all profiles"
 
     # ---- argparse helps (subcommand summary) ----
     arg_help_crud_subcommands = "list(l), view(v), create(c), update(u), delete(d)"
     arg_help_role_subcommands = "list(l), view(v)"
     arg_help_file_subcommands = "list(l), create(c) (upload)"
+    arg_help_list_only_subcommands = "list(l)"
 
     # ---- argparse helps (project) ----
     arg_help_project_command = arg_help_crud_subcommands
@@ -531,6 +630,7 @@ class En(MessagesProto):
     arg_help_wiki_create_title = "Wiki page title (omit to enter interactively)"
     arg_help_wiki_parent_title = "Parent page title"
     arg_help_wiki_description = "Description (no value opens editor)"
+    arg_help_wiki_comments = "Update comment (recorded in the change log)"
     arg_help_wiki_delete = "Delete wiki page"
     arg_help_wiki_update = "Update wiki page"
     arg_help_wiki_update_title = "Wiki page title (omit to select interactively)"
@@ -645,8 +745,16 @@ class En(MessagesProto):
     arg_help_relation_view = "Relation details"
     arg_help_relation_view_id = "Relation ID"
 
+    # ---- argparse helps (issue journal) ----
+    arg_help_issue_journal_command = "update(u), delete(d)"
+    arg_help_issue_journal_update = "Update issue journal note"
+    arg_help_issue_journal_update_id = "Journal ID"
+    arg_help_issue_journal_update_notes = "Note text"
+    arg_help_issue_journal_delete = "Delete issue journal"
+    arg_help_issue_journal_delete_id = "Journal ID"
+
     # ---- argparse helps (attachment) ----
-    arg_help_attachment_command = "Attachment details/update/delete"
+    arg_help_attachment_command = "Attachment details/download/update/delete"
     arg_help_attachment_view = "Attachment details"
     arg_help_attachment_view_id = "Attachment ID"
     arg_help_attachment_update = "Update attachment"
@@ -655,12 +763,19 @@ class En(MessagesProto):
     arg_help_attachment_description = "Description"
     arg_help_attachment_delete = "Delete attachment"
     arg_help_attachment_delete_id = "Attachment ID"
+    arg_help_attachment_download = "Download attachment"
+    arg_help_attachment_download_id = "Attachment ID"
+    arg_help_attachment_output = (
+        "Output path (defaults to the original filename in the current directory)"
+    )
 
     # ---- argparse helps (time entry) ----
     arg_help_time_entry_command = (
         "list(l), view(v), create(c) (log), update(u), delete(d)"
     )
     arg_help_time_entry_user_id = "Filter by user ID ('me' allowed)"
+    arg_help_time_entry_from = "Filter by start date (YYYY-MM-DD, inclusive)"
+    arg_help_time_entry_to = "Filter by end date (YYYY-MM-DD, inclusive)"
     arg_help_time_entry_list = "List time entries"
     arg_help_time_entry_create = "Log time entry"
     arg_help_time_entry_hours = "Hours (e.g. 1.5; omit to enter interactively)"
@@ -694,18 +809,65 @@ class En(MessagesProto):
     # ---- argparse helps (search) ----
     arg_help_search_command = "Search"
     arg_help_search_query = "Search query"
+    arg_help_search_project_id = (
+        "Search within the project (searches all projects if omitted)"
+    )
+    arg_help_search_scope = (
+        "Search scope (subprojects requires --project_id, "
+        "the others cannot be combined with it)"
+    )
+    arg_help_search_no_all_words = "Match any word in the query (default: all words)"
+    arg_help_search_titles_only = "Search titles only"
+    arg_help_search_open_issues = "Search open issues only"
+    arg_help_search_attachments = (
+        "Search attachments (0: description only, "
+        "1: description and attachments, only: attachments only)"
+    )
+    arg_help_search_type = "Object types to search, comma separated ({choices})"
+    error_invalid_search_type = "Unknown search type: {values} (available: {choices})"
+    error_search_scope_requires_project = "--scope {scope} requires --project_id"
+    error_search_scope_conflicts_project = (
+        "--scope {scope} cannot be used with --project_id"
+    )
 
     # ---- argparse helps (news) ----
-    arg_help_news_command = "List news"
+    arg_help_news_command = arg_help_crud_subcommands
+    arg_help_news_list = "List news"
+    arg_help_news_view = "News details"
+    arg_help_news_view_id = "News ID"
+    arg_help_news_create = "Create news"
+    arg_help_news_create_title = "News title (omit to enter interactively)"
+    arg_help_news_title_opt = "News title"
+    arg_help_news_summary = "News summary"
+    arg_help_news_description = "Description (no value opens editor)"
+    arg_help_news_update = "Update news"
+    arg_help_news_update_id = "News ID (omit to select interactively)"
+    arg_help_news_delete = "Delete news"
+    arg_help_news_delete_id = "News ID (omit to select interactively)"
 
     # ---- argparse helps (enumerations) ----
-    arg_help_tracker_command = "List trackers"
-    arg_help_issue_status_command = "List issue statuses"
-    arg_help_issue_priority_command = "List issue priorities"
-    arg_help_time_entry_activity_command = "List time entry activities"
-    arg_help_document_category_command = "List document categories"
-    arg_help_query_command = "List custom queries"
-    arg_help_custom_field_command = "List custom fields"
+    arg_help_tracker_command = arg_help_list_only_subcommands
+    arg_help_tracker_list = "List trackers"
+    arg_help_issue_status_command = arg_help_list_only_subcommands
+    arg_help_issue_status_list = "List issue statuses"
+    arg_help_issue_priority_command = arg_help_list_only_subcommands
+    arg_help_issue_priority_list = "List issue priorities"
+    arg_help_time_entry_activity_command = arg_help_list_only_subcommands
+    arg_help_time_entry_activity_list = "List time entry activities"
+    arg_help_document_category_command = arg_help_list_only_subcommands
+    arg_help_document_category_list = "List document categories"
+    arg_help_query_command = arg_help_list_only_subcommands
+    arg_help_query_list = "List custom queries"
+    arg_help_custom_field_command = arg_help_list_only_subcommands
+    arg_help_custom_field_list = "List custom fields"
+
+    # ---- argparse helps (issue_template) ----
+    arg_help_issue_template_command = (
+        "List issue templates (requires redmine_issue_templates plugin)"
+    )
+    issue_template_not_available = (
+        "issue_templates endpoint not found (requires redmine_issue_templates plugin)"
+    )
 
     # ---- config_command suffix ----
     config_profile_suffix = " (profile: {name})"
@@ -727,15 +889,22 @@ class En(MessagesProto):
     tui_help_start_search = "Start search"
     tui_help_next_prev_match = "Next / previous match"
     tui_help_filter_status_assignee = "Filter by status/assignee (floating)"
+    tui_help_filter_user = "Filter by user (floating)"
+    tui_help_switch_project = "Switch project (floating)"
+    tui_help_switch_profile = "Switch profile (floating)"
+    tui_help_reload = "Reload the current tab"
     tui_help_show_or_close = "Show / close this help"
     tui_help_quit = "Quit"
 
     # ---- TUI help labels (issue tab) ----
-    tui_help_issue_load_comments = "Load comments for the selected issue"
+    tui_help_issue_load_comments = "Load comments & enter comment-select mode"
     tui_help_issue_create_or_update = "Create / update issue"
     tui_help_issue_add_comment = "Add comment (when no search query)"
     tui_help_issue_create_time_entry = "Create a time entry"
     tui_help_issue_open_web_or_n = "Open selected issue in web / open #N in web"
+    tui_help_issue_comment_select_in_mode = (
+        "In select mode: jk:move u:update D:delete Esc/q:exit"
+    )
 
     # ---- TUI help labels (wiki tab) ----
     tui_help_wiki_load_text = "Load body of the selected page"

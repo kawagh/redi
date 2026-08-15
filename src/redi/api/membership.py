@@ -1,9 +1,46 @@
 import json
+import sys
+from typing import NotRequired, TypedDict, cast
 
 import requests
 
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.i18n import messages
+
+
+class ProjectUser(TypedDict):
+    """`memberships[].user` の要素。"""
+
+    id: int
+    name: str
+
+
+class Role(TypedDict):
+    """`memberships[].roles` の要素。"""
+
+    id: int
+    name: str
+
+
+class Membership(TypedDict):
+    """`memberships[]` の要素。
+
+    `user` と `roles` は本ライブラリで扱うユーザーメンバーシップでは常に存在する前提。
+    """
+
+    id: int
+    user: ProjectUser
+    roles: list[Role]
+
+
+class MembershipsResponse(TypedDict):
+    """GET /projects/{id}/memberships.json のレスポンス。"""
+
+    memberships: list[Membership]
+    total_count: NotRequired[int]
+    offset: NotRequired[int]
+    limit: NotRequired[int]
 
 
 def list_memberships(project_id: str, full: bool = False) -> None:
@@ -17,19 +54,19 @@ def list_memberships(project_id: str, full: bool = False) -> None:
         print(_format_membership_line(m))
 
 
-def fetch_project_users(project_id: str) -> list[dict]:
+def fetch_project_users(project_id: str) -> list[ProjectUser]:
     """プロジェクトのメンバー（user）を返す。"""
     response = client.get(f"/projects/{project_id}/memberships.json")
     response.raise_for_status()
-    memberships = response.json()["memberships"]
-    return [m["user"] for m in memberships if m.get("user")]
+    data = cast(MembershipsResponse, response.json())
+    return [m["user"] for m in data["memberships"] if "user" in m]
 
 
 def fetch_membership(membership_id: str) -> dict:
     response = client.get(f"/memberships/{membership_id}.json")
     if response.status_code == 404:
         print(messages.membership_not_found.format(id=membership_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return response.json()["membership"]
 
@@ -69,7 +106,7 @@ def create_membership(
         data["user_id"] = group_id
     else:
         print(messages.user_or_group_id_required)
-        exit(1)
+        sys.exit(1)
     response = client.post(
         f"/projects/{project_id}/memberships.json", json={"membership": data}
     )
@@ -77,9 +114,9 @@ def create_membership(
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.membership_create_failed)
-        exit(1)
+        sys.exit(1)
     created = response.json()["membership"]
     print(messages.membership_created.format(line=_format_membership_line(created)))
 
@@ -87,7 +124,7 @@ def create_membership(
 def update_membership(membership_id: str, role_ids: list[int]) -> None:
     if not role_ids:
         print(messages.update_canceled)
-        exit()
+        sys.exit()
     response = client.put(
         f"/memberships/{membership_id}.json",
         json={"membership": {"role_ids": role_ids}},
@@ -96,9 +133,9 @@ def update_membership(membership_id: str, role_ids: list[int]) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.membership_update_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.membership_updated.format(id=membership_id))
 
 
@@ -106,14 +143,14 @@ def delete_membership(membership_id: str) -> None:
     response = client.delete(f"/memberships/{membership_id}.json")
     if response.status_code == 404:
         print(messages.membership_not_found.format(id=membership_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.membership_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.membership_deleted.format(id=membership_id))
 
 

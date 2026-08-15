@@ -1,9 +1,21 @@
 import json
+import sys
 
 import requests
 
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
 from redi.i18n import messages
+
+
+def fetch_my_user_id() -> str | None:
+    """`/my/account.json` から自分のユーザー id を取得する。失敗時は None。"""
+    try:
+        response = client.get("/my/account.json")
+        response.raise_for_status()
+        return str(response.json()["user"]["id"])
+    except requests.RequestException:
+        return None
 
 
 def read_my_account(full: bool = False) -> None:
@@ -48,13 +60,13 @@ def update_my_account(
         data["mail"] = mail
     if not data:
         print(messages.update_canceled_no_changes)
-        exit(1)
+        sys.exit(1)
     response = client.put("/my/account.json", json={"user": data})
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.account_update_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.account_updated)

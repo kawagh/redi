@@ -1,10 +1,52 @@
+from __future__ import annotations
+
 import json
+import sys
+from typing import NotRequired, TypedDict, cast
 
 import requests
 
+from redi.api.exceptions import RedmineValidationException, print_http_error_body
 from redi.api.project import resolve_project_id
+from redi.api.types import IdName
 from redi.client import client
 from redi.i18n import messages
+
+
+class TimeEntry(TypedDict):
+    """redmine TimeEntry
+
+    GET /time_entries.json / GET /time_entries/{id}.json を実行して確認できた
+    フィールドを記載。`issue` はチケットに紐づく作業時間の場合のみ存在し、
+    `id` のみを持つ（件名は含まれないため別途 fetch_issue_subjects で取得する）。
+    """
+
+    id: int
+    project: IdName
+    user: IdName
+    activity: IdName
+    hours: float
+    comments: str | None
+    spent_on: str  # YYYY-MM-DD
+    created_on: str
+    updated_on: str
+    # チケットに紐づく作業時間の場合のみ存在
+    issue: NotRequired[TimeEntryIssueRef]
+
+
+class TimeEntryIssueRef(TypedDict):
+    """作業時間が参照するチケット。`id` のみを持つ。"""
+
+    id: int
+
+
+class TimeEntriesPageResponse(TypedDict):
+    """GET /time_entries.json のレスポンス"""
+
+    time_entries: list[TimeEntry]
+    total_count: int
+    offset: int
+    limit: int
 
 
 def create_time_entry(
@@ -15,9 +57,14 @@ def create_time_entry(
     spent_on: str | None = None,
     comments: str | None = None,
 ) -> None:
+    """作業時間を作成する
+
+    Raises:
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+    """
     if not issue_id and not project_id:
         print(messages.issue_or_project_id_required)
-        exit(1)
+        sys.exit(1)
     # time_entries は他の API と異なり project_id に slug を受け付けず整数のみ許容
     # https://www.redmine.org/projects/redmine/wiki/Rest_TimeEntries
     if project_id is not None:
@@ -34,14 +81,16 @@ def create_time_entry(
     if comments:
         data["comments"] = comments
     response = client.post("/time_entries.json", json={"time_entry": data})
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("time_entry", "create", response)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.time_entry_create_failed)
-        exit(1)
-    created = response.json()["time_entry"]
+        sys.exit(1)
+    created = cast("TimeEntry", response.json()["time_entry"])
     print(
         messages.time_entry_created.format(
             id=created["id"], hours=created["hours"], spent_on=created["spent_on"]
@@ -53,7 +102,7 @@ COMMENT_PREVIEW_MAX_LEN = 30
 
 
 def format_time_entry_line(
-    te: dict,
+    te: TimeEntry,
     include_user: bool = True,
     issue_subjects: dict[int, str] | None = None,
 ) -> str:
@@ -84,6 +133,28 @@ def format_time_entry_line(
     return "  ".join(parts)
 
 
+def fetch_time_entries_page(
+    project_id: str | None = None,
+    user_id: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> TimeEntriesPageResponse:
+    if project_id:
+        path = f"/projects/{project_id}/time_entries.json"
+    else:
+        path = "/time_entries.json"
+    params: dict = {}
+    if user_id:
+        params["user_id"] = user_id
+    if limit is not None:
+        params["limit"] = limit
+    if offset is not None:
+        params["offset"] = offset
+    response = client.get(path, params=params)
+    response.raise_for_status()
+    return cast("TimeEntriesPageResponse", response.json())
+
+
 def fetch_issue_subjects(issue_ids: list[int]) -> dict[int, str]:
     if not issue_ids:
         return {}
@@ -98,18 +169,30 @@ def fetch_issue_subjects(issue_ids: list[int]) -> dict[int, str]:
 def list_time_entries(
     project_id: str | None = None,
     user_id: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
     full: bool = False,
 ) -> None:
     if project_id:
         path = f"/projects/{project_id}/time_entries.json"
     else:
         path = "/time_entries.json"
-    params = {}
+    params: dict = {}
     if user_id:
         params["user_id"] = user_id
+    if from_date:
+        params["from"] = from_date
+    if to_date:
+        params["to"] = to_date
+    if limit is not None:
+        params["limit"] = limit
+    if offset is not None:
+        params["offset"] = offset
     response = client.get(path, params=params)
     response.raise_for_status()
-    time_entries = response.json()["time_entries"]
+    time_entries = cast("list[TimeEntry]", response.json()["time_entries"])
     if full:
         print(json.dumps(time_entries, ensure_ascii=False))
         return
@@ -132,13 +215,13 @@ def list_time_entries(
         )
 
 
-def fetch_time_entry(time_entry_id: str) -> dict:
+def fetch_time_entry(time_entry_id: str) -> TimeEntry:
     response = client.get(f"/time_entries/{time_entry_id}.json")
     if response.status_code == 404:
         print(messages.time_entry_not_found.format(id=time_entry_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
-    return response.json()["time_entry"]
+    return cast("TimeEntry", response.json()["time_entry"])
 
 
 def read_time_entry(time_entry_id: str, full: bool = False) -> None:
@@ -171,6 +254,11 @@ def update_time_entry(
     spent_on: str | None = None,
     comments: str | None = None,
 ) -> None:
+    """作業時間を更新する
+
+    Raises:
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+    """
     # time_entries は他の API と異なり project_id に slug を受け付けず整数のみ許容
     # https://www.redmine.org/projects/redmine/wiki/Rest_TimeEntries
     if project_id is not None:
@@ -190,17 +278,19 @@ def update_time_entry(
         data["comments"] = comments
     if not data:
         print(messages.update_canceled_no_changes)
-        exit(1)
+        sys.exit(1)
     response = client.put(
         f"/time_entries/{time_entry_id}.json", json={"time_entry": data}
     )
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("time_entry", "update", response)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.time_entry_update_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.time_entry_updated.format(id=time_entry_id))
 
 
@@ -210,7 +300,7 @@ def delete_time_entry(time_entry_id: str) -> None:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.time_entry_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.time_entry_deleted.format(id=time_entry_id))

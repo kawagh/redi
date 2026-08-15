@@ -1,26 +1,36 @@
 import argparse
+import sys
 import tomllib
 
 import requests
-from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
 
-from redi.cli._common import inline_choice
-from redi.cli.prompt_util import UrlValidator
-from redi.config import CONFIG_PATH, create_profile
-from redi.i18n import messages
+from redi.api.project import Project, fetch_projects
+from redi.cli.interactive import prompt
+from redi.cli.picker import inline_choice
+from redi.cli.validator import UrlValidator
+from redi.client import RedmineClient
+from redi.config import (
+    CONFIG_PATH,
+    LANGUAGE_LABELS,
+    SUPPORTED_LANGUAGES,
+    Profile,
+    create_profile,
+)
+from redi.i18n import MessagesProto, messages, select_messages
 
 PROFILE_NAME = "default"
 
 
 def add_init_parser(subparsers: argparse._SubParsersAction) -> None:
+    # init は新規プロファイル作成専用で --profile は意味を持たないため parents を受けない
     subparsers.add_parser(
         "init",
         help=messages.arg_help_init_command,
     )
 
 
-def _verify_connection(url: str, api_key: str) -> dict | None:
+def _verify_connection(url: str, api_key: str, messages: MessagesProto) -> dict | None:
     try:
         response = requests.get(
             f"{url}/my/account.json",
@@ -30,40 +40,39 @@ def _verify_connection(url: str, api_key: str) -> dict | None:
         response.raise_for_status()
         return response.json().get("user")
     except requests.exceptions.HTTPError as e:
-        print(
-            messages.connection_failed_http.format(
-                status=e.response.status_code, reason=e.response.reason
+        if e.response is not None:
+            print(
+                messages.connection_failed_http.format(
+                    status=e.response.status_code, reason=e.response.reason
+                )
             )
-        )
+        else:
+            print(messages.connection_failed_other.format(error=e))
     except requests.exceptions.RequestException as e:
         print(messages.connection_failed_other.format(error=e))
     return None
 
 
-def _fetch_projects(url: str, api_key: str) -> list[dict]:
+def _fetch_projects(url: str, api_key: str, messages: MessagesProto) -> list[Project]:
     try:
-        response = requests.get(
-            f"{url}/projects.json",
-            headers={"X-Redmine-API-Key": api_key},
-            params={"limit": 100},
-            timeout=10,
-        )
-        response.raise_for_status()
-        return response.json().get("projects", [])
+        return fetch_projects(RedmineClient(url.rstrip("/"), api_key))
     except requests.exceptions.RequestException as e:
         print(messages.project_list_fetch_failed.format(error=e))
         return []
 
 
-def _select_project_id(message: str, projects: list[dict]) -> str:
+def _select_project_id(
+    prompt_message: str, projects: list[Project], messages: MessagesProto
+) -> str:
     options: list[tuple[str, str]] = [
-        (str(p["id"]), f"{p['id']} {p['name']}") for p in projects
+        (str(p["id"]), f"{p['id']} {p['name']}")
+        for p in sorted(projects, key=lambda p: p["id"], reverse=True)
     ]
     try:
-        return inline_choice(message, options)
+        return inline_choice(prompt_message, options)
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
 
 def _has_existing_profile() -> bool:
@@ -74,10 +83,28 @@ def _has_existing_profile() -> bool:
     return any(isinstance(v, dict) for v in doc.values())
 
 
+def _select_language() -> str:
+    """言語設定の存在に気付けるよう、init の最初に言語を選ばせる。"""
+    options = [(code, LANGUAGE_LABELS[code]) for code in SUPPORTED_LANGUAGES]
+    try:
+        return inline_choice(messages.prompt_select_language, options)
+    except (KeyboardInterrupt, EOFError):
+        print(messages.canceled)
+        sys.exit(1)
+
+
 def handle_init(_args: argparse.Namespace) -> None:
     if _has_existing_profile():
         print(messages.init_profile_already_exists.format(path=CONFIG_PATH))
-        exit(1)
+        sys.exit(1)
+
+    _init_profile(_select_language())
+
+
+def _init_profile(language: str) -> None:
+    # 以降のメッセージは選択された言語で表示する
+    messages = select_messages(language)
+    print(messages.language_set.format(value=language, suffix=""))
 
     non_empty_validator = Validator.from_callable(
         lambda text: len(text.strip()) > 0,
@@ -93,22 +120,22 @@ def handle_init(_args: argparse.Namespace) -> None:
         ).strip()
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
     print(messages.checking_connection)
-    user = _verify_connection(url, api_key)
+    user = _verify_connection(url, api_key, messages)
     if user is None:
-        exit(1)
+        sys.exit(1)
     name = " ".join(filter(None, [user.get("firstname"), user.get("lastname")]))
     print(messages.connection_success.format(login=user.get("login", ""), name=name))
 
-    projects = _fetch_projects(url, api_key)
+    projects = _fetch_projects(url, api_key, messages)
     default_project_id: str | None = None
     wiki_project_id: str | None = None
     if projects:
         projects_by_id = {str(p["id"]): p for p in projects}
         default_project_id = _select_project_id(
-            messages.prompt_select_default_project, projects
+            messages.prompt_select_default_project, projects, messages
         )
         print(
             messages.default_project_label.format(
@@ -116,7 +143,7 @@ def handle_init(_args: argparse.Namespace) -> None:
             )
         )
         wiki_project_id = _select_project_id(
-            messages.prompt_select_wiki_project, projects
+            messages.prompt_select_wiki_project, projects, messages
         )
         print(
             messages.wiki_project_label.format(
@@ -128,11 +155,14 @@ def handle_init(_args: argparse.Namespace) -> None:
 
     result = create_profile(
         profile_name=PROFILE_NAME,
-        redmine_url=url,
-        redmine_api_key=api_key,
-        default_project_id=default_project_id,
-        wiki_project_id=wiki_project_id,
+        profile=Profile(
+            redmine_url=url,
+            redmine_api_key=api_key,
+            default_project_id=default_project_id,
+            wiki_project_id=wiki_project_id,
+            language=language,
+        ),
     )
     if not result.created:
-        exit(1)
+        sys.exit(1)
     print(messages.config_created.format(path=CONFIG_PATH))

@@ -1,8 +1,7 @@
 import argparse
+import sys
 
-from redi.cli._common import confirm_delete, resolve_alias
-from redi.config import default_project_id
-from redi.i18n import messages
+from redi import config
 from redi.api.membership import (
     create_membership,
     delete_membership,
@@ -11,29 +10,35 @@ from redi.api.membership import (
     read_membership,
     update_membership,
 )
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.cli.shared_options import project_option_parser
+from redi.i18n import messages
 
 
 def _parse_role_ids(value: str) -> list[int]:
     return [int(v) for v in value.split(",") if v.strip()]
 
 
-def add_membership_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_membership_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     m_parser = subparsers.add_parser(
         "membership",
         aliases=["m"],
         help=messages.arg_help_membership_command,
-    )
-    m_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
-    m_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
+        parents=[*parents, project_option_parser()],
     )
     m_subparsers = m_parser.add_subparsers(dest="membership_command")
     m_subparsers.add_parser(
-        "list", aliases=["l"], help=messages.arg_help_membership_list
+        "list",
+        aliases=["l"],
+        help=messages.arg_help_membership_list,
+        parents=[*parents, project_option_parser(postfix=True)],
     )
 
     m_view_parser = m_subparsers.add_parser(
-        "view", aliases=["v"], help=messages.arg_help_membership_view
+        "view", aliases=["v"], help=messages.arg_help_membership_view, parents=parents
     )
     m_view_parser.add_argument(
         "membership_id", help=messages.arg_help_membership_view_id
@@ -43,7 +48,10 @@ def add_membership_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     m_create_parser = m_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_membership_create
+        "create",
+        aliases=["c"],
+        help=messages.arg_help_membership_create,
+        parents=parents,
     )
     m_create_parser.add_argument(
         "--project_id", "-p", help=messages.arg_help_project_id
@@ -62,7 +70,10 @@ def add_membership_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     m_update_parser = m_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_membership_update
+        "update",
+        aliases=["u"],
+        help=messages.arg_help_membership_update,
+        parents=parents,
     )
     m_update_parser.add_argument(
         "membership_id", help=messages.arg_help_membership_update_id
@@ -75,7 +86,10 @@ def add_membership_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     m_delete_parser = m_subparsers.add_parser(
-        "delete", aliases=["d"], help=messages.arg_help_membership_delete
+        "delete",
+        aliases=["d"],
+        help=messages.arg_help_membership_delete,
+        parents=parents,
     )
     m_delete_parser.add_argument(
         "membership_id", help=messages.arg_help_membership_delete_id
@@ -91,13 +105,13 @@ def handle_membership(args: argparse.Namespace) -> None:
         read_membership(args.membership_id, full=args.full)
         return
     if cmd == "create":
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
-            exit(1)
+            sys.exit(1)
         if args.user_id is None and args.group_id is None:
             print(messages.user_or_group_flag_required)
-            exit(1)
+            sys.exit(1)
         create_membership(
             project_id=project_id,
             role_ids=_parse_role_ids(args.role_ids),
@@ -130,8 +144,8 @@ def handle_membership(args: argparse.Namespace) -> None:
         return
 
     if cmd == "list" or cmd is None:
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
-            exit(1)
+            sys.exit(1)
         list_memberships(project_id, full=args.full)

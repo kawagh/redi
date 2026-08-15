@@ -1,9 +1,11 @@
 import json
+import sys
 
 import requests
 
+from redi import config
+from redi.api.exceptions import print_http_error_body
 from redi.client import client
-from redi.config import redmine_url
 from redi.i18n import messages
 
 
@@ -25,10 +27,10 @@ def fetch_group(group_id: str, include: str = "") -> dict:
     response = client.get(f"/groups/{group_id}.json", params=params)
     if response.status_code == 404:
         print(messages.group_not_found.format(id=group_id))
-        exit(1)
+        sys.exit(1)
     if response.status_code == 403:
         print(messages.group_get_admin_required)
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
     return response.json()["group"]
 
@@ -71,21 +73,21 @@ def update_group(
         data["user_ids"] = user_ids
     if len(data) == 0:
         print(messages.update_canceled)
-        exit()
+        sys.exit()
     response = client.put(f"/groups/{group_id}.json", json={"group": data})
     if response.status_code == 404:
         print(messages.group_not_found.format(id=group_id))
-        exit(1)
+        sys.exit(1)
     if response.status_code == 403:
         print(messages.group_update_admin_required)
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.group_update_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.group_updated.format(id=group_id))
 
 
@@ -96,17 +98,17 @@ def add_group_user(group_id: str, user_id: int) -> None:
     )
     if response.status_code == 404:
         print(messages.group_not_found.format(id=group_id))
-        exit(1)
+        sys.exit(1)
     if response.status_code == 403:
         print(messages.group_add_user_admin_required)
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.group_add_user_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.group_user_added.format(group_id=group_id, user_id=user_id))
 
 
@@ -116,17 +118,17 @@ def remove_group_user(group_id: str, user_id: int) -> None:
         print(
             messages.group_or_user_not_found.format(group_id=group_id, user_id=user_id)
         )
-        exit(1)
+        sys.exit(1)
     if response.status_code == 403:
         print(messages.group_remove_user_admin_required)
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.group_remove_user_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.group_user_removed.format(group_id=group_id, user_id=user_id))
 
 
@@ -134,17 +136,17 @@ def delete_group(group_id: str) -> None:
     response = client.delete(f"/groups/{group_id}.json")
     if response.status_code == 404:
         print(messages.group_not_found.format(id=group_id))
-        exit(1)
+        sys.exit(1)
     if response.status_code == 403:
         print(messages.group_delete_admin_required)
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.group_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.group_deleted.format(id=group_id))
 
 
@@ -155,19 +157,19 @@ def create_group(name: str, user_ids: list[int] | None = None) -> None:
     response = client.post("/groups.json", json={"group": group_data})
     if response.status_code == 403:
         print(messages.group_create_admin_required)
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.group_create_failed)
-        exit(1)
+        sys.exit(1)
     created = response.json()["group"]
     print(
         messages.group_created.format(
             id=created["id"],
             name=created["name"],
-            url=f"{redmine_url}/groups/{created['id']}",
+            url=f"{config.redmine_url}/groups/{created['id']}",
         )
     )

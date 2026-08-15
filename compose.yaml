@@ -1,11 +1,18 @@
+name: redi
+
 services:
-  redmine-for-test:
-    image: redmine
+  redmine-for-test-6.1:
+    image: redmine:6.1
     ports:
-      - 3000:3000
+      - 3061:3000
+
+  redmine-for-test-7.0:
+    image: redmine:7.0
+    ports:
+      - 3070:3000
 
   redmine-for-dogfooding:
-    image: redmine
+    image: redmine:6.1
     profiles:
       - dogfooding
     restart: always
@@ -14,6 +21,13 @@ services:
     volumes:
       - redmine-dogfooding-files:/usr/src/redmine/files
       - redmine-dogfooding-sqlite:/usr/src/redmine/sqlite
+
+  redmine-for-demo:
+    profiles:
+      - demo
+    image: redmine:6.1
+    ports:
+      - 3002:3000
 
 volumes:
   redmine-dogfooding-files:

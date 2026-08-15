@@ -5,7 +5,9 @@ class MessagesProto(Protocol):
     """全言語が満たすべきメッセージ集合の輪郭。
 
     新しいメッセージを追加するときはまずここに key を宣言し、
-    ja.py / en.py に実装を追加する。実装側に欠けがあれば ty が検出する。
+    ja.py / en.py に実装を追加する。実装側に欠けがあれば
+    tests/unit/i18n/test_i18n.py の TestProtocolImplemented が検出する
+    (Protocol の annotation-only メンバは ty では強制されないため)。
     """
 
     # ---- profile / config ----
@@ -49,6 +51,10 @@ class MessagesProto(Protocol):
     """プロジェクトが特定できないためキャンセル"""
     canceled_field_mismatch: str
     """{field} が一致しないのでキャンセル"""
+    non_interactive_input_required: str
+    """非TTY環境で対話入力に入ろうとした。求めていた入力を {message} に埋め込む。"""
+    prompt_editor_input: str
+    """non_interactive_input_required の {message} に埋めるエディタ入力の呼び名"""
 
     # ---- common indicators ----
     project_id_required: str
@@ -65,6 +71,8 @@ class MessagesProto(Protocol):
     """--delete-relation には --to が必要"""
     relate_and_to_required: str
     """--relate と --to は両方指定する"""
+    body_saved_to_tempfile: str
+    """送信に失敗したため本文を一時ファイルに保存。{path}"""
 
     # ---- not found ----
     role_not_found: str
@@ -95,6 +103,8 @@ class MessagesProto(Protocol):
     """ファイルが見つからない。{path}"""
     attachment_not_found: str
     """添付ファイルが見つからない。{id}"""
+    issue_journal_not_found: str
+    """イシューのジャーナルが見つからない。{id}"""
     time_entry_not_found: str
     """作業時間が見つからない。{id}"""
     version_not_found: str
@@ -105,6 +115,8 @@ class MessagesProto(Protocol):
     """グループまたはユーザーが見つからない。{group_id} / {user_id}"""
     category_not_found: str
     """カテゴリが見つからない。{id}"""
+    news_not_found: str
+    """ニュースが見つからない。{id}"""
     no_search_results: str
     """検索結果が見つからない"""
     issue_not_found_simple: str
@@ -112,7 +124,10 @@ class MessagesProto(Protocol):
     no_versions_available: str
     """選択可能なバージョンがない"""
     no_issues_available: str
+    no_news_available: str
     """選択可能なイシューがない"""
+    no_profiles_available: str
+    """選択可能なプロファイルがない"""
     no_project_skip_project_id: str
     """プロジェクトが存在しないため設定スキップ"""
 
@@ -144,7 +159,7 @@ class MessagesProto(Protocol):
     project_unarchived: str
     project_deleted: str
     issue_created: str
-    """{url}"""
+    """{id} {url}"""
     issue_updated: str
     """{url}"""
     issue_deleted: str
@@ -188,6 +203,12 @@ class MessagesProto(Protocol):
     """{id}"""
     attachment_updated: str
     """{url}"""
+    attachment_downloaded: str
+    """{path}"""
+    issue_journal_updated: str
+    """{id}"""
+    issue_journal_deleted: str
+    """{id}"""
     group_updated: str
     """{id}"""
     group_deleted: str
@@ -206,6 +227,12 @@ class MessagesProto(Protocol):
     """{id}"""
     category_deleted: str
     """{id}"""
+    news_created: str
+    """{url}"""
+    news_updated: str
+    """{url}"""
+    news_deleted: str
+    """{id}"""
 
     # ---- failures ----
     user_create_failed: str
@@ -221,6 +248,14 @@ class MessagesProto(Protocol):
     watcher_add_failed: str
     watcher_remove_failed: str
     wiki_page_delete_failed: str
+    wiki_page_update_conflict: str
+    """{title}"""
+    validation_failed: str
+    """{resource} {action} {errors}"""
+    action_create: str
+    """validation_failed の {action} に埋め込む語 (en: create / ja: 作成)"""
+    action_update: str
+    """validation_failed の {action} に埋め込む語 (en: update / ja: 更新)"""
     membership_create_failed: str
     membership_update_failed: str
     membership_delete_failed: str
@@ -239,6 +274,11 @@ class MessagesProto(Protocol):
     time_entry_delete_failed: str
     attachment_delete_failed: str
     attachment_update_failed: str
+    attachment_download_failed: str
+    attachment_content_url_unexpected: str
+    """{url}"""
+    issue_journal_update_failed: str
+    issue_journal_delete_failed: str
     group_create_failed: str
     group_update_failed: str
     group_delete_failed: str
@@ -247,6 +287,9 @@ class MessagesProto(Protocol):
     category_create_failed: str
     category_update_failed: str
     category_delete_failed: str
+    news_create_failed: str
+    news_update_failed: str
+    news_delete_failed: str
     project_list_fetch_failed: str
     """{error}"""
     connection_failed_http: str
@@ -262,6 +305,8 @@ class MessagesProto(Protocol):
     update_target_version: str
     """{label}"""
     update_target_issue: str
+    """{label}"""
+    update_target_news: str
     """{label}"""
     update_items: str
     """{items}"""
@@ -285,6 +330,8 @@ class MessagesProto(Protocol):
     """{value}"""
     estimated_hours_label: str
     """{value}"""
+    template_label: str
+    """{value}"""
 
     # ---- init flow ----
     api_key_url_hint: str
@@ -303,24 +350,40 @@ class MessagesProto(Protocol):
 
     # ---- prompts (interactive input messages) ----
     prompt_confirm_delete: str
+    prompt_confirm_overwrite: str
     prompt_confirm_delete_with_identifier: str
     """{label}, {expected}"""
     prompt_subject: str
+    prompt_title: str
+    prompt_summary: str
     prompt_comment: str
     prompt_page_title: str
     prompt_parent_page: str
     prompt_edit_page: str
     prompt_select_tracker: str
+    prompt_select_template: str
+    prompt_select_template_none: str
     prompt_select_status: str
     prompt_select_priority: str
     prompt_select_assignee: str
     prompt_select_assignee_none: str
     prompt_select_fixed_version: str
+    prompt_select_fixed_version_none: str
+    prompt_parent_issue_id: str
+    prompt_select_create_optional_items: str
     prompt_select_activity: str
     prompt_select_done_ratio: str
     prompt_select_sharing: str
     prompt_select_version_to_update: str
     prompt_select_issue_to_update: str
+    prompt_select_news_to_update: str
+    prompt_select_news_to_delete: str
+    prompt_select_profile: str
+    """プロファイル一覧の見出し。Enter でデフォルト設定 / u で項目更新の案内を含む"""
+    prompt_default_project_id: str
+    prompt_wiki_project_id: str
+    prompt_editor: str
+    prompt_select_language: str
     prompt_start_date: str
     prompt_due_date: str
     prompt_estimated_hours: str
@@ -332,6 +395,7 @@ class MessagesProto(Protocol):
     prompt_select_update_items: str
     prompt_version_name: str
     prompt_description_optional: str
+    prompt_wiki_comments: str
     prompt_due_date_optional: str
     prompt_issue_id_or_project: str
     prompt_project_id_or_name: str
@@ -345,6 +409,20 @@ class MessagesProto(Protocol):
     """{name}, {value}"""
     prompt_custom_field_label: str
     """{name}"""
+    label_bool_true: str
+    """カスタムフィールド bool 形式の真の表示ラベル"""
+    label_bool_false: str
+    """カスタムフィールド bool 形式の偽の表示ラベル"""
+    prompt_what_next: str
+    """イシュー作成時に次のアクションを選ばせるメニューのタイトル"""
+    action_submit: str
+    """prompt_what_next の選択肢: そのまま送信"""
+    action_fill_optional: str
+    """prompt_what_next の選択肢: 任意項目を入力する"""
+    action_continue_in_browser: str
+    """prompt_what_next の選択肢: ブラウザで続きを編集"""
+    attachment_field_unsupported_notice: str
+    """{name}: 必須カスタムフィールドに添付ファイル型がある場合の未対応通知。ブラウザでの編集が必要"""
 
     # ---- prompt validators ----
     error_input_required: str
@@ -360,11 +438,14 @@ class MessagesProto(Protocol):
     # ---- field labels (interactive selection items) ----
     field_tracker: str
     field_subject: str
+    field_title: str
+    field_summary: str
     field_description: str
     field_status: str
     field_priority: str
     field_assignee: str
     field_fixed_version: str
+    field_parent_issue: str
     field_start_date: str
     field_due_date: str
     field_done_ratio: str
@@ -378,6 +459,13 @@ class MessagesProto(Protocol):
     field_spent_on: str
     field_comments: str
     field_issue_id: str
+    field_redmine_url: str
+    field_redmine_api_key: str
+    field_default_project_id: str
+    field_wiki_project_id: str
+    field_editor: str
+    field_language: str
+    field_set_default_profile: str
 
     # ---- sharing options ----
     sharing_none: str
@@ -402,14 +490,18 @@ class MessagesProto(Protocol):
     """{id}, {kind}, {principal_id}, {principal_name}, {roles}"""
     delete_target_attachment: str
     """{id}, {filename}"""
+    overwrite_target_file: str
+    """{path}"""
+    delete_target_issue_journal: str
+    """{id}, {notes}"""
     delete_target_category: str
     """{id}, {name}"""
+    delete_target_news: str
+    """{id}, {title}"""
     delete_target_group: str
     """{id}, {name}"""
     delete_target_time_entry: str
     """{id}, {hours}, {activity}, {spent_on}"""
-    delete_confirm_tui: str
-    """{summary}"""
 
     # ---- detail/output labels ----
     label_assignable: str
@@ -448,6 +540,9 @@ class MessagesProto(Protocol):
     """{value}"""
     label_description_field: str
     """{value}"""
+    label_summary_field: str
+    """{value}"""
+    label_news_comments_header: str
     label_url_field: str
     """{value}"""
     label_roles_header: str
@@ -459,7 +554,6 @@ class MessagesProto(Protocol):
     label_allowed_statuses_header: str
     label_revisions_header: str
     label_journals_header: str
-    label_comments_header: str
     label_due_date_field: str
     """{value}"""
     label_sharing_field: str
@@ -469,8 +563,6 @@ class MessagesProto(Protocol):
     label_trackers_header: str
     label_issue_categories_header: str
     label_enabled_modules_header: str
-    label_user_field: str
-    """{name}, {id}"""
     label_issue_field: str
     """{id}"""
     label_comments_field: str
@@ -498,14 +590,38 @@ class MessagesProto(Protocol):
     tui_tab_switch_hint: str
     tui_filter_status: str
     tui_filter_assignee: str
+    tui_filter_user: str
     tui_filter_hint: str
+    tui_filter_hint_single: str
     tui_filter_title: str
+    tui_filter_title_time_entries: str
+    tui_project_modal_title: str
+    tui_project_modal_hint: str
+    tui_current_project: str
+    """{name}"""
+    tui_flash_project_switched: str
+    """{name}"""
+    tui_project_load_failed: str
+    """{error}"""
+    tui_profile_modal_title: str
+    tui_profile_modal_hint: str
+    tui_current_profile: str
+    """{name}"""
+    tui_flash_profile_switched: str
+    """{name}"""
+    tui_profile_switch_invalid: str
+    """切替先に redmine_url / redmine_api_key が揃っていない。{name} を埋め込む。"""
+    tui_no_profiles: str
+    """config.toml にプロファイルが1つも無い。"""
     tui_help_title: str
     """{label}"""
+    tui_error_modal_title: str
     tui_status_hint_issues: str
     """{page_label}"""
     tui_status_hint_wiki: str
     tui_status_hint_time_entries: str
+    """{page_label}"""
+    tui_flash_reloaded: str
     tui_filter_status_open_default: str
     tui_filter_status_all: str
     tui_filter_status_closed_only: str
@@ -531,6 +647,10 @@ class MessagesProto(Protocol):
     tui_meta_activity: str
     tui_meta_issue: str
     tui_preview_comments_header: str
+    tui_comment_select_status_hint: str
+    tui_comment_edit_canceled_empty: str
+    tui_comment_delete_prompt: str
+    """{summary}"""
     tui_wiki_no_pages: str
     tui_wiki_loading: str
     tui_wiki_load_failed: str
@@ -561,14 +681,7 @@ class MessagesProto(Protocol):
     arg_help_skip_confirm: str
     arg_help_open_web: str
     arg_help_project_id: str
-    arg_help_project_id_filter: str
-    arg_help_user_id: str
     arg_help_full_profiles: str
-
-    # ---- argparse helps (subcommand summary) ----
-    arg_help_crud_subcommands: str
-    arg_help_role_subcommands: str
-    arg_help_file_subcommands: str
 
     # ---- argparse helps (project) ----
     arg_help_project_command: str
@@ -666,6 +779,7 @@ class MessagesProto(Protocol):
     arg_help_wiki_create_title: str
     arg_help_wiki_parent_title: str
     arg_help_wiki_description: str
+    arg_help_wiki_comments: str
     arg_help_wiki_delete: str
     arg_help_wiki_update: str
     arg_help_wiki_update_title: str
@@ -772,6 +886,14 @@ class MessagesProto(Protocol):
     arg_help_relation_view: str
     arg_help_relation_view_id: str
 
+    # ---- argparse helps (issue journal) ----
+    arg_help_issue_journal_command: str
+    arg_help_issue_journal_update: str
+    arg_help_issue_journal_update_id: str
+    arg_help_issue_journal_update_notes: str
+    arg_help_issue_journal_delete: str
+    arg_help_issue_journal_delete_id: str
+
     # ---- argparse helps (attachment) ----
     arg_help_attachment_command: str
     arg_help_attachment_view: str
@@ -782,10 +904,15 @@ class MessagesProto(Protocol):
     arg_help_attachment_description: str
     arg_help_attachment_delete: str
     arg_help_attachment_delete_id: str
+    arg_help_attachment_download: str
+    arg_help_attachment_download_id: str
+    arg_help_attachment_output: str
 
     # ---- argparse helps (time entry) ----
     arg_help_time_entry_command: str
     arg_help_time_entry_user_id: str
+    arg_help_time_entry_from: str
+    arg_help_time_entry_to: str
     arg_help_time_entry_list: str
     arg_help_time_entry_create: str
     arg_help_time_entry_hours: str
@@ -819,18 +946,55 @@ class MessagesProto(Protocol):
     # ---- argparse helps (search) ----
     arg_help_search_command: str
     arg_help_search_query: str
+    arg_help_search_project_id: str
+    arg_help_search_scope: str
+    arg_help_search_no_all_words: str
+    arg_help_search_titles_only: str
+    arg_help_search_open_issues: str
+    arg_help_search_attachments: str
+    arg_help_search_type: str
+    """{choices}"""
+    error_invalid_search_type: str
+    """{values} {choices}"""
+    error_search_scope_requires_project: str
+    """{scope}"""
+    error_search_scope_conflicts_project: str
+    """{scope}"""
 
     # ---- argparse helps (news) ----
     arg_help_news_command: str
+    arg_help_news_list: str
+    arg_help_news_view: str
+    arg_help_news_view_id: str
+    arg_help_news_create: str
+    arg_help_news_create_title: str
+    arg_help_news_title_opt: str
+    arg_help_news_summary: str
+    arg_help_news_description: str
+    arg_help_news_update: str
+    arg_help_news_update_id: str
+    arg_help_news_delete: str
+    arg_help_news_delete_id: str
 
     # ---- argparse helps (enumerations) ----
     arg_help_tracker_command: str
+    arg_help_tracker_list: str
     arg_help_issue_status_command: str
+    arg_help_issue_status_list: str
     arg_help_issue_priority_command: str
+    arg_help_issue_priority_list: str
     arg_help_time_entry_activity_command: str
+    arg_help_time_entry_activity_list: str
     arg_help_document_category_command: str
+    arg_help_document_category_list: str
     arg_help_query_command: str
+    arg_help_query_list: str
     arg_help_custom_field_command: str
+    arg_help_custom_field_list: str
+
+    # ---- argparse helps (issue_template) ----
+    arg_help_issue_template_command: str
+    issue_template_not_available: str
 
     # ---- config_command suffix ----
     config_profile_suffix: str
@@ -853,6 +1017,10 @@ class MessagesProto(Protocol):
     tui_help_start_search: str
     tui_help_next_prev_match: str
     tui_help_filter_status_assignee: str
+    tui_help_filter_user: str
+    tui_help_switch_project: str
+    tui_help_switch_profile: str
+    tui_help_reload: str
     tui_help_show_or_close: str
     tui_help_quit: str
 
@@ -862,6 +1030,8 @@ class MessagesProto(Protocol):
     tui_help_issue_add_comment: str
     tui_help_issue_create_time_entry: str
     tui_help_issue_open_web_or_n: str
+    tui_help_issue_comment_select_in_mode: str
+    """選択モード中の jk/Enter/Esc 操作 (Enter でモードに入る)"""
 
     # ---- TUI help labels (wiki tab) ----
     tui_help_wiki_load_text: str

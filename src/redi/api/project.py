@@ -1,11 +1,47 @@
+from __future__ import annotations
+
 import json
+import sys
 import webbrowser
+from typing import NotRequired, TypedDict, cast
 
 import requests
 
-from redi.client import client
-from redi.config import redmine_url
+from redi import config
+from redi.api.exceptions import print_http_error_body
+from redi.api.types import IdName
+from redi.client import RedmineClient, client
 from redi.i18n import messages
+
+# Redmine の一覧 API が 1 リクエストで返せる上限
+PROJECTS_PAGE_LIMIT = 100
+
+
+class Project(TypedDict):
+    """redmine Project
+
+    GET /projects.json / GET /projects/{id}.json を実行して確認できたフィールドを記載。
+    `parent` や `trackers` などは親プロジェクトの有無や include 指定により
+    存在しない場合がある。
+    """
+
+    id: int
+    name: str
+    identifier: str
+    description: str | None
+    homepage: str
+    status: int
+    is_public: bool
+    inherit_members: bool
+    created_on: str
+    updated_on: str
+    # 親プロジェクトを持つ場合のみ存在
+    parent: NotRequired[IdName]
+    # include 指定時のみ存在
+    trackers: NotRequired[list[IdName]]
+    issue_categories: NotRequired[list[IdName]]
+    time_entry_activities: NotRequired[list[IdName]]
+    enabled_modules: NotRequired[list[IdName]]
 
 
 def list_projects(full: bool = False) -> None:
@@ -17,11 +53,34 @@ def list_projects(full: bool = False) -> None:
             print(f"{project['id']} {project['name']}")
 
 
-def fetch_projects() -> list[dict]:
-    response = client.get("/projects.json")
-    response.raise_for_status()
-    data = response.json()
-    return data.get("projects", [])
+def fetch_projects(api_client: RedmineClient | None = None) -> list[Project]:
+    """アクセスできるプロジェクトを全件返す。
+
+    Redmine の一覧 API は limit 未指定だと既定件数しか返さないため、
+    `total_count` を見て全件揃うまで offset を進める。
+
+    `api_client` は config 未確定の `redi init` から、入力されたばかりの
+    URL/API キーで呼ぶために受ける。省略時はグローバルの client を使う。
+    """
+    target = api_client or client
+    projects: list[Project] = []
+    offset = 0
+    while True:
+        response = target.get(
+            "/projects.json", params={"limit": PROJECTS_PAGE_LIMIT, "offset": offset}
+        )
+        response.raise_for_status()
+        data = response.json()
+        page = cast("list[Project]", data.get("projects", []))
+        projects.extend(page)
+        total_count = data.get("total_count")
+        if not page or total_count is None or len(projects) >= total_count:
+            return projects
+        offset += len(page)
+
+
+def sort_projects_by_id_desc(projects: list[Project]) -> list[Project]:
+    return sorted(projects, key=lambda p: p["id"], reverse=True)
 
 
 def resolve_project_id(value: str) -> str:
@@ -32,19 +91,19 @@ def resolve_project_id(value: str) -> str:
         if p.get("identifier") == value or p.get("name") == value:
             return str(p["id"])
     print(messages.project_not_found.format(id=value))
-    exit(1)
+    sys.exit(1)
 
 
-def fetch_project(project_id: str, include: str = "") -> dict:
+def fetch_project(project_id: str, include: str = "") -> Project:
     params: dict = {}
     if include:
         params["include"] = include
     response = client.get(f"/projects/{project_id}.json", params=params)
     if response.status_code == 404:
         print(messages.project_not_found.format(id=project_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
-    return response.json()["project"]
+    return cast("Project", response.json()["project"])
 
 
 def create_project(
@@ -74,8 +133,8 @@ def create_project(
         print(f"{project['id']} {project['name']} ({project['identifier']})")
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
-        exit(1)
+        print_http_error_body(e)
+        sys.exit(1)
 
 
 def update_project(
@@ -99,15 +158,15 @@ def update_project(
         data["tracker_ids"] = tracker_ids
     if len(data) == 0:
         print(messages.update_canceled)
-        exit()
+        sys.exit()
     response = client.put(f"/projects/{project_id}.json", json={"project": data})
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.project_update_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.project_updated.format(id=project_id))
 
 
@@ -115,14 +174,14 @@ def archive_project(project_id: str) -> None:
     response = client.put(f"/projects/{project_id}/archive.json")
     if response.status_code == 404:
         print(messages.project_not_found.format(id=project_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.project_archive_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.project_archived.format(id=project_id))
 
 
@@ -130,14 +189,14 @@ def unarchive_project(project_id: str) -> None:
     response = client.put(f"/projects/{project_id}/unarchive.json")
     if response.status_code == 404:
         print(messages.project_not_found.format(id=project_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.project_unarchive_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.project_unarchived.format(id=project_id))
 
 
@@ -145,14 +204,14 @@ def delete_project(project_id: str) -> None:
     response = client.delete(f"/projects/{project_id}.json")
     if response.status_code == 404:
         print(messages.project_not_found.format(id=project_id))
-        exit(1)
+        sys.exit(1)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(e)
-        print(e.response.text)
+        print_http_error_body(e)
         print(messages.project_delete_failed)
-        exit(1)
+        sys.exit(1)
     print(messages.project_deleted.format(id=project_id))
 
 
@@ -160,7 +219,7 @@ def read_project(
     project_id: str, include: str = "", full: bool = False, web: bool = False
 ) -> None:
     if web:
-        url = f"{redmine_url}/projects/{project_id}"
+        url = f"{config.redmine_url}/projects/{project_id}"
         print(url)
         webbrowser.open(url)
         return
@@ -170,18 +229,19 @@ def read_project(
     response = client.get(f"/projects/{project_id}.json", params=params)
     if response.status_code == 404:
         print(messages.project_not_found.format(id=project_id))
-        exit(1)
+        sys.exit(1)
     response.raise_for_status()
-    project = response.json()["project"]
+    project = cast("Project", response.json()["project"])
     if full:
         print(json.dumps(project, ensure_ascii=False))
         return
 
     lines = []
     lines.append(f"{project['id']} {project['name']} ({project['identifier']})")
-    if project.get("description"):
+    description = project.get("description")
+    if description:
         lines.append("")
-        lines.append(project["description"])
+        lines.append(description)
     parent = project.get("parent")
     if parent:
         lines.append("")

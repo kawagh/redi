@@ -1,20 +1,13 @@
 import argparse
+import sys
 
-from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding.key_processor import KeyPress
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.shortcuts import choice
 from prompt_toolkit.validation import Validator
 
-from redi.cli._common import (
-    confirm_delete,
-    inline_checkbox,
-    inline_choice,
-    resolve_alias,
-)
-from redi.config import default_project_id
-from redi.i18n import messages
+from redi import config
 from redi.api.version import (
     create_version,
     delete_version,
@@ -24,22 +17,32 @@ from redi.api.version import (
     read_version,
     update_version,
 )
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.cli.interactive import ensure_interactive, prompt
+from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.shared_options import project_option_parser
+from redi.i18n import messages
 
 
-def add_version_parser(subparsers: argparse._SubParsersAction) -> None:
+def add_version_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     v_parser = subparsers.add_parser(
         "version",
         aliases=["v"],
         help=messages.arg_help_version_command,
-    )
-    v_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
-    v_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
+        parents=[*parents, project_option_parser()],
     )
     v_subparsers = v_parser.add_subparsers(dest="version_command")
-    v_subparsers.add_parser("list", aliases=["l"], help=messages.arg_help_version_list)
+    v_subparsers.add_parser(
+        "list",
+        aliases=["l"],
+        help=messages.arg_help_version_list,
+        parents=[*parents, project_option_parser(postfix=True)],
+    )
     v_view_parser = v_subparsers.add_parser(
-        "view", aliases=["v"], help=messages.arg_help_version_view
+        "view", aliases=["v"], help=messages.arg_help_version_view, parents=parents
     )
     v_view_parser.add_argument("version_id", help=messages.arg_help_version_view_id)
     v_view_parser.add_argument(
@@ -49,7 +52,7 @@ def add_version_parser(subparsers: argparse._SubParsersAction) -> None:
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
     v_create_parser = v_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_version_create
+        "create", aliases=["c"], help=messages.arg_help_version_create, parents=parents
     )
     v_create_parser.add_argument(
         "name", nargs="?", default=None, help=messages.arg_help_version_name_arg
@@ -72,14 +75,14 @@ def add_version_parser(subparsers: argparse._SubParsersAction) -> None:
         help=messages.arg_help_version_sharing,
     )
     v_delete_parser = v_subparsers.add_parser(
-        "delete", aliases=["d"], help=messages.arg_help_version_delete
+        "delete", aliases=["d"], help=messages.arg_help_version_delete, parents=parents
     )
     v_delete_parser.add_argument("version_id", help=messages.arg_help_version_delete_id)
     v_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
     v_update_parser = v_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_version_update
+        "update", aliases=["u"], help=messages.arg_help_version_update, parents=parents
     )
     v_update_parser.add_argument(
         "version_id", nargs="?", help=messages.arg_help_version_update_id
@@ -107,16 +110,16 @@ def _interactive_select_version_id(project_id: str) -> str:
     versions = fetch_versions(project_id)
     if not versions:
         print(messages.no_versions_available)
-        exit(1)
+        sys.exit(1)
     options: list[tuple[str, str]] = [
         (str(v["id"]), f"{v['id']} {v['name']} ({v['status']})") for v in versions
     ]
     labels = dict(options)
     try:
         selected = inline_choice(messages.prompt_select_version_to_update, options)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     print(messages.update_target_version.format(label=labels[selected]))
     return selected
 
@@ -132,12 +135,12 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
     ]
     try:
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     if not selected:
         print(messages.canceled_no_items_selected)
-        exit(1)
+        sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
     try:
@@ -186,7 +189,7 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
             print(messages.sharing_label.format(value=args.sharing))
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
 
 def _interactive_create_version(project_id: str, args: argparse.Namespace) -> None:
@@ -200,19 +203,19 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
         ).strip()
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
     try:
         due_date = prompt(messages.prompt_due_date_optional).strip() or None
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
     try:
         description = prompt(messages.prompt_description_optional).strip() or None
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
     sharing_options: list[tuple[str, str]] = [
         ("none", messages.sharing_none),
@@ -231,6 +234,7 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
     def _move_down(event):
         event.app.key_processor.feed(KeyPress(Keys.Down))
 
+    ensure_interactive(messages.prompt_select_sharing)
     try:
         sharing_input = choice(
             messages.prompt_select_sharing,
@@ -238,9 +242,9 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
             default="none",
             key_bindings=choice_kb,
         )
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     sharing = sharing_input if sharing_input != "none" else None
 
     create_version(
@@ -257,10 +261,10 @@ def handle_version(args: argparse.Namespace) -> None:
     if cmd == "view":
         read_version(args.version_id, full=args.full, web=args.web)
     elif cmd == "create":
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
-            exit(1)
+            sys.exit(1)
         if args.name is None:
             _interactive_create_version(project_id, args)
         else:
@@ -283,10 +287,10 @@ def handle_version(args: argparse.Namespace) -> None:
         delete_version(args.version_id)
     elif cmd == "update":
         if not args.version_id:
-            project_id = args.project_id or default_project_id
+            project_id = args.project_id or config.default_project_id
             if not project_id:
                 print(messages.project_id_required)
-                exit(1)
+                sys.exit(1)
             args.version_id = _interactive_select_version_id(project_id)
         no_args_provided = not (
             args.name
@@ -306,8 +310,8 @@ def handle_version(args: argparse.Namespace) -> None:
             sharing=args.sharing,
         )
     elif cmd == "list" or cmd is None:
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
-            exit(1)
+            sys.exit(1)
         list_versions(project_id, full=args.full)

@@ -1,7 +1,7 @@
 [project]
 name = "redtile"
-version = "0.0.24"
-description = "Redmine CLI tool"
+version = "0.0.56"
+description = "Redmine CLI/TUI tool that wraps the Redmine REST API"
 readme = "README.md"
 authors = [
     { name = "kawagh", email = "kawagh.dev@gmail.com" }
@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.13"
 license = "MIT"
 license-files = ["LICENSE"]
+keywords = ["redmine"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
@@ -22,26 +23,35 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/kawagh/redi"
 Repository = "https://github.com/kawagh/redi"
-Issues = "https://github.com/kawagh/redi/issues"
 
 [project.scripts]
-redi = "redi.cli:main"
+redi = "redi.cli.main:main"
 
 [build-system]
-requires = ["uv_build>=0.9.2,<0.10.0"]
+requires = ["uv_build>=0.9.2,<0.13.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
     "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
     "ruff>=0.15.9",
     "ty>=0.0.31",
 ]
 
 [tool.uv.build-backend]
 module-name = "redi"
+
+[tool.ruff.lint]
+ignore = [
+  # タイムゾーンを意識した実装はしないので許容する
+  "DTZ005", # datetime.now() を tz なしで呼ぶことを許容する
+  "DTZ011", # date.today() の使用を許容する
+  # 副作用のある式をif で重ねて書くと読みにくいため
+  "SIM102", # ネストした if を and でまとめることを強制しない
+  "SIM114", # 同じ本体を持つ分岐を or でまとめることを強制しない
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

@@ -1,22 +1,10 @@
 import argparse
+import sys
 
-from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.validation import Validator
 
-from redi.cli._common import (
-    confirm_delete,
-    inline_checkbox,
-    inline_choice,
-    resolve_alias,
-)
-from redi.cli.prompt_util import (
-    HourValidator,
-    digit_and_period_key_bindings,
-    digit_only_key_bindings,
-)
-from redi.config import default_project_id
-from redi.i18n import messages
+from redi import config
 from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.issue import fetch_issue
 from redi.api.project import fetch_projects
@@ -28,28 +16,62 @@ from redi.api.time_entry import (
     read_time_entry,
     update_time_entry,
 )
+from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
+from redi.cli.interactive import prompt
+from redi.cli.keybinding import (
+    date_key_bindings,
+    digit_and_period_key_bindings,
+    digit_only_key_bindings,
+)
+from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.shared_options import SharedOptionParser
+from redi.cli.validator import DateValidator, HourValidator
+from redi.i18n import messages
 
 
-def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
+def _time_entry_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
+    """time_entry の一覧フィルタと出力形式のオプション"""
+    parser = SharedOptionParser(postfix=postfix)
+    parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
+    parser.add_argument("--user_id", "-u", help=messages.arg_help_time_entry_user_id)
+    parser.add_argument(
+        "--from",
+        dest="from_date",
+        help=messages.arg_help_time_entry_from,
+    )
+    parser.add_argument(
+        "--to",
+        dest="to_date",
+        help=messages.arg_help_time_entry_to,
+    )
+    parser.add_argument("--limit", "-l", type=int, help=messages.arg_help_limit)
+    parser.add_argument("--offset", "-o", type=int, help=messages.arg_help_offset)
+    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    return parser
+
+
+def add_time_entry_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
     time_entry_parser = subparsers.add_parser(
         "time_entry",
+        aliases=["te"],
         help=messages.arg_help_time_entry_command,
-    )
-    time_entry_parser.add_argument(
-        "--project_id", "-p", help=messages.arg_help_project_id
-    )
-    time_entry_parser.add_argument(
-        "--user_id", "-u", help=messages.arg_help_time_entry_user_id
-    )
-    time_entry_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
+        parents=[*parents, _time_entry_list_option_parser()],
     )
     te_subparsers = time_entry_parser.add_subparsers(dest="time_entry_command")
     te_subparsers.add_parser(
-        "list", aliases=["l"], help=messages.arg_help_time_entry_list
+        "list",
+        aliases=["l"],
+        help=messages.arg_help_time_entry_list,
+        parents=[*parents, _time_entry_list_option_parser(postfix=True)],
     )
     te_create_parser = te_subparsers.add_parser(
-        "create", aliases=["c"], help=messages.arg_help_time_entry_create
+        "create",
+        aliases=["c"],
+        help=messages.arg_help_time_entry_create,
+        parents=parents,
     )
     te_create_parser.add_argument(
         "hours", type=float, nargs="?", help=messages.arg_help_time_entry_hours
@@ -70,7 +92,7 @@ def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
         "--comments", "-c", help=messages.arg_help_time_entry_comments
     )
     te_view_parser = te_subparsers.add_parser(
-        "view", aliases=["v"], help=messages.arg_help_time_entry_view
+        "view", aliases=["v"], help=messages.arg_help_time_entry_view, parents=parents
     )
     te_view_parser.add_argument(
         "time_entry_id", help=messages.arg_help_time_entry_view_id
@@ -79,7 +101,10 @@ def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
         "--full", action="store_true", help=messages.arg_help_full_json
     )
     te_update_parser = te_subparsers.add_parser(
-        "update", aliases=["u"], help=messages.arg_help_time_entry_update
+        "update",
+        aliases=["u"],
+        help=messages.arg_help_time_entry_update,
+        parents=parents,
     )
     te_update_parser.add_argument(
         "time_entry_id", help=messages.arg_help_time_entry_update_id
@@ -103,7 +128,10 @@ def add_time_entry_parser(subparsers: argparse._SubParsersAction) -> None:
         "--comments", "-c", help=messages.arg_help_time_entry_comments
     )
     te_delete_parser = te_subparsers.add_parser(
-        "delete", aliases=["d"], help=messages.arg_help_time_entry_delete
+        "delete",
+        aliases=["d"],
+        help=messages.arg_help_time_entry_delete,
+        parents=parents,
     )
     te_delete_parser.add_argument(
         "time_entry_id", help=messages.arg_help_time_entry_delete_id
@@ -148,7 +176,7 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
                 )
                 project_id = prompt(
                     messages.prompt_project_id_or_name,
-                    default=default_project_id or "",
+                    default=config.default_project_id or "",
                     validator=project_validator,
                     completer=completer,
                 ).strip()
@@ -172,12 +200,19 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
                 messages.activity_label.format(value=activity_labels[args.activity_id])
             )
         if not args.spent_on:
-            args.spent_on = prompt(messages.prompt_spent_on).strip() or None
+            args.spent_on = (
+                prompt(
+                    messages.prompt_spent_on,
+                    validator=DateValidator(allow_empty=True),
+                    key_bindings=date_key_bindings(),
+                ).strip()
+                or None
+            )
         if not args.comments:
             args.comments = prompt(messages.prompt_comment).strip() or None
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
 
 def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
@@ -191,12 +226,12 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
     ]
     try:
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
     if not selected:
         print(messages.canceled_no_items_selected)
-        exit(1)
+        sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
     try:
@@ -228,6 +263,8 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
                 prompt(
                     messages.prompt_update_spent_on,
                     default=current.get("spent_on", "") or "",
+                    validator=DateValidator(allow_empty=True),
+                    key_bindings=date_key_bindings(),
                 ).strip()
                 or None
             )
@@ -252,7 +289,7 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
                 args.issue_id = issue_id
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
-        exit(1)
+        sys.exit(1)
 
 
 def handle_time_entry(args: argparse.Namespace) -> None:
@@ -260,7 +297,7 @@ def handle_time_entry(args: argparse.Namespace) -> None:
     if cmd == "create":
         if args.hours is None:
             _interactive_fill_time_entry_create_args(args)
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         create_time_entry(
             issue_id=args.issue_id,
             project_id=project_id,
@@ -304,5 +341,13 @@ def handle_time_entry(args: argparse.Namespace) -> None:
             )
         delete_time_entry(args.time_entry_id)
     elif cmd == "list" or cmd is None:
-        project_id = args.project_id or default_project_id
-        list_time_entries(project_id=project_id, user_id=args.user_id, full=args.full)
+        project_id = args.project_id or config.default_project_id
+        list_time_entries(
+            project_id=project_id,
+            user_id=args.user_id,
+            from_date=args.from_date,
+            to_date=args.to_date,
+            limit=args.limit,
+            offset=args.offset,
+            full=args.full,
+        )
