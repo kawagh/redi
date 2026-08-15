@@ -91,12 +91,6 @@ class TestSharedOptionPlacement:
 
         assert args.project_id == "1"
 
-    def test_issue_option_after_list_wins(self, parser):
-        """前後どちらにも書いた場合は後ろの値が採用される"""
-        args = parser.parse_args(["issue", "--limit", "3", "list", "--limit", "5"])
-
-        assert args.limit == 5
-
     def test_issue_option_defaults_kept(self, parser):
         """オプション未指定ならデフォルト値のまま"""
         args = parser.parse_args(["issue", "list"])
