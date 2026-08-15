@@ -37,6 +37,12 @@ This file provides guidance to Agents when working with code in this repository.
     - `redi.cli.interactive` の `prompt` / `ensure_interactive` を経由させる
     - `inline_choice` / `inline_checkbox` / `open_editor` は内部で `ensure_interactive` を呼んでいる
 
+## テスト
+
+- 守りたい仕様をテストとして書く
+- 実装やライブラリの都合でそうなっているだけの挙動はテストとして書かない
+- docstring に守りたい仕様を日本語で書く(`pytest -v` に一覧として表示される)
+
 ## i18n
 
 - 英語と日本語の二言語に対応している(デフォルトは英語)
