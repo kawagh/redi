@@ -14,7 +14,9 @@ class TestMe:
             f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
         )
         assert "admin" in result.stdout
-        assert "admin@example.net" in result.stdout
+        # メールアドレスは Redmine のデフォルト値依存で、バージョンによって
+        # admin@example.net / admin@dummy.invalid と変わるため前半だけを見る
+        assert "Mail: admin@" in result.stdout
 
 
 @pytest.mark.e2e
