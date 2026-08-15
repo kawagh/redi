@@ -978,12 +978,19 @@ class MessagesProto(Protocol):
 
     # ---- argparse helps (enumerations) ----
     arg_help_tracker_command: str
+    arg_help_tracker_list: str
     arg_help_issue_status_command: str
+    arg_help_issue_status_list: str
     arg_help_issue_priority_command: str
+    arg_help_issue_priority_list: str
     arg_help_time_entry_activity_command: str
+    arg_help_time_entry_activity_list: str
     arg_help_document_category_command: str
+    arg_help_document_category_list: str
     arg_help_query_command: str
+    arg_help_query_list: str
     arg_help_custom_field_command: str
+    arg_help_custom_field_list: str
 
     # ---- argparse helps (issue_template) ----
     arg_help_issue_template_command: str

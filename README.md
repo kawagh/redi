@@ -254,6 +254,7 @@ redi search "keyword" --full # output full JSON
 # others
 redi user # list users (alias: u)
 redi tracker # list trackers (alias: t)
+redi tracker list # 同上 (以下の一覧専用リソースも `list` / `l` を受け付ける)
 redi issue_status # list issue statuses (alias: is)
 redi issue_priority # list priorities (alias: ip)
 redi time_entry_activity # list activities (alias: tea)
