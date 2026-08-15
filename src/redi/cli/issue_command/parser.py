@@ -1,12 +1,12 @@
 import argparse
 
-from redi.cli.filter_parser import FilterParser
+from redi.cli.shared_options import SharedOptionParser
 from redi.i18n import messages
 
 
-def _issue_filter_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
-    """issue 一覧のフィルタオプション"""
-    parser = FilterParser(postfix=postfix)
+def _issue_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
+    """issue の一覧フィルタと出力形式のオプション"""
+    parser = SharedOptionParser(postfix=postfix)
     parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
     parser.add_argument(
         "--project_id", "-p", help=messages.arg_help_issue_filter_project
@@ -47,14 +47,14 @@ def add_issue_parser(
         "issue",
         aliases=["i"],
         help=messages.arg_help_issue_command,
-        parents=[*parents, _issue_filter_parser()],
+        parents=[*parents, _issue_list_option_parser()],
     )
     i_subparsers = i_parser.add_subparsers(dest="issue_command")
     i_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_issue_list,
-        parents=[*parents, _issue_filter_parser(postfix=True)],
+        parents=[*parents, _issue_list_option_parser(postfix=True)],
     )
     i_view_parser = i_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_issue_view, parents=parents

@@ -19,9 +19,9 @@ from redi.api.wiki import (
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor
-from redi.cli.filter_parser import project_filter_parser
 from redi.cli.interactive import prompt
 from redi.cli.picker import inline_choice
+from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
 
 
@@ -54,14 +54,14 @@ def add_wiki_parser(
         "wiki",
         aliases=["w"],
         help=messages.arg_help_wiki_command,
-        parents=[*parents, project_filter_parser()],
+        parents=[*parents, project_option_parser()],
     )
     w_subparsers = w_parser.add_subparsers(dest="wiki_command")
     w_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_wiki_list,
-        parents=[*parents, project_filter_parser(postfix=True)],
+        parents=[*parents, project_option_parser(postfix=True)],
     )
     w_view_parser = w_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_wiki_view, parents=parents

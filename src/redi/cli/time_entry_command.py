@@ -18,7 +18,6 @@ from redi.api.time_entry import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.filter_parser import FilterParser
 from redi.cli.interactive import prompt
 from redi.cli.keybinding import (
     date_key_bindings,
@@ -26,13 +25,14 @@ from redi.cli.keybinding import (
     digit_only_key_bindings,
 )
 from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.shared_options import SharedOptionParser
 from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
 
 
-def _time_entry_filter_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
-    """time_entry 一覧のフィルタオプション"""
-    parser = FilterParser(postfix=postfix)
+def _time_entry_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
+    """time_entry の一覧フィルタと出力形式のオプション"""
+    parser = SharedOptionParser(postfix=postfix)
     parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
     parser.add_argument("--user_id", "-u", help=messages.arg_help_time_entry_user_id)
     parser.add_argument(
@@ -58,14 +58,14 @@ def add_time_entry_parser(
         "time_entry",
         aliases=["te"],
         help=messages.arg_help_time_entry_command,
-        parents=[*parents, _time_entry_filter_parser()],
+        parents=[*parents, _time_entry_list_option_parser()],
     )
     te_subparsers = time_entry_parser.add_subparsers(dest="time_entry_command")
     te_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_time_entry_list,
-        parents=[*parents, _time_entry_filter_parser(postfix=True)],
+        parents=[*parents, _time_entry_list_option_parser(postfix=True)],
     )
     te_create_parser = te_subparsers.add_parser(
         "create",

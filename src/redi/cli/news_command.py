@@ -15,9 +15,9 @@ from redi.api.news import (
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor, shorten_to_oneline
-from redi.cli.filter_parser import project_filter_parser
 from redi.cli.interactive import prompt
 from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.shared_options import project_option_parser
 from redi.cli.validator import RequiredValidator
 from redi.i18n import messages
 
@@ -119,14 +119,14 @@ def add_news_parser(
         "news",
         aliases=["n"],
         help=messages.arg_help_news_command,
-        parents=[*parents, project_filter_parser()],
+        parents=[*parents, project_option_parser()],
     )
     n_subparsers = n_parser.add_subparsers(dest="news_command")
     n_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_news_list,
-        parents=[*parents, project_filter_parser(postfix=True)],
+        parents=[*parents, project_option_parser(postfix=True)],
     )
 
     n_view_parser = n_subparsers.add_parser(

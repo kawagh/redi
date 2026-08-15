@@ -10,7 +10,7 @@ from redi.api.user import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
-from redi.cli.filter_parser import full_filter_parser
+from redi.cli.shared_options import full_option_parser
 from redi.i18n import messages
 
 MAIL_NOTIFICATION_CHOICES = [
@@ -30,14 +30,14 @@ def add_user_parser(
         "user",
         aliases=["u"],
         help=messages.arg_help_user_command,
-        parents=[*parents, full_filter_parser()],
+        parents=[*parents, full_option_parser()],
     )
     u_subparsers = u_parser.add_subparsers(dest="user_command")
     u_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_user_list,
-        parents=[*parents, full_filter_parser(postfix=True)],
+        parents=[*parents, full_option_parser(postfix=True)],
     )
     u_create_parser = u_subparsers.add_parser(
         "create", aliases=["c"], help=messages.arg_help_user_create, parents=parents

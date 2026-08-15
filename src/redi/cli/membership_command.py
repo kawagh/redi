@@ -12,7 +12,7 @@ from redi.api.membership import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.filter_parser import project_filter_parser
+from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
 
 
@@ -27,14 +27,14 @@ def add_membership_parser(
         "membership",
         aliases=["m"],
         help=messages.arg_help_membership_command,
-        parents=[*parents, project_filter_parser()],
+        parents=[*parents, project_option_parser()],
     )
     m_subparsers = m_parser.add_subparsers(dest="membership_command")
     m_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_membership_list,
-        parents=[*parents, project_filter_parser(postfix=True)],
+        parents=[*parents, project_option_parser(postfix=True)],
     )
 
     m_view_parser = m_subparsers.add_parser(

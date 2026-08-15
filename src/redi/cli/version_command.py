@@ -19,9 +19,9 @@ from redi.api.version import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.filter_parser import project_filter_parser
 from redi.cli.interactive import ensure_interactive, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
 
 
@@ -32,14 +32,14 @@ def add_version_parser(
         "version",
         aliases=["v"],
         help=messages.arg_help_version_command,
-        parents=[*parents, project_filter_parser()],
+        parents=[*parents, project_option_parser()],
     )
     v_subparsers = v_parser.add_subparsers(dest="version_command")
     v_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_version_list,
-        parents=[*parents, project_filter_parser(postfix=True)],
+        parents=[*parents, project_option_parser(postfix=True)],
     )
     v_view_parser = v_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_version_view, parents=parents
