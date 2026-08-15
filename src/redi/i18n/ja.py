@@ -26,6 +26,11 @@ class Ja(MessagesProto):
     canceled_no_items_selected = "更新する項目が選択されていないためキャンセルしました"
     canceled_no_project = "プロジェクトが特定できないためキャンセルしました"
     canceled_field_mismatch = "{field}が一致しません。キャンセルしました"
+    non_interactive_input_required = (
+        "非対話環境のため入力を受け付けられません: {message}\n"
+        "引数・オプションで指定して再実行してください"
+    )
+    prompt_editor_input = "エディタでの入力"
 
     # ---- common indicators ----
     project_id_required = "project_idを指定するか、default_project_idを設定してください"
@@ -66,10 +71,12 @@ class Ja(MessagesProto):
         "グループまたはユーザーが見つかりません: #{group_id} / #{user_id}"
     )
     category_not_found = "カテゴリが見つかりません: {id}"
+    news_not_found = "ニュースが見つかりません: {id}"
     no_search_results = "検索結果が見つかりませんでした"
     issue_not_found_simple = "イシューが見つかりません"
     no_versions_available = "選択可能なバージョンがありません"
     no_issues_available = "選択可能なイシューがありません"
+    no_news_available = "選択可能なニュースがありません"
     no_profiles_available = (
         "選択可能なプロファイルがありません。redi init を実行してください"
     )
@@ -102,7 +109,7 @@ class Ja(MessagesProto):
     project_archived = "プロジェクトをアーカイブしました: {id}"
     project_unarchived = "プロジェクトのアーカイブを解除しました: {id}"
     project_deleted = "プロジェクトを削除しました: {id}"
-    issue_created = "イシューを作成しました: {url}"
+    issue_created = "イシューを作成しました: {id} {url}"
     issue_updated = "イシューを更新しました: {url}"
     issue_deleted = "イシューを削除しました: #{id}"
     comment_added = "コメントを追加しました: {url}"
@@ -137,6 +144,9 @@ class Ja(MessagesProto):
     category_created = "カテゴリを作成しました: {id} {name}"
     category_updated = "カテゴリを更新しました: {id}"
     category_deleted = "カテゴリを削除しました: {id}"
+    news_created = "ニュースを作成しました: {url}"
+    news_updated = "ニュースを更新しました: {url}"
+    news_deleted = "ニュースを削除しました: {id}"
 
     # ---- failures ----
     user_create_failed = "ユーザーの作成に失敗しました"
@@ -186,6 +196,9 @@ class Ja(MessagesProto):
     category_create_failed = "カテゴリの作成に失敗しました"
     category_update_failed = "カテゴリの更新に失敗しました"
     category_delete_failed = "カテゴリの削除に失敗しました"
+    news_create_failed = "ニュースの作成に失敗しました"
+    news_update_failed = "ニュースの更新に失敗しました"
+    news_delete_failed = "ニュースの削除に失敗しました"
     project_list_fetch_failed = "プロジェクト一覧の取得に失敗しました: {error}"
     connection_failed_http = "接続失敗: {status} {reason}"
     connection_failed_other = "接続失敗: {error}"
@@ -195,6 +208,7 @@ class Ja(MessagesProto):
     edit_target_page = "編集するページ: {label}"
     update_target_version = "更新するバージョン: {label}"
     update_target_issue = "更新するイシュー: {label}"
+    update_target_news = "更新するニュース: {label}"
     update_items = "更新する項目: {items}"
     status_label = "ステータス: {value}"
     sharing_label = "共有設定: {value}"
@@ -227,6 +241,8 @@ class Ja(MessagesProto):
         '削除するには{label} "{expected}" を入力してください: '
     )
     prompt_subject = "題名: "
+    prompt_title = "タイトル: "
+    prompt_summary = "サマリー（省略可）: "
     prompt_comment = "コメント: "
     prompt_page_title = "ページタイトル: "
     prompt_parent_page = "親ページ"
@@ -249,6 +265,8 @@ class Ja(MessagesProto):
     prompt_select_sharing = "共有設定"
     prompt_select_version_to_update = "更新するバージョンを選択"
     prompt_select_issue_to_update = "更新するイシューを選択"
+    prompt_select_news_to_update = "更新するニュースを選択"
+    prompt_select_news_to_delete = "削除するニュースを選択"
     prompt_select_profile = (
         "プロファイルを選択 (Enter: デフォルトに設定 / u: 項目を更新)"
     )
@@ -303,6 +321,8 @@ class Ja(MessagesProto):
     # ---- field labels ----
     field_tracker = "トラッカー (tracker)"
     field_subject = "題名 (subject)"
+    field_title = "タイトル (title)"
+    field_summary = "サマリー (summary)"
     field_description = "説明 (description)"
     field_status = "ステータス (status)"
     field_priority = "優先度 (priority)"
@@ -328,6 +348,7 @@ class Ja(MessagesProto):
     field_wiki_project_id = "Wikiプロジェクト (wiki_project_id)"
     field_editor = "エディタ (editor)"
     field_language = "言語 (language)"
+    field_set_default_profile = "デフォルトプロファイルにする (default_profile)"
 
     # ---- sharing options ----
     sharing_none = "none (共有しない)"
@@ -350,6 +371,7 @@ class Ja(MessagesProto):
     overwrite_target_file = "既に存在するファイル: {path}"
     delete_target_issue_journal = "削除するイシューのジャーナル: #{id} {notes}"
     delete_target_category = "削除するイシューカテゴリ: {id} {name}"
+    delete_target_news = "削除するニュース: {id} {title}"
     delete_target_group = "削除するグループ: {id} {name}"
     delete_target_time_entry = "削除する作業時間: {id} {hours}h {activity} ({spent_on})"
 
@@ -375,6 +397,8 @@ class Ja(MessagesProto):
     label_kind = "種別: {value}"
     label_author = "作成者: {value}"
     label_description_field = "説明: {value}"
+    label_summary_field = "サマリー: {value}"
+    label_news_comments_header = "コメント:"
     label_url_field = "URL: {value}"
     label_roles_header = "ロール:"
     label_inherited_suffix = " (継承)"
@@ -424,6 +448,14 @@ class Ja(MessagesProto):
     tui_current_project = "  [project: {name}]"
     tui_flash_project_switched = "プロジェクトを {name} に切り替えました"
     tui_project_load_failed = "プロジェクト一覧の取得に失敗しました: {error}"
+    tui_profile_modal_title = "プロファイル切替 (Esc/P で閉じる)"
+    tui_profile_modal_hint = "jk:移動 Enter:切替 Esc/P:閉じる"
+    tui_current_profile = "  [profile: {name}]"
+    tui_flash_profile_switched = "プロファイルを {name} に切り替えました"
+    tui_profile_switch_invalid = (
+        "profile '{name}' に redmine_url または redmine_api_key がありません"
+    )
+    tui_no_profiles = "config.toml にプロファイルがありません"
     tui_help_title = "ヘルプ - {label} タブ (任意のキーで閉じる)"
     tui_error_modal_title = "エラー (q で閉じる)"
     tui_status_hint_issues = (
@@ -512,6 +544,7 @@ class Ja(MessagesProto):
     arg_help_crud_subcommands = "list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除"
     arg_help_role_subcommands = "list(l): 一覧, view(v): 詳細"
     arg_help_file_subcommands = "list(l): 一覧, create(c): アップロード"
+    arg_help_list_only_subcommands = "list(l): 一覧"
 
     # ---- argparse helps (project) ----
     arg_help_project_command = arg_help_crud_subcommands
@@ -814,16 +847,35 @@ class Ja(MessagesProto):
     )
 
     # ---- argparse helps (news) ----
-    arg_help_news_command = "ニュース一覧"
+    arg_help_news_command = arg_help_crud_subcommands
+    arg_help_news_list = "ニュース一覧"
+    arg_help_news_view = "ニュース詳細"
+    arg_help_news_view_id = "ニュースID"
+    arg_help_news_create = "ニュース作成"
+    arg_help_news_create_title = "ニュースのタイトル（省略で対話的に入力）"
+    arg_help_news_title_opt = "ニュースのタイトル"
+    arg_help_news_summary = "ニュースのサマリー"
+    arg_help_news_description = "説明（値省略でエディタ起動）"
+    arg_help_news_update = "ニュース更新"
+    arg_help_news_update_id = "ニュースID（省略で対話的に選択）"
+    arg_help_news_delete = "ニュース削除"
+    arg_help_news_delete_id = "ニュースID（省略で対話的に選択）"
 
     # ---- argparse helps (enumerations) ----
-    arg_help_tracker_command = "トラッカー一覧"
-    arg_help_issue_status_command = "ステータス一覧"
-    arg_help_issue_priority_command = "優先度一覧"
-    arg_help_time_entry_activity_command = "作業分類一覧"
-    arg_help_document_category_command = "文書カテゴリ一覧"
-    arg_help_query_command = "カスタムクエリ一覧"
-    arg_help_custom_field_command = "カスタムフィールド一覧"
+    arg_help_tracker_command = arg_help_list_only_subcommands
+    arg_help_tracker_list = "トラッカー一覧"
+    arg_help_issue_status_command = arg_help_list_only_subcommands
+    arg_help_issue_status_list = "ステータス一覧"
+    arg_help_issue_priority_command = arg_help_list_only_subcommands
+    arg_help_issue_priority_list = "優先度一覧"
+    arg_help_time_entry_activity_command = arg_help_list_only_subcommands
+    arg_help_time_entry_activity_list = "作業分類一覧"
+    arg_help_document_category_command = arg_help_list_only_subcommands
+    arg_help_document_category_list = "文書カテゴリ一覧"
+    arg_help_query_command = arg_help_list_only_subcommands
+    arg_help_query_list = "カスタムクエリ一覧"
+    arg_help_custom_field_command = arg_help_list_only_subcommands
+    arg_help_custom_field_list = "カスタムフィールド一覧"
 
     # ---- argparse helps (issue_template) ----
     arg_help_issue_template_command = (
@@ -856,6 +908,7 @@ class Ja(MessagesProto):
     tui_help_filter_status_assignee = "ステータス/担当者でフィルタ (フローティング)"
     tui_help_filter_user = "ユーザーでフィルタ (フローティング)"
     tui_help_switch_project = "プロジェクトを切り替え (フローティング)"
+    tui_help_switch_profile = "プロファイルを切り替え (フローティング)"
     tui_help_reload = "現在のタブを再読込"
     tui_help_show_or_close = "このヘルプを表示 / 閉じる"
     tui_help_quit = "終了"

@@ -7,6 +7,7 @@ from importlib.metadata import version
 
 import argcomplete
 
+from redi import config
 from redi.api.custom_field import list_custom_fields
 from redi.api.enumeration import (
     list_document_categories,
@@ -41,9 +42,9 @@ from redi.cli.issue_category_command import (
 )
 from redi.cli.issue_command import (
     add_issue_parser,
+    create_issue_interactively,
     handle_issue,
-    handle_issue_create,
-    handle_issue_update,
+    update_issue_interactively,
 )
 from redi.cli.issue_journal_command import (
     add_issue_journal_parser,
@@ -64,6 +65,7 @@ from redi.cli.time_entry_command import add_time_entry_parser, handle_time_entry
 from redi.cli.user_command import add_user_parser, handle_user
 from redi.cli.version_command import add_version_parser, handle_version
 from redi.cli.wiki_command import add_wiki_parser, handle_wiki
+from redi.client import client
 from redi.config import CONFIG_PATH, check_config, list_profile_names
 from redi.i18n import messages
 from redi.tui import TuiState, run_issue_tui
@@ -189,57 +191,25 @@ def main() -> None:
             tui_result = run_issue_tui(state=tui_state, debug_log_path=debug_log_path)
             if tui_result is None:
                 return
+            if tui_result.action == "switch_profile" and tui_result.profile_name:
+                config.apply_profile(tui_result.profile_name)
+                client.reconfigure(config.redmine_url, config.redmine_api_key)
+                # 前のプロファイルの state は一切引き継がない (issue #290)。
+                # carry_over はフィルタとプロジェクトを引き継ぐのでここでは通さない。
+                tui_state = TuiState(
+                    flash_message=messages.tui_flash_profile_switched.format(
+                        name=tui_result.profile_name
+                    )
+                )
+                continue
             tui_state = tui_state.carry_over(tui_result)
             try:
                 if tui_result.action == "update" and tui_result.tab == "issues":
-                    handle_issue_update(
-                        argparse.Namespace(
-                            issue_id=tui_result.issue_id,
-                            subject=None,
-                            description=None,
-                            tracker_id=None,
-                            status_id=None,
-                            priority_id=None,
-                            assigned_to_id=None,
-                            fixed_version_id=None,
-                            parent_issue_id=None,
-                            start_date=None,
-                            due_date=None,
-                            done_ratio=None,
-                            estimated_hours=None,
-                            notes=None,
-                            custom_fields=None,
-                            relate=None,
-                            relate_to=None,
-                            delete_relation=False,
-                            attach=None,
-                            hours=None,
-                            activity_id=None,
-                            spent_on=None,
-                            time_comments=None,
-                            add_watcher_ids=None,
-                            remove_watcher_ids=None,
-                        )
-                    )
+                    update_issue_interactively(tui_result.issue_id)
                 elif tui_result.action == "create" and tui_result.tab == "issues":
-                    handle_issue_create(
-                        argparse.Namespace(
-                            subject=None,
-                            # TUI 内で切り替えたプロジェクトに作成する。
-                            # None なら従来どおり default_project_id に落ちる。
-                            project_id=tui_state.project_id,
-                            tracker_id=None,
-                            priority_id=None,
-                            assigned_to_id=None,
-                            fixed_version_id=None,
-                            parent_issue_id=None,
-                            start_date=None,
-                            due_date=None,
-                            estimated_hours=None,
-                            description=None,
-                            custom_fields=None,
-                        )
-                    )
+                    # TUI 内で切り替えたプロジェクトに作成する。
+                    # None なら従来どおり default_project_id に落ちる。
+                    create_issue_interactively(tui_state.project_id)
                 elif tui_result.action == "comment":
                     if tui_result.issue_id is None:
                         continue

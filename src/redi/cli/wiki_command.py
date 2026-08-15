@@ -1,9 +1,9 @@
 import argparse
 import sys
 
-from prompt_toolkit import prompt
 from prompt_toolkit.validation import ValidationError, Validator
 
+from redi import config
 from redi.api.wiki import (
     WikiPage,
     build_children_map,
@@ -19,8 +19,9 @@ from redi.api.wiki import (
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor
+from redi.cli.interactive import prompt
 from redi.cli.picker import inline_choice
-from redi.config import default_project_id, wiki_project_id
+from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
 
 
@@ -53,15 +54,14 @@ def add_wiki_parser(
         "wiki",
         aliases=["w"],
         help=messages.arg_help_wiki_command,
-        parents=parents,
-    )
-    w_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
-    w_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
+        parents=[*parents, project_option_parser()],
     )
     w_subparsers = w_parser.add_subparsers(dest="wiki_command")
     w_subparsers.add_parser(
-        "list", aliases=["l"], help=messages.arg_help_wiki_list, parents=parents
+        "list",
+        aliases=["l"],
+        help=messages.arg_help_wiki_list,
+        parents=[*parents, project_option_parser(postfix=True)],
     )
     w_view_parser = w_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_wiki_view, parents=parents
@@ -127,7 +127,7 @@ def add_wiki_parser(
 
 
 def handle_wiki(args: argparse.Namespace) -> None:
-    project_id = args.project_id or wiki_project_id or default_project_id
+    project_id = args.project_id or config.wiki_project_id or config.default_project_id
     if not project_id:
         print(messages.wiki_project_id_required)
         sys.exit(1)
@@ -177,7 +177,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
                         parent_title = inline_choice(
                             messages.prompt_parent_page, parent_options
                         )
-                    except KeyboardInterrupt:
+                    except (KeyboardInterrupt, EOFError):
                         print(messages.canceled)
                         sys.exit(1)
                     print(
@@ -226,7 +226,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
             page_labels = dict(page_options)
             try:
                 page_title = inline_choice(messages.prompt_edit_page, page_options)
-            except KeyboardInterrupt:
+            except (KeyboardInterrupt, EOFError):
                 print(messages.canceled)
                 sys.exit(1)
             print(

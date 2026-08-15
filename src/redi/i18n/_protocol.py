@@ -51,6 +51,10 @@ class MessagesProto(Protocol):
     """プロジェクトが特定できないためキャンセル"""
     canceled_field_mismatch: str
     """{field} が一致しないのでキャンセル"""
+    non_interactive_input_required: str
+    """非TTY環境で対話入力に入ろうとした。求めていた入力を {message} に埋め込む。"""
+    prompt_editor_input: str
+    """non_interactive_input_required の {message} に埋めるエディタ入力の呼び名"""
 
     # ---- common indicators ----
     project_id_required: str
@@ -111,6 +115,8 @@ class MessagesProto(Protocol):
     """グループまたはユーザーが見つからない。{group_id} / {user_id}"""
     category_not_found: str
     """カテゴリが見つからない。{id}"""
+    news_not_found: str
+    """ニュースが見つからない。{id}"""
     no_search_results: str
     """検索結果が見つからない"""
     issue_not_found_simple: str
@@ -118,6 +124,7 @@ class MessagesProto(Protocol):
     no_versions_available: str
     """選択可能なバージョンがない"""
     no_issues_available: str
+    no_news_available: str
     """選択可能なイシューがない"""
     no_profiles_available: str
     """選択可能なプロファイルがない"""
@@ -152,7 +159,7 @@ class MessagesProto(Protocol):
     project_unarchived: str
     project_deleted: str
     issue_created: str
-    """{url}"""
+    """{id} {url}"""
     issue_updated: str
     """{url}"""
     issue_deleted: str
@@ -220,6 +227,12 @@ class MessagesProto(Protocol):
     """{id}"""
     category_deleted: str
     """{id}"""
+    news_created: str
+    """{url}"""
+    news_updated: str
+    """{url}"""
+    news_deleted: str
+    """{id}"""
 
     # ---- failures ----
     user_create_failed: str
@@ -274,6 +287,9 @@ class MessagesProto(Protocol):
     category_create_failed: str
     category_update_failed: str
     category_delete_failed: str
+    news_create_failed: str
+    news_update_failed: str
+    news_delete_failed: str
     project_list_fetch_failed: str
     """{error}"""
     connection_failed_http: str
@@ -289,6 +305,8 @@ class MessagesProto(Protocol):
     update_target_version: str
     """{label}"""
     update_target_issue: str
+    """{label}"""
+    update_target_news: str
     """{label}"""
     update_items: str
     """{items}"""
@@ -336,6 +354,8 @@ class MessagesProto(Protocol):
     prompt_confirm_delete_with_identifier: str
     """{label}, {expected}"""
     prompt_subject: str
+    prompt_title: str
+    prompt_summary: str
     prompt_comment: str
     prompt_page_title: str
     prompt_parent_page: str
@@ -356,6 +376,8 @@ class MessagesProto(Protocol):
     prompt_select_sharing: str
     prompt_select_version_to_update: str
     prompt_select_issue_to_update: str
+    prompt_select_news_to_update: str
+    prompt_select_news_to_delete: str
     prompt_select_profile: str
     """プロファイル一覧の見出し。Enter でデフォルト設定 / u で項目更新の案内を含む"""
     prompt_default_project_id: str
@@ -416,6 +438,8 @@ class MessagesProto(Protocol):
     # ---- field labels (interactive selection items) ----
     field_tracker: str
     field_subject: str
+    field_title: str
+    field_summary: str
     field_description: str
     field_status: str
     field_priority: str
@@ -441,6 +465,7 @@ class MessagesProto(Protocol):
     field_wiki_project_id: str
     field_editor: str
     field_language: str
+    field_set_default_profile: str
 
     # ---- sharing options ----
     sharing_none: str
@@ -471,6 +496,8 @@ class MessagesProto(Protocol):
     """{id}, {notes}"""
     delete_target_category: str
     """{id}, {name}"""
+    delete_target_news: str
+    """{id}, {title}"""
     delete_target_group: str
     """{id}, {name}"""
     delete_target_time_entry: str
@@ -513,6 +540,9 @@ class MessagesProto(Protocol):
     """{value}"""
     label_description_field: str
     """{value}"""
+    label_summary_field: str
+    """{value}"""
+    label_news_comments_header: str
     label_url_field: str
     """{value}"""
     label_roles_header: str
@@ -573,6 +603,16 @@ class MessagesProto(Protocol):
     """{name}"""
     tui_project_load_failed: str
     """{error}"""
+    tui_profile_modal_title: str
+    tui_profile_modal_hint: str
+    tui_current_profile: str
+    """{name}"""
+    tui_flash_profile_switched: str
+    """{name}"""
+    tui_profile_switch_invalid: str
+    """切替先に redmine_url / redmine_api_key が揃っていない。{name} を埋め込む。"""
+    tui_no_profiles: str
+    """config.toml にプロファイルが1つも無い。"""
     tui_help_title: str
     """{label}"""
     tui_error_modal_title: str
@@ -933,15 +973,34 @@ class MessagesProto(Protocol):
 
     # ---- argparse helps (news) ----
     arg_help_news_command: str
+    arg_help_news_list: str
+    arg_help_news_view: str
+    arg_help_news_view_id: str
+    arg_help_news_create: str
+    arg_help_news_create_title: str
+    arg_help_news_title_opt: str
+    arg_help_news_summary: str
+    arg_help_news_description: str
+    arg_help_news_update: str
+    arg_help_news_update_id: str
+    arg_help_news_delete: str
+    arg_help_news_delete_id: str
 
     # ---- argparse helps (enumerations) ----
     arg_help_tracker_command: str
+    arg_help_tracker_list: str
     arg_help_issue_status_command: str
+    arg_help_issue_status_list: str
     arg_help_issue_priority_command: str
+    arg_help_issue_priority_list: str
     arg_help_time_entry_activity_command: str
+    arg_help_time_entry_activity_list: str
     arg_help_document_category_command: str
+    arg_help_document_category_list: str
     arg_help_query_command: str
+    arg_help_query_list: str
     arg_help_custom_field_command: str
+    arg_help_custom_field_list: str
 
     # ---- argparse helps (issue_template) ----
     arg_help_issue_template_command: str
@@ -970,6 +1029,7 @@ class MessagesProto(Protocol):
     tui_help_filter_status_assignee: str
     tui_help_filter_user: str
     tui_help_switch_project: str
+    tui_help_switch_profile: str
     tui_help_reload: str
     tui_help_show_or_close: str
     tui_help_quit: str

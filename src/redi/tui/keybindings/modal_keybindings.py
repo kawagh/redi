@@ -2,6 +2,7 @@
 
 from prompt_toolkit.key_binding import KeyBindings
 
+from redi.tui.choice_modal import register_choice_keys
 from redi.tui.conditions import Conditions
 from redi.tui.issue.delete_modal import (
     backspace as issue_delete_backspace,
@@ -17,6 +18,7 @@ from redi.tui.issue.delete_modal import (
 )
 from redi.tui.issue.issue_tab import reload_with_filter
 from redi.tui.keybindings.keybinding_actions import reset_preview_scroll
+from redi.tui.profile_modal import request_profile_switch
 from redi.tui.project_modal import apply_project_switch
 from redi.tui.state import IssueFilter, TimeEntryFilter, TuiState
 from redi.tui.time_entry.time_entry_tab import (
@@ -31,6 +33,7 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     show_error_modal = conditions.error_modal
     show_project_modal = conditions.project_modal
     show_issue_delete_modal = conditions.issue_delete_modal
+    show_profile_modal = conditions.profile_modal
 
     @kb.add("<any>", filter=show_help_modal)
     def _(event):
@@ -40,34 +43,23 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     def _(event):
         state.error_modal = None
 
-    @kb.add("j", filter=show_project_modal)
-    @kb.add("down", filter=show_project_modal)
-    @kb.add("c-n", filter=show_project_modal)
-    def _project_modal_cursor_down(event):
-        modal = state.project_modal
-        modal.cursor = min(len(modal.choices) - 1, modal.cursor + 1)
-
-    @kb.add("k", filter=show_project_modal)
-    @kb.add("up", filter=show_project_modal)
-    @kb.add("c-p", filter=show_project_modal)
-    def _project_modal_cursor_up(event):
-        modal = state.project_modal
-        modal.cursor = max(0, modal.cursor - 1)
-
-    @kb.add("enter", filter=show_project_modal)
-    def _(event):
-        modal = state.project_modal
-        if not modal.choices:
-            return
-        pid, label = modal.choices[modal.cursor]
+    def _on_project_selected(event, project_id: str, label: str) -> None:
         reset_preview_scroll(state)
-        apply_project_switch(state, pid, label)
+        apply_project_switch(state, project_id, label)
 
-    @kb.add("escape", filter=show_project_modal)
-    @kb.add("p", filter=show_project_modal)
-    @kb.add("q", filter=show_project_modal)
-    def _(event):
-        state.project_modal.show = False
+    register_choice_keys(
+        kb, lambda: state.project_modal, show_project_modal, "p", _on_project_selected
+    )
+
+    def _on_profile_selected(event, name: str, _label: str) -> None:
+        # 切替が必要なときだけ TUI を抜ける。適用と state のクリアは cli.main が行う。
+        result = request_profile_switch(state, name)
+        if result is not None:
+            event.app.exit(result=result)
+
+    register_choice_keys(
+        kb, lambda: state.profile_modal, show_profile_modal, "P", _on_profile_selected
+    )
 
     @kb.add("tab", filter=show_filter_modal)
     @kb.add("s-tab", filter=show_filter_modal)

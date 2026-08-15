@@ -3,9 +3,9 @@ import sys
 
 import requests
 
+from redi import config
 from redi.api.exceptions import print_http_error_body
 from redi.client import client
-from redi.config import redmine_url
 from redi.i18n import messages
 
 
@@ -170,6 +170,6 @@ def create_group(name: str, user_ids: list[int] | None = None) -> None:
         messages.group_created.format(
             id=created["id"],
             name=created["name"],
-            url=f"{redmine_url}/groups/{created['id']}",
+            url=f"{config.redmine_url}/groups/{created['id']}",
         )
     )

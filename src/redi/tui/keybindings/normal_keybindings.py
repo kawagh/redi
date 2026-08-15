@@ -11,6 +11,7 @@ from redi.tui.keybindings.keybinding_actions import (
     reset_preview_scroll,
     scroll_preview,
 )
+from redi.tui.profile_modal import open_profile_modal
 from redi.tui.project_modal import open_project_modal
 from redi.tui.state import TuiState
 from redi.tui.tabs import TABS
@@ -212,3 +213,8 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     def _(event):
         clear_temporary_state(state)
         open_project_modal(state)
+
+    @kb.add("P", filter=normal_mode)
+    def _(event):
+        clear_temporary_state(state)
+        open_profile_modal(state)

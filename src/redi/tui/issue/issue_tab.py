@@ -1,5 +1,6 @@
 import webbrowser
 
+from redi import config
 from redi.api.issue import (
     Issue,
     IssuesPageResponse,
@@ -7,7 +8,6 @@ from redi.api.issue import (
     fetch_issue,
     fetch_issues_page,
 )
-from redi.config import redmine_url
 from redi.i18n import messages
 from redi.tui.state import (
     CommentSelectState,
@@ -364,11 +364,11 @@ def _on_open_web(state: TuiState) -> None:
     if not state.issue_tab.issues:
         return
     issue_id = state.issue_tab.issues[state.issue_tab.cursor]["id"]
-    webbrowser.open(f"{redmine_url}/issues/{issue_id}")
+    webbrowser.open(f"{config.redmine_url}/issues/{issue_id}")
 
 
 def _on_open_web_by_id(state: TuiState, target_id: int) -> None:
-    webbrowser.open(f"{redmine_url}/issues/{target_id}")
+    webbrowser.open(f"{config.redmine_url}/issues/{target_id}")
 
 
 def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
@@ -425,6 +425,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     (messages.tui_help_section_filter, ""),
     ("  f", messages.tui_help_filter_status_assignee),
     ("  p", messages.tui_help_switch_project),
+    ("  P", messages.tui_help_switch_profile),
     (messages.tui_help_section_actions, ""),
     ("  Enter", messages.tui_help_issue_load_comments),
     ("  jk / u / D / Esc", messages.tui_help_issue_comment_select_in_mode),

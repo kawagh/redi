@@ -8,10 +8,10 @@ from typing import NotRequired, TypedDict, cast
 
 import requests
 
+from redi import config
 from redi.api.exceptions import RedmineValidationException, print_http_error_body
 from redi.api.types import Attachment, IdName
 from redi.client import client
-from redi.config import redmine_url
 from redi.i18n import messages
 
 
@@ -34,6 +34,8 @@ class WikiPage(TypedDict):
     text: NotRequired[str]
     author: NotRequired[IdName]
     comments: NotRequired[str]
+    # Redmine 7.0 以降、個別ページ取得時のみ存在
+    project: NotRequired[IdName]
     # include=attachments 指定時のみ存在
     attachments: NotRequired[list[Attachment]]
 
@@ -114,7 +116,7 @@ def list_wikis(project_id: str, full: bool = False) -> None:
         return
     for page, tree_prefix in flatten_wiki_tree(pages):
         title = page["title"]
-        url = f"{redmine_url}/projects/{project_id}/wiki/{title}"
+        url = f"{config.redmine_url}/projects/{project_id}/wiki/{title}"
         print(f"{tree_prefix}[{title}]({url})")
 
 
@@ -143,7 +145,7 @@ def read_wiki(
     version: int | None = None,
 ) -> None:
     if web:
-        url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
+        url = f"{config.redmine_url}/projects/{project_id}/wiki/{page_title}"
         if version is not None:
             url = f"{url}/{version}"
         print(url)
@@ -198,7 +200,7 @@ def update_wiki(
     if response.status_code == 422:
         raise RedmineValidationException.from_response("wiki", "update", response)
     response.raise_for_status()
-    url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
+    url = f"{config.redmine_url}/projects/{project_id}/wiki/{page_title}"
     print(messages.wiki_page_updated.format(url=url))
 
 
@@ -252,7 +254,7 @@ def create_wiki(
     if response.status_code == 422:
         raise RedmineValidationException.from_response("wiki", "create", response)
     response.raise_for_status()
-    url = f"{redmine_url}/projects/{project_id}/wiki/{page_title}"
+    url = f"{config.redmine_url}/projects/{project_id}/wiki/{page_title}"
     if exists:
         print(messages.wiki_page_updated.format(url=url))
     else:

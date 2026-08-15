@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from typing import cast
 
+import pytest
 import requests
 
 from redi import config
@@ -54,7 +55,7 @@ class TestOpenProjectModal:
     """open_project_modal() は選択肢を構築し現在プロジェクトへカーソルを合わせる"""
 
     def test_cursor_on_switched_project(self, monkeypatch):
-        """切替済みならそのプロジェクトの位置にカーソルが乗り active_id が入る"""
+        """切替済みならそのプロジェクトの位置にカーソルが乗り active_value が入る"""
         monkeypatch.setattr(project_modal, "fetch_projects", lambda: PROJECTS)
         state = TuiState(project_id="2")
 
@@ -63,7 +64,7 @@ class TestOpenProjectModal:
         assert state.project_modal.show is True
         assert state.project_modal.choices == [("2", "Beta"), ("1", "Alpha")]
         assert state.project_modal.cursor == 0
-        assert state.project_modal.active_id == "2"
+        assert state.project_modal.active_value == "2"
 
     def test_unswitched_marks_config_default_project(self, monkeypatch):
         """未切替でも toml の default_project_id のプロジェクトが active になる"""
@@ -73,7 +74,7 @@ class TestOpenProjectModal:
 
         project_modal.open_project_modal(state)
 
-        assert state.project_modal.active_id == "1"
+        assert state.project_modal.active_value == "1"
         assert state.project_modal.cursor == 1
 
     def test_config_identifier_is_resolved_to_id(self, monkeypatch):
@@ -84,7 +85,7 @@ class TestOpenProjectModal:
 
         project_modal.open_project_modal(state)
 
-        assert state.project_modal.active_id == "2"
+        assert state.project_modal.active_value == "2"
         assert state.project_modal.cursor == 0
 
     def test_cursor_top_when_no_current_project(self, monkeypatch):
@@ -96,7 +97,7 @@ class TestOpenProjectModal:
         project_modal.open_project_modal(state)
 
         assert state.project_modal.cursor == 0
-        assert state.project_modal.active_id is None
+        assert state.project_modal.active_value is None
 
     def test_request_error_goes_to_error_modal(self, monkeypatch):
         """取得失敗時は error modal に流し、モーダルは開かない"""
@@ -219,6 +220,11 @@ class TestApplyProjectSwitch:
 class TestRenderTabs:
     """render_tabs() は現在のプロジェクトを常に表示する"""
 
+    @pytest.fixture(autouse=True)
+    def hide_profile_label(self, monkeypatch):
+        """プロファイル名も同じ行に出るので、実行環境の config に左右されないようにする"""
+        monkeypatch.setattr(config, "current_profile", None)
+
     def test_shows_config_project_when_unswitched(self, monkeypatch):
         monkeypatch.setattr(config, "default_project_id", "redidemo")
         state = TuiState()
@@ -243,33 +249,6 @@ class TestRenderTabs:
         rendered = "".join(text for _style, text in app_render.render_tabs(state))
 
         assert "[project:" not in rendered
-
-
-class TestRenderProjectModal:
-    """render_project_list() は active な行に * を付ける"""
-
-    def test_marks_active_row(self):
-        state = TuiState()
-        state.project_modal.choices = [("1", "Alpha"), ("2", "Beta")]
-        state.project_modal.cursor = 0
-        state.project_modal.active_id = "2"
-
-        rendered = "".join(
-            text for _style, text in project_modal.render_project_list(state)
-        )
-
-        assert " >   Alpha" in rendered
-        assert "   * Beta" in rendered
-
-    def test_no_mark_without_active(self):
-        state = TuiState()
-        state.project_modal.choices = [("1", "Alpha")]
-
-        rendered = "".join(
-            text for _style, text in project_modal.render_project_list(state)
-        )
-
-        assert "*" not in rendered
 
 
 class TestFetchUsesEffectiveProject:

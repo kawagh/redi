@@ -10,7 +10,13 @@ from redi.api.wiki import WikiPage
 from redi.i18n import messages
 
 TuiAction = Literal[
-    "update", "create", "comment", "edit_comment", "delete_comment", "create_time_entry"
+    "update",
+    "create",
+    "comment",
+    "edit_comment",
+    "delete_comment",
+    "create_time_entry",
+    "switch_profile",
 ]
 TuiTab = Literal["issues", "wiki", "time_entries"]
 FilterField = Literal["status", "assignee"]
@@ -39,6 +45,8 @@ class TuiResult:
     time_entry_id: str | None = None
     journal_id: str | None = None
     journal_notes: str = ""
+    # action == "switch_profile" のときの切替先プロファイル名。
+    profile_name: str | None = None
     position: TuiPosition = field(default_factory=TuiPosition)
 
 
@@ -87,17 +95,19 @@ class FilterModalState:
 
 
 @dataclass
-class ProjectModalState:
-    """p で開くプロジェクト切替 modal の表示・選択肢キャッシュ・カーソル状態。"""
+class ChoiceModalState:
+    """一覧から1つ選ぶ modal (p のプロジェクト切替 / P のプロファイル切替) の状態。
+
+    描画とキーバインドは `tui.choice_modal` が共通で持つ。
+    """
 
     show: bool = False
-    # 選択肢: (Redmine のプロジェクト id, 表示名) の組
+    # 選択肢: (値, 表示ラベル) の組
     choices: list[tuple[str, str]] = field(default_factory=list)
     cursor: int = 0
-    # 現在有効なプロジェクトを id に解決した値。config には identifier も
-    # 設定できるため、モーダルを開くときに choices の id と比較できる形へ
-    # 解決してから保持する。`*` 表示とカーソル初期位置に使う。
-    active_id: str | None = None
+    # 現在有効な選択肢の値。`*` 表示とカーソル初期位置に使う。プロジェクトは
+    # config に identifier も設定できるため、開くときに id へ解決してから入れる。
+    active_value: str | None = None
 
 
 @dataclass
@@ -221,7 +231,8 @@ class TuiState:
     # p で切り替えたセッション内のプロジェクト。None は未切替 (config の既定に従う)。
     project_id: str | None = None
     project_label: str = ""
-    project_modal: ProjectModalState = field(default_factory=ProjectModalState)
+    project_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
+    profile_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
 
     def effective_project_id(self) -> str | None:
         return self.project_id or config.default_project_id

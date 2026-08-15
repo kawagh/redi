@@ -1,10 +1,30 @@
 #!/bin/bash
 set -e
 
-docker compose down redmine-for-test
-docker compose up -d redmine-for-test
+# 引数で対象の Redmine バージョンを選ぶ (例: ./script/init-redmine.sh 7.0)
+# バージョンごとにサービス・ポート・profile を分けているため、
+# 他バージョンのコンテナを落とさずに初期化できる
+REDMINE_VERSION="${1:-6.1}"
+case "$REDMINE_VERSION" in
+6.1) PORT=3061 ;;
+7.0) PORT=3070 ;;
+*)
+    echo "not a target redmine version: $REDMINE_VERSION (target: 6.1, 7.0)" >&2
+    exit 1
+    ;;
+esac
+SERVICE="redmine-for-test-${REDMINE_VERSION}"
+URL="http://localhost:${PORT}"
+ADMIN_PROFILE="sandbox_admin_${REDMINE_VERSION}"
+DEVELOPER_PROFILE="sandbox_developer_${REDMINE_VERSION}"
+
+# 作り直した Redmine に対して古いキャッシュを参照しないよう消す
+rm -rf "$HOME/.cache/redi/localhost_${PORT}"
+
+docker compose down "$SERVICE"
+docker compose up -d "$SERVICE"
 sleep 5
-API_KEYS_OUTPUT=$(docker compose exec -T redmine-for-test rails runner - <<RUBY
+API_KEYS_OUTPUT=$(docker compose exec -T "$SERVICE" rails runner - <<RUBY
     # 初期生成される管理者のパスワードを変更
     admin = User.find_by(login: 'admin')
     admin.password = 'adminadmin'
@@ -43,6 +63,17 @@ API_KEYS_OUTPUT=$(docker compose exec -T redmine-for-test rails runner - <<RUBY
       cf.save!
     end
 
+    # reditest プロジェクトにのみ適用するカスタムフィールドを作成
+    # (redmine 7.0 の custom field API が返す projects の検証に使う)
+    project_cf = IssueCustomField.find_or_initialize_by(name: 'プロジェクト限定メモ')
+    project_cf.field_format = 'string'
+    project_cf.description = 'reditest プロジェクトにのみ適用されるカスタムフィールド'
+    project_cf.is_for_all = false
+    project_cf.is_required = false
+    project_cf.tracker_ids = bug_tracker_ids
+    project_cf.project_ids = [project.id]
+    project_cf.save!
+
     # sandbox_developer ユーザーを作成
     developer = User.find_or_initialize_by(login: 'sandbox_developer')
     developer.firstname = 'Sandbox'
@@ -69,16 +100,16 @@ RUBY
 ADMIN_API_KEY=$(echo "$API_KEYS_OUTPUT" | grep '^ADMIN_KEY=' | tail -1 | cut -d= -f2)
 DEVELOPER_API_KEY=$(echo "$API_KEYS_OUTPUT" | grep '^DEVELOPER_KEY=' | tail -1 | cut -d= -f2)
 
-redi config create sandbox_admin || true # profile作成がべき等でないので失敗するのを当座で防ぐ
-redi config update --default_profile sandbox_admin
-redi config update sandbox_admin \
-    --url "http://localhost:3000" \
+redi config create "$ADMIN_PROFILE" || true # profile作成がべき等でないので失敗するのを当座で防ぐ
+redi config update --default_profile "$ADMIN_PROFILE"
+redi config update "$ADMIN_PROFILE" \
+    --url "$URL" \
     --api_key "$ADMIN_API_KEY" \
     --project_id "reditest"
 
-redi config create sandbox_developer || true
-redi config update sandbox_developer \
-    --url "http://localhost:3000" \
+redi config create "$DEVELOPER_PROFILE" || true
+redi config update "$DEVELOPER_PROFILE" \
+    --url "$URL" \
     --api_key "$DEVELOPER_API_KEY" \
     --project_id "reditest"
 

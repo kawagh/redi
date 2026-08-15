@@ -1,6 +1,7 @@
 import argparse
 import sys
 
+from redi import config
 from redi.api.membership import (
     create_membership,
     delete_membership,
@@ -11,7 +12,7 @@ from redi.api.membership import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.config import default_project_id
+from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
 
 
@@ -26,15 +27,14 @@ def add_membership_parser(
         "membership",
         aliases=["m"],
         help=messages.arg_help_membership_command,
-        parents=parents,
-    )
-    m_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
-    m_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
+        parents=[*parents, project_option_parser()],
     )
     m_subparsers = m_parser.add_subparsers(dest="membership_command")
     m_subparsers.add_parser(
-        "list", aliases=["l"], help=messages.arg_help_membership_list, parents=parents
+        "list",
+        aliases=["l"],
+        help=messages.arg_help_membership_list,
+        parents=[*parents, project_option_parser(postfix=True)],
     )
 
     m_view_parser = m_subparsers.add_parser(
@@ -105,7 +105,7 @@ def handle_membership(args: argparse.Namespace) -> None:
         read_membership(args.membership_id, full=args.full)
         return
     if cmd == "create":
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
             sys.exit(1)
@@ -144,7 +144,7 @@ def handle_membership(args: argparse.Namespace) -> None:
         return
 
     if cmd == "list" or cmd is None:
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
             sys.exit(1)

@@ -1,13 +1,13 @@
 import argparse
 import sys
 
-from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding.key_processor import KeyPress
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.shortcuts import choice
 from prompt_toolkit.validation import Validator
 
+from redi import config
 from redi.api.version import (
     create_version,
     delete_version,
@@ -19,8 +19,9 @@ from redi.api.version import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
+from redi.cli.interactive import ensure_interactive, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.config import default_project_id
+from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
 
 
@@ -31,15 +32,14 @@ def add_version_parser(
         "version",
         aliases=["v"],
         help=messages.arg_help_version_command,
-        parents=parents,
-    )
-    v_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
-    v_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
+        parents=[*parents, project_option_parser()],
     )
     v_subparsers = v_parser.add_subparsers(dest="version_command")
     v_subparsers.add_parser(
-        "list", aliases=["l"], help=messages.arg_help_version_list, parents=parents
+        "list",
+        aliases=["l"],
+        help=messages.arg_help_version_list,
+        parents=[*parents, project_option_parser(postfix=True)],
     )
     v_view_parser = v_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_version_view, parents=parents
@@ -117,7 +117,7 @@ def _interactive_select_version_id(project_id: str) -> str:
     labels = dict(options)
     try:
         selected = inline_choice(messages.prompt_select_version_to_update, options)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
     print(messages.update_target_version.format(label=labels[selected]))
@@ -135,7 +135,7 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
     ]
     try:
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
     if not selected:
@@ -234,6 +234,7 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
     def _move_down(event):
         event.app.key_processor.feed(KeyPress(Keys.Down))
 
+    ensure_interactive(messages.prompt_select_sharing)
     try:
         sharing_input = choice(
             messages.prompt_select_sharing,
@@ -241,7 +242,7 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
             default="none",
             key_bindings=choice_kb,
         )
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
     sharing = sharing_input if sharing_input != "none" else None
@@ -260,7 +261,7 @@ def handle_version(args: argparse.Namespace) -> None:
     if cmd == "view":
         read_version(args.version_id, full=args.full, web=args.web)
     elif cmd == "create":
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
             sys.exit(1)
@@ -286,7 +287,7 @@ def handle_version(args: argparse.Namespace) -> None:
         delete_version(args.version_id)
     elif cmd == "update":
         if not args.version_id:
-            project_id = args.project_id or default_project_id
+            project_id = args.project_id or config.default_project_id
             if not project_id:
                 print(messages.project_id_required)
                 sys.exit(1)
@@ -309,7 +310,7 @@ def handle_version(args: argparse.Namespace) -> None:
             sharing=args.sharing,
         )
     elif cmd == "list" or cmd is None:
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
             sys.exit(1)

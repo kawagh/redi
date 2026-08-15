@@ -11,7 +11,7 @@
 ## Quickstart
 
 ```sh
-redi init                # interactive: enter Redmine URL and API key
+redi init                # interactive: select language, then enter Redmine URL and API key
 redi --tui               # launch the TUI
 redi issue               # or list issues
 ```
@@ -37,6 +37,9 @@ To use redi, you need to set the Redmine URL and API key in one of the ways belo
 ```sh
 redi init
 ```
+
+`redi init` first asks which language to use (`en` / `ja`), and the rest of the setup is shown in the selected language.
+You can change it later with `redi config update --language <en|ja>`.
 
 Then, profile will be created in `~/.config/redi/config.toml` like below format.
 You can also create profile by `redi config create`, and update profile by `redi config update` (and also by manual edit).
@@ -75,6 +78,33 @@ uv tool install argcomplete
 echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
 ```
 
+### Agent skill
+
+`redmine-redi` is a skill that lets coding agents (Claude Code, Codex) know to
+reach for `redi` when a task involves Redmine.
+
+Install it globally (user scope) so that it is available in every project.
+`curl` needs no extra tooling:
+
+```sh
+# Claude Code
+mkdir -p ~/.claude/skills/redmine-redi && \
+  curl -sL https://raw.githubusercontent.com/kawagh/redi/main/skills/redmine-redi/SKILL.md \
+    -o ~/.claude/skills/redmine-redi/SKILL.md
+
+# Codex
+mkdir -p ~/.agents/skills/redmine-redi && \
+  curl -sL https://raw.githubusercontent.com/kawagh/redi/main/skills/redmine-redi/SKILL.md \
+    -o ~/.agents/skills/redmine-redi/SKILL.md
+```
+
+Or with a skill manager:
+
+```sh
+npx skills add kawagh/redi --skill redmine-redi -g
+gh skill install kawagh/redi redmine-redi --scope user  # requires gh v2.90+ and a GitHub account
+```
+
 ## Usage (examples)
 
 Most commands follow the form:
@@ -90,7 +120,7 @@ redi <resource> <action> [<resource_id>] [options]
 
 ```sh
 # init
-redi init # interactive
+redi init # interactive: select language, then Redmine URL / API key / projects
 
 # run TUI
 redi --tui
@@ -123,6 +153,7 @@ redi issue view <issue_id> --web # view issue with web browser
 redi issue view <issue_id> --include journals,attachments,relations
 redi issue create # (interactive)
 redi issue create "subject" -p <project_id> -t <tracker_id> -a <user_id> -d "description"
+redi issue create "subject" -p <project_id> --full # output created issue as full JSON
 redi issue update <issue_id> # (interactive)
 redi issue update <issue_id> --status_id <status_id> -n "notes"
 redi issue update <issue_id> --start_date 2026-04-26 --due_date 2026-05-31 --estimated_hours 1.5
@@ -186,6 +217,17 @@ redi membership view <membership_id>
 
 # news (alias: n)
 redi news -p <project_id>
+redi news view <news_id>
+redi news view <news_id> --web # open in browser
+redi news create -p <project_id> # interactive: title, summary (optional), then the description in an editor
+redi news create "title" -p <project_id> # opens editor for the description
+redi news create "title" -d "description" --summary "summary" -p <project_id>
+redi news update # interactive: pick the news, then the items to update
+redi news update <news_id> # interactive: pick the items to update
+redi news update <news_id> --title "new title" -d "new description"
+redi news update <news_id> -d # opens editor with the current description
+redi news delete # interactive: pick the news to delete
+redi news delete <news_id>
 
 # issue_category (alias: ic)
 redi issue_category -p <project_id>
@@ -194,6 +236,7 @@ redi issue_category create "category" -p <project_id>
 # issue_template (alias: it)
 # This command requires redmine_issue_templates plugin ( https://www.redmine.org/plugins/redmine_issue_templates )
 redi issue_template # list issue_templates
+redi issue_template -t <tracker_id> # list issue_templates for the tracker
 
 # search (alias: s)
 redi search "keyword" # search all projects
@@ -211,6 +254,7 @@ redi search "keyword" --full # output full JSON
 # others
 redi user # list users (alias: u)
 redi tracker # list trackers (alias: t)
+redi tracker list # 同上 (以下の一覧専用リソースも `list` / `l` を受け付ける)
 redi issue_status # list issue statuses (alias: is)
 redi issue_priority # list priorities (alias: ip)
 redi time_entry_activity # list activities (alias: tea)
@@ -221,6 +265,10 @@ redi custom_field # list custom fields (alias: cf)
 redi query # list custom queries (alias: q)
 redi --version
 ```
+
+## Redmine version
+
+`redi` is developed against Redmine 6.1.
 
 ## Development
 
@@ -240,6 +288,8 @@ task format      # uv run ruff format
 task lint        # uv run ruff check
 task typecheck   # uv run ty check
 task test        # uv run pytest -v
+task test:e2e    # E2E tests against every target Redmine version
+task test:e2e:7.0 # E2E tests against Redmine 7.0 only (also: task test:e2e:6.1)
 ```
 
 ### Debug

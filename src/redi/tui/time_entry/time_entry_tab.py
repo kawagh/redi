@@ -2,13 +2,13 @@ import webbrowser
 
 import requests
 
+from redi import config
 from redi.api.time_entry import (
     fetch_issue_subjects,
     fetch_time_entries_page,
     format_time_entry_line,
 )
 from redi.client import client
-from redi.config import redmine_url
 from redi.i18n import messages
 from redi.tui.state import Renderable, TuiPosition, TuiResult, TuiState
 from redi.tui.tab import TabView, noop, noop_jump
@@ -329,9 +329,9 @@ def _on_open_web(state: TuiState) -> None:
     te = entries[state.time_entry_tab.cursor]
     issue_id = (te.get("issue") or {}).get("id")
     if issue_id:
-        webbrowser.open(f"{redmine_url}/issues/{issue_id}")
+        webbrowser.open(f"{config.redmine_url}/issues/{issue_id}")
     else:
-        webbrowser.open(f"{redmine_url}/time_entries")
+        webbrowser.open(f"{config.redmine_url}/time_entries")
 
 
 _HELP_LINES: list[tuple[str, str]] = [
@@ -349,6 +349,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     (messages.tui_help_section_filter, ""),
     ("  f", messages.tui_help_filter_user),
     ("  p", messages.tui_help_switch_project),
+    ("  P", messages.tui_help_switch_profile),
     (messages.tui_help_section_actions, ""),
     ("  c", messages.tui_help_time_entry_create),
     ("  u", messages.tui_help_time_entry_update),

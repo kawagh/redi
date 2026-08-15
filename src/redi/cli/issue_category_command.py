@@ -1,6 +1,7 @@
 import argparse
 import sys
 
+from redi import config
 from redi.api.issue_category import (
     create_issue_category,
     delete_issue_category,
@@ -11,7 +12,7 @@ from redi.api.issue_category import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.config import default_project_id
+from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
 
 
@@ -22,18 +23,14 @@ def add_issue_category_parser(
         "issue_category",
         aliases=["ic"],
         help=messages.arg_help_issue_category_command,
-        parents=parents,
-    )
-    ic_parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
-    ic_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
+        parents=[*parents, project_option_parser()],
     )
     ic_subparsers = ic_parser.add_subparsers(dest="issue_category_command")
     ic_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_issue_category_list,
-        parents=parents,
+        parents=[*parents, project_option_parser(postfix=True)],
     )
 
     ic_view_parser = ic_subparsers.add_parser(
@@ -108,7 +105,7 @@ def handle_issue_category(args: argparse.Namespace) -> None:
         read_issue_category(args.category_id, full=args.full)
         return
     if cmd == "create":
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
             sys.exit(1)
@@ -139,7 +136,7 @@ def handle_issue_category(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "list" or cmd is None:
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         if not project_id:
             print(messages.project_id_required)
             sys.exit(1)

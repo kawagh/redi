@@ -1,20 +1,20 @@
 import argparse
 import sys
 
-from prompt_toolkit import prompt
-
 from redi.cli.alias import resolve_alias
+from redi.cli.interactive import prompt
 from redi.cli.picker import inline_checkbox, inline_choice, inline_choice_with_action
 from redi.cli.validator import RequiredValidator, UrlValidator
 from redi.config import (
     SUPPORTED_LANGUAGES,
+    Profile,
     create_profile,
     get_default_profile,
     list_profile_names,
-    read_profile_values,
+    read_profile,
     set_default_profile,
     show_config,
-    update_config,
+    update_profile,
 )
 from redi.i18n import messages, select_messages
 
@@ -112,14 +112,8 @@ def _interactive_select_profile(args: argparse.Namespace) -> bool:
     return False
 
 
-def _interactive_fill_config_update_args(
-    args: argparse.Namespace, profile: str
-) -> bool:
-    """更新する項目を選ばせて値を入力し、args に反映する。
-
-    後続の更新フローへ流す場合 True を返す。キャンセル時は False。
-    """
-    current = read_profile_values(profile)
+def _update_field_values(profile: str) -> list[tuple[str, str]]:
+    """更新項目の選択肢を返す。既にデフォルトのプロファイルには set_default を出さない。"""
     field_values: list[tuple[str, str]] = [
         ("url", messages.field_redmine_url),
         ("api_key", messages.field_redmine_api_key),
@@ -128,9 +122,23 @@ def _interactive_fill_config_update_args(
         ("editor", messages.field_editor),
         ("language", messages.field_language),
     ]
+    if profile != get_default_profile():
+        field_values.append(("set_default", messages.field_set_default_profile))
+    return field_values
+
+
+def _interactive_fill_config_update_args(
+    args: argparse.Namespace, profile: str
+) -> bool:
+    """更新する項目を選ばせて値を入力し、args に反映する。
+
+    後続の更新フローへ流す場合 True を返す。キャンセル時は False。
+    """
+    current = read_profile(profile)
+    field_values = _update_field_values(profile)
     try:
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         return False
     if not selected:
@@ -143,7 +151,7 @@ def _interactive_fill_config_update_args(
         if "url" in selected:
             args.url = prompt(
                 messages.prompt_redmine_url,
-                default=current.get("redmine_url", ""),
+                default=current.redmine_url or "",
                 validator=UrlValidator(),
             ).strip()
         if "api_key" in selected:
@@ -156,30 +164,32 @@ def _interactive_fill_config_update_args(
         if "project_id" in selected:
             args.project_id = prompt(
                 messages.prompt_default_project_id,
-                default=current.get("default_project_id", ""),
+                default=current.default_project_id or "",
                 validator=RequiredValidator(),
             ).strip()
         if "wiki_project_id" in selected:
             args.wiki_project_id = prompt(
                 messages.prompt_wiki_project_id,
-                default=current.get("wiki_project_id", ""),
+                default=current.wiki_project_id or "",
                 validator=RequiredValidator(),
             ).strip()
         if "editor" in selected:
             args.editor = prompt(
                 messages.prompt_editor,
-                default=current.get("editor", ""),
+                default=current.editor or "",
                 validator=RequiredValidator(),
             ).strip()
         if "language" in selected:
             args.language = inline_choice(
                 messages.prompt_select_language,
                 [(v, v) for v in SUPPORTED_LANGUAGES],
-                default=current.get("language"),
+                default=current.language,
             )
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         return False
+    if "set_default" in selected:
+        args.default_profile = profile
     args.profile_name = profile
     return True
 
@@ -189,12 +199,14 @@ def handle_config(args: argparse.Namespace) -> None:
     if cmd == "create":
         result = create_profile(
             profile_name=args.profile_name,
-            redmine_url=args.url,
-            redmine_api_key=args.api_key,
-            default_project_id=args.project_id,
-            wiki_project_id=args.wiki_project_id,
-            editor=args.editor,
-            language=args.language,
+            profile=Profile(
+                redmine_url=args.url,
+                redmine_api_key=args.api_key,
+                default_project_id=args.project_id,
+                wiki_project_id=args.wiki_project_id,
+                editor=args.editor,
+                language=args.language,
+            ),
         )
         if not result.created:
             sys.exit(1)
@@ -225,43 +237,43 @@ def handle_config(args: argparse.Namespace) -> None:
     profile_suffix = (
         messages.config_profile_suffix.format(name=profile) if profile else ""
     )
+    # 指定された項目をまとめて書き込み、結果は項目ごとに知らせる
+    values = Profile(
+        redmine_url=args.url,
+        redmine_api_key=args.api_key,
+        default_project_id=args.project_id,
+        wiki_project_id=args.wiki_project_id,
+        editor=args.editor,
+        language=args.language,
+    )
+    if values.to_dict():
+        update_profile(values, profile)
+        updated = True
     if args.project_id:
-        update_config("default_project_id", args.project_id, profile)
         print(
             messages.default_project_id_set.format(
                 value=args.project_id, suffix=profile_suffix
             )
         )
-        updated = True
     if args.wiki_project_id:
-        update_config("wiki_project_id", args.wiki_project_id, profile)
         print(
             messages.wiki_project_id_set.format(
                 value=args.wiki_project_id, suffix=profile_suffix
             )
         )
-        updated = True
     if args.editor:
-        update_config("editor", args.editor, profile)
         print(messages.editor_set.format(value=args.editor, suffix=profile_suffix))
-        updated = True
     if args.language:
-        update_config("language", args.language, profile)
         new_lang_messages = select_messages(args.language)
         print(
             new_lang_messages.language_set.format(
                 value=args.language, suffix=profile_suffix
             )
         )
-        updated = True
     if args.api_key:
-        update_config("redmine_api_key", args.api_key, profile)
         print(messages.redmine_api_key_set.format(suffix=profile_suffix))
-        updated = True
     if args.url:
-        update_config("redmine_url", args.url, profile)
         print(messages.redmine_url_set.format(value=args.url, suffix=profile_suffix))
-        updated = True
     if args.default_profile:
         if set_default_profile(args.default_profile):
             print(messages.default_profile_set.format(name=args.default_profile))

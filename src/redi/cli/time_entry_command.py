@@ -1,10 +1,10 @@
 import argparse
 import sys
 
-from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.validation import Validator
 
+from redi import config
 from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.issue import fetch_issue
 from redi.api.project import fetch_projects
@@ -18,15 +18,37 @@ from redi.api.time_entry import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
+from redi.cli.interactive import prompt
 from redi.cli.keybinding import (
     date_key_bindings,
     digit_and_period_key_bindings,
     digit_only_key_bindings,
 )
 from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.shared_options import SharedOptionParser
 from redi.cli.validator import DateValidator, HourValidator
-from redi.config import default_project_id
 from redi.i18n import messages
+
+
+def _time_entry_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
+    """time_entry の一覧フィルタと出力形式のオプション"""
+    parser = SharedOptionParser(postfix=postfix)
+    parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
+    parser.add_argument("--user_id", "-u", help=messages.arg_help_time_entry_user_id)
+    parser.add_argument(
+        "--from",
+        dest="from_date",
+        help=messages.arg_help_time_entry_from,
+    )
+    parser.add_argument(
+        "--to",
+        dest="to_date",
+        help=messages.arg_help_time_entry_to,
+    )
+    parser.add_argument("--limit", "-l", type=int, help=messages.arg_help_limit)
+    parser.add_argument("--offset", "-o", type=int, help=messages.arg_help_offset)
+    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    return parser
 
 
 def add_time_entry_parser(
@@ -36,36 +58,14 @@ def add_time_entry_parser(
         "time_entry",
         aliases=["te"],
         help=messages.arg_help_time_entry_command,
-        parents=parents,
-    )
-    time_entry_parser.add_argument(
-        "--project_id", "-p", help=messages.arg_help_project_id
-    )
-    time_entry_parser.add_argument(
-        "--user_id", "-u", help=messages.arg_help_time_entry_user_id
-    )
-    time_entry_parser.add_argument(
-        "--from",
-        dest="from_date",
-        help=messages.arg_help_time_entry_from,
-    )
-    time_entry_parser.add_argument(
-        "--to",
-        dest="to_date",
-        help=messages.arg_help_time_entry_to,
-    )
-    time_entry_parser.add_argument(
-        "--limit", "-l", type=int, help=messages.arg_help_limit
-    )
-    time_entry_parser.add_argument(
-        "--offset", "-o", type=int, help=messages.arg_help_offset
-    )
-    time_entry_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
+        parents=[*parents, _time_entry_list_option_parser()],
     )
     te_subparsers = time_entry_parser.add_subparsers(dest="time_entry_command")
     te_subparsers.add_parser(
-        "list", aliases=["l"], help=messages.arg_help_time_entry_list, parents=parents
+        "list",
+        aliases=["l"],
+        help=messages.arg_help_time_entry_list,
+        parents=[*parents, _time_entry_list_option_parser(postfix=True)],
     )
     te_create_parser = te_subparsers.add_parser(
         "create",
@@ -176,7 +176,7 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
                 )
                 project_id = prompt(
                     messages.prompt_project_id_or_name,
-                    default=default_project_id or "",
+                    default=config.default_project_id or "",
                     validator=project_validator,
                     completer=completer,
                 ).strip()
@@ -226,7 +226,7 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
     ]
     try:
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
     if not selected:
@@ -297,7 +297,7 @@ def handle_time_entry(args: argparse.Namespace) -> None:
     if cmd == "create":
         if args.hours is None:
             _interactive_fill_time_entry_create_args(args)
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         create_time_entry(
             issue_id=args.issue_id,
             project_id=project_id,
@@ -341,7 +341,7 @@ def handle_time_entry(args: argparse.Namespace) -> None:
             )
         delete_time_entry(args.time_entry_id)
     elif cmd == "list" or cmd is None:
-        project_id = args.project_id or default_project_id
+        project_id = args.project_id or config.default_project_id
         list_time_entries(
             project_id=project_id,
             user_id=args.user_id,
