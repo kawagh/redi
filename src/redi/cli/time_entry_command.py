@@ -25,8 +25,30 @@ from redi.cli.keybinding import (
     digit_only_key_bindings,
 )
 from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.shared_options import SharedOptionParser
 from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
+
+
+def _time_entry_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
+    """time_entry の一覧フィルタと出力形式のオプション"""
+    parser = SharedOptionParser(postfix=postfix)
+    parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
+    parser.add_argument("--user_id", "-u", help=messages.arg_help_time_entry_user_id)
+    parser.add_argument(
+        "--from",
+        dest="from_date",
+        help=messages.arg_help_time_entry_from,
+    )
+    parser.add_argument(
+        "--to",
+        dest="to_date",
+        help=messages.arg_help_time_entry_to,
+    )
+    parser.add_argument("--limit", "-l", type=int, help=messages.arg_help_limit)
+    parser.add_argument("--offset", "-o", type=int, help=messages.arg_help_offset)
+    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    return parser
 
 
 def add_time_entry_parser(
@@ -36,36 +58,14 @@ def add_time_entry_parser(
         "time_entry",
         aliases=["te"],
         help=messages.arg_help_time_entry_command,
-        parents=parents,
-    )
-    time_entry_parser.add_argument(
-        "--project_id", "-p", help=messages.arg_help_project_id
-    )
-    time_entry_parser.add_argument(
-        "--user_id", "-u", help=messages.arg_help_time_entry_user_id
-    )
-    time_entry_parser.add_argument(
-        "--from",
-        dest="from_date",
-        help=messages.arg_help_time_entry_from,
-    )
-    time_entry_parser.add_argument(
-        "--to",
-        dest="to_date",
-        help=messages.arg_help_time_entry_to,
-    )
-    time_entry_parser.add_argument(
-        "--limit", "-l", type=int, help=messages.arg_help_limit
-    )
-    time_entry_parser.add_argument(
-        "--offset", "-o", type=int, help=messages.arg_help_offset
-    )
-    time_entry_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
+        parents=[*parents, _time_entry_list_option_parser()],
     )
     te_subparsers = time_entry_parser.add_subparsers(dest="time_entry_command")
     te_subparsers.add_parser(
-        "list", aliases=["l"], help=messages.arg_help_time_entry_list, parents=parents
+        "list",
+        aliases=["l"],
+        help=messages.arg_help_time_entry_list,
+        parents=[*parents, _time_entry_list_option_parser(postfix=True)],
     )
     te_create_parser = te_subparsers.add_parser(
         "create",

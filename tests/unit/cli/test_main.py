@@ -63,6 +63,81 @@ class TestProfileFlagPlacement:
         assert args.command is None
 
 
+class TestSharedOptionPlacement:
+    """親パーサ側のオプションは list サブコマンドの前後どちらに置いても受け付けられる"""
+
+    @pytest.fixture
+    def parser(self, monkeypatch) -> argparse.ArgumentParser:
+        monkeypatch.setattr(main_module, "list_profile_names", list)
+        return build_redi_parser()
+
+    def test_issue_option_after_list(self, parser):
+        """`issue list --limit 3` を受け付ける"""
+        args = parser.parse_args(["issue", "list", "--limit", "3"])
+
+        assert args.issue_command == "list"
+        assert args.limit == 3
+
+    def test_issue_option_before_list(self, parser):
+        """`issue --limit 3 list` も従来どおり受け付ける"""
+        args = parser.parse_args(["issue", "--limit", "3", "list"])
+
+        assert args.issue_command == "list"
+        assert args.limit == 3
+
+    def test_issue_option_not_overwritten_by_list_default(self, parser):
+        """前置した値を list サブパーサのデフォルト値が上書きしない"""
+        args = parser.parse_args(["issue", "--project_id", "1", "list"])
+
+        assert args.project_id == "1"
+
+    def test_issue_option_defaults_kept(self, parser):
+        """オプション未指定ならデフォルト値のまま"""
+        args = parser.parse_args(["issue", "list"])
+
+        assert args.limit is None
+        assert args.project_id is None
+        assert args.full is False
+
+    def test_issue_option_after_list_alias(self, parser):
+        """エイリアス `issue l` の後ろにも書ける"""
+        args = parser.parse_args(["issue", "l", "-l", "3"])
+
+        assert args.issue_command == "l"
+        assert args.limit == 3
+
+    def test_time_entry_option_after_list(self, parser):
+        """issue 以外のリソースでも後置できる"""
+        args = parser.parse_args(
+            ["time_entry", "list", "--from", "2026-01-01", "--user_id", "1"]
+        )
+
+        assert args.time_entry_command == "list"
+        assert args.from_date == "2026-01-01"
+        assert args.user_id == "1"
+
+    @pytest.mark.parametrize(
+        ("argv", "dest", "expected"),
+        [
+            (["project", "list", "--full"], "full", True),
+            (["user", "list", "--full"], "full", True),
+            (["role", "list", "--full"], "full", True),
+            (["group", "list", "--full"], "full", True),
+            (["version", "list", "--project_id", "1"], "project_id", "1"),
+            (["wiki", "list", "--project_id", "1"], "project_id", "1"),
+            (["membership", "list", "--project_id", "1"], "project_id", "1"),
+            (["news", "list", "--project_id", "1"], "project_id", "1"),
+            (["issue_category", "list", "--project_id", "1"], "project_id", "1"),
+            (["file", "list", "--project_id", "1"], "project_id", "1"),
+        ],
+    )
+    def test_option_after_list_for_each_resource(self, parser, argv, dest, expected):
+        """親側にオプションを持つリソースはすべて後置できる"""
+        args = parser.parse_args(argv)
+
+        assert getattr(args, dest) == expected
+
+
 class TestTuiProfileSwitchLoop:
     """TUI が switch_profile で抜けたらプロファイルを適用して state 無しで再起動する"""
 
