@@ -270,6 +270,8 @@ class Ja(MessagesProto):
     prompt_select_profile = (
         "プロファイルを選択 (Enter: デフォルトに設定 / u: 項目を更新)"
     )
+    prompt_profile_name = "プロファイル名: "
+    prompt_set_default_profile = "profile '{name}' をdefault_profileにしますか?"
     prompt_default_project_id = "default_project_id: "
     prompt_wiki_project_id = "wiki_project_id: "
     prompt_editor = "editor: "
@@ -298,6 +300,8 @@ class Ja(MessagesProto):
     prompt_required_field = "{name}（必須）"
     prompt_field_value = "{name}: {value}"
     prompt_custom_field_label = "{name}: "
+    choice_yes = "はい"
+    choice_no = "いいえ"
     label_bool_true = "はい"
     label_bool_false = "いいえ"
     prompt_what_next = "次のアクションを選択してください"
@@ -684,7 +688,7 @@ class Ja(MessagesProto):
     arg_help_config_set_url = "Redmine URLを設定"
     arg_help_config_set_default_profile = "デフォルトプロファイルを設定"
     arg_help_config_create = "プロファイル作成"
-    arg_help_config_create_profile_name = "作成するプロファイル名"
+    arg_help_config_create_profile_name = "作成するプロファイル名（省略時は対話入力）"
     arg_help_config_url = "Redmine URL"
     arg_help_config_api_key = "Redmine APIキー"
     arg_help_config_default_project_id = "デフォルトプロジェクトID"

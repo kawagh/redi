@@ -100,14 +100,16 @@ RUBY
 ADMIN_API_KEY=$(echo "$API_KEYS_OUTPUT" | grep '^ADMIN_KEY=' | tail -1 | cut -d= -f2)
 DEVELOPER_API_KEY=$(echo "$API_KEYS_OUTPUT" | grep '^DEVELOPER_KEY=' | tail -1 | cut -d= -f2)
 
-redi config create "$ADMIN_PROFILE" || true # profile作成がべき等でないので失敗するのを当座で防ぐ
+# profile作成がべき等でないので失敗するのを当座で防ぐ。
+# 引数が足りないと対話に入るため、非TTYでも完結するようURLとAPIキーは渡す
+redi config create "$ADMIN_PROFILE" --url "$URL" --api_key "$ADMIN_API_KEY" || true
 redi config update --default_profile "$ADMIN_PROFILE"
 redi config update "$ADMIN_PROFILE" \
     --url "$URL" \
     --api_key "$ADMIN_API_KEY" \
     --project_id "reditest"
 
-redi config create "$DEVELOPER_PROFILE" || true
+redi config create "$DEVELOPER_PROFILE" --url "$URL" --api_key "$DEVELOPER_API_KEY" || true
 redi config update "$DEVELOPER_PROFILE" \
     --url "$URL" \
     --api_key "$DEVELOPER_API_KEY" \

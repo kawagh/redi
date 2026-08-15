@@ -20,6 +20,25 @@ class RequiredValidator(Validator):
             raise ValidationError(message=messages.error_input_required)
 
 
+class ProfileNameValidator(Validator):
+    """プロファイル名用の Validator。空文字と既存プロファイル名を拒否する。
+
+    作成後に「既に存在します」で終わらせず、入力中に気付けるようにする。
+    """
+
+    def __init__(self, existing_names: list[str]) -> None:
+        self.existing_names = existing_names
+
+    def validate(self, document: Document) -> None:
+        text = document.text.strip()
+        if not text:
+            raise ValidationError(message=messages.error_input_required)
+        if text in self.existing_names:
+            raise ValidationError(
+                message=messages.profile_already_exists.format(name=text)
+            )
+
+
 class UrlValidator(Validator):
     """http:// または https:// で始まるURLを許容するValidator。
 
