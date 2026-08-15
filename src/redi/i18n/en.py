@@ -528,6 +528,7 @@ class En(MessagesProto):
     arg_help_crud_subcommands = "list(l), view(v), create(c), update(u), delete(d)"
     arg_help_role_subcommands = "list(l), view(v)"
     arg_help_file_subcommands = "list(l), create(c) (upload)"
+    arg_help_list_only_subcommands = "list(l)"
 
     # ---- argparse helps (project) ----
     arg_help_project_command = arg_help_crud_subcommands
@@ -845,13 +846,20 @@ class En(MessagesProto):
     arg_help_news_delete_id = "News ID (omit to select interactively)"
 
     # ---- argparse helps (enumerations) ----
-    arg_help_tracker_command = "List trackers"
-    arg_help_issue_status_command = "List issue statuses"
-    arg_help_issue_priority_command = "List issue priorities"
-    arg_help_time_entry_activity_command = "List time entry activities"
-    arg_help_document_category_command = "List document categories"
-    arg_help_query_command = "List custom queries"
-    arg_help_custom_field_command = "List custom fields"
+    arg_help_tracker_command = arg_help_list_only_subcommands
+    arg_help_tracker_list = "List trackers"
+    arg_help_issue_status_command = arg_help_list_only_subcommands
+    arg_help_issue_status_list = "List issue statuses"
+    arg_help_issue_priority_command = arg_help_list_only_subcommands
+    arg_help_issue_priority_list = "List issue priorities"
+    arg_help_time_entry_activity_command = arg_help_list_only_subcommands
+    arg_help_time_entry_activity_list = "List time entry activities"
+    arg_help_document_category_command = arg_help_list_only_subcommands
+    arg_help_document_category_list = "List document categories"
+    arg_help_query_command = arg_help_list_only_subcommands
+    arg_help_query_list = "List custom queries"
+    arg_help_custom_field_command = arg_help_list_only_subcommands
+    arg_help_custom_field_list = "List custom fields"
 
     # ---- argparse helps (issue_template) ----
     arg_help_issue_template_command = (

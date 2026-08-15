@@ -63,6 +63,47 @@ class TestProfileFlagPlacement:
         assert args.command is None
 
 
+LIST_ONLY_RESOURCES = [
+    ("tracker", "t"),
+    ("issue_status", "is"),
+    ("issue_priority", "ip"),
+    ("time_entry_activity", "tea"),
+    ("document_category", "dc"),
+    ("query", "q"),
+    ("custom_field", "cf"),
+]
+
+
+class TestListOnlyResourceListSubcommand:
+    """一覧専用リソースは list (alias: l) を付けても引数無しと同じに解釈される"""
+
+    @pytest.fixture
+    def parser(self, monkeypatch) -> argparse.ArgumentParser:
+        monkeypatch.setattr(main_module, "list_profile_names", list)
+        return build_redi_parser()
+
+    @pytest.mark.parametrize("resource,alias", LIST_ONLY_RESOURCES)
+    def test_accepts_list_subcommand(self, parser, resource, alias):
+        """`redi <resource> list` と `redi <alias> l` の双方を受け付ける"""
+        for argv in ([resource, "list"], [alias, "l"]):
+            args = parser.parse_args(argv)
+
+            assert args.command == argv[0]
+            assert args.full is False
+
+    @pytest.mark.parametrize("resource,alias", LIST_ONLY_RESOURCES)
+    def test_full_flag_on_either_side(self, parser, resource, alias):
+        """--full は list の前後どちらに置いても有効になる"""
+        for argv in (
+            [resource, "list", "--full"],
+            [resource, "--full", "list"],
+            [resource, "--full"],
+        ):
+            args = parser.parse_args(argv)
+
+            assert args.full is True, argv
+
+
 class TestSharedOptionPlacement:
     """親パーサ側のオプションは list サブコマンドの前後どちらに置いても受け付けられる"""
 

@@ -535,6 +535,7 @@ class Ja(MessagesProto):
     arg_help_crud_subcommands = "list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除"
     arg_help_role_subcommands = "list(l): 一覧, view(v): 詳細"
     arg_help_file_subcommands = "list(l): 一覧, create(c): アップロード"
+    arg_help_list_only_subcommands = "list(l): 一覧"
 
     # ---- argparse helps (project) ----
     arg_help_project_command = arg_help_crud_subcommands
@@ -852,13 +853,20 @@ class Ja(MessagesProto):
     arg_help_news_delete_id = "ニュースID（省略で対話的に選択）"
 
     # ---- argparse helps (enumerations) ----
-    arg_help_tracker_command = "トラッカー一覧"
-    arg_help_issue_status_command = "ステータス一覧"
-    arg_help_issue_priority_command = "優先度一覧"
-    arg_help_time_entry_activity_command = "作業分類一覧"
-    arg_help_document_category_command = "文書カテゴリ一覧"
-    arg_help_query_command = "カスタムクエリ一覧"
-    arg_help_custom_field_command = "カスタムフィールド一覧"
+    arg_help_tracker_command = arg_help_list_only_subcommands
+    arg_help_tracker_list = "トラッカー一覧"
+    arg_help_issue_status_command = arg_help_list_only_subcommands
+    arg_help_issue_status_list = "ステータス一覧"
+    arg_help_issue_priority_command = arg_help_list_only_subcommands
+    arg_help_issue_priority_list = "優先度一覧"
+    arg_help_time_entry_activity_command = arg_help_list_only_subcommands
+    arg_help_time_entry_activity_list = "作業分類一覧"
+    arg_help_document_category_command = arg_help_list_only_subcommands
+    arg_help_document_category_list = "文書カテゴリ一覧"
+    arg_help_query_command = arg_help_list_only_subcommands
+    arg_help_query_list = "カスタムクエリ一覧"
+    arg_help_custom_field_command = arg_help_list_only_subcommands
+    arg_help_custom_field_list = "カスタムフィールド一覧"
 
     # ---- argparse helps (issue_template) ----
     arg_help_issue_template_command = (
