@@ -159,7 +159,7 @@ class MessagesProto(Protocol):
     project_unarchived: str
     project_deleted: str
     issue_created: str
-    """{url}"""
+    """{id} {url}"""
     issue_updated: str
     """{url}"""
     issue_deleted: str
