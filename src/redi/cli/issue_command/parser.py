@@ -1,6 +1,43 @@
 import argparse
 
+from redi.cli.filter_parser import FilterParser
 from redi.i18n import messages
+
+
+def _issue_filter_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
+    """issue 一覧のフィルタオプション"""
+    parser = FilterParser(postfix=postfix)
+    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    parser.add_argument(
+        "--project_id", "-p", help=messages.arg_help_issue_filter_project
+    )
+    parser.add_argument(
+        "--version",
+        "-v",
+        help=messages.arg_help_issue_filter_version,
+    )
+    parser.add_argument(
+        "--assigned_to",
+        "-a",
+        help=messages.arg_help_issue_filter_assigned_to,
+    )
+    parser.add_argument(
+        "--status_id",
+        "-s",
+        help=messages.arg_help_issue_filter_status,
+    )
+    parser.add_argument(
+        "--tracker_id", "-t", help=messages.arg_help_issue_filter_tracker
+    )
+    parser.add_argument("--priority_id", help=messages.arg_help_issue_filter_priority)
+    parser.add_argument(
+        "--query_id",
+        "-q",
+        help=messages.arg_help_issue_filter_query,
+    )
+    parser.add_argument("--limit", "-l", type=int, help=messages.arg_help_limit)
+    parser.add_argument("--offset", "-o", type=int, help=messages.arg_help_offset)
+    return parser
 
 
 def add_issue_parser(
@@ -10,43 +47,14 @@ def add_issue_parser(
         "issue",
         aliases=["i"],
         help=messages.arg_help_issue_command,
-        parents=parents,
+        parents=[*parents, _issue_filter_parser()],
     )
-    i_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
-    i_parser.add_argument(
-        "--project_id", "-p", help=messages.arg_help_issue_filter_project
-    )
-    i_parser.add_argument(
-        "--version",
-        "-v",
-        help=messages.arg_help_issue_filter_version,
-    )
-    i_parser.add_argument(
-        "--assigned_to",
-        "-a",
-        help=messages.arg_help_issue_filter_assigned_to,
-    )
-    i_parser.add_argument(
-        "--status_id",
-        "-s",
-        help=messages.arg_help_issue_filter_status,
-    )
-    i_parser.add_argument(
-        "--tracker_id", "-t", help=messages.arg_help_issue_filter_tracker
-    )
-    i_parser.add_argument("--priority_id", help=messages.arg_help_issue_filter_priority)
-    i_parser.add_argument(
-        "--query_id",
-        "-q",
-        help=messages.arg_help_issue_filter_query,
-    )
-    i_parser.add_argument("--limit", "-l", type=int, help=messages.arg_help_limit)
-    i_parser.add_argument("--offset", "-o", type=int, help=messages.arg_help_offset)
     i_subparsers = i_parser.add_subparsers(dest="issue_command")
     i_subparsers.add_parser(
-        "list", aliases=["l"], help=messages.arg_help_issue_list, parents=parents
+        "list",
+        aliases=["l"],
+        help=messages.arg_help_issue_list,
+        parents=[*parents, _issue_filter_parser(postfix=True)],
     )
     i_view_parser = i_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_issue_view, parents=parents

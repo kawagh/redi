@@ -13,6 +13,7 @@ from redi.api.project import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
+from redi.cli.filter_parser import full_filter_parser
 from redi.i18n import messages
 
 
@@ -23,14 +24,14 @@ def add_project_parser(
         "project",
         aliases=["p"],
         help=messages.arg_help_project_command,
-        parents=parents,
-    )
-    p_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
+        parents=[*parents, full_filter_parser()],
     )
     p_subparsers = p_parser.add_subparsers(dest="project_command")
     p_subparsers.add_parser(
-        "list", aliases=["l"], help=messages.arg_help_project_list, parents=parents
+        "list",
+        aliases=["l"],
+        help=messages.arg_help_project_list,
+        parents=[*parents, full_filter_parser(postfix=True)],
     )
     p_view_parser = p_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_project_view, parents=parents
