@@ -1,16 +1,10 @@
 from __future__ import annotations
 
-import json
-import sys
-import webbrowser
-from collections import defaultdict
 from typing import NotRequired, TypedDict, cast
 
-from redi import config
-from redi.api.exceptions import RedmineValidationException
+from redi.api.exceptions import RedmineValidationException, ValidationAction
 from redi.api.types import Attachment, IdName
 from redi.client import client
-from redi.i18n import messages
 
 
 class WikiPage(TypedDict):
@@ -44,10 +38,13 @@ class WikiPageParent(TypedDict):
     title: str
 
 
-class WikiPageUpdateBody(TypedDict):
+class WikiPageBody(TypedDict):
+    """Wiki ページ更新 (PUT) のリクエストボディ。作成も同じ PUT で行う。"""
+
     text: str
     comments: str
     version: NotRequired[int]
+    parent_title: NotRequired[str]
 
 
 class WikiUpdateConflictException(Exception):
@@ -77,53 +74,6 @@ def fetch_wikis(project_id: str) -> list[WikiPage]:
     return cast("list[WikiPage]", response.json()["wiki_pages"])
 
 
-def build_children_map(pages: list[WikiPage]) -> dict[str | None, list[str]]:
-    children_map: dict[str | None, list[str]] = defaultdict(list)
-    for page in pages:
-        parent_obj = page.get("parent")
-        parent = parent_obj["title"] if parent_obj is not None else None
-        children_map[parent].append(page["title"])
-    for titles in children_map.values():
-        titles.sort()
-    return children_map
-
-
-def flatten_wiki_tree(pages: list[WikiPage]) -> list[tuple[WikiPage, str]]:
-    """
-    Wiki ページをツリー順に並べ、(ページ辞書, ツリー前置子) のペア列として返す。
-    前置子は `│   ├── ` のようなツリー装飾で、末尾にタイトル等を連結すれば
-    1 行分のツリー表示になる。
-    """
-    children_map = build_children_map(pages)
-    by_title = {p["title"]: p for p in pages}
-    result: list[tuple[WikiPage, str]] = []
-
-    def walk(parent: str | None, prefix: str) -> None:
-        children = children_map.get(parent, [])
-        for i, title in enumerate(children):
-            if title not in by_title:
-                continue
-            is_last = i == len(children) - 1
-            connector = "└── " if is_last else "├── "
-            result.append((by_title[title], f"{prefix}{connector}"))
-            next_prefix = prefix + ("    " if is_last else "│   ")
-            walk(title, next_prefix)
-
-    walk(None, "")
-    return result
-
-
-def list_wikis(project_id: str, full: bool = False) -> None:
-    pages = fetch_wikis(project_id)
-    if full:
-        print(json.dumps(pages, ensure_ascii=False))
-        return
-    for page, tree_prefix in flatten_wiki_tree(pages):
-        title = page["title"]
-        url = f"{config.redmine_url}/projects/{project_id}/wiki/{title}"
-        print(f"{tree_prefix}[{title}]({url})")
-
-
 def fetch_wiki(
     project_id: str,
     page_title: str,
@@ -141,38 +91,48 @@ def fetch_wiki(
     return cast("WikiPage", response.json()["wiki_page"])
 
 
-def read_wiki(
+def _put_wiki_page(
     project_id: str,
     page_title: str,
-    full: bool = False,
-    web: bool = False,
-    version: int | None = None,
+    body: WikiPageBody,
+    action: ValidationAction,
 ) -> None:
-    if web:
-        url = f"{config.redmine_url}/projects/{project_id}/wiki/{page_title}"
-        if version is not None:
-            url = f"{url}/{version}"
-        print(url)
-        webbrowser.open(url)
-        return
-    wiki = fetch_wiki(project_id, page_title, version=version, full=full)
-    if wiki is None:
-        if version is not None:
-            print(
-                messages.wiki_page_with_version_not_found.format(
-                    title=page_title, version=version
-                )
-            )
-        else:
-            print(messages.wiki_page_not_found.format(title=page_title))
-        sys.exit(1)
-    if full:
-        print(json.dumps(wiki, ensure_ascii=False, indent=2))
-    else:
-        print(wiki.get("text", ""))
+    """Wikiページを PUT する
+
+    Raises:
+        WikiUpdateConflictException: version がRedmine側の最新バージョンと一致せず、更新が競合した場合（HTTP 409）。
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+        requests.exceptions.HTTPError: 409 / 422 以外の HTTP エラーが返った場合
+    """
+    response = client.put(
+        f"/projects/{project_id}/wiki/{page_title}.json",
+        json={"wiki_page": body},
+    )
+    if response.status_code == 409:
+        raise WikiUpdateConflictException(page_title)
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("wiki", action, response)
+    response.raise_for_status()
 
 
-def update_wiki(
+def create_wiki_page(
+    project_id: str,
+    page_title: str,
+    text: str,
+    parent_title: str | None = None,
+    comments: str = "",
+) -> None:
+    """Wikiページを作成する
+
+    Redmine の Wiki 作成は更新と同じ PUT なので、既存のタイトルを渡すと更新になる。
+    """
+    body: WikiPageBody = {"text": text, "comments": comments}
+    if parent_title:
+        body["parent_title"] = parent_title
+    _put_wiki_page(project_id, page_title, body, "create")
+
+
+def update_wiki_page(
     project_id: str,
     page_title: str,
     text: str,
@@ -186,26 +146,11 @@ def update_wiki(
                  指定するとRedmine 側のバージョンと一致しない場合に409 が返る。
                  Noneの場合はバージョンチェックを行わない
         comments: 更新時のコメント（変更履歴に記録される）
-
-    Raises:
-        WikiUpdateConflictException: version がRedmine側の最新バージョンと一致せず、更新が競合した場合（HTTP 409）。
-        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
-        requests.exceptions.HTTPError: 409 / 422 以外の HTTP エラーが返った場合
     """
-    body: WikiPageUpdateBody = {"text": text, "comments": comments}
+    body: WikiPageBody = {"text": text, "comments": comments}
     if version is not None:
         body["version"] = version
-    response = client.put(
-        f"/projects/{project_id}/wiki/{page_title}.json",
-        json={"wiki_page": body},
-    )
-    if response.status_code == 409:
-        raise WikiUpdateConflictException(page_title)
-    if response.status_code == 422:
-        raise RedmineValidationException.from_response("wiki", "update", response)
-    response.raise_for_status()
-    url = f"{config.redmine_url}/projects/{project_id}/wiki/{page_title}"
-    print(messages.wiki_page_updated.format(url=url))
+    _put_wiki_page(project_id, page_title, body, "update")
 
 
 def delete_wiki_page(project_id: str, page_title: str) -> None:
@@ -219,45 +164,3 @@ def delete_wiki_page(project_id: str, page_title: str) -> None:
     if response.status_code == 404:
         raise WikiPageNotFoundException(page_title)
     response.raise_for_status()
-
-
-def create_wiki(
-    project_id: str,
-    page_title: str,
-    text: str,
-    parent_title: str | None = None,
-    comments: str = "",
-) -> None:
-    """Wikiページを作成する
-
-    Raises:
-        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
-    """
-    if parent_title:
-        parent_exists = (
-            client.get(f"/projects/{project_id}/wiki/{parent_title}.json").status_code
-            == 200
-        )
-        if not parent_exists:
-            print(messages.parent_page_not_found.format(title=parent_title))
-            return
-
-    exists = (
-        client.get(f"/projects/{project_id}/wiki/{page_title}.json").status_code == 200
-    )
-
-    body: dict = {"text": text, "comments": comments}
-    if parent_title:
-        body["parent_title"] = parent_title
-    response = client.put(
-        f"/projects/{project_id}/wiki/{page_title}.json",
-        json={"wiki_page": body},
-    )
-    if response.status_code == 422:
-        raise RedmineValidationException.from_response("wiki", "create", response)
-    response.raise_for_status()
-    url = f"{config.redmine_url}/projects/{project_id}/wiki/{page_title}"
-    if exists:
-        print(messages.wiki_page_updated.format(url=url))
-    else:
-        print(messages.wiki_page_created.format(url=url))
