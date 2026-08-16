@@ -1,58 +1,88 @@
-import json
-import sys
+from __future__ import annotations
 
-import requests
+from typing import NotRequired, TypedDict, cast
 
-from redi.api.attachment import upload_file
-from redi.api.exceptions import print_http_error_body
+from redi.api.types import IdName
 from redi.client import client
-from redi.i18n import messages
 
 
-def list_files(project_id: str, full: bool = False) -> None:
+class ProjectFile(TypedDict):
+    """プロジェクトのファイル。
+
+    GET /projects/{id}/files.json を実行して確認できたフィールドを記載。
+    """
+
+    id: int
+    filename: str
+    filesize: int  # bytes
+    content_type: str  # ex. text/plain
+    description: str
+    content_url: str
+    author: IdName
+    created_on: str
+    digest: NotRequired[str]
+    downloads: NotRequired[int]
+    # バージョンに紐づけて登録した場合のみ存在
+    version: NotRequired[IdName]
+
+
+class ProjectFileBody(TypedDict):
+    """プロジェクトファイル登録 (POST) のリクエストボディ。"""
+
+    token: str
+    filename: str
+    content_type: str
+    version_id: NotRequired[int]
+    description: NotRequired[str]
+
+
+class ProjectNotFoundException(Exception):
+    """対象プロジェクトが存在しないときに送出する例外。"""
+
+    def __init__(self, project_id: str) -> None:
+        super().__init__(project_id)
+        self.project_id = project_id
+
+
+def fetch_files(project_id: str) -> list[ProjectFile]:
+    """プロジェクトのファイル一覧を取得する
+
+    Raises:
+        ProjectNotFoundException: 対象プロジェクトが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     response = client.get(f"/projects/{project_id}/files.json")
     if response.status_code == 404:
-        print(messages.project_not_found.format(id=project_id))
-        sys.exit(1)
+        raise ProjectNotFoundException(project_id)
     response.raise_for_status()
-    files = response.json()["files"]
-    if full:
-        print(json.dumps(files, ensure_ascii=False))
-        return
-    for f in files:
-        version = f.get("version") or {}
-        version_label = f" [{version.get('name')}]" if version else ""
-        size = f.get("filesize", "")
-        print(f"{f['id']} {f['filename']} ({size}B){version_label}")
+    return cast("list[ProjectFile]", response.json()["files"])
 
 
 def create_file(
     project_id: str,
-    file_path: str,
+    upload: dict,
     version_id: int | None = None,
     description: str | None = None,
 ) -> None:
-    upload = upload_file(file_path)
-    file_data: dict = {
+    """アップロード済みのファイルをプロジェクトのファイルとして登録する
+
+    Args:
+        upload: アップロード結果 (`api.attachment.upload_file` の戻り値)
+
+    Raises:
+        ProjectNotFoundException: 対象プロジェクトが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
+    body: ProjectFileBody = {
         "token": upload["token"],
         "filename": upload["filename"],
         "content_type": upload["content_type"],
     }
     if version_id is not None:
-        file_data["version_id"] = version_id
+        body["version_id"] = version_id
     if description is not None:
-        file_data["description"] = description
-    response = client.post(
-        f"/projects/{project_id}/files.json", json={"file": file_data}
-    )
+        body["description"] = description
+    response = client.post(f"/projects/{project_id}/files.json", json={"file": body})
     if response.status_code == 404:
-        print(messages.project_not_found.format(id=project_id))
-        sys.exit(1)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.file_upload_failed)
-        sys.exit(1)
-    print(messages.file_uploaded.format(filename=upload["filename"]))
+        raise ProjectNotFoundException(project_id)
+    response.raise_for_status()
