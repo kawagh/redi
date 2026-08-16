@@ -513,6 +513,7 @@ class En(MessagesProto):
     tui_issue_delete_modal_prompt = 'Type issue_id "{expected}" to confirm deletion'
     tui_issue_delete_modal_input_label = "issue_id> "
     tui_issue_delete_modal_mismatch = "issue_id does not match"
+    tui_issue_delete_modal_empty = "Enter the issue_id"
     tui_issue_delete_modal_hint = "Enter:confirm Esc:close"
 
     # ---- argparse helps (root) ----

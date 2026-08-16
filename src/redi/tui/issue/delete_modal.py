@@ -40,8 +40,8 @@ def render_delete_modal(state: TuiState) -> Renderable:
     # 末尾の反転した空白を入力カーソルに見立てる
     parts.append(("reverse", " "))
     parts.append(("", "\n"))
-    if modal.mismatch:
-        parts.append(("fg:ansired", messages.tui_issue_delete_modal_mismatch + "\n"))
+    if modal.notice:
+        parts.append(("fg:ansired", modal.notice + "\n"))
     parts.append(("", "\n"))
     parts.append(("", messages.tui_issue_delete_modal_hint))
     return parts
@@ -91,7 +91,7 @@ def open_delete_modal(state: TuiState) -> bool:
     modal.target_id = int(issue_id)
     modal.target_subject = str(issue.get("subject", ""))
     modal.input_text = ""
-    modal.mismatch = False
+    modal.notice = None
     return True
 
 
@@ -100,23 +100,23 @@ def close_delete_modal(state: TuiState) -> None:
     modal = state.issue_tab.delete_modal
     modal.show = False
     modal.input_text = ""
-    modal.mismatch = False
+    modal.notice = None
 
 
 def confirm_delete(state: TuiState) -> None:
     """modal で入力された issue_id が modal を開いた対象と一致したら削除する。
 
-    入力が空の場合はまだ打ち始めていないだけなので何もしない。
-    一致しない場合は modal.mismatch を立て、入力をクリアして再入力させる。
+    入力が空の場合と一致しない場合は modal.notice に理由を出して再入力させる。
     削除成功時は modal を閉じ、ローカルの issue 一覧から該当行を取り除く。
     削除失敗時は modal を閉じて flash_message にエラーを出す。
     """
     modal = state.issue_tab.delete_modal
     entered = modal.input_text.strip()
     if not entered:
+        modal.notice = messages.tui_issue_delete_modal_empty
         return
     if entered != str(modal.target_id):
-        modal.mismatch = True
+        modal.notice = messages.tui_issue_delete_modal_mismatch
         modal.input_text = ""
         return
     issues = state.issue_tab.issues
@@ -147,7 +147,7 @@ def input_digit(state: TuiState, digit: str) -> None:
         return
     modal = state.issue_tab.delete_modal
     modal.input_text += digit
-    modal.mismatch = False
+    modal.notice = None
 
 
 def backspace(state: TuiState) -> None:
@@ -155,4 +155,4 @@ def backspace(state: TuiState) -> None:
     modal = state.issue_tab.delete_modal
     if modal.input_text:
         modal.input_text = modal.input_text[:-1]
-        modal.mismatch = False
+        modal.notice = None

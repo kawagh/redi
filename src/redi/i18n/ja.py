@@ -522,6 +522,7 @@ class Ja(MessagesProto):
     )
     tui_issue_delete_modal_input_label = "issue_id> "
     tui_issue_delete_modal_mismatch = "issue_id が一致しません"
+    tui_issue_delete_modal_empty = "issue_id を入力してください"
     tui_issue_delete_modal_hint = "Enter:確定 Esc:閉じる"
 
     # ---- argparse helps (root) ----

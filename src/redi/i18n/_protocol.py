@@ -677,6 +677,7 @@ class MessagesProto(Protocol):
     """{expected}"""
     tui_issue_delete_modal_input_label: str
     tui_issue_delete_modal_mismatch: str
+    tui_issue_delete_modal_empty: str
     tui_issue_delete_modal_hint: str
 
     # ---- argparse helps (root) ----

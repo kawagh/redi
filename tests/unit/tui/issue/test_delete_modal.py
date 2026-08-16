@@ -3,6 +3,7 @@ from typing import cast
 import requests
 
 from redi.api.issue import Issue
+from redi.i18n import messages
 from redi.tui.issue import delete_modal
 from redi.tui.issue.delete_modal import confirm_delete, open_delete_modal
 from redi.tui.state import TuiState
@@ -37,7 +38,7 @@ class TestOpenDeleteModal:
         assert modal.target_id == 22
         assert modal.target_subject == "second"
         assert modal.input_text == ""
-        assert modal.mismatch is False
+        assert modal.notice is None
 
     def test_returns_false_when_empty(self):
         """issues が空のときは modal を開かず False"""
@@ -85,7 +86,7 @@ class TestConfirmDelete:
         assert state.flash_message is None
 
     def test_mismatch_keeps_modal_open_and_clears_input(self, monkeypatch):
-        """入力が一致しなければ削除せず mismatch=True で再入力を促す"""
+        """入力が一致しなければ削除せず notice を出して再入力を促す"""
         state = TuiState()
         self._setup(state, input_text="9")
 
@@ -97,8 +98,27 @@ class TestConfirmDelete:
 
         assert [i["id"] for i in state.issue_tab.issues] == [1, 2, 3]
         assert state.issue_tab.delete_modal.show is True
-        assert state.issue_tab.delete_modal.mismatch is True
+        assert (
+            state.issue_tab.delete_modal.notice
+            == messages.tui_issue_delete_modal_mismatch
+        )
         assert state.issue_tab.delete_modal.input_text == ""
+
+    def test_empty_input_asks_for_issue_id(self, monkeypatch):
+        """入力が空のままなら削除せず issue_id の入力を促す"""
+        state = TuiState()
+        self._setup(state, input_text="")
+
+        def fail(path: str):
+            raise AssertionError("DELETE should not be called on empty input")
+
+        monkeypatch.setattr(delete_modal.client, "delete", fail)
+        confirm_delete(state)
+
+        assert state.issue_tab.delete_modal.show is True
+        assert (
+            state.issue_tab.delete_modal.notice == messages.tui_issue_delete_modal_empty
+        )
 
     def test_clamps_cursor_when_deleting_last(self, monkeypatch):
         """末尾を削除した場合、cursor を新しい末尾にクランプする"""
@@ -140,15 +160,15 @@ class TestConfirmDelete:
 
 
 class TestInputDigit:
-    """input_digit() は数字のみを入力欄に積み、mismatch 表示を消す"""
+    """input_digit() は数字のみを入力欄に積み、notice を消す"""
 
-    def test_appends_digit_and_clears_mismatch(self):
+    def test_appends_digit_and_clears_notice(self):
         state = TuiState()
-        state.issue_tab.delete_modal.mismatch = True
+        state.issue_tab.delete_modal.notice = "dummy"
         delete_modal.input_digit(state, "1")
         delete_modal.input_digit(state, "2")
         assert state.issue_tab.delete_modal.input_text == "12"
-        assert state.issue_tab.delete_modal.mismatch is False
+        assert state.issue_tab.delete_modal.notice is None
 
     def test_ignores_non_digit(self):
         """数字以外 (英字や複数文字) は入力欄に入れない"""

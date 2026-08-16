@@ -127,8 +127,8 @@ class IssueDeleteModalState:
     target_id: int = 0
     target_subject: str = ""
     input_text: str = ""
-    # 直前の Enter で id 不一致だった場合に出す注意メッセージ
-    mismatch: bool = False
+    # 直前の Enter が削除に至らなかった場合に出す注意メッセージ
+    notice: str | None = None
 
 
 @dataclass
