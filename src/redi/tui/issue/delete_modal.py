@@ -62,7 +62,8 @@ def build_delete_float(state: TuiState, show: FilterOrBool) -> Float:
                                 lambda: render_delete_modal(state),
                                 show_cursor=False,
                             ),
-                            wrap_lines=False,
+                            # 何を消すかが読めないと確認にならないので subject は折り返す
+                            wrap_lines=True,
                         ),
                         title=lambda: messages.tui_issue_delete_modal_title,
                     ),
