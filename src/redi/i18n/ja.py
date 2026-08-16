@@ -532,7 +532,7 @@ class Ja(MessagesProto):
         "版履歴も削除され、元に戻せません (子ページは最上位に移ります)"
     )
     tui_wiki_delete_modal_prompt = '削除を実行するには "{expected}" を入力してください'
-    tui_wiki_delete_modal_input_label = "confirm> "
+    tui_wiki_delete_modal_input_label = "確認> "
     tui_wiki_delete_modal_mismatch = '"{expected}" と一致しません'
     tui_wiki_delete_modal_empty = '"{expected}" を入力してください'
     tui_wiki_delete_modal_hint = "Enter:確定 Esc:閉じる"
