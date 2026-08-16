@@ -42,7 +42,7 @@ This file provides guidance to Agents when working with code in this repository.
 - 操作主体は人(非エージェント)
 - 削除操作は誤操作の戻しやすさに応じて操作完了までの手間の大小を変える
     - issue: modal を開き issue_id を打ち直させる(issueに付随する添付ファイルやコメントが削除されるので重く見ている)
-    - wiki: modal を開き `DELETE` と打たせる(版履歴ごと消えるので重く見ている。数値idが無く、タイトルは日本語もあり打ち直させられないため確認語にしている)
+    - wiki: modal を開き `DELETE` と打たせる(数値idが無く、タイトルは日本語もあり打ち直させられないため確認語にしている)
     - コメント : ステータスバーの y/N
     - time_entry : ステータスバーの y/N
 
