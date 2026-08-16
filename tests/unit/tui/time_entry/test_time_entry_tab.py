@@ -172,8 +172,12 @@ class TestFetchPageUsesFilter:
             captured["user_id"] = user_id
             return {"time_entries": [], "total_count": 0}
 
-        monkeypatch.setattr(time_entry_tab, "fetch_time_entries_page", fake_fetch)
-        monkeypatch.setattr(time_entry_tab, "fetch_issue_subjects", lambda ids: {})
+        monkeypatch.setattr(time_entry_tab.time_entry_service, "fetch_page", fake_fetch)
+        monkeypatch.setattr(
+            time_entry_tab.time_entry_service,
+            "fetch_issue_subjects",
+            lambda entries: {},
+        )
 
         time_entry_tab._fetch_page_with_subjects(state, 0)
 
@@ -192,8 +196,12 @@ class TestFetchPageUsesFilter:
             captured["user_id"] = user_id
             return {"time_entries": [], "total_count": 0}
 
-        monkeypatch.setattr(time_entry_tab, "fetch_time_entries_page", fake_fetch)
-        monkeypatch.setattr(time_entry_tab, "fetch_issue_subjects", lambda ids: {})
+        monkeypatch.setattr(time_entry_tab.time_entry_service, "fetch_page", fake_fetch)
+        monkeypatch.setattr(
+            time_entry_tab.time_entry_service,
+            "fetch_issue_subjects",
+            lambda entries: {},
+        )
 
         time_entry_tab._fetch_page_with_subjects(state, 0)
 

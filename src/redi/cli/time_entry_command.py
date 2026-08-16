@@ -1,4 +1,5 @@
 import argparse
+import json
 import sys
 
 import requests
@@ -10,14 +11,7 @@ from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.exceptions import print_http_error_body
 from redi.api.issue import fetch_issue
 from redi.api.project import fetch_projects
-from redi.api.time_entry import (
-    TimeEntryNotFoundException,
-    create_time_entry,
-    fetch_time_entry,
-    list_time_entries,
-    read_time_entry,
-    update_time_entry,
-)
+from redi.api.time_entry import TimeEntry, TimeEntryNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.interactive import prompt
@@ -31,6 +25,146 @@ from redi.cli.shared_options import SharedOptionParser
 from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
 from redi.service import time_entry_service
+
+
+def _fetch_time_entry_or_exit(time_entry_id: str) -> TimeEntry:
+    """作業時間を取得する。存在しなければ見つからないと伝えて exit 1。"""
+    te = time_entry_service.read_time_entry(time_entry_id)
+    if te is None:
+        print(messages.time_entry_not_found.format(id=time_entry_id))
+        sys.exit(1)
+    return te
+
+
+def _list_time_entries(
+    project_id: str | None = None,
+    user_id: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    full: bool = False,
+) -> None:
+    """作業時間の一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
+    entries = time_entry_service.fetch_page(
+        project_id=project_id,
+        user_id=user_id,
+        from_date=from_date,
+        to_date=to_date,
+        limit=limit,
+        offset=offset,
+    )["time_entries"]
+    if full:
+        print(json.dumps(entries, ensure_ascii=False))
+        return
+    issue_subjects = time_entry_service.fetch_issue_subjects(entries)
+    # ユーザで絞り込んでいる場合は全行に同じ名前が並ぶので出さない
+    for te in entries:
+        print(
+            time_entry_service.format_time_entry_line(
+                te,
+                include_user=user_id is None,
+                issue_subjects=issue_subjects,
+            )
+        )
+
+
+def _view_time_entry(time_entry_id: str, full: bool = False) -> None:
+    """作業時間の詳細を標準出力に出す。存在しない場合は exit 1。"""
+    te = _fetch_time_entry_or_exit(time_entry_id)
+    if full:
+        print(json.dumps(te, ensure_ascii=False))
+        return
+    lines = [
+        f"{te['id']} {te['hours']}h {te['activity']['name']} ({te['spent_on']})",
+        messages.label_project_in_te.format(
+            name=te["project"]["name"], id=te["project"]["id"]
+        ),
+        messages.label_user_in_te.format(name=te["user"]["name"], id=te["user"]["id"]),
+    ]
+    issue = te.get("issue")
+    if issue:
+        lines.append(messages.label_issue_field.format(id=issue["id"]))
+    comments = te.get("comments")
+    if comments:
+        lines.append(messages.label_comments_field.format(value=comments))
+    print("\n".join(lines))
+
+
+def create_time_entry(
+    issue_id: str | None = None,
+    project_id: str | None = None,
+    hours: float = 0,
+    activity_id: str | None = None,
+    spent_on: str | None = None,
+    comments: str | None = None,
+) -> None:
+    """作業時間を作成し、結果を標準出力に出す。失敗時は exit 1。
+
+    `redi issue update --hours` からも使う。
+    """
+    if not issue_id and not project_id:
+        print(messages.issue_or_project_id_required)
+        sys.exit(1)
+    try:
+        created = time_entry_service.create_time_entry(
+            issue_id=issue_id,
+            project_id=project_id,
+            hours=hours,
+            activity_id=activity_id,
+            spent_on=spent_on,
+            comments=comments,
+        )
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.time_entry_create_failed)
+        sys.exit(1)
+    print(
+        messages.time_entry_created.format(
+            id=created["id"], hours=created["hours"], spent_on=created["spent_on"]
+        )
+    )
+
+
+def _update_time_entry(
+    time_entry_id: str,
+    hours: float | None = None,
+    issue_id: str | None = None,
+    project_id: str | None = None,
+    activity_id: str | None = None,
+    spent_on: str | None = None,
+    comments: str | None = None,
+) -> None:
+    """作業時間を更新し、結果を標準出力に出す。変更が無い場合と失敗時は exit 1。"""
+    has_changes = (
+        hours is not None
+        or bool(issue_id)
+        or bool(project_id)
+        or bool(activity_id)
+        or bool(spent_on)
+        # 空文字はコメントを消す更新として送るため None かどうかで見る
+        or comments is not None
+    )
+    if not has_changes:
+        print(messages.update_canceled_no_changes)
+        sys.exit(1)
+    try:
+        time_entry_service.update_time_entry(
+            time_entry_id,
+            hours=hours,
+            issue_id=issue_id,
+            project_id=project_id,
+            activity_id=activity_id,
+            spent_on=spent_on,
+            comments=comments,
+        )
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.time_entry_update_failed)
+        sys.exit(1)
+    print(messages.time_entry_updated.format(id=time_entry_id))
 
 
 def _delete_time_entry(time_entry_id: str) -> None:
@@ -234,7 +368,7 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
 
 
 def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
-    current = fetch_time_entry(args.time_entry_id)
+    current = _fetch_time_entry_or_exit(args.time_entry_id)
     field_values: list[tuple[str, str]] = [
         ("hours", messages.field_hours),
         ("activity", messages.field_activity),
@@ -325,7 +459,7 @@ def handle_time_entry(args: argparse.Namespace) -> None:
             comments=args.comments,
         )
     elif cmd == "view":
-        read_time_entry(args.time_entry_id, full=args.full)
+        _view_time_entry(args.time_entry_id, full=args.full)
     elif cmd == "update":
         if (
             args.hours is None
@@ -336,7 +470,7 @@ def handle_time_entry(args: argparse.Namespace) -> None:
             and args.comments is None
         ):
             _interactive_fill_time_entry_update_args(args)
-        update_time_entry(
+        _update_time_entry(
             time_entry_id=args.time_entry_id,
             hours=args.hours,
             issue_id=args.issue_id,
@@ -347,7 +481,7 @@ def handle_time_entry(args: argparse.Namespace) -> None:
         )
     elif cmd == "delete":
         if not args.yes:
-            te = fetch_time_entry(args.time_entry_id)
+            te = _fetch_time_entry_or_exit(args.time_entry_id)
             activity = (te.get("activity") or {}).get("name", "")
             confirm_delete(
                 messages.delete_target_time_entry.format(
@@ -360,7 +494,7 @@ def handle_time_entry(args: argparse.Namespace) -> None:
         _delete_time_entry(args.time_entry_id)
     elif cmd == "list" or cmd is None:
         project_id = args.project_id or config.default_project_id
-        list_time_entries(
+        _list_time_entries(
             project_id=project_id,
             user_id=args.user_id,
             from_date=args.from_date,

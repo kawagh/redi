@@ -23,7 +23,6 @@ from redi.api.issue import (
 from redi.api.issue_relation import create_relation, delete_relation
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.project import fetch_project
-from redi.api.time_entry import create_time_entry
 from redi.cli.custom_field_prompt import (
     SKIP_UNSUPPORTED_FIELD,
     prompt_custom_field_value,
@@ -40,6 +39,7 @@ from redi.cli.issue_command.field_prompt import (
 )
 from redi.cli.keybinding import date_key_bindings
 from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.time_entry_command import create_time_entry
 from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
 
