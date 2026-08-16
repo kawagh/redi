@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 
 from redi import config
@@ -6,9 +8,11 @@ from redi.service import wiki_service
 
 @pytest.fixture
 def stub_wiki_api(monkeypatch):
-    """存在するページを差し替え、作成 PUT の呼び出しを記録する。
+    """存在するページを `existing` で差し替え、作成 PUT を `calls` に記録する。
 
     fetch は与えたタイトル集合に含まれるかだけを見て WikiPage 相当を返す。
+    記録するのは分岐に効く page_title / parent_title のみで、本文が Redmine に
+    正しく届くかは E2E (`tests/e2e/test_wiki_cli.py`) で見る。
     """
 
     existing: set[str] = set()
@@ -26,7 +30,7 @@ def stub_wiki_api(monkeypatch):
 
     monkeypatch.setattr(wiki_service, "fetch_wiki", fake_fetch_wiki)
     monkeypatch.setattr(wiki_service, "create_wiki_page", fake_create_wiki_page)
-    return existing, calls
+    return SimpleNamespace(existing=existing, calls=calls)
 
 
 class TestCreatePage:
@@ -34,41 +38,27 @@ class TestCreatePage:
 
     def test_new_title_is_created(self, stub_wiki_api):
         """存在しないタイトルなら作成として返す"""
-        _, calls = stub_wiki_api
-
         result = wiki_service.create_page("demo", "New", "本文")
 
         assert result == wiki_service.WikiCreateResult(title="New", created=True)
-        assert calls == [{"page_title": "New", "parent_title": None}]
+        assert stub_wiki_api.calls == [{"page_title": "New", "parent_title": None}]
 
     def test_existing_title_is_update(self, stub_wiki_api):
         """既存タイトルへの作成は PUT が更新になるため created=False で返す"""
-        existing, calls = stub_wiki_api
-        existing.add("Existing")
+        stub_wiki_api.existing.add("Existing")
 
         result = wiki_service.create_page("demo", "Existing", "本文")
 
-        assert result.created is False
-        assert calls == [{"page_title": "Existing", "parent_title": None}]
+        assert result == wiki_service.WikiCreateResult(title="Existing", created=False)
+        assert stub_wiki_api.calls == [{"page_title": "Existing", "parent_title": None}]
 
     def test_missing_parent_raises_without_put(self, stub_wiki_api):
         """親ページが存在しなければ PUT せず例外にする"""
-        _, calls = stub_wiki_api
-
         with pytest.raises(wiki_service.ParentPageNotFoundException) as e:
             wiki_service.create_page("demo", "Child", "本文", parent_title="Parent")
 
         assert e.value.title == "Parent"
-        assert calls == []
-
-    def test_existing_parent_is_passed_through(self, stub_wiki_api):
-        """親ページが存在すれば parent_title を渡して作成する"""
-        existing, calls = stub_wiki_api
-        existing.add("Parent")
-
-        wiki_service.create_page("demo", "Child", "本文", parent_title="Parent")
-
-        assert calls == [{"page_title": "Child", "parent_title": "Parent"}]
+        assert stub_wiki_api.calls == []
 
 
 class TestPageUrl:
