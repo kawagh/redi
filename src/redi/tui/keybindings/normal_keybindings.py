@@ -21,6 +21,7 @@ from redi.tui.time_entry.filter_modal import (
 from redi.tui.time_entry.time_entry_tab import (
     request_delete as time_entry_request_delete,
 )
+from redi.tui.wiki.delete_modal import open_delete_modal as open_wiki_delete_modal
 
 
 def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
@@ -183,6 +184,8 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
                 state.confirm_delete_prompt = prompt
         elif state.tab == "issues":
             open_issue_delete_modal(state)
+        elif state.tab == "wiki":
+            open_wiki_delete_modal(state)
 
     @kb.add("R", filter=normal_mode)
     def _(event):

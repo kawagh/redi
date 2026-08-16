@@ -461,7 +461,7 @@ class En(MessagesProto):
     tui_error_modal_title = "Error (q to close)"
     tui_status_hint_issues = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
     tui_status_hint_wiki = (
-        " jk:move /:search p:project c:create u:update v:web ?:help q:quit "
+        " jk:move /:search p:project c:create u:update D:delete v:web ?:help q:quit "
     )
     tui_status_hint_time_entries = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
     tui_flash_reloaded = "Reloaded"
@@ -515,6 +515,19 @@ class En(MessagesProto):
     tui_issue_delete_modal_mismatch = "issue_id does not match"
     tui_issue_delete_modal_empty = "Enter the issue_id"
     tui_issue_delete_modal_hint = "Enter:confirm Esc:close"
+    tui_wiki_delete_failed = "Failed to delete wiki page: {error}"
+    tui_wiki_delete_page_missing = "Wiki page not found: {title}"
+    tui_wiki_delete_modal_title = "Confirm wiki page deletion (Esc to close)"
+    tui_wiki_delete_modal_target = "Target: {title}"
+    tui_wiki_delete_modal_warning = (
+        "Version history is deleted too and cannot be undone"
+        " (child pages move to the top level)"
+    )
+    tui_wiki_delete_modal_prompt = 'Type "{expected}" to confirm deletion'
+    tui_wiki_delete_modal_input_label = "confirm> "
+    tui_wiki_delete_modal_mismatch = 'Input does not match "{expected}"'
+    tui_wiki_delete_modal_empty = 'Enter "{expected}"'
+    tui_wiki_delete_modal_hint = "Enter:confirm Esc:close"
 
     # ---- argparse helps (root) ----
     arg_help_root_description = "Redmine CLI"
@@ -919,6 +932,7 @@ class En(MessagesProto):
     tui_help_wiki_load_text = "Load body of the selected page"
     tui_help_wiki_create_child = "Create child of the selected page"
     tui_help_wiki_update_page = "Update the selected page"
+    tui_help_wiki_delete_page = "Delete the selected page"
     tui_help_wiki_open_web = "Open the selected page in web"
 
     # ---- TUI help labels (time entry tab) ----

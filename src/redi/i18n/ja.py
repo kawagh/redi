@@ -463,7 +463,7 @@ class Ja(MessagesProto):
         " c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     )
     tui_status_hint_wiki = (
-        " jk:移動 /:検索 p:プロジェクト c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+        " jk:移動 /:検索 p:プロジェクト c:作成 u:更新 D:削除 v:web ?:ヘルプ q:終了 "
     )
     tui_status_hint_time_entries = (
         " {page_label}  jk:移動 /:検索 f:フィルタ p:プロジェクト"
@@ -524,6 +524,18 @@ class Ja(MessagesProto):
     tui_issue_delete_modal_mismatch = "issue_id が一致しません"
     tui_issue_delete_modal_empty = "issue_id を入力してください"
     tui_issue_delete_modal_hint = "Enter:確定 Esc:閉じる"
+    tui_wiki_delete_failed = "Wikiページの削除に失敗しました: {error}"
+    tui_wiki_delete_page_missing = "Wikiページが見つかりません: {title}"
+    tui_wiki_delete_modal_title = "Wikiページ削除の確認 (Esc で閉じる)"
+    tui_wiki_delete_modal_target = "対象: {title}"
+    tui_wiki_delete_modal_warning = (
+        "版履歴も削除され、元に戻せません (子ページは最上位に移ります)"
+    )
+    tui_wiki_delete_modal_prompt = '削除を実行するには "{expected}" を入力してください'
+    tui_wiki_delete_modal_input_label = "confirm> "
+    tui_wiki_delete_modal_mismatch = '"{expected}" と一致しません'
+    tui_wiki_delete_modal_empty = '"{expected}" を入力してください'
+    tui_wiki_delete_modal_hint = "Enter:確定 Esc:閉じる"
 
     # ---- argparse helps (root) ----
     arg_help_root_description = "Redmine CLI"
@@ -929,6 +941,7 @@ class Ja(MessagesProto):
     tui_help_wiki_load_text = "選択ページの本文を読込"
     tui_help_wiki_create_child = "選択ページの子ページを作成"
     tui_help_wiki_update_page = "選択ページを更新"
+    tui_help_wiki_delete_page = "選択ページを削除"
     tui_help_wiki_open_web = "選択ページを web で開く"
 
     # ---- TUI help labels (time entry tab) ----
