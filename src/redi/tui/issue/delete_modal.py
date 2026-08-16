@@ -117,7 +117,6 @@ def confirm_delete(state: TuiState) -> None:
         return
     if entered != str(modal.target_id):
         modal.notice = messages.tui_issue_delete_modal_mismatch
-        modal.input_text = ""
         return
     issues = state.issue_tab.issues
     index = next(

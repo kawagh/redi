@@ -85,8 +85,8 @@ class TestConfirmDelete:
         assert state.issue_tab.delete_modal.show is False
         assert state.flash_message is None
 
-    def test_mismatch_keeps_modal_open_and_clears_input(self, monkeypatch):
-        """入力が一致しなければ削除せず notice を出して再入力を促す"""
+    def test_mismatch_keeps_modal_open_and_keeps_input(self, monkeypatch):
+        """入力が一致しなければ削除せず、入力はそのまま残して直させる"""
         state = TuiState()
         self._setup(state, input_text="9")
 
@@ -102,7 +102,7 @@ class TestConfirmDelete:
             state.issue_tab.delete_modal.notice
             == messages.tui_issue_delete_modal_mismatch
         )
-        assert state.issue_tab.delete_modal.input_text == ""
+        assert state.issue_tab.delete_modal.input_text == "9"
 
     def test_empty_input_asks_for_issue_id(self, monkeypatch):
         """入力が空のままなら削除せず issue_id の入力を促す"""
