@@ -6,6 +6,8 @@ import webbrowser
 from collections import defaultdict
 from typing import NotRequired, TypedDict, cast
 
+import requests
+
 from redi import config
 from redi.api.exceptions import RedmineValidationException
 from redi.api.types import Attachment, IdName
@@ -200,6 +202,11 @@ def update_wiki(
     response.raise_for_status()
     url = f"{config.redmine_url}/projects/{project_id}/wiki/{page_title}"
     print(messages.wiki_page_updated.format(url=url))
+
+
+def delete_wiki_page(project_id: str, page_title: str) -> requests.Response:
+    """Wikiページ削除の DELETE を投げる。ステータスコードの解釈は呼び出し元に任せる。"""
+    return client.delete(f"/projects/{project_id}/wiki/{page_title}.json")
 
 
 def create_wiki(
