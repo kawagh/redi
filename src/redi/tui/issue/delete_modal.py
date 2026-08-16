@@ -102,7 +102,7 @@ def close_delete_modal(state: TuiState) -> None:
 
 
 def confirm_delete(state: TuiState) -> None:
-    """modal で入力された issue_id がカーソル行と一致したら削除する。
+    """modal で入力された issue_id が modal を開いた対象と一致したら削除する。
 
     入力が空の場合はまだ打ち始めていないだけなので何もしない。
     一致しない場合は modal.mismatch を立て、入力をクリアして再入力させる。
@@ -110,30 +110,31 @@ def confirm_delete(state: TuiState) -> None:
     削除失敗時は modal を閉じて flash_message にエラーを出す。
     """
     modal = state.issue_tab.delete_modal
-    issues = state.issue_tab.issues
-    if not issues:
-        close_delete_modal(state)
-        return
-    cursor = state.issue_tab.cursor
-    issue = issues[cursor]
-    expected = str(modal.target_id)
     entered = modal.input_text.strip()
     if not entered:
         return
-    if entered != expected or str(issue.get("id")) != expected:
+    if entered != str(modal.target_id):
         modal.mismatch = True
         modal.input_text = ""
         return
+    issues = state.issue_tab.issues
+    index = next(
+        (i for i, issue in enumerate(issues) if issue.get("id") == modal.target_id),
+        None,
+    )
+    if index is None:
+        close_delete_modal(state)
+        return
     try:
-        response = client.delete(f"/issues/{issue['id']}.json")
+        response = client.delete(f"/issues/{modal.target_id}.json")
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         close_delete_modal(state)
         state.flash_message = messages.tui_issue_delete_failed.format(error=e)
         return
-    issues.pop(cursor)
+    issues.pop(index)
     state.issue_tab.total_count = max(0, state.issue_tab.total_count - 1)
-    if cursor >= len(issues):
+    if state.issue_tab.cursor >= len(issues):
         state.issue_tab.cursor = max(0, len(issues) - 1)
     close_delete_modal(state)
 
