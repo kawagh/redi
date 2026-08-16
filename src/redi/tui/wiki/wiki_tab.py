@@ -3,7 +3,7 @@ import webbrowser
 import requests
 
 from redi import config
-from redi.api.wiki import fetch_wiki, fetch_wikis, flatten_wiki_tree
+from redi.api.wiki import WikiPage, fetch_wiki, fetch_wikis, flatten_wiki_tree
 from redi.i18n import messages
 from redi.tui.state import (
     Renderable,
@@ -20,6 +20,18 @@ def _wiki_project(state: TuiState) -> str | None:
     return state.effective_wiki_project_id()
 
 
+def set_pages(state: TuiState, pages: list[WikiPage]) -> None:
+    """ページ一覧を差し替え、ツリー順とその表示ラベルを作り直す。
+
+    ページが増減すればツリーの装飾も変わるため、pages と labels は必ずここで揃える。
+    """
+    items = flatten_wiki_tree(pages)
+    state.wiki_tab.pages = [page for page, _ in items]
+    state.wiki_tab.labels = [
+        f"{tree_prefix}{page['title']}" for page, tree_prefix in items
+    ]
+
+
 def _load_wikis(state: TuiState) -> None:
     if state.wiki_tab.loaded:
         return
@@ -33,11 +45,7 @@ def _load_wikis(state: TuiState) -> None:
     except requests.exceptions.RequestException as e:
         state.wiki_tab.error = messages.tui_wiki_load_failed.format(error=e)
         return
-    items = flatten_wiki_tree(pages)
-    state.wiki_tab.pages = [page for page, _ in items]
-    state.wiki_tab.labels = [
-        f"{tree_prefix}{page['title']}" for page, tree_prefix in items
-    ]
+    set_pages(state, pages)
     state.wiki_tab.cursor = 0
 
 
@@ -237,6 +245,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  Enter", messages.tui_help_wiki_load_text),
     ("  c", messages.tui_help_wiki_create_child),
     ("  u", messages.tui_help_wiki_update_page),
+    ("  D", messages.tui_help_wiki_delete_page),
     ("  v", messages.tui_help_wiki_open_web),
     ("  R", messages.tui_help_reload),
     (messages.tui_help_section_other, ""),

@@ -32,6 +32,7 @@ from redi.tui.tabs import TABS
 from redi.tui.time_entry.filter_modal import (
     build_filter_float as build_time_entry_filter_float,
 )
+from redi.tui.wiki.delete_modal import build_delete_float as build_wiki_delete_float
 
 
 def build_layout(state: TuiState, conditions: Conditions) -> Layout:
@@ -104,6 +105,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
     project_float = build_project_float(state, conditions.project_modal)
 
     issue_delete_float = build_delete_float(state, conditions.issue_delete_modal)
+    wiki_delete_float = build_wiki_delete_float(state, conditions.wiki_delete_modal)
     profile_float = build_profile_float(state, conditions.profile_modal)
 
     error_float = Float(
@@ -136,6 +138,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
                 time_entry_filter_float,
                 project_float,
                 issue_delete_float,
+                wiki_delete_float,
                 profile_float,
                 error_float,
             ],

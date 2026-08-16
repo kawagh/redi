@@ -679,6 +679,22 @@ class MessagesProto(Protocol):
     tui_issue_delete_modal_mismatch: str
     tui_issue_delete_modal_empty: str
     tui_issue_delete_modal_hint: str
+    tui_wiki_delete_failed: str
+    """{error}"""
+    tui_wiki_delete_page_missing: str
+    """{title}"""
+    tui_wiki_delete_modal_title: str
+    tui_wiki_delete_modal_target: str
+    """{title}"""
+    tui_wiki_delete_modal_warning: str
+    tui_wiki_delete_modal_prompt: str
+    """{expected}"""
+    tui_wiki_delete_modal_input_label: str
+    tui_wiki_delete_modal_mismatch: str
+    """{expected}"""
+    tui_wiki_delete_modal_empty: str
+    """{expected}"""
+    tui_wiki_delete_modal_hint: str
 
     # ---- argparse helps (root) ----
     arg_help_root_description: str
@@ -1049,6 +1065,7 @@ class MessagesProto(Protocol):
     tui_help_wiki_load_text: str
     tui_help_wiki_create_child: str
     tui_help_wiki_update_page: str
+    tui_help_wiki_delete_page: str
     tui_help_wiki_open_web: str
 
     # ---- TUI help labels (time entry tab) ----

@@ -6,10 +6,8 @@ import webbrowser
 from collections import defaultdict
 from typing import NotRequired, TypedDict, cast
 
-import requests
-
 from redi import config
-from redi.api.exceptions import RedmineValidationException, print_http_error_body
+from redi.api.exceptions import RedmineValidationException
 from redi.api.types import Attachment, IdName
 from redi.client import client
 from redi.i18n import messages
@@ -53,6 +51,12 @@ class WikiPageUpdateBody(TypedDict):
 
 
 class WikiUpdateConflictException(Exception):
+    def __init__(self, title: str) -> None:
+        super().__init__(title)
+        self.title = title
+
+
+class WikiPageNotFoundException(Exception):
     def __init__(self, title: str) -> None:
         super().__init__(title)
         self.title = title
@@ -204,19 +208,17 @@ def update_wiki(
     print(messages.wiki_page_updated.format(url=url))
 
 
-def delete_wiki(project_id: str, page_title: str) -> None:
+def delete_wiki_page(project_id: str, page_title: str) -> None:
+    """Wikiページを削除する
+
+    Raises:
+        WikiPageNotFoundException: 対象ページが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     response = client.delete(f"/projects/{project_id}/wiki/{page_title}.json")
     if response.status_code == 404:
-        print(messages.wiki_page_not_found.format(title=page_title))
-        sys.exit(1)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.wiki_page_delete_failed)
-        sys.exit(1)
-    print(messages.wiki_page_deleted.format(title=page_title))
+        raise WikiPageNotFoundException(page_title)
+    response.raise_for_status()
 
 
 def create_wiki(

@@ -1,5 +1,7 @@
 """modal 表示中のキーバインド。"""
 
+from string import ascii_uppercase
+
 from prompt_toolkit.key_binding import KeyBindings
 
 from redi.tui.choice_modal import register_choice_keys
@@ -24,6 +26,18 @@ from redi.tui.state import IssueFilter, TimeEntryFilter, TuiState
 from redi.tui.time_entry.time_entry_tab import (
     reload_with_filter as time_entry_reload_with_filter,
 )
+from redi.tui.wiki.delete_modal import (
+    backspace as wiki_delete_backspace,
+)
+from redi.tui.wiki.delete_modal import (
+    close_delete_modal as wiki_close_delete_modal,
+)
+from redi.tui.wiki.delete_modal import (
+    confirm_delete as wiki_confirm_delete,
+)
+from redi.tui.wiki.delete_modal import (
+    input_char as wiki_delete_input_char,
+)
 
 
 def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
@@ -33,6 +47,7 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     show_error_modal = conditions.error_modal
     show_project_modal = conditions.project_modal
     show_issue_delete_modal = conditions.issue_delete_modal
+    show_wiki_delete_modal = conditions.wiki_delete_modal
     show_profile_modal = conditions.profile_modal
 
     @kb.add("<any>", filter=show_help_modal)
@@ -188,3 +203,24 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         @kb.add(digit, filter=show_issue_delete_modal)
         def _(event):
             issue_delete_input_digit(state, event.data)
+
+    @kb.add("enter", filter=show_wiki_delete_modal)
+    def _(event):
+        wiki_confirm_delete(state)
+
+    @kb.add("escape", filter=show_wiki_delete_modal)
+    @kb.add("c-c", filter=show_wiki_delete_modal)
+    def _(event):
+        wiki_close_delete_modal(state)
+
+    @kb.add("backspace", filter=show_wiki_delete_modal)
+    def _(event):
+        wiki_delete_backspace(state)
+
+    # 確認語 (DELETE) の入力欄なので英大文字だけ受け付ける。打ち間違いも入力欄に
+    # 残して不一致として気付けるようにする。
+    for char in ascii_uppercase:
+
+        @kb.add(char, filter=show_wiki_delete_modal)
+        def _(event):
+            wiki_delete_input_char(state, event.data)

@@ -144,6 +144,21 @@ class IssueTabState:
 
 
 @dataclass
+class WikiDeleteModalState:
+    """D で開く wiki 削除確認 modal の状態。
+
+    wiki は issue_id にあたる数値 id を持たないため、対象の特定ではなく確認語
+    (`DELETE`) の入力で確定させる。
+    """
+
+    show: bool = False
+    target_title: str = ""
+    input_text: str = ""
+    # 直前の Enter が削除に至らなかった場合に出す注意メッセージ
+    notice: str | None = None
+
+
+@dataclass
 class WikiTabState:
     loaded: bool = False
     pages: list[WikiPage] = field(default_factory=list)
@@ -151,6 +166,7 @@ class WikiTabState:
     cursor: int = 0
     texts: dict[str, str] = field(default_factory=dict)
     error: str | None = None
+    delete_modal: WikiDeleteModalState = field(default_factory=WikiDeleteModalState)
 
 
 @dataclass

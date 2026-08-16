@@ -42,13 +42,31 @@ This file provides guidance to Agents when working with code in this repository.
 - 操作主体は人(非エージェント)
 - 削除操作は誤操作の戻しやすさに応じて操作完了までの手間の大小を変える
     - issue: modal を開き issue_id を打ち直させる(issueに付随する添付ファイルやコメントが削除されるので重く見ている)
+    - wiki: modal を開き `DELETE` と打たせる(数値idが無く、タイトルは日本語もあり打ち直させられないため確認語にしている)
     - コメント : ステータスバーの y/N
     - time_entry : ステータスバーの y/N
+
+## 層構造
+
+- ※ コードの現状を示すものではなくあくまで志向
+- `tui/`
+- `cli/`
+- `service/` : CLI や TUI と、 APIの間に入るコード
+    - `api/` の役割が大きくなっているものを分割することと、CLI/TUI から呼び出しやすい構造にすることが目的。
+    - `wiki_service`などredmineのリソース毎に作る
+- `api/` : Redmine のAPI呼び出し、レスポンス型の定義、ステータスコードの解釈
+    - 404 / 409 / 422 などは例外や `None` に変換して返し、HTTP を呼び出し元に見せない
+
+- 基本的には以下の依存関係を保つ
+    - `tui` -> `service`
+    - `cli` -> `service`
+    - `service` -> `api`
 
 ## テスト
 
 - 守りたい仕様をテストとして書く
 - 実装やライブラリの都合でそうなっているだけの挙動はテストとして書かない
+- HTTP の正しさは CLI の E2E (`task test:e2e`) で担保する
 - docstring に守りたい仕様を日本語で書く(`pytest -v` に一覧として表示される)
 
 ## i18n
