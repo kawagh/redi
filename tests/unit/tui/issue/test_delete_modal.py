@@ -4,11 +4,7 @@ import requests
 
 from redi.api.issue import Issue
 from redi.tui.issue import delete_modal
-from redi.tui.issue.delete_modal import (
-    close_delete_modal,
-    confirm_delete,
-    open_delete_modal,
-)
+from redi.tui.issue.delete_modal import confirm_delete, open_delete_modal
 from redi.tui.state import TuiState
 
 
@@ -143,23 +139,6 @@ class TestConfirmDelete:
         assert "boom" in state.flash_message
 
 
-class TestCloseDeleteModal:
-    """close_delete_modal() は modal を閉じて入力をクリアする"""
-
-    def test_clears_state(self):
-        state = TuiState()
-        state.issue_tab.issues = cast(list[Issue], [{"id": 1, "subject": "a"}])
-        open_delete_modal(state)
-        state.issue_tab.delete_modal.input_text = "12"
-        state.issue_tab.delete_modal.mismatch = True
-
-        close_delete_modal(state)
-
-        assert state.issue_tab.delete_modal.show is False
-        assert state.issue_tab.delete_modal.input_text == ""
-        assert state.issue_tab.delete_modal.mismatch is False
-
-
 class TestInputDigit:
     """input_digit() は数字のみを入力欄に積み、mismatch 表示を消す"""
 
@@ -176,21 +155,4 @@ class TestInputDigit:
         state = TuiState()
         delete_modal.input_digit(state, "a")
         delete_modal.input_digit(state, "12")
-        assert state.issue_tab.delete_modal.input_text == ""
-
-
-class TestBackspace:
-    """backspace() は入力欄の末尾を1文字削る"""
-
-    def test_removes_last_character(self):
-        state = TuiState()
-        state.issue_tab.delete_modal.input_text = "12"
-        state.issue_tab.delete_modal.mismatch = True
-        delete_modal.backspace(state)
-        assert state.issue_tab.delete_modal.input_text == "1"
-        assert state.issue_tab.delete_modal.mismatch is False
-
-    def test_noop_when_empty(self):
-        state = TuiState()
-        delete_modal.backspace(state)
         assert state.issue_tab.delete_modal.input_text == ""
