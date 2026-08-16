@@ -316,7 +316,11 @@ def main() -> None:
             print(_format_validation_error(e))
             sys.exit(1)
     elif args.command in ("version", "v"):
-        handle_version(args)
+        try:
+            handle_version(args)
+        except RedmineValidationException as e:
+            print(_format_validation_error(e))
+            sys.exit(1)
     elif args.command in ("wiki", "w"):
         try:
             handle_wiki(args)
