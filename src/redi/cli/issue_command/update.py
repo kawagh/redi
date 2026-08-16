@@ -4,6 +4,8 @@ from dataclasses import dataclass, fields
 from datetime import date
 from typing import Self, cast
 
+import requests
+
 from redi import config
 from redi.api.custom_field import (
     CustomField,
@@ -13,12 +15,11 @@ from redi.api.custom_field import (
     filter_required_issue_custom_fields,
 )
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
+from redi.api.exceptions import print_http_error_body
 from redi.api.issue import (
-    add_watcher,
-    fetch_issue,
-    fetch_issues,
-    remove_watcher,
-    update_issue,
+    Issue,
+    IssueNotFoundException,
+    WatcherNotFoundException,
 )
 from redi.api.issue_relation import create_relation, delete_relation
 from redi.api.issue_status import fetch_issue_statuses
@@ -30,6 +31,7 @@ from redi.cli.custom_field_prompt import (
 )
 from redi.cli.editor import open_editor, save_body_on_failure
 from redi.cli.interactive import prompt
+from redi.cli.issue_command.custom_fields import parse_custom_fields
 from redi.cli.issue_command.field_prompt import (
     parse_iso_date,
     prompt_assignee,
@@ -42,6 +44,7 @@ from redi.cli.keybinding import date_key_bindings
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
+from redi.service import issue_service
 
 
 @dataclass
@@ -84,8 +87,17 @@ class IssueUpdateArgs:
         return cls(**{f.name: getattr(args, f.name) for f in fields(cls)})
 
 
+def _read_issue(issue_id: str) -> Issue:
+    """更新対象のイシューを取得する。存在しない場合は exit 1。"""
+    try:
+        return issue_service.read_issue(issue_id)
+    except IssueNotFoundException:
+        print(messages.issue_not_found.format(id=issue_id))
+        sys.exit(1)
+
+
 def _interactive_select_issue_id() -> str:
-    issues = fetch_issues(project_id=config.default_project_id)
+    issues = issue_service.list_issues(project_id=config.default_project_id)
     if not issues:
         print(messages.no_issues_available)
         sys.exit(1)
@@ -105,7 +117,7 @@ def _interactive_select_issue_id() -> str:
 def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
     # 呼び出し側で issue_id は解決済み
     assert args.issue_id is not None
-    current = fetch_issue(args.issue_id)
+    current = _read_issue(args.issue_id)
     field_values: list[tuple[str, str]] = [
         ("tracker", messages.field_tracker),
         ("subject", messages.field_subject),
@@ -325,6 +337,73 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         sys.exit(1)
 
 
+def _update_issue(args: IssueUpdateArgs, description: str | None) -> None:
+    """イシューを更新し、結果を標準出力に出す。HTTP エラーは exit 1。"""
+    # 呼び出し側で issue_id は解決済み
+    assert args.issue_id is not None
+    try:
+        issue_service.update_issue(
+            issue_id=args.issue_id,
+            subject=args.subject,
+            description=description or None,
+            tracker_id=args.tracker_id,
+            status_id=args.status_id,
+            priority_id=args.priority_id,
+            assigned_to_id=args.assigned_to_id,
+            fixed_version_id=args.fixed_version_id,
+            parent_issue_id=args.parent_issue_id,
+            start_date=args.start_date,
+            due_date=args.due_date,
+            done_ratio=args.done_ratio,
+            estimated_hours=args.estimated_hours,
+            notes=args.notes or "",
+            custom_fields=parse_custom_fields(args.custom_fields)
+            if args.custom_fields
+            else None,
+            attachments=args.attach,
+        )
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.issue_update_failed)
+        sys.exit(1)
+    print(
+        messages.issue_updated.format(url=issue_service.issue_url(args.issue_id)),
+    )
+
+
+def _add_watcher(issue_id: str, user_id: int) -> None:
+    """ウォッチャーを追加し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        issue_service.add_watcher(issue_id, user_id)
+    except IssueNotFoundException:
+        print(messages.issue_not_found.format(id=issue_id))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.watcher_add_failed)
+        sys.exit(1)
+    print(messages.watcher_added.format(issue_id=issue_id, user_id=user_id))
+
+
+def _remove_watcher(issue_id: str, user_id: int) -> None:
+    """ウォッチャーを削除し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        issue_service.remove_watcher(issue_id, user_id)
+    except WatcherNotFoundException:
+        print(
+            messages.issue_or_user_not_found.format(issue_id=issue_id, user_id=user_id)
+        )
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.watcher_remove_failed)
+        sys.exit(1)
+    print(messages.watcher_removed.format(issue_id=issue_id, user_id=user_id))
+
+
 def handle_issue_update(args: argparse.Namespace) -> None:
     """argparse アダプタ。Namespace を読むのはここまでに閉じる。"""
     _run_issue_update(IssueUpdateArgs.from_namespace(args))
@@ -365,11 +444,12 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
         _interactive_fill_issue_update_args(args)
     description = args.description
     if description is not None and description == "":
-        current = fetch_issue(args.issue_id)
+        current = _read_issue(args.issue_id)
         description = open_editor(current.get("description") or "")
+    # 空の説明は「変更しない」扱いなので更新対象から外す
     should_update_issue = (
         args.subject
-        or description is not None
+        or description
         or args.tracker_id
         or args.status_id
         or args.priority_id
@@ -390,24 +470,7 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
     should_create_time_entry = args.hours is not None
     if should_update_issue:
         try:
-            update_issue(
-                issue_id=args.issue_id,
-                subject=args.subject,
-                description=description if description else None,
-                tracker_id=args.tracker_id,
-                status_id=args.status_id,
-                priority_id=args.priority_id,
-                assigned_to_id=args.assigned_to_id,
-                fixed_version_id=args.fixed_version_id,
-                parent_issue_id=args.parent_issue_id,
-                start_date=args.start_date,
-                due_date=args.due_date,
-                done_ratio=args.done_ratio,
-                estimated_hours=args.estimated_hours,
-                notes=args.notes or "",
-                custom_fields=args.custom_fields,
-                attachments=args.attach,
-            )
+            _update_issue(args, description)
         except Exception:
             save_body_on_failure(description)
             raise
@@ -437,9 +500,9 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
             comments=args.time_comments,
         )
     for user_id in args.add_watcher_ids or []:
-        add_watcher(args.issue_id, user_id)
+        _add_watcher(args.issue_id, user_id)
     for user_id in args.remove_watcher_ids or []:
-        remove_watcher(args.issue_id, user_id)
+        _remove_watcher(args.issue_id, user_id)
     should_update_watchers = bool(args.add_watcher_ids or args.remove_watcher_ids)
     if (
         not should_update_issue

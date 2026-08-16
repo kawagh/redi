@@ -1,14 +1,54 @@
 import argparse
+import json
 
+import pytest
+
+from redi import config
 from redi.cli.issue_command import add_issue_parser
-from redi.cli.issue_command.create import IssueCreateArgs
+from redi.cli.issue_command import create as create_module
+from redi.cli.issue_command.create import IssueCreateArgs, handle_issue_create
 from redi.cli.issue_command.update import IssueUpdateArgs
+
+CREATED_ISSUE = {"id": 123, "subject": "件名"}
 
 
 def parse_issue_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     add_issue_parser(parser.add_subparsers(dest="command"), [])
     return parser.parse_args(argv)
+
+
+@pytest.fixture
+def created_issue(monkeypatch):
+    """作成をスタブし、Redmine の URL を固定する"""
+    monkeypatch.setattr(
+        create_module.issue_service, "create_issue", lambda **kwargs: CREATED_ISSUE
+    )
+    monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+
+
+class TestIssueCreateOutput:
+    """`issue create` の標準出力"""
+
+    def test_prints_id_and_url(self, created_issue, capsys):
+        """既定では作成した issue の id と URL を出す"""
+        handle_issue_create(
+            parse_issue_args(["issue", "create", "件名", "-p", "demo", "-d", "本文"])
+        )
+
+        out = capsys.readouterr().out
+        assert "123" in out
+        assert "http://localhost:3001/issues/123" in out
+
+    def test_full_prints_json(self, created_issue, capsys):
+        """--full では作成した issue の JSON だけを出す"""
+        handle_issue_create(
+            parse_issue_args(
+                ["issue", "create", "件名", "-p", "demo", "-d", "本文", "--full"]
+            )
+        )
+
+        assert json.loads(capsys.readouterr().out) == CREATED_ISSUE
 
 
 class TestIssueUpdateArgsFromNamespace:

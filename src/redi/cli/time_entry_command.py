@@ -8,7 +8,7 @@ from prompt_toolkit.validation import Validator
 from redi import config
 from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.exceptions import print_http_error_body
-from redi.api.issue import fetch_issue
+from redi.api.issue import Issue, IssueNotFoundException
 from redi.api.project import fetch_projects
 from redi.api.time_entry import (
     TimeEntryNotFoundException,
@@ -30,7 +30,16 @@ from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import SharedOptionParser
 from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
-from redi.service import time_entry_service
+from redi.service import issue_service, time_entry_service
+
+
+def _read_issue(issue_id: str) -> Issue:
+    """作業時間の対象イシューを取得する。存在しない場合は exit 1。"""
+    try:
+        return issue_service.read_issue(issue_id)
+    except IssueNotFoundException:
+        print(messages.issue_not_found.format(id=issue_id))
+        sys.exit(1)
 
 
 def _delete_time_entry(time_entry_id: str) -> None:
@@ -170,7 +179,7 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
             ).strip()
             if issue_id:
                 args.issue_id = issue_id
-                issue = fetch_issue(issue_id)
+                issue = _read_issue(issue_id)
                 print(
                     messages.issue_label.format(
                         id=issue["id"], subject=issue["subject"]
@@ -298,7 +307,7 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
                 key_bindings=digit_only_key_bindings(),
             ).strip()
             if issue_id:
-                issue = fetch_issue(issue_id)
+                issue = _read_issue(issue_id)
                 print(
                     messages.issue_label.format(
                         id=issue["id"], subject=issue["subject"]
