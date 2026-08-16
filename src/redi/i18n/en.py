@@ -932,7 +932,7 @@ class En(MessagesProto):
     tui_help_wiki_load_text = "Load body of the selected page"
     tui_help_wiki_create_child = "Create child of the selected page"
     tui_help_wiki_update_page = "Update the selected page"
-    tui_help_wiki_delete_page = "Delete the selected page"
+    tui_help_wiki_delete_page = "Delete the selected page (confirm by typing DELETE)"
     tui_help_wiki_open_web = "Open the selected page in web"
 
     # ---- TUI help labels (time entry tab) ----

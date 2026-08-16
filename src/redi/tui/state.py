@@ -148,7 +148,7 @@ class WikiDeleteModalState:
     """D で開く wiki 削除確認 modal の状態。
 
     wiki は issue_id にあたる数値 id を持たないため、対象の特定ではなく確認語
-    (`delete`) の入力で確定させる。
+    (`DELETE`) の入力で確定させる。
     """
 
     show: bool = False

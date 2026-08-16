@@ -1,6 +1,6 @@
 """modal 表示中のキーバインド。"""
 
-from string import ascii_lowercase
+from string import ascii_uppercase
 
 from prompt_toolkit.key_binding import KeyBindings
 
@@ -217,9 +217,9 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     def _(event):
         wiki_delete_backspace(state)
 
-    # 確認語 (delete) の入力欄なので英小文字だけ受け付ける。打ち間違いも入力欄に
+    # 確認語 (DELETE) の入力欄なので英大文字だけ受け付ける。打ち間違いも入力欄に
     # 残して不一致として気付けるようにする。
-    for char in ascii_lowercase:
+    for char in ascii_uppercase:
 
         @kb.add(char, filter=show_wiki_delete_modal)
         def _(event):

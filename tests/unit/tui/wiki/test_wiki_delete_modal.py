@@ -54,7 +54,7 @@ class TestOpenDeleteModal:
     def test_clears_previous_input(self):
         """前回の入力や注意メッセージは持ち越さない"""
         state = _state([_page("Home")])
-        state.wiki_tab.delete_modal.input_text = "del"
+        state.wiki_tab.delete_modal.input_text = "DEL"
         state.wiki_tab.delete_modal.notice = "dummy"
 
         open_delete_modal(state)
@@ -73,7 +73,7 @@ class TestOpenDeleteModal:
         """閉じると入力と注意メッセージをクリアする"""
         state = _state([_page("Home")])
         open_delete_modal(state)
-        state.wiki_tab.delete_modal.input_text = "delete"
+        state.wiki_tab.delete_modal.input_text = CONFIRM_WORD
 
         close_delete_modal(state)
 
@@ -102,7 +102,7 @@ class TestValidateInput:
     def test_reports_mismatch(self):
         """確認語と違う入力は不一致として返す"""
         state = _state([_page("Home")])
-        state.wiki_tab.delete_modal.input_text = "delet"
+        state.wiki_tab.delete_modal.input_text = "DELET"
 
         assert validate_input(
             state.wiki_tab.delete_modal
@@ -199,13 +199,13 @@ class TestConfirmDelete:
 
     def test_mismatch_keeps_input(self, deleted):
         """一致しなければ削除せず、入力はそのまま残して直させる"""
-        state = self._opened("delet")
+        state = self._opened("DELET")
 
         confirm_delete(state)
 
         assert deleted == []
         assert state.wiki_tab.delete_modal.show is True
-        assert state.wiki_tab.delete_modal.input_text == "delet"
+        assert state.wiki_tab.delete_modal.input_text == "DELET"
         assert state.wiki_tab.delete_modal.notice is not None
 
     @pytest.mark.parametrize(

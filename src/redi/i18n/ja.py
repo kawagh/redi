@@ -941,7 +941,7 @@ class Ja(MessagesProto):
     tui_help_wiki_load_text = "選択ページの本文を読込"
     tui_help_wiki_create_child = "選択ページの子ページを作成"
     tui_help_wiki_update_page = "選択ページを更新"
-    tui_help_wiki_delete_page = "選択ページを削除"
+    tui_help_wiki_delete_page = "選択ページを削除 (DELETE の入力で確定)"
     tui_help_wiki_open_web = "選択ページを web で開く"
 
     # ---- TUI help labels (time entry tab) ----

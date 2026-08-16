@@ -1,6 +1,6 @@
 """wiki タブの D で開く削除確認 modal のレイアウト・描画と、開く/閉じる/確定する操作。
 
-wiki は issue_id にあたる数値 id を持たないため、確認語 (`delete`) を打たせて確定する。
+wiki は issue_id にあたる数値 id を持たないため、確認語 (`DELETE`) を打たせて確定する。
 HTTP は `service.wiki_service` に任せ、ここでは入力の検証と状態の更新だけを行う。
 """
 
@@ -22,7 +22,7 @@ from redi.tui.state import Renderable, TuiState, WikiDeleteModalState
 from redi.tui.wiki.wiki_tab import set_pages
 
 # 削除を確定するために打たせる語。ASCII 固定なので日本語タイトルでも入力できる。
-CONFIRM_WORD = "delete"
+CONFIRM_WORD = "DELETE"
 
 
 def render_delete_modal(state: TuiState) -> Renderable:
