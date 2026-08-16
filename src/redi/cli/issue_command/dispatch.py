@@ -1,9 +1,13 @@
 import argparse
+import sys
+
+import requests
 
 from redi import config
+from redi.api.exceptions import print_http_error_body
 from redi.api.issue import (
+    IssueNotFoundException,
     add_note,
-    delete_issue,
     fetch_issue,
     list_issues,
     read_issue,
@@ -14,6 +18,22 @@ from redi.cli.editor import open_editor
 from redi.cli.issue_command.create import handle_issue_create
 from redi.cli.issue_command.update import handle_issue_update
 from redi.i18n import messages
+from redi.service import issue_service
+
+
+def _delete_issue(issue_id: str) -> None:
+    """イシューを削除し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        issue_service.delete_issue(issue_id)
+    except IssueNotFoundException:
+        print(messages.issue_not_found.format(id=issue_id))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.issue_delete_failed)
+        sys.exit(1)
+    print(messages.issue_deleted.format(id=issue_id))
 
 
 def handle_issue(args: argparse.Namespace) -> None:
@@ -46,7 +66,7 @@ def handle_issue(args: argparse.Namespace) -> None:
                     id=issue["id"], subject=issue["subject"]
                 )
             )
-        delete_issue(args.issue_id)
+        _delete_issue(args.issue_id)
     elif cmd == "list" or cmd is None:
         list_issues(
             project_id=args.project_id or config.default_project_id,

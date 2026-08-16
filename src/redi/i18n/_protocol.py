@@ -670,6 +670,8 @@ class MessagesProto(Protocol):
     """{summary}"""
     tui_issue_delete_failed: str
     """{error}"""
+    tui_issue_delete_missing: str
+    """{id}"""
     tui_issue_delete_modal_title: str
     tui_issue_delete_modal_target: str
     """{id}, {subject}"""

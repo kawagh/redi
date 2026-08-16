@@ -85,6 +85,12 @@ class JournalDetail(TypedDict):
     new_value: str | None
 
 
+class IssueNotFoundException(Exception):
+    def __init__(self, issue_id: str) -> None:
+        super().__init__(issue_id)
+        self.issue_id = issue_id
+
+
 def fetch_issues_page(
     project_id: str | None = None,
     fixed_version_id: str | None = None,
@@ -494,18 +500,16 @@ def remove_watcher(issue_id: str, user_id: int) -> None:
 
 
 def delete_issue(issue_id: str) -> None:
+    """イシューを削除する
+
+    Raises:
+        IssueNotFoundException: 対象イシューが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     response = client.delete(f"/issues/{issue_id}.json")
     if response.status_code == 404:
-        print(messages.issue_not_found.format(id=issue_id))
-        sys.exit(1)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.issue_delete_failed)
-        sys.exit(1)
-    print(messages.issue_deleted.format(id=issue_id))
+        raise IssueNotFoundException(issue_id)
+    response.raise_for_status()
 
 
 def add_note(issue_id: str, notes: str) -> None:

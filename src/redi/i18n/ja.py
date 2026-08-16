@@ -515,6 +515,7 @@ class Ja(MessagesProto):
     tui_time_entry_delete_failed = "作業時間の削除に失敗しました: {error}"
     tui_time_entry_delete_prompt = "削除しますか? {summary} [y/N]"
     tui_issue_delete_failed = "イシューの削除に失敗しました: {error}"
+    tui_issue_delete_missing = "イシューが見つかりません: #{id}"
     tui_issue_delete_modal_title = "イシュー削除の確認 (Esc で閉じる)"
     tui_issue_delete_modal_target = "対象: #{id} {subject}"
     tui_issue_delete_modal_prompt = (

@@ -1,4 +1,8 @@
-"""issues タブの D で開く削除確認 modal のレイアウト・描画と、開く/閉じる/確定する操作。"""
+"""issues タブの D で開く削除確認 modal のレイアウト・描画と、開く/閉じる/確定する操作。
+
+issue は数値 id を持つため、対象の issue_id を打ち直させて確定する。
+HTTP は `service.issue_service` に任せ、ここでは入力の検証と状態の更新だけを行う。
+"""
 
 import requests
 from prompt_toolkit.filters import FilterOrBool
@@ -11,9 +15,10 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Frame
 
-from redi.client import client
+from redi.api.issue import IssueNotFoundException
 from redi.i18n import messages
-from redi.tui.state import Renderable, TuiState
+from redi.service import issue_service
+from redi.tui.state import IssueDeleteModalState, Renderable, TuiState
 
 
 def render_delete_modal(state: TuiState) -> Renderable:
@@ -99,6 +104,31 @@ def close_delete_modal(state: TuiState) -> None:
     modal.notice = None
 
 
+def validate_input(modal: IssueDeleteModalState) -> str | None:
+    """入力が対象の issue_id と一致しない理由を返す。一致していれば None。"""
+    entered = modal.input_text.strip()
+    if not entered:
+        return messages.tui_issue_delete_modal_empty
+    if entered != str(modal.target_id):
+        return messages.tui_issue_delete_modal_mismatch
+    return None
+
+
+def apply_deleted(state: TuiState, issue_id: int) -> None:
+    """削除済みの issue を一覧から取り除き、total_count と cursor を整える。"""
+    issues = state.issue_tab.issues
+    index = next(
+        (i for i, issue in enumerate(issues) if issue.get("id") == issue_id),
+        None,
+    )
+    if index is None:
+        return
+    issues.pop(index)
+    state.issue_tab.total_count = max(0, state.issue_tab.total_count - 1)
+    if state.issue_tab.cursor >= len(issues):
+        state.issue_tab.cursor = max(0, len(issues) - 1)
+
+
 def confirm_delete(state: TuiState) -> None:
     """modal で入力された issue_id が modal を開いた対象と一致したら削除する。
 
@@ -107,32 +137,23 @@ def confirm_delete(state: TuiState) -> None:
     削除失敗時は modal を閉じて flash_message にエラーを出す。
     """
     modal = state.issue_tab.delete_modal
-    entered = modal.input_text.strip()
-    if not entered:
-        modal.notice = messages.tui_issue_delete_modal_empty
-        return
-    if entered != str(modal.target_id):
-        modal.notice = messages.tui_issue_delete_modal_mismatch
-        return
-    issues = state.issue_tab.issues
-    index = next(
-        (i for i, issue in enumerate(issues) if issue.get("id") == modal.target_id),
-        None,
-    )
-    if index is None:
-        close_delete_modal(state)
+    notice = validate_input(modal)
+    if notice is not None:
+        modal.notice = notice
         return
     try:
-        response = client.delete(f"/issues/{modal.target_id}.json")
-        response.raise_for_status()
+        issue_service.delete_issue(str(modal.target_id))
+    except IssueNotFoundException:
+        close_delete_modal(state)
+        state.flash_message = messages.tui_issue_delete_missing.format(
+            id=modal.target_id
+        )
+        return
     except requests.exceptions.RequestException as e:
         close_delete_modal(state)
         state.flash_message = messages.tui_issue_delete_failed.format(error=e)
         return
-    issues.pop(index)
-    state.issue_tab.total_count = max(0, state.issue_tab.total_count - 1)
-    if state.issue_tab.cursor >= len(issues):
-        state.issue_tab.cursor = max(0, len(issues) - 1)
+    apply_deleted(state, modal.target_id)
     close_delete_modal(state)
 
 
