@@ -208,12 +208,20 @@ class TestConfirmDelete:
         assert state.wiki_tab.delete_modal.input_text == "delet"
         assert state.wiki_tab.delete_modal.notice is not None
 
-    def test_flashes_when_page_missing(self, monkeypatch):
-        """既に消えているページなら modal を閉じて flash_message で知らせる"""
+    @pytest.mark.parametrize(
+        ("error", "expected_in_flash"),
+        [
+            (WikiPageNotFoundError("Home"), "Home"),
+            (requests.exceptions.ConnectionError("boom"), "boom"),
+        ],
+        ids=["page_missing", "api_failure"],
+    )
+    def test_flashes_reason_on_failure(self, monkeypatch, error, expected_in_flash):
+        """削除に失敗したら一覧を変えず、modal を閉じて理由を flash_message に出す"""
         state = self._opened(CONFIRM_WORD)
 
         def fake_delete_page(project_id: str, page_title: str) -> None:
-            raise WikiPageNotFoundError(page_title)
+            raise error
 
         monkeypatch.setattr(delete_modal.wiki_service, "delete_page", fake_delete_page)
         confirm_delete(state)
@@ -221,19 +229,4 @@ class TestConfirmDelete:
         assert _titles(state) == ["Guide", "Home"]
         assert state.wiki_tab.delete_modal.show is False
         assert state.flash_message is not None
-        assert "Home" in state.flash_message
-
-    def test_flashes_on_api_failure(self, monkeypatch):
-        """API エラー時は一覧を変えず、modal を閉じて flash_message に出す"""
-        state = self._opened(CONFIRM_WORD)
-
-        def fake_delete_page(project_id: str, page_title: str) -> None:
-            raise requests.exceptions.ConnectionError("boom")
-
-        monkeypatch.setattr(delete_modal.wiki_service, "delete_page", fake_delete_page)
-        confirm_delete(state)
-
-        assert _titles(state) == ["Guide", "Home"]
-        assert state.wiki_tab.delete_modal.show is False
-        assert state.flash_message is not None
-        assert "boom" in state.flash_message
+        assert expected_in_flash in state.flash_message
