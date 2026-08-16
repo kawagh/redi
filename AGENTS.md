@@ -37,6 +37,14 @@ This file provides guidance to Agents when working with code in this repository.
     - `redi.cli.interactive` の `prompt` / `ensure_interactive` を経由させる
     - `inline_choice` / `inline_checkbox` / `open_editor` は内部で `ensure_interactive` を呼んでいる
 
+## TUI 設計方針
+
+- 操作主体は人(非エージェント)
+- 削除操作は誤操作の戻しやすさに応じて操作完了までの手間の大小を変える
+    - issue: modal を開き issue_id を打ち直させる(issueに付随する添付ファイルやコメントが削除されるので重く見ている)
+    - コメント : ステータスバーの y/N
+    - time_entry : ステータスバーの y/N
+
 ## テスト
 
 - 守りたい仕様をテストとして書く

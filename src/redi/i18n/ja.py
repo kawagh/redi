@@ -514,6 +514,16 @@ class Ja(MessagesProto):
     tui_time_entry_load_failed = "作業時間の取得に失敗しました: {error}"
     tui_time_entry_delete_failed = "作業時間の削除に失敗しました: {error}"
     tui_time_entry_delete_prompt = "削除しますか? {summary} [y/N]"
+    tui_issue_delete_failed = "イシューの削除に失敗しました: {error}"
+    tui_issue_delete_modal_title = "イシュー削除の確認 (Esc で閉じる)"
+    tui_issue_delete_modal_target = "対象: #{id} {subject}"
+    tui_issue_delete_modal_prompt = (
+        '削除を実行するには issue_id "{expected}" を入力してください'
+    )
+    tui_issue_delete_modal_input_label = "issue_id> "
+    tui_issue_delete_modal_mismatch = "issue_id が一致しません"
+    tui_issue_delete_modal_empty = "issue_id を入力してください"
+    tui_issue_delete_modal_hint = "Enter:確定 Esc:閉じる"
 
     # ---- argparse helps (root) ----
     arg_help_root_description = "Redmine CLI"
@@ -913,6 +923,7 @@ class Ja(MessagesProto):
     tui_help_issue_comment_select_in_mode = (
         "コメント選択モード中: jk:移動 u:更新 D:削除 Esc/q:抜ける"
     )
+    tui_help_issue_delete = "選択したイシューを削除 (issue_id の入力で確定)"
 
     # ---- TUI help labels (wiki tab) ----
     tui_help_wiki_load_text = "選択ページの本文を読込"
