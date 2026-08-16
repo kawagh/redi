@@ -1,5 +1,3 @@
-import json
-
 from redi import cache
 from redi.client import client
 
@@ -15,12 +13,3 @@ def fetch_trackers() -> list[dict]:
     data = response.json()["trackers"]
     cache.save(CACHE_KEY, data)
     return data
-
-
-def list_trackers(full: bool = False) -> None:
-    trackers = fetch_trackers()
-    if full:
-        print(json.dumps(trackers, ensure_ascii=False))
-    else:
-        for tracker in trackers:
-            print(f"{tracker['id']} {tracker['name']}")
