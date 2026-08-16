@@ -328,7 +328,11 @@ def main() -> None:
     elif args.command in ("user", "u"):
         handle_user(args)
     elif args.command == "me":
-        handle_me(args)
+        try:
+            handle_me(args)
+        except RedmineValidationException as e:
+            print(_format_validation_error(e))
+            sys.exit(1)
     elif args.command in ("membership", "m"):
         handle_membership(args)
     elif args.command in ("news", "n"):
