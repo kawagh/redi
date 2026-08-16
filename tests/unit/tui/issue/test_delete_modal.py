@@ -160,7 +160,7 @@ class TestConfirmDelete:
 
 
 class TestInputDigit:
-    """input_digit() は数字のみを入力欄に積み、notice を消す"""
+    """input_digit() は入力欄に数字を積み、notice を消す"""
 
     def test_appends_digit_and_clears_notice(self):
         state = TuiState()
@@ -169,10 +169,3 @@ class TestInputDigit:
         delete_modal.input_digit(state, "2")
         assert state.issue_tab.delete_modal.input_text == "12"
         assert state.issue_tab.delete_modal.notice is None
-
-    def test_ignores_non_digit(self):
-        """数字以外 (英字や複数文字) は入力欄に入れない"""
-        state = TuiState()
-        delete_modal.input_digit(state, "a")
-        delete_modal.input_digit(state, "12")
-        assert state.issue_tab.delete_modal.input_text == ""

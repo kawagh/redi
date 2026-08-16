@@ -141,9 +141,7 @@ def confirm_delete(state: TuiState) -> None:
 
 
 def input_digit(state: TuiState, digit: str) -> None:
-    """入力欄に数字を1文字追加する。数字以外は無視する。"""
-    if len(digit) != 1 or not digit.isdigit():
-        return
+    """入力欄に数字を1文字追加する。"""
     modal = state.issue_tab.delete_modal
     modal.input_text += digit
     modal.notice = None

@@ -182,9 +182,9 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     def _(event):
         issue_delete_backspace(state)
 
-    # id 入力欄なので数字だけ受け付ける。q や Esc 以外のキーで modal が
-    # 閉じないよう <any> で握りつぶす。
-    @kb.add("<any>", filter=show_issue_delete_modal)
-    def _(event):
-        if event.data:
+    # id 入力欄なので数字だけ受け付ける
+    for digit in "0123456789":
+
+        @kb.add(digit, filter=show_issue_delete_modal)
+        def _(event):
             issue_delete_input_digit(state, event.data)
