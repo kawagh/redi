@@ -35,7 +35,6 @@ class Ja(MessagesProto):
     # ---- common indicators ----
     project_id_required = "project_idを指定するか、default_project_idを設定してください"
     wiki_project_id_required = "project_idを指定するか、wiki_project_idまたはdefault_project_idを設定してください"
-    user_or_group_id_required = "user_id または group_id を指定してください"
     user_or_group_flag_required = "--user_id または --group_id を指定してください"
     issue_or_project_id_required = "issue_idまたはproject_idを指定してください"
     delete_relation_requires_to = "--delete-relation には --to が必要です"
