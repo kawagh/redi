@@ -1,5 +1,7 @@
 import argparse
+import json
 import sys
+import webbrowser
 
 import requests
 from prompt_toolkit.validation import ValidationError, Validator
@@ -9,14 +11,7 @@ from redi.api.exceptions import print_http_error_body
 from redi.api.wiki import (
     WikiPage,
     WikiPageNotFoundException,
-    build_children_map,
-    create_wiki,
-    fetch_wiki,
-    fetch_wikis,
-    list_wikis,
     normalize_title,
-    read_wiki,
-    update_wiki,
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
@@ -52,8 +47,93 @@ def _delete_page(project_id: str, page_title: str) -> None:
     print(messages.wiki_page_deleted.format(title=page_title))
 
 
+def _list_pages(project_id: str, full: bool = False) -> None:
+    """Wiki ページ一覧をツリー表示する。full=True では取得した JSON をそのまま出す。"""
+    pages = wiki_service.list_pages(project_id)
+    if full:
+        print(json.dumps(pages, ensure_ascii=False))
+        return
+    for page, tree_prefix in wiki_service.flatten_wiki_tree(pages):
+        title = page["title"]
+        print(f"{tree_prefix}[{title}]({wiki_service.page_url(project_id, title)})")
+
+
+def _view_page(
+    project_id: str,
+    page_title: str,
+    full: bool = False,
+    web: bool = False,
+    version: int | None = None,
+) -> None:
+    """Wiki ページの本文を標準出力に出す。存在しない場合は exit 1。"""
+    if web:
+        url = wiki_service.page_url(project_id, page_title, version=version)
+        print(url)
+        webbrowser.open(url)
+        return
+    page = wiki_service.read_page(project_id, page_title, version=version, full=full)
+    if page is None:
+        if version is not None:
+            print(
+                messages.wiki_page_with_version_not_found.format(
+                    title=page_title, version=version
+                )
+            )
+        else:
+            print(messages.wiki_page_not_found.format(title=page_title))
+        sys.exit(1)
+    if full:
+        print(json.dumps(page, ensure_ascii=False, indent=2))
+    else:
+        print(page.get("text", ""))
+
+
+def _create_page(
+    project_id: str,
+    page_title: str,
+    text: str,
+    parent_title: str | None = None,
+    comments: str = "",
+) -> None:
+    """Wiki ページを作成し、結果を標準出力に出す。親ページが無い場合は exit 1。"""
+    try:
+        result = wiki_service.create_page(
+            project_id,
+            page_title,
+            text,
+            parent_title=parent_title,
+            comments=comments,
+        )
+    except wiki_service.ParentPageNotFoundException as e:
+        print(messages.parent_page_not_found.format(title=e.title))
+        sys.exit(1)
+    url = wiki_service.page_url(project_id, result.title)
+    if result.created:
+        print(messages.wiki_page_created.format(url=url))
+    else:
+        print(messages.wiki_page_updated.format(url=url))
+
+
+def _update_page(
+    project_id: str,
+    page_title: str,
+    text: str,
+    version: int | None = None,
+    comments: str = "",
+) -> None:
+    """Wiki ページを更新し、結果を標準出力に出す。"""
+    wiki_service.update_page(
+        project_id, page_title, text, version=version, comments=comments
+    )
+    print(
+        messages.wiki_page_updated.format(
+            url=wiki_service.page_url(project_id, page_title)
+        )
+    )
+
+
 def build_wiki_tree_choices(pages: list[WikiPage]) -> list[tuple[str, str]]:
-    children_map = build_children_map(pages)
+    children_map = wiki_service.build_children_map(pages)
     options: list[tuple[str, str]] = []
 
     def walk(parent: str | None, depth: int) -> None:
@@ -151,7 +231,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
         sys.exit(1)
     cmd = resolve_alias(args.wiki_command)
     if cmd == "view":
-        read_wiki(
+        _view_page(
             project_id,
             args.page_title,
             full=args.full,
@@ -162,7 +242,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
         page_title = args.page_title
         parent_title = args.parent_title
         if page_title is None:
-            pages = fetch_wikis(project_id)
+            pages = wiki_service.list_pages(project_id)
             existing_titles = {normalize_title(p["title"]) for p in pages}
 
             class _PageTitleValidator(Validator):
@@ -213,7 +293,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
             page_title = normalize_title(page_title)
             if parent_title:
                 parent_title = normalize_title(parent_title)
-            create_wiki(
+            _create_page(
                 project_id,
                 page_title,
                 text,
@@ -225,7 +305,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
     elif cmd == "delete":
         title = normalize_title(args.page_title)
         if not args.yes:
-            page = fetch_wiki(project_id, title)
+            page = wiki_service.read_page(project_id, title)
             if page is None:
                 print(messages.wiki_page_not_found.format(title=title))
                 sys.exit(1)
@@ -236,7 +316,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
     elif cmd == "update":
         page_title = args.page_title
         if page_title is None:
-            pages = fetch_wikis(project_id)
+            pages = wiki_service.list_pages(project_id)
             if not pages:
                 print(messages.wiki_page_does_not_exist)
                 sys.exit(1)
@@ -255,7 +335,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
             text = args.description
             comments = args.comments
         else:
-            current = fetch_wiki(project_id, page_title)
+            current = wiki_service.read_page(project_id, page_title)
             if current is None:
                 print(messages.wiki_page_not_found.format(title=page_title))
                 sys.exit(1)
@@ -263,7 +343,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
             text = open_editor(current.get("text") or "")
             comments = args.comments or _prompt_wiki_comments()
         if text:
-            update_wiki(
+            _update_page(
                 project_id,
                 page_title,
                 text,
@@ -273,4 +353,4 @@ def handle_wiki(args: argparse.Namespace) -> None:
         else:
             print(messages.canceled_empty_text)
     elif cmd == "list" or cmd is None:
-        list_wikis(project_id, full=args.full)
+        _list_pages(project_id, full=args.full)

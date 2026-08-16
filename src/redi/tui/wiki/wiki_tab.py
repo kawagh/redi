@@ -2,9 +2,9 @@ import webbrowser
 
 import requests
 
-from redi import config
-from redi.api.wiki import WikiPage, fetch_wiki, fetch_wikis, flatten_wiki_tree
+from redi.api.wiki import WikiPage
 from redi.i18n import messages
+from redi.service import wiki_service
 from redi.tui.state import (
     Renderable,
     TuiAction,
@@ -25,7 +25,7 @@ def set_pages(state: TuiState, pages: list[WikiPage]) -> None:
 
     ページが増減すればツリーの装飾も変わるため、pages と labels は必ずここで揃える。
     """
-    items = flatten_wiki_tree(pages)
+    items = wiki_service.flatten_wiki_tree(pages)
     state.wiki_tab.pages = [page for page, _ in items]
     state.wiki_tab.labels = [
         f"{tree_prefix}{page['title']}" for page, tree_prefix in items
@@ -41,7 +41,7 @@ def _load_wikis(state: TuiState) -> None:
         state.wiki_tab.error = messages.tui_wiki_project_required
         return
     try:
-        pages = fetch_wikis(project)
+        pages = wiki_service.list_pages(project)
     except requests.exceptions.RequestException as e:
         state.wiki_tab.error = messages.tui_wiki_load_failed.format(error=e)
         return
@@ -56,7 +56,7 @@ def _load_wiki_text(state: TuiState, title: str) -> None:
     if not project:
         return
     try:
-        wiki = fetch_wiki(project, title)
+        wiki = wiki_service.read_page(project, title)
     except requests.exceptions.RequestException as e:
         state.wiki_tab.texts[title] = messages.tui_wiki_load_text_failed.format(error=e)
         return
@@ -224,7 +224,7 @@ def _on_open_web(state: TuiState) -> None:
         return
     title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
     if title:
-        webbrowser.open(f"{config.redmine_url}/projects/{project}/wiki/{title}")
+        webbrowser.open(wiki_service.page_url(project, title))
 
 
 _HELP_LINES: list[tuple[str, str]] = [
