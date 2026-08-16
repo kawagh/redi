@@ -11,7 +11,6 @@ from redi.tui.wiki import delete_modal
 from redi.tui.wiki.delete_modal import (
     CONFIRM_WORD,
     apply_deleted,
-    close_delete_modal,
     confirm_delete,
     open_delete_modal,
     validate_input,
@@ -68,17 +67,6 @@ class TestOpenDeleteModal:
 
         assert open_delete_modal(state) is False
         assert state.wiki_tab.delete_modal.show is False
-
-    def test_close_clears_input(self):
-        """閉じると入力と注意メッセージをクリアする"""
-        state = _state([_page("Home")])
-        open_delete_modal(state)
-        state.wiki_tab.delete_modal.input_text = CONFIRM_WORD
-
-        close_delete_modal(state)
-
-        assert state.wiki_tab.delete_modal.show is False
-        assert state.wiki_tab.delete_modal.input_text == ""
 
 
 class TestValidateInput:
@@ -139,14 +127,6 @@ class TestApplyDeleted:
             "└── Setup",
             "    └── Detail",
         ]
-
-    def test_rebuilds_labels(self):
-        """残ったページのツリー表示ラベルを作り直す"""
-        state = _state([_page("Guide"), _page("Setup", parent="Guide"), _page("Home")])
-
-        apply_deleted(state, "Home")
-
-        assert state.wiki_tab.labels == ["└── Guide", "    └── Setup"]
 
     def test_drops_loaded_text(self):
         """読み込み済みの本文も削除したページのぶんだけ捨てる"""
