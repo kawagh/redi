@@ -1,17 +1,16 @@
 import argparse
+import json
+import sys
 
-from redi.api.user import (
-    create_user,
-    delete_user,
-    fetch_user,
-    list_users,
-    read_user,
-    update_user,
-)
+import requests
+
+from redi.api.exceptions import print_http_error_body
+from redi.api.user import User, UserNotFoundException, UserPermissionDeniedException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
 from redi.cli.shared_options import full_option_parser
 from redi.i18n import messages
+from redi.service import user_service
 
 MAIL_NOTIFICATION_CHOICES = [
     "all",
@@ -21,6 +20,190 @@ MAIL_NOTIFICATION_CHOICES = [
     "only_owner",
     "none",
 ]
+
+
+def _user_summary(user: User) -> str:
+    """`id login 氏名` の 1 行表現を作る。取得できなかった項目は詰めて表示する。"""
+    name = f"{user.get('firstname', '')} {user.get('lastname', '')}".strip()
+    return f"{user['id']} {user.get('login', '')} {name}".rstrip()
+
+
+def _read_user(user_id: str, detail: bool = False) -> User:
+    """ユーザーを取得する。存在しない場合や権限が無い場合は exit 1。"""
+    try:
+        return user_service.read_user(user_id, detail=detail)
+    except UserNotFoundException:
+        print(messages.user_not_found.format(id=user_id))
+        sys.exit(1)
+    except UserPermissionDeniedException:
+        print(messages.user_detail_permission_required)
+        sys.exit(1)
+
+
+def _create_user(
+    login: str,
+    firstname: str,
+    lastname: str,
+    mail: str,
+    password: str | None = None,
+    auth_source_id: int | None = None,
+    mail_notification: str | None = None,
+    must_change_passwd: bool | None = None,
+    generate_password: bool | None = None,
+    admin: bool | None = None,
+) -> None:
+    """ユーザーを作成し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        created = user_service.create_user(
+            login=login,
+            firstname=firstname,
+            lastname=lastname,
+            mail=mail,
+            password=password,
+            auth_source_id=auth_source_id,
+            mail_notification=mail_notification,
+            must_change_passwd=must_change_passwd,
+            generate_password=generate_password,
+            admin=admin,
+        )
+    except UserPermissionDeniedException:
+        print(messages.user_create_admin_required)
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.user_create_failed)
+        sys.exit(1)
+    print(
+        messages.user_created.format(
+            id=created["id"],
+            login=created["login"],
+            url=user_service.user_url(created["id"]),
+        )
+    )
+
+
+def _list_users(full: bool = False) -> None:
+    """ユーザー一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
+    try:
+        users = user_service.list_users()
+    except UserPermissionDeniedException:
+        print(messages.user_list_admin_required)
+        print(messages.user_list_member_hint)
+        return
+    if full:
+        print(json.dumps(users, ensure_ascii=False))
+        return
+    for user in users:
+        print(f"{user['id']} {user['login']}")
+
+
+def _view_user(user_id: str, full: bool = False) -> None:
+    """ユーザーの詳細を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
+    user = _read_user(user_id, detail=True)
+    if full:
+        print(json.dumps(user, ensure_ascii=False))
+        return
+    lines = [
+        _user_summary(user),
+        "  " + messages.label_mail.format(value=user.get("mail", "")),
+    ]
+    if user.get("admin"):
+        lines.append(messages.label_admin_yes)
+    created_on = user.get("created_on")
+    if created_on:
+        lines.append("  " + messages.label_created_on.format(value=created_on))
+    last_login_on = user.get("last_login_on")
+    if last_login_on:
+        lines.append("  " + messages.label_last_login_on.format(value=last_login_on))
+    memberships = user.get("memberships") or []
+    if memberships:
+        lines.append("  " + messages.label_membership_header)
+        for m in memberships:
+            project = m.get("project") or {}
+            roles = m.get("roles") or []
+            role_str = ", ".join(r.get("name", "") for r in roles)
+            lines.append(
+                f"    {project.get('id', '?')} {project.get('name', '')} - {role_str}"
+            )
+    groups = user.get("groups") or []
+    if groups:
+        lines.append("  " + messages.label_groups_header)
+        for g in groups:
+            lines.append(f"    {g.get('id', '?')} {g.get('name', '')}")
+    print("\n".join(lines))
+
+
+def _update_user(
+    user_id: str,
+    login: str | None = None,
+    firstname: str | None = None,
+    lastname: str | None = None,
+    mail: str | None = None,
+    password: str | None = None,
+    auth_source_id: int | None = None,
+    mail_notification: str | None = None,
+    must_change_passwd: bool | None = None,
+    admin: bool | None = None,
+) -> None:
+    """ユーザーを更新し、結果を標準出力に出す。更新対象が無い場合や失敗時は exit 1。"""
+    fields = {
+        "login": login,
+        "firstname": firstname,
+        "lastname": lastname,
+        "mail": mail,
+        "password": password,
+        "auth_source_id": auth_source_id,
+        "mail_notification": mail_notification,
+        "must_change_passwd": must_change_passwd,
+        "admin": admin,
+    }
+    if all(value is None for value in fields.values()):
+        print(messages.update_canceled_no_changes)
+        sys.exit(1)
+    try:
+        user_service.update_user(
+            user_id=user_id,
+            login=login,
+            firstname=firstname,
+            lastname=lastname,
+            mail=mail,
+            password=password,
+            auth_source_id=auth_source_id,
+            mail_notification=mail_notification,
+            must_change_passwd=must_change_passwd,
+            admin=admin,
+        )
+    except UserNotFoundException:
+        print(messages.user_not_found.format(id=user_id))
+        sys.exit(1)
+    except UserPermissionDeniedException:
+        print(messages.user_update_admin_required)
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.user_update_failed)
+        sys.exit(1)
+    print(messages.user_updated.format(id=user_id))
+
+
+def _delete_user(user_id: str) -> None:
+    """ユーザーを削除し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        user_service.delete_user(user_id)
+    except UserNotFoundException:
+        print(messages.user_not_found.format(id=user_id))
+        sys.exit(1)
+    except UserPermissionDeniedException:
+        print(messages.user_delete_admin_required)
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.user_delete_failed)
+        sys.exit(1)
+    print(messages.user_deleted.format(id=user_id))
 
 
 def add_user_parser(
@@ -129,7 +312,7 @@ def add_user_parser(
 def handle_user(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.user_command)
     if cmd == "create":
-        create_user(
+        _create_user(
             login=args.login,
             firstname=args.firstname,
             lastname=args.lastname,
@@ -143,10 +326,10 @@ def handle_user(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "view":
-        read_user(args.user_id, full=args.full)
+        _view_user(args.user_id, full=args.full)
         return
     if cmd == "update":
-        update_user(
+        _update_user(
             user_id=args.user_id,
             login=args.login,
             firstname=args.firstname,
@@ -161,15 +344,12 @@ def handle_user(args: argparse.Namespace) -> None:
         return
     if cmd == "delete":
         if not args.yes:
-            user = fetch_user(args.user_id)
-            name = f"{user.get('firstname', '')} {user.get('lastname', '')}".strip()
-            summary = messages.delete_target_user.format(
-                summary=f"{user['id']} {user.get('login', '')} {name}".rstrip()
-            )
+            user = _read_user(args.user_id)
+            summary = messages.delete_target_user.format(summary=_user_summary(user))
             confirm_delete_with_identifier(
                 summary, user.get("login", ""), messages.arg_help_user_login
             )
-        delete_user(args.user_id)
+        _delete_user(args.user_id)
         return
     if cmd == "list" or cmd is None:
-        list_users(full=args.full)
+        _list_users(full=args.full)
