@@ -15,7 +15,6 @@ from redi.api.enumeration import (
     list_time_entry_activities,
 )
 from redi.api.exceptions import RedmineValidationException
-from redi.api.issue import add_note
 from redi.api.issue_journal import delete_issue_journal, update_issue_journal
 from redi.api.issue_status import list_issue_statuses
 from redi.api.query import list_queries
@@ -41,6 +40,7 @@ from redi.cli.issue_category_command import (
     handle_issue_category,
 )
 from redi.cli.issue_command import (
+    add_issue_note,
     add_issue_parser,
     create_issue_interactively,
     handle_issue,
@@ -215,7 +215,7 @@ def main() -> None:
                         continue
                     notes = open_editor()
                     if notes:
-                        add_note(tui_result.issue_id, notes)
+                        add_issue_note(tui_result.issue_id, notes)
                 elif tui_result.action == "edit_comment":
                     if tui_result.journal_id is None:
                         continue

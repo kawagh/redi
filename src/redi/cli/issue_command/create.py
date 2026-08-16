@@ -1,10 +1,13 @@
 import argparse
+import json
 import sys
 import urllib.parse
 import webbrowser
 from dataclasses import dataclass, fields
 from datetime import date
 from typing import Self
+
+import requests
 
 from redi import config
 from redi.api.custom_field import (
@@ -14,7 +17,8 @@ from redi.api.custom_field import (
     filter_optional_issue_custom_fields,
     filter_required_issue_custom_fields,
 )
-from redi.api.issue import create_issue, parse_custom_fields
+from redi.api.exceptions import print_http_error_body
+from redi.api.issue import Issue
 from redi.api.issue_template import IssueTemplate, fetch_enabled_issue_templates
 from redi.api.project import fetch_project
 from redi.cli.custom_field_prompt import (
@@ -23,6 +27,7 @@ from redi.cli.custom_field_prompt import (
 )
 from redi.cli.editor import open_editor, save_body_on_failure, shorten_to_oneline
 from redi.cli.interactive import prompt
+from redi.cli.issue_command.custom_fields import parse_custom_fields
 from redi.cli.issue_command.field_prompt import (
     parse_iso_date,
     prompt_assignee,
@@ -39,6 +44,7 @@ from redi.cli.validator import (
     IntValidator,
 )
 from redi.i18n import messages
+from redi.service import issue_service
 
 
 @dataclass
@@ -363,10 +369,30 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
                 return
             break
     try:
-        create_issue(
-            project_id=project_id,
+        created = _create_issue(args)
+    except Exception:
+        save_body_on_failure(args.description)
+        raise
+    if args.full:
+        print(json.dumps(created, ensure_ascii=False))
+        return
+    print(
+        messages.issue_created.format(
+            id=created["id"], url=issue_service.issue_url(str(created["id"]))
+        )
+    )
+
+
+def _create_issue(args: IssueCreateArgs) -> Issue:
+    """イシューを作成する。HTTP エラーはメッセージを出して exit 1。"""
+    # 呼び出し側で project_id と subject は解決済み
+    assert args.project_id is not None
+    assert args.subject is not None
+    try:
+        return issue_service.create_issue(
+            project_id=args.project_id,
             subject=args.subject,
-            description=args.description,
+            description=args.description or "",
             tracker_id=args.tracker_id,
             priority_id=args.priority_id,
             assigned_to_id=args.assigned_to_id,
@@ -375,9 +401,12 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
             start_date=args.start_date,
             due_date=args.due_date,
             estimated_hours=args.estimated_hours,
-            custom_fields=args.custom_fields,
-            full=args.full,
+            custom_fields=parse_custom_fields(args.custom_fields)
+            if args.custom_fields
+            else None,
         )
-    except Exception:
-        save_body_on_failure(args.description)
-        raise
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.issue_create_failed)
+        sys.exit(1)

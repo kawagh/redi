@@ -5,10 +5,10 @@ from redi.api.issue import (
     Issue,
     IssuesPageResponse,
     Journal,
-    fetch_issue,
     fetch_issues_page,
 )
 from redi.i18n import messages
+from redi.service import issue_service
 from redi.tui.state import (
     CommentSelectState,
     Renderable,
@@ -22,7 +22,7 @@ from redi.tui.text_format import highlight_segments, render_meta_table
 
 
 def load_journals(issue: Issue) -> None:
-    fetched = fetch_issue(str(issue["id"]), include="journals")
+    fetched = issue_service.read_issue(str(issue["id"]), include="journals")
     issue["journals"] = fetched.get("journals") or []
 
 
