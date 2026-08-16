@@ -48,11 +48,7 @@ def render_delete_modal(state: TuiState) -> Renderable:
 
 
 def build_delete_float(state: TuiState, show: FilterOrBool) -> Float:
-    """削除確認 modal の Float を組み立てる。
-
-    Frame を VSplit で挟んで左右に幅1の空白パディングを置く理由は
-    `build_layout` の help_float 手前のコメントを参照。
-    """
+    """削除確認 modal の Float を組み立てる。"""
     return Float(
         content=ConditionalContainer(
             content=VSplit(
