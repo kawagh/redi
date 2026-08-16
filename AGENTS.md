@@ -45,6 +45,14 @@ This file provides guidance to Agents when working with code in this repository.
     - コメント : ステータスバーの y/N
     - time_entry : ステータスバーの y/N
 
+## 層構造
+
+- `api/` : Redmine のレスポンス型と取得・整形
+- `service/` : CLI と TUI が共有する操作。エンドポイントとステータスコードの解釈はここだけが知り、結果は戻り値と例外で返す
+- `cli/` / `tui/` : 結果の見せ方だけを持つ(CLI は print / sys.exit、TUI は flash_message)
+- 更新系を新しく足すときは service に置いて CLI と TUI の双方から呼ぶ(URL 組み立ての二重化を避ける)
+- HTTP の正しさは CLI の E2E (`task test:e2e`) で担保し、TUI 側は service を呼ぶだけにする
+
 ## テスト
 
 - 守りたい仕様をテストとして書く

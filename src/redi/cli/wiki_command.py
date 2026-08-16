@@ -1,14 +1,15 @@
 import argparse
 import sys
 
+import requests
 from prompt_toolkit.validation import ValidationError, Validator
 
 from redi import config
+from redi.api.exceptions import print_http_error_body
 from redi.api.wiki import (
     WikiPage,
     build_children_map,
     create_wiki,
-    delete_wiki,
     fetch_wiki,
     fetch_wikis,
     list_wikis,
@@ -23,6 +24,7 @@ from redi.cli.interactive import prompt
 from redi.cli.picker import inline_choice
 from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
+from redi.service import wiki_service
 
 
 def _prompt_wiki_comments() -> str:
@@ -32,6 +34,21 @@ def _prompt_wiki_comments() -> str:
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)
+
+
+def _delete_page(project_id: str, page_title: str) -> None:
+    """Wiki ページを削除し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        wiki_service.delete_page(project_id, page_title)
+    except wiki_service.WikiPageNotFoundError:
+        print(messages.wiki_page_not_found.format(title=page_title))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.wiki_page_delete_failed)
+        sys.exit(1)
+    print(messages.wiki_page_deleted.format(title=page_title))
 
 
 def build_wiki_tree_choices(pages: list[WikiPage]) -> list[tuple[str, str]]:
@@ -214,7 +231,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
             confirm_delete(
                 messages.delete_target_wiki_page.format(title=page.get("title", title))
             )
-        delete_wiki(project_id, title)
+        _delete_page(project_id, title)
     elif cmd == "update":
         page_title = args.page_title
         if page_title is None:

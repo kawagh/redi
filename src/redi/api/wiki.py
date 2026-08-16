@@ -6,10 +6,8 @@ import webbrowser
 from collections import defaultdict
 from typing import NotRequired, TypedDict, cast
 
-import requests
-
 from redi import config
-from redi.api.exceptions import RedmineValidationException, print_http_error_body
+from redi.api.exceptions import RedmineValidationException
 from redi.api.types import Attachment, IdName
 from redi.client import client
 from redi.i18n import messages
@@ -202,21 +200,6 @@ def update_wiki(
     response.raise_for_status()
     url = f"{config.redmine_url}/projects/{project_id}/wiki/{page_title}"
     print(messages.wiki_page_updated.format(url=url))
-
-
-def delete_wiki(project_id: str, page_title: str) -> None:
-    response = client.delete(f"/projects/{project_id}/wiki/{page_title}.json")
-    if response.status_code == 404:
-        print(messages.wiki_page_not_found.format(title=page_title))
-        sys.exit(1)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.wiki_page_delete_failed)
-        sys.exit(1)
-    print(messages.wiki_page_deleted.format(title=page_title))
 
 
 def create_wiki(
