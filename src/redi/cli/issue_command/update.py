@@ -21,7 +21,7 @@ from redi.api.issue import (
     IssueNotFoundException,
     WatcherNotFoundException,
 )
-from redi.api.issue_relation import create_relation, delete_relation
+from redi.api.issue_relation import RelationNotFoundException
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.project import fetch_project
 from redi.cli.custom_field_prompt import (
@@ -44,7 +44,8 @@ from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.time_entry_command import create_time_entry
 from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
-from redi.service import issue_service
+from redi.service import issue_relation_service, issue_service
+from redi.service.issue_relation_service import RelationBetweenNotFoundException
 
 
 @dataclass
@@ -404,6 +405,58 @@ def _remove_watcher(issue_id: str, user_id: int) -> None:
     print(messages.watcher_removed.format(issue_id=issue_id, user_id=user_id))
 
 
+def _create_relation(issue_id: str, issue_to_id: str, relation_type: str) -> None:
+    """関係性を作成し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        issue_relation_service.create_relation(
+            issue_id=issue_id,
+            issue_to_id=issue_to_id,
+            relation_type=relation_type,
+        )
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.relation_create_failed)
+        sys.exit(1)
+    print(
+        messages.relation_created.format(
+            from_id=issue_id, type=relation_type, to_id=issue_to_id
+        )
+    )
+
+
+def _delete_relation(issue_id: str, issue_to_id: str) -> None:
+    """イシュー間の関係性を削除し、結果を標準出力に出す。対象が無ければ exit 1。"""
+    try:
+        relation = issue_relation_service.delete_relation(
+            issue_id=issue_id,
+            issue_to_id=issue_to_id,
+        )
+    except RelationBetweenNotFoundException:
+        print(
+            messages.relation_between_not_found.format(
+                from_id=issue_id, to_id=issue_to_id
+            )
+        )
+        sys.exit(1)
+    except RelationNotFoundException as e:
+        # 一覧を引いてから DELETE するまでの間に消えていた場合
+        print(messages.relation_not_found.format(id=e.relation_id))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.relation_delete_failed)
+        return
+    print(
+        messages.relation_deleted.format(
+            from_id=relation["issue_id"],
+            type=relation["relation_type"],
+            to_id=relation["issue_to_id"],
+        )
+    )
+
+
 def handle_issue_update(args: argparse.Namespace) -> None:
     """argparse アダプタ。Namespace を読むのはここまでに閉じる。"""
     _run_issue_update(IssueUpdateArgs.from_namespace(args))
@@ -478,12 +531,12 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
         if not args.relate_to:
             print(messages.delete_relation_requires_to)
             sys.exit(1)
-        delete_relation(
+        _delete_relation(
             issue_id=args.issue_id,
             issue_to_id=args.relate_to,
         )
     elif args.relate and args.relate_to:
-        create_relation(
+        _create_relation(
             issue_id=args.issue_id,
             issue_to_id=args.relate_to,
             relation_type=args.relate,
