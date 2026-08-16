@@ -357,7 +357,11 @@ def main() -> None:
     elif args.command in ("custom_field", "cf"):
         list_custom_fields(full=args.full)
     elif args.command in ("issue_category", "ic"):
-        handle_issue_category(args)
+        try:
+            handle_issue_category(args)
+        except RedmineValidationException as e:
+            print(_format_validation_error(e))
+            sys.exit(1)
     elif args.command in ("search", "s"):
         handle_search(args)
     elif args.command in ("attachment", "a"):
