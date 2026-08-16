@@ -6,8 +6,6 @@ import webbrowser
 from collections import defaultdict
 from typing import NotRequired, TypedDict, cast
 
-import requests
-
 from redi import config
 from redi.api.exceptions import RedmineValidationException
 from redi.api.types import Attachment, IdName
@@ -53,6 +51,12 @@ class WikiPageUpdateBody(TypedDict):
 
 
 class WikiUpdateConflictException(Exception):
+    def __init__(self, title: str) -> None:
+        super().__init__(title)
+        self.title = title
+
+
+class WikiPageNotFoundException(Exception):
     def __init__(self, title: str) -> None:
         super().__init__(title)
         self.title = title
@@ -204,9 +208,17 @@ def update_wiki(
     print(messages.wiki_page_updated.format(url=url))
 
 
-def delete_wiki_page(project_id: str, page_title: str) -> requests.Response:
-    """Wikiページ削除の DELETE を投げる。ステータスコードの解釈は呼び出し元に任せる。"""
-    return client.delete(f"/projects/{project_id}/wiki/{page_title}.json")
+def delete_wiki_page(project_id: str, page_title: str) -> None:
+    """Wikiページを削除する
+
+    Raises:
+        WikiPageNotFoundException: 対象ページが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
+    response = client.delete(f"/projects/{project_id}/wiki/{page_title}.json")
+    if response.status_code == 404:
+        raise WikiPageNotFoundException(page_title)
+    response.raise_for_status()
 
 
 def create_wiki(

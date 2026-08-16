@@ -15,7 +15,7 @@ from prompt_toolkit.layout.containers import (
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Frame
 
-from redi.api.wiki import WikiPage
+from redi.api.wiki import WikiPage, WikiPageNotFoundException
 from redi.i18n import messages
 from redi.service import wiki_service
 from redi.tui.state import Renderable, TuiState, WikiDeleteModalState
@@ -148,7 +148,7 @@ def confirm_delete(state: TuiState) -> None:
         return
     try:
         wiki_service.delete_page(project, modal.target_title)
-    except wiki_service.WikiPageNotFoundError:
+    except WikiPageNotFoundException:
         close_delete_modal(state)
         state.flash_message = messages.tui_wiki_delete_page_missing.format(
             title=modal.target_title

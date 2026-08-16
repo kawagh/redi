@@ -8,6 +8,7 @@ from redi import config
 from redi.api.exceptions import print_http_error_body
 from redi.api.wiki import (
     WikiPage,
+    WikiPageNotFoundException,
     build_children_map,
     create_wiki,
     fetch_wiki,
@@ -40,7 +41,7 @@ def _delete_page(project_id: str, page_title: str) -> None:
     """Wiki ページを削除し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         wiki_service.delete_page(project_id, page_title)
-    except wiki_service.WikiPageNotFoundError:
+    except WikiPageNotFoundException:
         print(messages.wiki_page_not_found.format(title=page_title))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:

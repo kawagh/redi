@@ -3,9 +3,8 @@ from typing import cast
 import pytest
 import requests
 
-from redi.api.wiki import WikiPage
+from redi.api.wiki import WikiPage, WikiPageNotFoundException
 from redi.i18n import messages
-from redi.service.wiki_service import WikiPageNotFoundError
 from redi.tui.state import TuiState
 from redi.tui.wiki import delete_modal
 from redi.tui.wiki.delete_modal import (
@@ -191,7 +190,7 @@ class TestConfirmDelete:
     @pytest.mark.parametrize(
         ("error", "expected_in_flash"),
         [
-            (WikiPageNotFoundError("Home"), "Home"),
+            (WikiPageNotFoundException("Home"), "Home"),
             (requests.exceptions.ConnectionError("boom"), "boom"),
         ],
         ids=["page_missing", "api_failure"],

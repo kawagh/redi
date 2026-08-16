@@ -54,7 +54,8 @@ This file provides guidance to Agents when working with code in this repository.
 - `service/` : CLI や TUI と、 APIの間に入るコード
     - `api/` の役割が大きくなっているものを分割することと、CLI/TUI から呼び出しやすい構造にすることが目的。
     - `wiki_service`などredmineのリソース毎に作る
-- `api/` : Redmine のAPI呼び出し、レスポンス型の定義
+- `api/` : Redmine のAPI呼び出し、レスポンス型の定義、ステータスコードの解釈
+    - 404 / 409 / 422 などは例外や `None` に変換して返し、HTTP を呼び出し元に見せない
 
 - 基本的には以下の依存関係を保つ
     - `tui` -> `service`
