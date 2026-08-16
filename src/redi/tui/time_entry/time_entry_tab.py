@@ -3,12 +3,7 @@ import webbrowser
 import requests
 
 from redi import config
-from redi.api.time_entry import (
-    TimeEntryNotFoundException,
-    fetch_issue_subjects,
-    fetch_time_entries_page,
-    format_time_entry_line,
-)
+from redi.api.time_entry import TimeEntryNotFoundException
 from redi.i18n import messages
 from redi.service import time_entry_service
 from redi.tui.state import Renderable, TuiPosition, TuiResult, TuiState
@@ -18,22 +13,15 @@ from redi.tui.text_format import highlight_segments, render_meta_table
 
 def _fetch_page_with_subjects(state: TuiState, offset: int) -> dict:
     """`offset` から始まる 1 ページ分の time_entries と issue subjects をまとめて返す。"""
-    page = fetch_time_entries_page(
+    page = time_entry_service.fetch_page(
         project_id=state.effective_project_id(),
         user_id=state.time_entry_tab.filter.user_id,
         limit=state.page_size,
         offset=offset,
     )
     entries = page["time_entries"]
-    issue_ids = sorted(
-        {
-            te["issue"]["id"]
-            for te in entries
-            if te.get("issue") and te["issue"].get("id")
-        }
-    )
     try:
-        subjects = fetch_issue_subjects(issue_ids)
+        subjects = time_entry_service.fetch_issue_subjects(entries)
     except requests.exceptions.RequestException:
         subjects = {}
     return {
@@ -76,7 +64,7 @@ def _render_list(state: TuiState) -> Renderable:
     subjects = state.time_entry_tab.issue_subjects
     for i, te in enumerate(entries):
         prefix = "> " if i == state.time_entry_tab.cursor else "  "
-        line = format_time_entry_line(te, issue_subjects=subjects)
+        line = time_entry_service.format_time_entry_line(te, issue_subjects=subjects)
         result.extend(highlight_segments(f"{prefix}{line}", query))
         result.append(("", "\n"))
     return result
@@ -224,7 +212,8 @@ def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
         return
     subjects = state.time_entry_tab.issue_subjects
     targets = [
-        format_time_entry_line(te, issue_subjects=subjects).lower() for te in entries
+        time_entry_service.format_time_entry_line(te, issue_subjects=subjects).lower()
+        for te in entries
     ]
     query_lower = query.lower()
     n = len(entries)
@@ -243,7 +232,7 @@ def request_delete(state: TuiState) -> str | None:
     if not entries:
         return None
     te = entries[state.time_entry_tab.cursor]
-    summary = format_time_entry_line(
+    summary = time_entry_service.format_time_entry_line(
         te, issue_subjects=state.time_entry_tab.issue_subjects
     )
     return messages.tui_time_entry_delete_prompt.format(summary=summary)

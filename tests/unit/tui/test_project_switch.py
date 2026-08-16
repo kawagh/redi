@@ -277,10 +277,14 @@ class TestFetchUsesEffectiveProject:
             return {"time_entries": [], "total_count": 0}
 
         monkeypatch.setattr(
-            time_entry_tab, "fetch_time_entries_page", fake_fetch_time_entries_page
+            time_entry_tab.time_entry_service,
+            "fetch_page",
+            fake_fetch_time_entries_page,
         )
         monkeypatch.setattr(
-            time_entry_tab, "fetch_issue_subjects", lambda issue_ids: {}
+            time_entry_tab.time_entry_service,
+            "fetch_issue_subjects",
+            lambda entries: {},
         )
         state = TuiState(project_id="2")
         state.page_size = 5
