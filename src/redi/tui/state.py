@@ -121,10 +121,7 @@ class CommentSelectState:
 
 @dataclass
 class IssueDeleteModalState:
-    """D で開く issue 削除確認 modal の状態。
-
-    破壊的操作のため、対象 issue の id を再入力させて一致したときだけ削除する。
-    """
+    """D で開く issue 削除確認 modal の状態。"""
 
     show: bool = False
     target_id: int = 0

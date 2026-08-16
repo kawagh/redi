@@ -1,8 +1,4 @@
-"""issues タブの D で開く削除確認 modal のレイアウト・描画と、開く/閉じる/確定する操作。
-
-issue の削除は取り消せないため、time_entry のようなステータスバーの y/N ではなく
-modal を開き、対象 issue の id を打ち直させて一致したときだけ削除する。
-"""
+"""issues タブの D で開く削除確認 modal のレイアウト・描画と、開く/閉じる/確定する操作。"""
 
 import requests
 from prompt_toolkit.filters import FilterOrBool
