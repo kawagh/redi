@@ -308,7 +308,11 @@ def main() -> None:
                 )
 
     if args.command in ("project", "p"):
-        handle_project(args)
+        try:
+            handle_project(args)
+        except RedmineValidationException as e:
+            print(_format_validation_error(e))
+            sys.exit(1)
     elif args.command in ("issue", "i"):
         try:
             handle_issue(args)

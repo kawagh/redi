@@ -4,8 +4,8 @@ import requests
 from prompt_toolkit.filters import FilterOrBool
 from prompt_toolkit.layout.containers import Float
 
-from redi.api.project import fetch_projects, sort_projects_by_id_desc
 from redi.i18n import messages
+from redi.service.project_service import list_projects, sort_projects_by_id_desc
 from redi.tui.choice_modal import build_choice_float
 from redi.tui.issue.issue_tab import reload_with_filter
 from redi.tui.state import (
@@ -30,7 +30,7 @@ def open_project_modal(state: TuiState) -> None:
     """プロジェクト切替モーダルを開く。一覧取得に失敗したら error modal に流す。"""
     modal = state.project_modal
     try:
-        projects = sort_projects_by_id_desc(fetch_projects())
+        projects = sort_projects_by_id_desc(list_projects())
     except requests.exceptions.RequestException as e:
         state.error_modal = messages.tui_project_load_failed.format(error=e)
         return

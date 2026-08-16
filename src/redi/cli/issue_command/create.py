@@ -20,7 +20,7 @@ from redi.api.custom_field import (
 from redi.api.exceptions import print_http_error_body
 from redi.api.issue import Issue
 from redi.api.issue_template import IssueTemplate, fetch_enabled_issue_templates
-from redi.api.project import fetch_project
+from redi.api.project import ProjectNotFoundException
 from redi.cli.custom_field_prompt import (
     SKIP_UNSUPPORTED_FIELD,
     prompt_custom_field_value,
@@ -44,7 +44,7 @@ from redi.cli.validator import (
     IntValidator,
 )
 from redi.i18n import messages
-from redi.service import issue_service
+from redi.service import issue_service, project_service
 
 
 @dataclass
@@ -296,7 +296,11 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
     template_description = ""
     if args.subject is None:
         if args.tracker_id is None:
-            project = fetch_project(project_id, include="trackers")
+            try:
+                project = project_service.read_project(project_id, include="trackers")
+            except ProjectNotFoundException:
+                print(messages.project_not_found.format(id=project_id))
+                sys.exit(1)
             trackers = project.get("trackers") or []
             tracker_options: list[tuple[str, str]] = [
                 (str(t["id"]), t["name"]) for t in trackers
