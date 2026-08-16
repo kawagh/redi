@@ -1,43 +1,25 @@
-import sys
+from __future__ import annotations
 
-import requests
-
-from redi.api.exceptions import print_http_error_body
 from redi.client import client
-from redi.i18n import messages
+
+
+class IssueJournalNotFoundException(Exception):
+    def __init__(self, journal_id: str) -> None:
+        super().__init__(journal_id)
+        self.journal_id = journal_id
 
 
 def update_issue_journal(journal_id: str, notes: str) -> None:
+    """コメント(ジャーナル)の本文を更新する
+
+    Raises:
+        IssueJournalNotFoundException: 対象コメントが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     response = client.put(
         f"/journals/{journal_id}.json",
         json={"journal": {"notes": notes}},
     )
     if response.status_code == 404:
-        print(messages.issue_journal_not_found.format(id=journal_id))
-        sys.exit(1)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.issue_journal_update_failed)
-        sys.exit(1)
-    print(messages.issue_journal_updated.format(id=journal_id))
-
-
-def delete_issue_journal(journal_id: str) -> None:
-    response = client.put(
-        f"/journals/{journal_id}.json",
-        json={"journal": {"notes": ""}},
-    )
-    if response.status_code == 404:
-        print(messages.issue_journal_not_found.format(id=journal_id))
-        sys.exit(1)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.issue_journal_delete_failed)
-        sys.exit(1)
-    print(messages.issue_journal_deleted.format(id=journal_id))
+        raise IssueJournalNotFoundException(journal_id)
+    response.raise_for_status()

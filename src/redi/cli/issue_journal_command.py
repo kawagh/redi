@@ -1,9 +1,44 @@
 import argparse
+import sys
 
-from redi.api.issue_journal import delete_issue_journal, update_issue_journal
+import requests
+
+from redi.api.exceptions import print_http_error_body
+from redi.api.issue_journal import IssueJournalNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.i18n import messages
+from redi.service import issue_journal_service
+
+
+def update_issue_journal(journal_id: str, notes: str) -> None:
+    """コメントを更新し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        issue_journal_service.update_issue_journal(journal_id, notes)
+    except IssueJournalNotFoundException:
+        print(messages.issue_journal_not_found.format(id=journal_id))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.issue_journal_update_failed)
+        sys.exit(1)
+    print(messages.issue_journal_updated.format(id=journal_id))
+
+
+def delete_issue_journal(journal_id: str) -> None:
+    """コメントを削除し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        issue_journal_service.delete_issue_journal(journal_id)
+    except IssueJournalNotFoundException:
+        print(messages.issue_journal_not_found.format(id=journal_id))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.issue_journal_delete_failed)
+        sys.exit(1)
+    print(messages.issue_journal_deleted.format(id=journal_id))
 
 
 def add_issue_journal_parser(
