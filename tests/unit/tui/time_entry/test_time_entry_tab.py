@@ -1,6 +1,9 @@
 from typing import cast
 
-from redi.api.time_entry import TimeEntry
+import pytest
+import requests
+
+from redi.api.time_entry import TimeEntry, TimeEntryNotFoundException
 from redi.tui.state import TuiState
 from redi.tui.time_entry import time_entry_tab
 
@@ -197,24 +200,54 @@ class TestFetchPageUsesFilter:
         assert captured["user_id"] is None
 
 
-class TestConfirmDeleteUpdatesTotal:
-    """削除時は total_count を 1 減らしてページ表示の整合性を保つ"""
+class TestConfirmDelete:
+    """confirm_delete() はカーソル行の削除を service に要求し、一覧を更新する"""
 
-    def test_decrements_total_count(self, monkeypatch):
+    def _state(self) -> TuiState:
         state = TuiState()
         state.time_entry_tab.entries = cast(list[TimeEntry], [{"id": 1}, {"id": 2}])
         state.time_entry_tab.total_count = 5
         state.time_entry_tab.cursor = 0
+        return state
 
-        class FakeResponse:
-            def raise_for_status(self):
-                pass
-
+    def test_decrements_total_count(self, monkeypatch):
+        """削除時は total_count を 1 減らしてページ表示の整合性を保つ"""
+        state = self._state()
+        deleted: list[str] = []
         monkeypatch.setattr(
-            time_entry_tab.client, "delete", lambda path: FakeResponse()
+            time_entry_tab.time_entry_service,
+            "delete_time_entry",
+            lambda time_entry_id: deleted.append(time_entry_id),
         )
 
         time_entry_tab.confirm_delete(state)
 
+        assert deleted == ["1"]
         assert state.time_entry_tab.total_count == 4
         assert len(state.time_entry_tab.entries) == 1
+
+    @pytest.mark.parametrize(
+        ("error", "expected_in_flash"),
+        [
+            (TimeEntryNotFoundException("1"), "1"),
+            (requests.exceptions.ConnectionError("boom"), "boom"),
+        ],
+        ids=["time_entry_missing", "api_failure"],
+    )
+    def test_flashes_reason_on_failure(self, monkeypatch, error, expected_in_flash):
+        """削除に失敗したら一覧を変えず、理由を flash_message に出す"""
+        state = self._state()
+
+        def fake_delete(time_entry_id: str) -> None:
+            raise error
+
+        monkeypatch.setattr(
+            time_entry_tab.time_entry_service, "delete_time_entry", fake_delete
+        )
+
+        time_entry_tab.confirm_delete(state)
+
+        assert state.time_entry_tab.total_count == 5
+        assert len(state.time_entry_tab.entries) == 2
+        assert state.flash_message is not None
+        assert expected_in_flash in state.flash_message

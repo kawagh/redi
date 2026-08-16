@@ -666,10 +666,14 @@ class MessagesProto(Protocol):
     """{error}"""
     tui_time_entry_delete_failed: str
     """{error}"""
+    tui_time_entry_delete_missing: str
+    """{id}"""
     tui_time_entry_delete_prompt: str
     """{summary}"""
     tui_issue_delete_failed: str
     """{error}"""
+    tui_issue_delete_missing: str
+    """{id}"""
     tui_issue_delete_modal_title: str
     tui_issue_delete_modal_target: str
     """{id}, {subject}"""

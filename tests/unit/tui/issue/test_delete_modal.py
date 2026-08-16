@@ -3,28 +3,27 @@ from typing import cast
 import pytest
 import requests
 
-from redi.api.issue import Issue
+from redi.api.issue import Issue, IssueNotFoundException
 from redi.i18n import messages
 from redi.tui.issue import delete_modal
-from redi.tui.issue.delete_modal import confirm_delete, open_delete_modal
+from redi.tui.issue.delete_modal import (
+    confirm_delete,
+    open_delete_modal,
+    validate_input,
+)
 from redi.tui.state import TuiState
 
 
 @pytest.fixture
 def deleted(monkeypatch) -> list[str]:
-    """DELETE の呼び出し先を記録するスタブ。呼ばれなければ空のまま。"""
-    paths: list[str] = []
+    """service への削除要求を記録するスタブ。呼ばれなければ空のまま。"""
+    ids: list[str] = []
 
-    class _Response:
-        def raise_for_status(self) -> None:
-            pass
+    def fake_delete_issue(issue_id: str) -> None:
+        ids.append(issue_id)
 
-    def fake_delete(path: str) -> _Response:
-        paths.append(path)
-        return _Response()
-
-    monkeypatch.setattr(delete_modal.client, "delete", fake_delete)
-    return paths
+    monkeypatch.setattr(delete_modal.issue_service, "delete_issue", fake_delete_issue)
+    return ids
 
 
 def _open(state: TuiState, ids: list[int], *, cursor: int, input_text: str) -> None:
@@ -68,17 +67,48 @@ class TestOpenDeleteModal:
         assert state.issue_tab.delete_modal.show is False
 
 
+class TestValidateInput:
+    """validate_input() は入力が対象 id と一致しない理由を返す"""
+
+    def test_returns_none_when_matches(self):
+        """target_id と一致すれば理由なし (None)"""
+        state = TuiState()
+        _open(state, [1, 2], cursor=1, input_text="2")
+
+        assert validate_input(state.issue_tab.delete_modal) is None
+
+    def test_asks_input_when_empty(self):
+        """未入力なら issue_id の入力を促す"""
+        state = TuiState()
+        _open(state, [1, 2], cursor=1, input_text="")
+
+        assert (
+            validate_input(state.issue_tab.delete_modal)
+            == messages.tui_issue_delete_modal_empty
+        )
+
+    def test_reports_mismatch(self):
+        """target_id と違う入力は不一致として返す"""
+        state = TuiState()
+        _open(state, [1, 2], cursor=1, input_text="9")
+
+        assert (
+            validate_input(state.issue_tab.delete_modal)
+            == messages.tui_issue_delete_modal_mismatch
+        )
+
+
 class TestConfirmDelete:
     """confirm_delete() は modal の入力 id が対象と一致したら削除する"""
 
     def test_removes_entry_when_id_matches(self, deleted):
-        """入力が target_id と一致すれば DELETE を発行し pop / total_count -1"""
+        """入力が target_id と一致すれば削除を要求し pop / total_count -1"""
         state = TuiState()
         _open(state, [1, 2, 3], cursor=1, input_text="2")
 
         confirm_delete(state)
 
-        assert deleted == ["/issues/2.json"]
+        assert deleted == ["2"]
         assert [i["id"] for i in state.issue_tab.issues] == [1, 3]
         assert state.issue_tab.total_count == 2
         assert state.issue_tab.delete_modal.show is False
@@ -121,22 +151,32 @@ class TestConfirmDelete:
         assert [i["id"] for i in state.issue_tab.issues] == [1]
         assert state.issue_tab.cursor == 0
 
-    def test_sets_flash_message_on_api_failure(self, monkeypatch):
-        """API エラー時は modal を閉じ、flash_message にメッセージを出す"""
+    @pytest.mark.parametrize(
+        ("error", "expected_in_flash"),
+        [
+            (IssueNotFoundException("1"), "1"),
+            (requests.exceptions.ConnectionError("boom"), "boom"),
+        ],
+        ids=["issue_missing", "api_failure"],
+    )
+    def test_flashes_reason_on_failure(self, monkeypatch, error, expected_in_flash):
+        """削除に失敗したら一覧を変えず、modal を閉じて理由を flash_message に出す"""
         state = TuiState()
         _open(state, [1], cursor=0, input_text="1")
 
-        def fake_delete(path: str):
-            raise requests.exceptions.ConnectionError("boom")
+        def fake_delete_issue(issue_id: str) -> None:
+            raise error
 
-        monkeypatch.setattr(delete_modal.client, "delete", fake_delete)
+        monkeypatch.setattr(
+            delete_modal.issue_service, "delete_issue", fake_delete_issue
+        )
         confirm_delete(state)
 
         assert [i["id"] for i in state.issue_tab.issues] == [1]
         assert state.issue_tab.total_count == 1
         assert state.issue_tab.delete_modal.show is False
         assert state.flash_message is not None
-        assert "boom" in state.flash_message
+        assert expected_in_flash in state.flash_message
 
 
 class TestInputDigit:
