@@ -48,16 +48,24 @@ This file provides guidance to Agents when working with code in this repository.
 
 ## 層構造
 
-- `api/` : Redmine のレスポンス型と取得・整形
-- `service/` : CLI と TUI が共有する操作。エンドポイントとステータスコードの解釈はここだけが知り、結果は戻り値と例外で返す
-- `cli/` / `tui/` : 結果の見せ方だけを持つ(CLI は print / sys.exit、TUI は flash_message)
-- 更新系を新しく足すときは service に置いて CLI と TUI の双方から呼ぶ(URL 組み立ての二重化を避ける)
-- HTTP の正しさは CLI の E2E (`task test:e2e`) で担保し、TUI 側は service を呼ぶだけにする
+- ※ コードの現状を示すものではなくあくまで志向
+- `tui/`
+- `cli/`
+- `service/` : CLI や TUI と、 APIの間に入るコード
+    - `api/` の役割が大きくなっているものを分割することと、CLI/TUI から呼び出しやすい構造にすることが目的。
+    - `wiki_service`などredmineのリソース毎に作る
+- `api/` : Redmine のAPI呼び出し、レスポンス型の定義
+
+- 基本的には以下の依存関係を保つ
+    - `tui` -> `service`
+    - `cli` -> `service`
+    - `service` -> `api`
 
 ## テスト
 
 - 守りたい仕様をテストとして書く
 - 実装やライブラリの都合でそうなっているだけの挙動はテストとして書かない
+- HTTP の正しさは CLI の E2E (`task test:e2e`) で担保する
 - docstring に守りたい仕様を日本語で書く(`pytest -v` に一覧として表示される)
 
 ## i18n
