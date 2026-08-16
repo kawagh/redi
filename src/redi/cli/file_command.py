@@ -10,6 +10,7 @@ from redi.cli.alias import resolve_alias
 from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
 from redi.service import file_service
+from redi.service.attachment_service import LocalFileNotFoundException
 
 
 def add_file_parser(
@@ -74,6 +75,9 @@ def _create_file(
             version_id=version_id,
             description=description,
         )
+    except LocalFileNotFoundException as e:
+        print(messages.file_not_found.format(path=e.path))
+        sys.exit(1)
     except ProjectNotFoundException:
         print(messages.project_not_found.format(id=project_id))
         sys.exit(1)
