@@ -104,6 +104,7 @@ def close_delete_modal(state: TuiState) -> None:
 def confirm_delete(state: TuiState) -> None:
     """modal で入力された issue_id がカーソル行と一致したら削除する。
 
+    入力が空の場合はまだ打ち始めていないだけなので何もしない。
     一致しない場合は modal.mismatch を立て、入力をクリアして再入力させる。
     削除成功時は modal を閉じ、ローカルの issue 一覧から該当行を取り除く。
     削除失敗時は modal を閉じて flash_message にエラーを出す。
@@ -117,6 +118,8 @@ def confirm_delete(state: TuiState) -> None:
     issue = issues[cursor]
     expected = str(modal.target_id)
     entered = modal.input_text.strip()
+    if not entered:
+        return
     if entered != expected or str(issue.get("id")) != expected:
         modal.mismatch = True
         modal.input_text = ""
