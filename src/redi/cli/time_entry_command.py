@@ -1,16 +1,18 @@
 import argparse
 import sys
 
+import requests
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.validation import Validator
 
 from redi import config
 from redi.api.enumeration import fetch_time_entry_activities
+from redi.api.exceptions import print_http_error_body
 from redi.api.issue import fetch_issue
 from redi.api.project import fetch_projects
 from redi.api.time_entry import (
+    TimeEntryNotFoundException,
     create_time_entry,
-    delete_time_entry,
     fetch_time_entry,
     list_time_entries,
     read_time_entry,
@@ -28,6 +30,22 @@ from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import SharedOptionParser
 from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
+from redi.service import time_entry_service
+
+
+def _delete_time_entry(time_entry_id: str) -> None:
+    """作業時間を削除し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        time_entry_service.delete_time_entry(time_entry_id)
+    except TimeEntryNotFoundException:
+        print(messages.time_entry_not_found.format(id=time_entry_id))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.time_entry_delete_failed)
+        sys.exit(1)
+    print(messages.time_entry_deleted.format(id=time_entry_id))
 
 
 def _time_entry_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
@@ -339,7 +357,7 @@ def handle_time_entry(args: argparse.Namespace) -> None:
                     spent_on=te["spent_on"],
                 )
             )
-        delete_time_entry(args.time_entry_id)
+        _delete_time_entry(args.time_entry_id)
     elif cmd == "list" or cmd is None:
         project_id = args.project_id or config.default_project_id
         list_time_entries(

@@ -49,6 +49,12 @@ class TimeEntriesPageResponse(TypedDict):
     limit: int
 
 
+class TimeEntryNotFoundException(Exception):
+    def __init__(self, time_entry_id: str) -> None:
+        super().__init__(time_entry_id)
+        self.time_entry_id = time_entry_id
+
+
 def create_time_entry(
     issue_id: str | None = None,
     project_id: str | None = None,
@@ -295,12 +301,13 @@ def update_time_entry(
 
 
 def delete_time_entry(time_entry_id: str) -> None:
+    """作業時間を削除する
+
+    Raises:
+        TimeEntryNotFoundException: 対象の作業時間が存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     response = client.delete(f"/time_entries/{time_entry_id}.json")
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.time_entry_delete_failed)
-        sys.exit(1)
-    print(messages.time_entry_deleted.format(id=time_entry_id))
+    if response.status_code == 404:
+        raise TimeEntryNotFoundException(time_entry_id)
+    response.raise_for_status()

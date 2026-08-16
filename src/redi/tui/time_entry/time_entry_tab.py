@@ -4,12 +4,13 @@ import requests
 
 from redi import config
 from redi.api.time_entry import (
+    TimeEntryNotFoundException,
     fetch_issue_subjects,
     fetch_time_entries_page,
     format_time_entry_line,
 )
-from redi.client import client
 from redi.i18n import messages
+from redi.service import time_entry_service
 from redi.tui.state import Renderable, TuiPosition, TuiResult, TuiState
 from redi.tui.tab import TabView, noop, noop_jump
 from redi.tui.text_format import highlight_segments, render_meta_table
@@ -248,23 +249,31 @@ def request_delete(state: TuiState) -> str | None:
     return messages.tui_time_entry_delete_prompt.format(summary=summary)
 
 
+def apply_deleted(state: TuiState, cursor: int) -> None:
+    """削除済みの行を一覧から取り除き、total_count と cursor を整える。"""
+    entries = state.time_entry_tab.entries
+    entries.pop(cursor)
+    state.time_entry_tab.total_count = max(0, state.time_entry_tab.total_count - 1)
+    if cursor >= len(entries):
+        state.time_entry_tab.cursor = max(0, len(entries) - 1)
+
+
 def confirm_delete(state: TuiState) -> None:
-    """カーソル行の time_entry を削除する。失敗時は error を設定する。"""
+    """カーソル行の time_entry を削除する。失敗時は flash_message に理由を出す。"""
     entries = state.time_entry_tab.entries
     if not entries:
         return
     cursor = state.time_entry_tab.cursor
     te = entries[cursor]
     try:
-        response = client.delete(f"/time_entries/{te['id']}.json")
-        response.raise_for_status()
+        time_entry_service.delete_time_entry(str(te["id"]))
+    except TimeEntryNotFoundException:
+        state.flash_message = messages.tui_time_entry_delete_missing.format(id=te["id"])
+        return
     except requests.exceptions.RequestException as e:
         state.flash_message = messages.tui_time_entry_delete_failed.format(error=e)
         return
-    entries.pop(cursor)
-    state.time_entry_tab.total_count = max(0, state.time_entry_tab.total_count - 1)
-    if cursor >= len(entries):
-        state.time_entry_tab.cursor = max(0, len(entries) - 1)
+    apply_deleted(state, cursor)
 
 
 def _on_reload(state: TuiState) -> None:

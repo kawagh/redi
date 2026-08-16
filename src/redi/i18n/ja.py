@@ -513,6 +513,7 @@ class Ja(MessagesProto):
     tui_time_entry_loading = "(作業時間を読み込み中...)"
     tui_time_entry_load_failed = "作業時間の取得に失敗しました: {error}"
     tui_time_entry_delete_failed = "作業時間の削除に失敗しました: {error}"
+    tui_time_entry_delete_missing = "作業時間が見つかりません: {id}"
     tui_time_entry_delete_prompt = "削除しますか? {summary} [y/N]"
     tui_issue_delete_failed = "イシューの削除に失敗しました: {error}"
     tui_issue_delete_missing = "イシューが見つかりません: #{id}"

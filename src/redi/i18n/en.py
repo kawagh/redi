@@ -506,6 +506,7 @@ class En(MessagesProto):
     tui_time_entry_loading = "(loading time entries...)"
     tui_time_entry_load_failed = "Failed to fetch time entries: {error}"
     tui_time_entry_delete_failed = "Failed to delete time entry: {error}"
+    tui_time_entry_delete_missing = "Time entry not found: {id}"
     tui_time_entry_delete_prompt = "Delete? {summary} [y/N]"
     tui_issue_delete_failed = "Failed to delete issue: {error}"
     tui_issue_delete_missing = "Issue not found: #{id}"
