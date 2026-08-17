@@ -5,7 +5,7 @@ description: redi を使用して見つけた課題・機能要望を `redi issu
 - ユーザーが指定した--profile `profile_name`でrediコマンドを使用してください
 - 重複起票を防ぐため`redi issue`で現在起票されているチケットを把握してください
 - バグは以下のようにして起票出来ます
-    - `redi issue create <title> --description <description> --custom_field "1=$(redi -V | awk '{print $2}')"
+    - `redi issue create <title> --description <description> --custom_fields "1=$(redi -V | awk '{print $2}')"
     - バグテンプレートを使用してください
     - 再現手順をコマンド実行可能な形で記載してください
 - 機能要望は以下のように起票出来ます
