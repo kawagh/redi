@@ -10,6 +10,18 @@ def print_http_error_body(e: requests.exceptions.HTTPError) -> None:
         print(e.response.text)
 
 
+class ProjectNotFoundException(Exception):
+    """プロジェクトを指定した API が HTTP 404 を返したときに送出する例外。
+
+    `project_id` は呼び出し時に指定した値。プロジェクトを省略できる API では
+    None のこともある。
+    """
+
+    def __init__(self, project_id: str | None) -> None:
+        super().__init__(str(project_id))
+        self.project_id = project_id
+
+
 class RedmineValidationException(Exception):
     """Redmine API がバリデーションエラー (HTTP 422) を返したときに送出する例外。
 

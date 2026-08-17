@@ -1,17 +1,10 @@
 from __future__ import annotations
 
-import json
-import sys
-import webbrowser
 from typing import NotRequired, TypedDict, cast
 
-import requests
-
-from redi import config
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import ProjectNotFoundException
 from redi.api.types import Attachment, IdName
 from redi.client import client
-from redi.i18n import messages
 
 
 class NewsComment(TypedDict):
@@ -46,10 +39,29 @@ class News(TypedDict):
     comments: NotRequired[list[NewsComment]]
 
 
+class NewsBody(TypedDict):
+    """ニュース作成 (POST) / 更新 (PUT) のリクエストボディ。"""
+
+    title: NotRequired[str]
+    description: NotRequired[str]
+    summary: NotRequired[str]
+
+
+class NewsNotFoundException(Exception):
+    def __init__(self, news_id: str) -> None:
+        super().__init__(news_id)
+        self.news_id = news_id
+
+
 def fetch_news_list(
     project_id: str | None = None, limit: int | None = None
 ) -> list[News]:
-    """ニュースを作成日時の降順で返す。project_id 省略時は全プロジェクトが対象。"""
+    """ニュースを作成日時の降順で返す。project_id 省略時は全プロジェクトが対象。
+
+    Raises:
+        ProjectNotFoundException: 対象プロジェクトが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     if project_id:
         path = f"/projects/{project_id}/news.json"
     else:
@@ -59,89 +71,25 @@ def fetch_news_list(
         params["limit"] = limit
     response = client.get(path, params=params)
     if response.status_code == 404:
-        print(messages.project_not_found.format(id=project_id))
-        sys.exit(1)
+        raise ProjectNotFoundException(project_id)
     response.raise_for_status()
     return cast("list[News]", response.json()["news"])
 
 
-def list_news(project_id: str | None = None, full: bool = False) -> None:
-    news_list = fetch_news_list(project_id)
-    if full:
-        print(json.dumps(news_list, ensure_ascii=False))
-        return
-    for news in news_list:
-        parts = [str(news["id"]), news["title"]]
-        project = news["project"]["name"]
-        if project:
-            parts.append(f"[{project}]")
-        author = news["author"]["name"]
-        if author:
-            parts.append(f"by {author}")
-        if news["created_on"]:
-            parts.append(news["created_on"])
-        print(" ".join(parts))
-
-
 def fetch_news(news_id: str) -> News:
+    """ニュースを添付ファイル・コメント込みで取得する。
+
+    Raises:
+        NewsNotFoundException: 対象ニュースが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     response = client.get(
         f"/news/{news_id}.json", params={"include": "attachments,comments"}
     )
     if response.status_code == 404:
-        print(messages.news_not_found.format(id=news_id))
-        sys.exit(1)
+        raise NewsNotFoundException(news_id)
     response.raise_for_status()
     return cast("News", response.json()["news"])
-
-
-def read_news(news_id: str, full: bool = False, web: bool = False) -> None:
-    if web:
-        url = f"{config.redmine_url}/news/{news_id}"
-        print(url)
-        webbrowser.open(url)
-        return
-    news = fetch_news(news_id)
-    if full:
-        print(json.dumps(news, ensure_ascii=False))
-        return
-    lines = [f"{news['id']} {news['title']}"]
-    project = news["project"]
-    lines.append(
-        messages.label_project_field.format(id=project["id"], name=project["name"])
-    )
-    lines.append(messages.label_author.format(value=news["author"]["name"]))
-    lines.append(messages.label_created_on.format(value=news["created_on"]))
-    summary = news.get("summary")
-    if summary:
-        lines.append(messages.label_summary_field.format(value=summary))
-    if news["description"]:
-        lines.append("")
-        lines.append(news["description"])
-    attachments = news.get("attachments") or []
-    if attachments:
-        lines.append("")
-        lines.append(messages.label_attachments_header)
-        for a in attachments:
-            lines.append(f"  {a['filename']} {a['content_url']}")
-    comments = news.get("comments") or []
-    if comments:
-        lines.append("")
-        lines.append(messages.label_news_comments_header)
-        for c in comments:
-            lines.append(f"  {c['id']} {c['author']['name']}")
-            if c["content"]:
-                lines.append(f"    {c['content'].strip()}")
-    print("\n".join(lines))
-
-
-def fetch_latest_news_id(project_id: str) -> int:
-    """プロジェクトの最新のニュースの id を返す。
-
-    作成 API は 204 を返し body を持たないため、レスポンスからは
-    作成したニュースの id を取れない。一覧は作成日時の降順で返るので、
-    作成直後に先頭を引くことで id を得る。
-    """
-    return fetch_news_list(project_id, limit=1)[0]["id"]
 
 
 def create_news(
@@ -150,22 +98,22 @@ def create_news(
     description: str,
     summary: str | None = None,
 ) -> None:
-    data: dict = {"title": title, "description": description}
+    """ニュースを作成する。
+
+    作成 API は 204 を返し body を持たないため、作成したニュースの id は
+    レスポンスからは取れない。
+
+    Raises:
+        ProjectNotFoundException: 対象プロジェクトが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
+    body: NewsBody = {"title": title, "description": description}
     if summary is not None:
-        data["summary"] = summary
-    response = client.post(f"/projects/{project_id}/news.json", json={"news": data})
+        body["summary"] = summary
+    response = client.post(f"/projects/{project_id}/news.json", json={"news": body})
     if response.status_code == 404:
-        print(messages.project_not_found.format(id=project_id))
-        sys.exit(1)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.news_create_failed)
-        sys.exit(1)
-    news_id = fetch_latest_news_id(project_id)
-    print(messages.news_created.format(url=f"{config.redmine_url}/news/{news_id}"))
+        raise ProjectNotFoundException(project_id)
+    response.raise_for_status()
 
 
 def update_news(
@@ -174,40 +122,33 @@ def update_news(
     description: str | None = None,
     summary: str | None = None,
 ) -> None:
-    data: dict = {}
+    """ニュースを更新する。None を渡した項目は更新しない。
+
+    Raises:
+        NewsNotFoundException: 対象ニュースが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
+    body: NewsBody = {}
     if title is not None:
-        data["title"] = title
+        body["title"] = title
     if description is not None:
-        data["description"] = description
+        body["description"] = description
     if summary is not None:
-        data["summary"] = summary
-    if len(data) == 0:
-        print(messages.update_canceled)
-        sys.exit()
-    response = client.put(f"/news/{news_id}.json", json={"news": data})
+        body["summary"] = summary
+    response = client.put(f"/news/{news_id}.json", json={"news": body})
     if response.status_code == 404:
-        print(messages.news_not_found.format(id=news_id))
-        sys.exit(1)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.news_update_failed)
-        sys.exit(1)
-    print(messages.news_updated.format(url=f"{config.redmine_url}/news/{news_id}"))
+        raise NewsNotFoundException(news_id)
+    response.raise_for_status()
 
 
 def delete_news(news_id: str) -> None:
+    """ニュースを削除する。
+
+    Raises:
+        NewsNotFoundException: 対象ニュースが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     response = client.delete(f"/news/{news_id}.json")
     if response.status_code == 404:
-        print(messages.news_not_found.format(id=news_id))
-        sys.exit(1)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.news_delete_failed)
-        sys.exit(1)
-    print(messages.news_deleted.format(id=news_id))
+        raise NewsNotFoundException(news_id)
+    response.raise_for_status()

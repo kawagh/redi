@@ -1,17 +1,18 @@
+"""`news` サブコマンドの表示整形と対話。
+
+取得や作成の手順は `service.news_service` に任せ、ここでは print と sys.exit を担当する。
+"""
+
 import argparse
+import json
 import sys
+import webbrowser
+
+import requests
 
 from redi import config
-from redi.api.news import (
-    News,
-    create_news,
-    delete_news,
-    fetch_news,
-    fetch_news_list,
-    list_news,
-    read_news,
-    update_news,
-)
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
+from redi.api.news import News, NewsNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor, shorten_to_oneline
@@ -20,6 +21,153 @@ from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import project_option_parser
 from redi.cli.validator import RequiredValidator
 from redi.i18n import messages
+from redi.service import news_service
+
+
+def _fetch_news_list(project_id: str | None) -> list[News]:
+    """ニュース一覧を取得する。プロジェクトが存在しなければ exit 1。"""
+    try:
+        return news_service.list_news(project_id)
+    except ProjectNotFoundException:
+        print(messages.project_not_found.format(id=project_id))
+        sys.exit(1)
+
+
+def _fetch_news(news_id: str) -> News:
+    """ニュースを取得する。存在しなければ exit 1。"""
+    try:
+        return news_service.read_news(news_id)
+    except NewsNotFoundException:
+        print(messages.news_not_found.format(id=news_id))
+        sys.exit(1)
+
+
+def _list_news(project_id: str | None = None, full: bool = False) -> None:
+    """ニュース一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
+    news_list = _fetch_news_list(project_id)
+    if full:
+        print(json.dumps(news_list, ensure_ascii=False))
+        return
+    for news in news_list:
+        parts = [str(news["id"]), news["title"]]
+        project = news["project"]["name"]
+        if project:
+            parts.append(f"[{project}]")
+        author = news["author"]["name"]
+        if author:
+            parts.append(f"by {author}")
+        if news["created_on"]:
+            parts.append(news["created_on"])
+        print(" ".join(parts))
+
+
+def _view_news(news_id: str, full: bool = False, web: bool = False) -> None:
+    """ニュースの詳細を標準出力に出す。存在しない場合は exit 1。"""
+    if web:
+        url = news_service.news_url(news_id)
+        print(url)
+        webbrowser.open(url)
+        return
+    news = _fetch_news(news_id)
+    if full:
+        print(json.dumps(news, ensure_ascii=False))
+        return
+    lines = [f"{news['id']} {news['title']}"]
+    project = news["project"]
+    lines.append(
+        messages.label_project_field.format(id=project["id"], name=project["name"])
+    )
+    lines.append(messages.label_author.format(value=news["author"]["name"]))
+    lines.append(messages.label_created_on.format(value=news["created_on"]))
+    summary = news.get("summary")
+    if summary:
+        lines.append(messages.label_summary_field.format(value=summary))
+    if news["description"]:
+        lines.append("")
+        lines.append(news["description"])
+    attachments = news.get("attachments") or []
+    if attachments:
+        lines.append("")
+        lines.append(messages.label_attachments_header)
+        for a in attachments:
+            lines.append(f"  {a['filename']} {a['content_url']}")
+    comments = news.get("comments") or []
+    if comments:
+        lines.append("")
+        lines.append(messages.label_news_comments_header)
+        for c in comments:
+            lines.append(f"  {c['id']} {c['author']['name']}")
+            if c["content"]:
+                lines.append(f"    {c['content'].strip()}")
+    print("\n".join(lines))
+
+
+def _create_news(
+    project_id: str,
+    title: str,
+    description: str,
+    summary: str | None = None,
+) -> None:
+    """ニュースを作成し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        url = news_service.create_news(
+            project_id=project_id,
+            title=title,
+            description=description,
+            summary=summary,
+        )
+    except ProjectNotFoundException:
+        print(messages.project_not_found.format(id=project_id))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.news_create_failed)
+        sys.exit(1)
+    print(messages.news_created.format(url=url))
+
+
+def _update_news(
+    news_id: str,
+    title: str | None = None,
+    description: str | None = None,
+    summary: str | None = None,
+) -> None:
+    """ニュースを更新し、結果を標準出力に出す。失敗時は exit 1。"""
+    if title is None and description is None and summary is None:
+        print(messages.update_canceled)
+        sys.exit()
+    try:
+        url = news_service.update_news(
+            news_id,
+            title=title,
+            description=description,
+            summary=summary,
+        )
+    except NewsNotFoundException:
+        print(messages.news_not_found.format(id=news_id))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.news_update_failed)
+        sys.exit(1)
+    print(messages.news_updated.format(url=url))
+
+
+def _delete_news(news_id: str) -> None:
+    """ニュースを削除し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        news_service.delete_news(news_id)
+    except NewsNotFoundException:
+        print(messages.news_not_found.format(id=news_id))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        print_http_error_body(e)
+        print(messages.news_delete_failed)
+        sys.exit(1)
+    print(messages.news_deleted.format(id=news_id))
 
 
 def _edit_description(initial_text: str = "") -> str:
@@ -51,7 +199,7 @@ def _interactive_select_news_id(
     selected_message を渡すと選んだニュースを `{label}` に埋めて表示する。
     削除のように後段で対象を表示する場合は省略する。
     """
-    news_list = fetch_news_list(project_id)
+    news_list = _fetch_news_list(project_id)
     if not news_list:
         print(messages.no_news_available)
         sys.exit(1)
@@ -195,7 +343,7 @@ def add_news_parser(
 def handle_news(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.news_command)
     if cmd == "view":
-        read_news(args.news_id, full=args.full, web=args.web)
+        _view_news(args.news_id, full=args.full, web=args.web)
         return
     if cmd == "create":
         project_id = args.project_id or config.default_project_id
@@ -216,7 +364,7 @@ def handle_news(args: argparse.Namespace) -> None:
                 print(messages.canceled)
                 sys.exit(1)
         description = args.description or _edit_description()
-        create_news(
+        _create_news(
             project_id=project_id,
             title=title,
             description=description,
@@ -235,11 +383,11 @@ def handle_news(args: argparse.Namespace) -> None:
         if title is None and summary is None and description is None:
             # 更新項目が 1 つも指定されていないので対話で選ばせる
             title, summary, description = _interactive_fill_news_update(
-                fetch_news(news_id)
+                _fetch_news(news_id)
             )
         elif description == "":
-            description = _edit_description(fetch_news(news_id)["description"])
-        update_news(
+            description = _edit_description(_fetch_news(news_id)["description"])
+        _update_news(
             news_id=news_id,
             title=title,
             description=description or None,
@@ -252,12 +400,12 @@ def handle_news(args: argparse.Namespace) -> None:
             messages.prompt_select_news_to_delete,
         )
         if not args.yes:
-            news = fetch_news(news_id)
+            news = _fetch_news(news_id)
             confirm_delete(
                 messages.delete_target_news.format(id=news["id"], title=news["title"])
             )
-        delete_news(news_id)
+        _delete_news(news_id)
         return
     if cmd == "list" or cmd is None:
         project_id = args.project_id or config.default_project_id
-        list_news(project_id=project_id, full=args.full)
+        _list_news(project_id=project_id, full=args.full)
