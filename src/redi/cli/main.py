@@ -339,7 +339,11 @@ def main() -> None:
             print(_format_validation_error(e))
             sys.exit(1)
     elif args.command in ("membership", "m"):
-        handle_membership(args)
+        try:
+            handle_membership(args)
+        except RedmineValidationException as e:
+            print(_format_validation_error(e))
+            sys.exit(1)
     elif args.command in ("news", "n"):
         handle_news(args)
     elif args.command in ("tracker", "t"):
