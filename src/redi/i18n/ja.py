@@ -171,7 +171,6 @@ class Ja(MessagesProto):
     relation_create_failed = "関係性の作成に失敗しました"
     relation_delete_failed = "関係性の削除に失敗しました"
     file_upload_failed = "ファイルのアップロードに失敗しました"
-    file_upload_failed_with_path = "ファイルのアップロードに失敗しました: {path}"
     account_update_failed = "アカウント情報の更新に失敗しました"
     version_create_failed = "バージョンの作成に失敗しました"
     version_update_failed = "バージョンの更新に失敗しました"
