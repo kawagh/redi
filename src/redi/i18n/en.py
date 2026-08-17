@@ -169,7 +169,6 @@ class En(MessagesProto):
     relation_create_failed = "Failed to create relation"
     relation_delete_failed = "Failed to delete relation"
     file_upload_failed = "Failed to upload file"
-    file_upload_failed_with_path = "Failed to upload file: {path}"
     account_update_failed = "Failed to update account info"
     version_create_failed = "Failed to create version"
     version_update_failed = "Failed to update version"

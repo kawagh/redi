@@ -261,8 +261,6 @@ class MessagesProto(Protocol):
     relation_delete_failed: str
     file_upload_failed: str
     """汎用版 (詳細なし)"""
-    file_upload_failed_with_path: str
-    """{path}"""
     account_update_failed: str
     version_create_failed: str
     version_update_failed: str

@@ -46,6 +46,7 @@ from redi.cli.time_entry_command import create_time_entry
 from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
 from redi.service import issue_relation_service, issue_service, project_service
+from redi.service.attachment_service import LocalFileNotFoundException
 from redi.service.issue_relation_service import RelationBetweenNotFoundException
 
 
@@ -376,6 +377,9 @@ def _update_issue(args: IssueUpdateArgs, description: str | None) -> None:
         )
     except ProjectNotFoundException:
         print(messages.project_not_found.format(id=args.project_id))
+        sys.exit(1)
+    except LocalFileNotFoundException as e:
+        print(messages.file_not_found.format(path=e.path))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
         print(e)

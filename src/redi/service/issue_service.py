@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from redi import config
 from redi.api import issue as issue_api
-from redi.api.attachment import upload_file
 from redi.api.issue import Issue
+from redi.service.attachment_service import upload_file
 from redi.service.project_service import resolve_project_id
 
 
@@ -118,6 +118,7 @@ def update_issue(
 
     Raises:
         ProjectNotFoundException: 移動先プロジェクトが見つからない
+        LocalFileNotFoundException: `attachments` に存在しないパスが含まれる
         RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
