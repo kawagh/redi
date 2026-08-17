@@ -5,8 +5,7 @@ import sys
 import requests
 
 from redi import config
-from redi.api.exceptions import print_http_error_body
-from redi.api.file import ProjectNotFoundException
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.cli.alias import resolve_alias
 from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages

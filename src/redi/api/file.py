@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import NotRequired, TypedDict, cast
 
+from redi.api.exceptions import ProjectNotFoundException
 from redi.api.types import IdName
 from redi.client import client
 
@@ -34,14 +35,6 @@ class ProjectFileBody(TypedDict):
     content_type: str
     version_id: NotRequired[int]
     description: NotRequired[str]
-
-
-class ProjectNotFoundException(Exception):
-    """対象プロジェクトが存在しないときに送出する例外。"""
-
-    def __init__(self, project_id: str) -> None:
-        super().__init__(project_id)
-        self.project_id = project_id
 
 
 def fetch_files(project_id: str) -> list[ProjectFile]:
