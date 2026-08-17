@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from redi import config
 from redi.api import issue as issue_api
-from redi.api.attachment import upload_file
 from redi.api.issue import Issue
+from redi.service.attachment_service import upload_file
 
 
 def issue_url(issue_id: str, note_number: int | None = None) -> str:
@@ -111,6 +111,7 @@ def update_issue(
     """イシューを更新する。添付ファイルが指定されていれば先にアップロードする。
 
     Raises:
+        LocalFileNotFoundException: `attachments` に存在しないパスが含まれる
         RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """

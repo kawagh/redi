@@ -6,8 +6,8 @@ CLI と TUI で共通の手順をここに置く。HTTP とステータスコー
 from __future__ import annotations
 
 from redi.api import file as file_api
-from redi.api.attachment import upload_file
 from redi.api.file import ProjectFile
+from redi.service.attachment_service import upload_file
 
 
 def list_files(project_id: str) -> list[ProjectFile]:
@@ -31,6 +31,7 @@ def create_file(
     Redmine ではアップロードで得た token を project files に渡す 2 段階の手順になる。
 
     Raises:
+        LocalFileNotFoundException: `file_path` がファイルとして存在しない
         ProjectNotFoundException: 対象プロジェクトが存在しない (HTTP 404)
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
