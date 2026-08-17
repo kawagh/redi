@@ -1,6 +1,8 @@
 ---
 name: redmine-redi
 description: Read and write Redmine issues, wiki pages, time entries, news and attachments through the `redi` CLI. Use whenever a task involves Redmine — creating or updating a ticket, searching issues, logging hours, or editing a wiki page — instead of calling the REST API directly. Redmine のチケット・Wiki・作業時間をコマンドラインで操作する (redmine, redi, redtile, ticket, issue, 課題, チケット, 工数, wiki, 作業時間).
+compatibility: Requires the `redi` CLI (PyPI package `redtile`, verified with 0.0.58), a profile configured in `~/.config/redi/config.toml`, and network access to a Redmine instance with the REST API enabled.
+allowed-tools: "Bash(redi:*)"
 ---
 
 # Working with Redmine via redi
