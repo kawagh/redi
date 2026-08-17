@@ -9,6 +9,7 @@ from redi import config
 from redi.api import issue as issue_api
 from redi.api.attachment import upload_file
 from redi.api.issue import Issue
+from redi.service.project_service import resolve_project_id
 
 
 def issue_url(issue_id: str, note_number: int | None = None) -> str:
@@ -92,6 +93,7 @@ def create_issue(
 
 def update_issue(
     issue_id: str,
+    project_id: str | None = None,
     subject: str | None = None,
     description: str | None = None,
     tracker_id: str | None = None,
@@ -110,13 +112,21 @@ def update_issue(
 ) -> None:
     """イシューを更新する。添付ファイルが指定されていれば先にアップロードする。
 
+    project_id を渡すとイシューを別プロジェクトへ移動する。
+    Redmine は移動先が見つからなくても 204 を返して黙って移動しないため、
+    先に数値の id へ解決して見つからない指定をここで弾く。
+
     Raises:
+        ProjectNotFoundException: 移動先プロジェクトが見つからない
         RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
+    if project_id is not None:
+        project_id = resolve_project_id(project_id)
     uploads = [upload_file(file_path) for file_path in attachments or []]
     issue_api.update_issue(
         issue_id=issue_id,
+        project_id=project_id,
         subject=subject,
         description=description,
         tracker_id=tracker_id,

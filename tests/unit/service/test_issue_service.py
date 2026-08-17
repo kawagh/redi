@@ -27,6 +27,42 @@ def stub_issue_api(monkeypatch):
     return state
 
 
+@pytest.fixture
+def stub_update_issue_api(monkeypatch):
+    """更新の PUT を `calls` に記録し、slug -> id の解決を差し替える。
+
+    プロジェクトの解決は `reditest` -> `5` の 1 件だけを知っている状態にする。
+    """
+
+    calls: list[dict] = []
+
+    def fake_resolve_project_id(project_id):
+        return "5" if project_id == "reditest" else project_id
+
+    def fake_update_issue(**kwargs):
+        calls.append(kwargs)
+
+    monkeypatch.setattr(issue_service, "resolve_project_id", fake_resolve_project_id)
+    monkeypatch.setattr(issue_service.issue_api, "update_issue", fake_update_issue)
+    return SimpleNamespace(calls=calls)
+
+
+class TestUpdateIssue:
+    """update_issue が API に渡す project_id"""
+
+    def test_project_slug_is_resolved_to_id(self, stub_update_issue_api):
+        """存在しない移動先を Redmine が黙って無視するので、数値の id に解決してから渡す"""
+        issue_service.update_issue("42", project_id="reditest")
+
+        assert stub_update_issue_api.calls[0]["project_id"] == "5"
+
+    def test_project_is_not_resolved_when_omitted(self, stub_update_issue_api):
+        """project_id を指定しなければ解決せず None のまま渡す (プロジェクトを変えない)"""
+        issue_service.update_issue("42", subject="件名")
+
+        assert stub_update_issue_api.calls[0]["project_id"] is None
+
+
 class TestAddNote:
     """add_note が返すコメントの URL"""
 

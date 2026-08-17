@@ -211,6 +211,7 @@ class En(MessagesProto):
     sharing_label = "Sharing: {value}"
     issue_label = "Issue: #{id} {subject}"
     activity_label = "Activity: {value}"
+    project_label = "Project: {value}"
     tracker_label = "Tracker: {value}"
     priority_label = "Priority: {value}"
     assignee_label = "Assignee: {value}"
@@ -244,6 +245,7 @@ class En(MessagesProto):
     prompt_page_title = "Page title: "
     prompt_parent_page = "Parent page"
     prompt_edit_page = "Page to edit"
+    prompt_select_project = "Select project"
     prompt_select_tracker = "Select tracker"
     prompt_select_template = "Select template"
     prompt_select_template_none = "(Do not use a template)"
@@ -315,6 +317,7 @@ class En(MessagesProto):
     error_no_matching_project = "No matching project"
 
     # ---- field labels ----
+    field_project = "project"
     field_tracker = "tracker"
     field_subject = "subject"
     field_title = "title"
@@ -600,6 +603,7 @@ class En(MessagesProto):
     arg_help_issue_update_id = "Issue ID (omit to select interactively)"
     arg_help_issue_subject_opt = "Subject"
     arg_help_issue_update_description = "Description (no value opens editor)"
+    arg_help_issue_update_project_id = "Project ID to move the issue to"
     arg_help_issue_update_tracker_id = "Tracker ID"
     arg_help_issue_status_id = "Status ID"
     arg_help_issue_fixed_version_id = "Fixed version ID"

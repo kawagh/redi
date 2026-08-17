@@ -37,6 +37,7 @@ from redi.cli.issue_command.field_prompt import (
     prompt_due_date,
     prompt_estimated_hours,
     prompt_fixed_version,
+    prompt_project,
     prompt_start_date,
 )
 from redi.cli.keybinding import date_key_bindings
@@ -57,6 +58,7 @@ class IssueUpdateArgs:
     """
 
     issue_id: str | None = None
+    project_id: str | None = None
     subject: str | None = None
     description: str | None = None
     tracker_id: str | None = None
@@ -120,6 +122,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
     assert args.issue_id is not None
     current = _read_issue(args.issue_id)
     field_values: list[tuple[str, str]] = [
+        ("project", messages.field_project),
         ("tracker", messages.field_tracker),
         ("subject", messages.field_subject),
         ("description", messages.field_description),
@@ -170,8 +173,11 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
     try:
+        if "project" in selected:
+            args.project_id = prompt_project(default=str(issue_project_id))
+        # 移動する場合、トラッカーなどの選択肢は移動先プロジェクトのものを出す
+        project_id = args.project_id or (current.get("project") or {}).get("id")
         if "tracker" in selected:
-            project_id = (current.get("project") or {}).get("id")
             if not project_id:
                 print(messages.canceled_no_project)
                 sys.exit(1)
@@ -220,7 +226,6 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
                 messages.priority_label.format(value=priority_labels[args.priority_id])
             )
         if "assigned_to" in selected:
-            project_id = (current.get("project") or {}).get("id")
             if not project_id:
                 print(messages.canceled_no_project)
                 sys.exit(1)
@@ -232,7 +237,6 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
                 str(project_id), default=default_assignee
             )
         if "fixed_version" in selected:
-            project_id = (current.get("project") or {}).get("id")
             if not project_id:
                 print(messages.canceled_no_project)
                 sys.exit(1)
@@ -351,6 +355,7 @@ def _update_issue(args: IssueUpdateArgs, description: str | None) -> None:
     try:
         issue_service.update_issue(
             issue_id=args.issue_id,
+            project_id=args.project_id,
             subject=args.subject,
             description=description or None,
             tracker_id=args.tracker_id,
@@ -369,6 +374,9 @@ def _update_issue(args: IssueUpdateArgs, description: str | None) -> None:
             else None,
             attachments=args.attach,
         )
+    except ProjectNotFoundException:
+        print(messages.project_not_found.format(id=args.project_id))
+        sys.exit(1)
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
@@ -477,7 +485,8 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
     if not args.issue_id:
         args.issue_id = _interactive_select_issue_id()
     no_args_provided = not (
-        args.subject
+        args.project_id
+        or args.subject
         or args.description is not None
         or args.tracker_id
         or args.status_id
@@ -507,7 +516,8 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
         description = open_editor(current.get("description") or "")
     # 空の説明は「変更しない」扱いなので更新対象から外す
     should_update_issue = (
-        args.subject
+        args.project_id
+        or args.subject
         or description
         or args.tracker_id
         or args.status_id

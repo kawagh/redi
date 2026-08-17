@@ -223,6 +223,7 @@ def create_issue(
 
 def update_issue(
     issue_id: str,
+    project_id: str | None = None,
     subject: str | None = None,
     description: str | None = None,
     tracker_id: str | None = None,
@@ -242,6 +243,7 @@ def update_issue(
     """イシューを更新する
 
     Args:
+        project_id: 指定するとイシューを別プロジェクトへ移動する
         uploads: 添付ファイルのアップロード結果 (`api.attachment.upload_file` の戻り値)
 
     Raises:
@@ -249,6 +251,8 @@ def update_issue(
         requests.exceptions.HTTPError: 422 以外の HTTP エラーが返った場合
     """
     issue_data: dict = {}
+    if project_id:
+        issue_data["project_id"] = project_id
     if subject:
         issue_data["subject"] = subject
     if description is not None:
