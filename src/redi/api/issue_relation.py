@@ -1,42 +1,60 @@
-import json
-import sys
+from __future__ import annotations
 
-import requests
+from typing import TypedDict, cast
 
-from redi import config
-from redi.api.exceptions import print_http_error_body
 from redi.client import client
-from redi.i18n import messages
 
 
-def fetch_relation(relation_id: str) -> dict:
+class IssueRelation(TypedDict):
+    """redmine IssueRelation"""
+
+    id: int
+    issue_id: int
+    issue_to_id: int
+    relation_type: str  # ex. relates
+    # precedes / follows 以外では null
+    delay: int | None
+
+
+class RelationNotFoundException(Exception):
+    def __init__(self, relation_id: str) -> None:
+        super().__init__(relation_id)
+        self.relation_id = relation_id
+
+
+def fetch_relation(relation_id: str) -> IssueRelation:
+    """関係性を取得する
+
+    Raises:
+        RelationNotFoundException: 対象の関係性が存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     response = client.get(f"/relations/{relation_id}.json")
     if response.status_code == 404:
-        print(messages.relation_not_found.format(id=relation_id))
-        sys.exit(1)
+        raise RelationNotFoundException(relation_id)
     response.raise_for_status()
-    return response.json()["relation"]
+    return cast("IssueRelation", response.json()["relation"])
 
 
-def read_relation(relation_id: str, full: bool = False) -> None:
-    relation = fetch_relation(relation_id)
-    if full:
-        print(json.dumps(relation, ensure_ascii=False))
-        return
-    issue_url = f"{config.redmine_url}/issues/{relation['issue_id']}"
-    issue_to_url = f"{config.redmine_url}/issues/{relation['issue_to_id']}"
-    print(
-        f"{relation['id']} #{relation['issue_id']} --[{relation['relation_type']}]--> #{relation['issue_to_id']}"
-    )
-    print(f"  {issue_url}")
-    print(f"  {issue_to_url}")
-    if relation.get("delay") is not None:
-        print(f"  delay: {relation['delay']}")
+def fetch_issue_relations(issue_id: str) -> list[IssueRelation]:
+    """イシューに紐づく関係性の一覧を取得する
+
+    Raises:
+        requests.exceptions.HTTPError: HTTP エラーが返った場合
+    """
+    response = client.get(f"/issues/{issue_id}/relations.json")
+    response.raise_for_status()
+    return cast("list[IssueRelation]", response.json()["relations"])
 
 
 def create_relation(
     issue_id: str, issue_to_id: str, relation_type: str = "relates"
-) -> None:
+) -> IssueRelation:
+    """関係性を作成し、作成された関係性を返す
+
+    Raises:
+        requests.exceptions.HTTPError: HTTP エラーが返った場合
+    """
     response = client.post(
         f"/issues/{issue_id}/relations.json",
         json={
@@ -46,52 +64,18 @@ def create_relation(
             }
         },
     )
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.relation_create_failed)
-        sys.exit(1)
-    print(
-        messages.relation_created.format(
-            from_id=issue_id, type=relation_type, to_id=issue_to_id
-        )
-    )
-
-
-def delete_relation(issue_id: str, issue_to_id: str) -> None:
-    response = client.get(f"/issues/{issue_id}/relations.json")
     response.raise_for_status()
-    relations = response.json()["relations"]
-    target_id = int(issue_to_id)
-    target_relation = next(
-        (
-            r
-            for r in relations
-            if r["issue_id"] == target_id or r["issue_to_id"] == target_id
-        ),
-        None,
-    )
-    if not target_relation:
-        print(
-            messages.relation_between_not_found.format(
-                from_id=issue_id, to_id=issue_to_id
-            )
-        )
-        sys.exit(1)
-    response = client.delete(f"/relations/{target_relation['id']}.json")
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.relation_delete_failed)
-        return
-    print(
-        messages.relation_deleted.format(
-            from_id=target_relation["issue_id"],
-            type=target_relation["relation_type"],
-            to_id=target_relation["issue_to_id"],
-        )
-    )
+    return cast("IssueRelation", response.json()["relation"])
+
+
+def delete_relation(relation_id: str) -> None:
+    """関係性を削除する
+
+    Raises:
+        RelationNotFoundException: 対象の関係性が存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
+    response = client.delete(f"/relations/{relation_id}.json")
+    if response.status_code == 404:
+        raise RelationNotFoundException(relation_id)
+    response.raise_for_status()
