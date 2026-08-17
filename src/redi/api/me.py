@@ -1,49 +1,38 @@
-import json
-import sys
+from __future__ import annotations
 
-import requests
+from typing import NotRequired, TypedDict, cast
 
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import RedmineValidationException
 from redi.client import client
-from redi.i18n import messages
 
 
-def fetch_my_user_id() -> str | None:
-    """`/my/account.json` から自分のユーザー id を取得する。失敗時は None。"""
-    try:
-        response = client.get("/my/account.json")
-        response.raise_for_status()
-        return str(response.json()["user"]["id"])
-    except requests.RequestException:
-        return None
+class MyAccount(TypedDict):
+    """GET /my/account.json が返す自分のアカウント。
+
+    `api_key` は自分のアカウントの取得時のみ返る。
+    """
+
+    id: int
+    login: str
+    firstname: str
+    lastname: str
+    mail: str
+    created_on: str
+    last_login_on: NotRequired[str]
+    admin: NotRequired[bool]
+    api_key: NotRequired[str]
+    custom_fields: NotRequired[list[dict]]
 
 
-def read_my_account(full: bool = False) -> None:
+def fetch_my_account() -> MyAccount:
+    """自分のアカウントを取得する
+
+    Raises:
+        requests.exceptions.HTTPError: HTTP エラーが返った場合
+    """
     response = client.get("/my/account.json")
     response.raise_for_status()
-    user = response.json()["user"]
-    user.pop("api_key", None)
-    if full:
-        print(json.dumps(user, ensure_ascii=False))
-        return
-    lines = [f"{user['id']} {user.get('login', '')}"]
-    name = " ".join(filter(None, [user.get("firstname"), user.get("lastname")]))
-    if name:
-        lines.append(messages.label_name.format(value=name))
-    if user.get("mail"):
-        lines.append(messages.label_mail.format(value=user["mail"]))
-    if "admin" in user:
-        lines.append(messages.label_admin.format(value=user["admin"]))
-    if user.get("created_on"):
-        lines.append(messages.label_created_on.format(value=user["created_on"]))
-    if user.get("last_login_on"):
-        lines.append(messages.label_last_login_on.format(value=user["last_login_on"]))
-    custom_fields = user.get("custom_fields") or []
-    if custom_fields:
-        lines.append(messages.label_custom_fields_header)
-        for cf in custom_fields:
-            lines.append(f"  {cf.get('name')}: {cf.get('value')}")
-    print("\n".join(lines))
+    return cast("MyAccount", response.json()["user"])
 
 
 def update_my_account(
@@ -51,6 +40,12 @@ def update_my_account(
     lastname: str | None = None,
     mail: str | None = None,
 ) -> None:
+    """自分のアカウントを更新する。None の項目は送らない
+
+    Raises:
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+        requests.exceptions.HTTPError: 422 以外の HTTP エラーが返った場合
+    """
     data: dict = {}
     if firstname is not None:
         data["firstname"] = firstname
@@ -58,15 +53,7 @@ def update_my_account(
         data["lastname"] = lastname
     if mail is not None:
         data["mail"] = mail
-    if not data:
-        print(messages.update_canceled_no_changes)
-        sys.exit(1)
     response = client.put("/my/account.json", json={"user": data})
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.account_update_failed)
-        sys.exit(1)
-    print(messages.account_updated)
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("user", "update", response)
+    response.raise_for_status()

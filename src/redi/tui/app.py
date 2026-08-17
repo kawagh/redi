@@ -4,7 +4,7 @@ from pathlib import Path
 from prompt_toolkit import Application
 from prompt_toolkit.key_binding import KeyBindings
 
-from redi.api.me import fetch_my_user_id
+from redi.service import me_service
 from redi.tui.app_layout import build_layout
 from redi.tui.conditions import build_conditions
 from redi.tui.issue.issue_tab import fetch_issues_with_filter, load_journals
@@ -74,7 +74,7 @@ def run_issue_tui(
     if state is None:
         state = TuiState()
     if state.me_id is None:
-        state.me_id = fetch_my_user_id()
+        state.me_id = me_service.read_my_user_id()
     _restore_session(state)
 
     conditions = build_conditions(state)
