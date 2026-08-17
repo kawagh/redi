@@ -1,6 +1,6 @@
 ---
 name: redmine-redi
-description: Use the `redi` CLI to work with Redmine via its REST API — issues, wiki, time entries, news, and attachments. Redmine のチケット・Wiki・作業時間をコマンドラインで操作する (redmine, ticket, issue, 課題, チケット).
+description: Read and write Redmine issues, wiki pages, time entries, news and attachments through the `redi` CLI. Use whenever a task involves Redmine — creating or updating a ticket, searching issues, logging hours, or editing a wiki page — instead of calling the REST API directly. Redmine のチケット・Wiki・作業時間をコマンドラインで操作する (redmine, redi, redtile, ticket, issue, 課題, チケット, 工数, wiki, 作業時間).
 ---
 
 # Working with Redmine via redi
