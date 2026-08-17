@@ -8,16 +8,7 @@ from importlib.metadata import version
 import argcomplete
 
 from redi import config
-from redi.api.custom_field import list_custom_fields
-from redi.api.enumeration import (
-    list_document_categories,
-    list_issue_priorities,
-    list_time_entry_activities,
-)
 from redi.api.exceptions import RedmineValidationException
-from redi.api.issue_status import list_issue_statuses
-from redi.api.query import list_queries
-from redi.api.tracker import list_trackers
 from redi.api.wiki import WikiUpdateConflictException
 from redi.cli.attachment_command import add_attachment_parser, handle_attachment
 from redi.cli.config_command import add_config_parser, handle_config
@@ -30,6 +21,13 @@ from redi.cli.enumerations_command import (
     add_query_parser,
     add_time_entry_activity_parser,
     add_tracker_parser,
+    handle_custom_field,
+    handle_document_category,
+    handle_issue_priority,
+    handle_issue_status,
+    handle_query,
+    handle_time_entry_activity,
+    handle_tracker,
 )
 from redi.cli.file_command import add_file_parser, handle_file
 from redi.cli.group_command import add_group_parser, handle_group
@@ -351,23 +349,23 @@ def main() -> None:
     elif args.command in ("news", "n"):
         handle_news(args)
     elif args.command in ("tracker", "t"):
-        list_trackers(full=args.full)
+        handle_tracker(args)
     elif args.command in ("issue_status", "is"):
-        list_issue_statuses(full=args.full)
+        handle_issue_status(args)
     elif args.command in ("issue_priority", "ip"):
-        list_issue_priorities(full=args.full)
+        handle_issue_priority(args)
     elif args.command in ("time_entry_activity", "tea"):
-        list_time_entry_activities(full=args.full)
+        handle_time_entry_activity(args)
     elif args.command in ("document_category", "dc"):
-        list_document_categories(full=args.full)
+        handle_document_category(args)
     elif args.command in ("role", "r"):
         handle_role(args)
     elif args.command in ("group", "g"):
         handle_group(args)
     elif args.command in ("query", "q"):
-        list_queries(full=args.full)
+        handle_query(args)
     elif args.command in ("custom_field", "cf"):
-        list_custom_fields(full=args.full)
+        handle_custom_field(args)
     elif args.command in ("issue_category", "ic"):
         try:
             handle_issue_category(args)

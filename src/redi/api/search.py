@@ -1,8 +1,6 @@
-import json
 from typing import Literal, get_args
 
 from redi.client import client
-from redi.i18n import messages
 
 # https://www.redmine.org/projects/redmine/wiki/Rest_Search
 SearchScope = Literal["all", "my_projects", "bookmarks", "subprojects"]
@@ -35,8 +33,7 @@ def search(
     open_issues: bool = False,
     attachments: SearchAttachments | None = None,
     types: list[SearchType] | None = None,
-    full: bool = False,
-) -> None:
+) -> dict:
     params: dict = {"q": query}
     if limit is not None:
         params["limit"] = limit
@@ -60,13 +57,4 @@ def search(
         params[search_type] = "1"
     response = client.get("/search.json", params=params)
     response.raise_for_status()
-    data = response.json()
-    results = data.get("results", [])
-    if full:
-        print(json.dumps(data, ensure_ascii=False))
-        return
-    if not results:
-        print(messages.no_search_results)
-        return
-    for r in results:
-        print(f"[{r.get('type', '')}] {r.get('title', '')} {r.get('url', '')}")
+    return response.json()
