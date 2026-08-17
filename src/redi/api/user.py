@@ -36,6 +36,10 @@ class User(TypedDict):
     groups: NotRequired[list[IdName]]
 
 
+# GET /users.json の status パラメータ。Redmine が定める数値との対応。
+USER_STATUS: dict[str, int] = {"active": 1, "registered": 2, "locked": 3}
+
+
 class UserNotFoundException(Exception):
     def __init__(self, user_id: str) -> None:
         super().__init__(user_id)
@@ -51,14 +55,30 @@ class UserPermissionDeniedException(Exception):
     """
 
 
-def fetch_users() -> list[User]:
+def fetch_users(
+    status: int | None = None,
+    name: str | None = None,
+    group_id: int | None = None,
+) -> list[User]:
     """ユーザー一覧を取得する
+
+    Args:
+        status: `USER_STATUS` の数値。未指定なら Redmine の既定 (active のみ)
+        name: login / firstname / lastname / mail への部分一致
+        group_id: 所属グループ
 
     Raises:
         UserPermissionDeniedException: 管理者権限が無い場合（HTTP 403）
         requests.exceptions.HTTPError: 403 以外の HTTP エラーが返った場合
     """
-    response = client.get("/users.json")
+    params: dict = {}
+    if status is not None:
+        params["status"] = status
+    if name is not None:
+        params["name"] = name
+    if group_id is not None:
+        params["group_id"] = group_id
+    response = client.get("/users.json", params=params)
     if response.status_code == 403:
         raise UserPermissionDeniedException
     # 未知のステータスコードに遭遇した際にエラーをraiseする(jsonのdecodeエラーよりは原因がわかりやすい)

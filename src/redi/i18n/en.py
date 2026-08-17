@@ -701,6 +701,9 @@ class En(MessagesProto):
     # ---- argparse helps (user) ----
     arg_help_user_command = arg_help_crud_subcommands
     arg_help_user_list = "List users"
+    arg_help_user_status = "Filter by status (defaults to active only)"
+    arg_help_user_name_filter = "Filter by partial match on login / name / mail"
+    arg_help_user_group_id = "Filter by group ID"
     arg_help_user_create = "Create user (admin required)"
     arg_help_user_login = "Login name"
     arg_help_user_firstname = "First name"
