@@ -23,7 +23,7 @@ from redi.api.issue import (
 )
 from redi.api.issue_relation import RelationNotFoundException
 from redi.api.issue_status import fetch_issue_statuses
-from redi.api.project import fetch_project
+from redi.api.project import ProjectNotFoundException
 from redi.cli.custom_field_prompt import (
     SKIP_UNSUPPORTED_FIELD,
     prompt_custom_field_value,
@@ -44,7 +44,7 @@ from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.time_entry_command import create_time_entry
 from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
-from redi.service import issue_relation_service, issue_service
+from redi.service import issue_relation_service, issue_service, project_service
 from redi.service.issue_relation_service import RelationBetweenNotFoundException
 
 
@@ -175,7 +175,13 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
             if not project_id:
                 print(messages.canceled_no_project)
                 sys.exit(1)
-            project = fetch_project(str(project_id), include="trackers")
+            try:
+                project = project_service.read_project(
+                    str(project_id), include="trackers"
+                )
+            except ProjectNotFoundException:
+                print(messages.project_not_found.format(id=project_id))
+                sys.exit(1)
             trackers = project.get("trackers") or []
             tracker_options: list[tuple[str, str]] = [
                 (str(t["id"]), t["name"]) for t in trackers

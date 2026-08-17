@@ -1,12 +1,10 @@
-import json
-import sys
+from __future__ import annotations
+
 from typing import NotRequired, TypedDict, cast
 
-import requests
-
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import RedmineValidationException
+from redi.api.types import IdName
 from redi.client import client
-from redi.i18n import messages
 
 
 class ProjectUser(TypedDict):
@@ -21,17 +19,22 @@ class Role(TypedDict):
 
     id: int
     name: str
+    # グループ経由で付与されたロールにのみ存在
+    inherited: NotRequired[bool]
 
 
 class Membership(TypedDict):
     """`memberships[]` の要素。
 
-    `user` と `roles` は本ライブラリで扱うユーザーメンバーシップでは常に存在する前提。
+    `user` と `group` はどちらか一方のみ存在する。
+    `project` は GET /memberships/{id}.json のときのみ返る。
     """
 
     id: int
-    user: ProjectUser
     roles: list[Role]
+    user: NotRequired[ProjectUser]
+    group: NotRequired[IdName]
+    project: NotRequired[IdName]
 
 
 class MembershipsResponse(TypedDict):
@@ -43,121 +46,96 @@ class MembershipsResponse(TypedDict):
     limit: NotRequired[int]
 
 
-def list_memberships(project_id: str, full: bool = False) -> None:
+class MembershipNotFoundException(Exception):
+    """対象のメンバーシップが存在しないときに送出する例外。"""
+
+    def __init__(self, membership_id: str) -> None:
+        super().__init__(membership_id)
+        self.membership_id = membership_id
+
+
+def fetch_memberships(project_id: str) -> list[Membership]:
+    """プロジェクトのメンバーシップ一覧を取得する。"""
     response = client.get(f"/projects/{project_id}/memberships.json")
     response.raise_for_status()
-    memberships = response.json()["memberships"]
-    if full:
-        print(json.dumps(memberships, ensure_ascii=False))
-        return
-    for m in memberships:
-        print(_format_membership_line(m))
+    data = cast("MembershipsResponse", response.json())
+    return data["memberships"]
 
 
 def fetch_project_users(project_id: str) -> list[ProjectUser]:
     """プロジェクトのメンバー（user）を返す。"""
-    response = client.get(f"/projects/{project_id}/memberships.json")
-    response.raise_for_status()
-    data = cast(MembershipsResponse, response.json())
-    return [m["user"] for m in data["memberships"] if "user" in m]
+    users: list[ProjectUser] = []
+    for membership in fetch_memberships(project_id):
+        user = membership.get("user")
+        if user is not None:
+            users.append(user)
+    return users
 
 
-def fetch_membership(membership_id: str) -> dict:
+def fetch_membership(membership_id: str) -> Membership:
+    """メンバーシップを取得する。
+
+    Raises:
+        MembershipNotFoundException: 対象のメンバーシップが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     response = client.get(f"/memberships/{membership_id}.json")
     if response.status_code == 404:
-        print(messages.membership_not_found.format(id=membership_id))
-        sys.exit(1)
+        raise MembershipNotFoundException(membership_id)
     response.raise_for_status()
-    return response.json()["membership"]
-
-
-def read_membership(membership_id: str, full: bool = False) -> None:
-    membership = fetch_membership(membership_id)
-    if full:
-        print(json.dumps(membership, ensure_ascii=False))
-        return
-    lines = [_format_membership_line(membership)]
-    project = membership.get("project")
-    if project:
-        lines.append(
-            messages.label_project_field.format(
-                id=project.get("id"), name=project.get("name", "")
-            )
-        )
-    roles = membership.get("roles") or []
-    if roles:
-        lines.append(messages.label_roles_header)
-        for r in roles:
-            inherited = messages.label_inherited_suffix if r.get("inherited") else ""
-            lines.append(f"  {r.get('id')} {r.get('name', '')}{inherited}")
-    print("\n".join(lines))
+    return cast("Membership", response.json()["membership"])
 
 
 def create_membership(
-    project_id: str,
-    role_ids: list[int],
-    user_id: int | None = None,
-    group_id: int | None = None,
-) -> None:
-    data: dict = {"role_ids": role_ids}
-    if user_id is not None:
-        data["user_id"] = user_id
-    elif group_id is not None:
-        data["user_id"] = group_id
-    else:
-        print(messages.user_or_group_id_required)
-        sys.exit(1)
+    project_id: str, principal_id: int, role_ids: list[int]
+) -> Membership:
+    """プロジェクトにメンバーシップを追加する。
+
+    Args:
+        principal_id: 追加する user または group の id
+                      （Redmine はどちらも `user_id` で受け取る）
+
+    Raises:
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+        requests.exceptions.HTTPError: 422 以外の HTTP エラーが返った場合
+    """
     response = client.post(
-        f"/projects/{project_id}/memberships.json", json={"membership": data}
+        f"/projects/{project_id}/memberships.json",
+        json={"membership": {"user_id": principal_id, "role_ids": role_ids}},
     )
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.membership_create_failed)
-        sys.exit(1)
-    created = response.json()["membership"]
-    print(messages.membership_created.format(line=_format_membership_line(created)))
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("membership", "create", response)
+    response.raise_for_status()
+    return cast("Membership", response.json()["membership"])
 
 
 def update_membership(membership_id: str, role_ids: list[int]) -> None:
-    if not role_ids:
-        print(messages.update_canceled)
-        sys.exit()
+    """メンバーシップのロールを更新する。
+
+    Raises:
+        MembershipNotFoundException: 対象のメンバーシップが存在しない場合（HTTP 404）
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+        requests.exceptions.HTTPError: 404 / 422 以外の HTTP エラーが返った場合
+    """
     response = client.put(
         f"/memberships/{membership_id}.json",
         json={"membership": {"role_ids": role_ids}},
     )
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.membership_update_failed)
-        sys.exit(1)
-    print(messages.membership_updated.format(id=membership_id))
+    if response.status_code == 404:
+        raise MembershipNotFoundException(membership_id)
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("membership", "update", response)
+    response.raise_for_status()
 
 
 def delete_membership(membership_id: str) -> None:
+    """メンバーシップを削除する。
+
+    Raises:
+        MembershipNotFoundException: 対象のメンバーシップが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     response = client.delete(f"/memberships/{membership_id}.json")
     if response.status_code == 404:
-        print(messages.membership_not_found.format(id=membership_id))
-        sys.exit(1)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.membership_delete_failed)
-        sys.exit(1)
-    print(messages.membership_deleted.format(id=membership_id))
-
-
-def _format_membership_line(membership: dict) -> str:
-    principal = membership.get("user") or membership.get("group") or {}
-    principal_kind = "user" if "user" in membership else "group"
-    principal_str = f"{principal.get('id', '?')} {principal.get('name', '')}".strip()
-    roles = membership.get("roles") or []
-    role_str = ", ".join(r.get("name", "") for r in roles)
-    return f"{membership['id']} [{principal_kind}] {principal_str} - {role_str}"
+        raise MembershipNotFoundException(membership_id)
+    response.raise_for_status()

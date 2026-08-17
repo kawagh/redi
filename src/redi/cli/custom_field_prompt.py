@@ -6,7 +6,6 @@ issue 固有の要素は持たないので、他リソースの CF 対応を足�
 
 from redi.api.custom_field import CustomField
 from redi.api.membership import fetch_project_users
-from redi.api.version import fetch_versions
 from redi.cli.editor import open_editor, shorten_to_oneline
 from redi.cli.interactive import prompt
 from redi.cli.picker import inline_checkbox, inline_choice
@@ -17,6 +16,7 @@ from redi.cli.validator import (
     RequiredValidator,
 )
 from redi.i18n import messages
+from redi.service import version_service
 
 # attachment 型のような未対応フィールドで「スキップしてブラウザでの編集に倒す」ことを示すセンチネル
 SKIP_UNSUPPORTED_FIELD = object()
@@ -96,7 +96,7 @@ def prompt_custom_field_value(
 
         # バージョン
         case "version":
-            versions = fetch_versions(project_id)
+            versions = version_service.list_versions(project_id)
             options = [(str(v["id"]), v["name"]) for v in versions]
             return _choose_from_options(name, label, options, multiple, default_value)
 

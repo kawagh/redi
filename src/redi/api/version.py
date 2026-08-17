@@ -1,13 +1,96 @@
-import json
-import sys
-import webbrowser
+from __future__ import annotations
 
-import requests
+from typing import NotRequired, TypedDict, cast
 
-from redi import config
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import RedmineValidationException
+from redi.api.types import IdName
 from redi.client import client
-from redi.i18n import messages
+
+
+class Version(TypedDict):
+    """redmine Version
+
+    GET /projects/{id}/versions.json / GET /versions/{id}.json を実行して
+    確認できたフィールドを記載。
+    未設定の due_date / wiki_page_title は省略されず null が返る。
+    """
+
+    id: int
+    project: IdName
+    name: str
+    description: str
+    # open / locked / closed
+    status: str
+    due_date: str | None
+    # none / descendants / hierarchy / tree / system
+    sharing: str
+    wiki_page_title: str | None
+    created_on: str
+    updated_on: str
+    # 個別ページ取得時のみ存在
+    estimated_hours: NotRequired[float]
+    spent_hours: NotRequired[float]
+
+
+class VersionBody(TypedDict, total=False):
+    """バージョン作成 (POST) / 更新 (PUT) のリクエストボディ。"""
+
+    name: str
+    status: str
+    due_date: str
+    description: str
+    sharing: str
+
+
+class VersionNotFoundException(Exception):
+    def __init__(self, version_id: str) -> None:
+        super().__init__(version_id)
+        self.version_id = version_id
+
+
+def _build_version_body(
+    name: str | None = None,
+    status: str | None = None,
+    due_date: str | None = None,
+    description: str | None = None,
+    sharing: str | None = None,
+) -> VersionBody:
+    """指定されたフィールドのみを持つリクエストボディを組み立てる。
+
+    due_date / description は空文字で値を消せるよう、None でなければ送る。
+    """
+    body: VersionBody = {}
+    if name:
+        body["name"] = name
+    if status:
+        body["status"] = status
+    if due_date is not None:
+        body["due_date"] = due_date
+    if description is not None:
+        body["description"] = description
+    if sharing:
+        body["sharing"] = sharing
+    return body
+
+
+def fetch_versions(project_id: str) -> list[Version]:
+    response = client.get(f"/projects/{project_id}/versions.json")
+    response.raise_for_status()
+    return cast("list[Version]", response.json()["versions"])
+
+
+def fetch_version(version_id: str) -> Version:
+    """バージョンを取得する
+
+    Raises:
+        VersionNotFoundException: 対象バージョンが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
+    response = client.get(f"/versions/{version_id}.json")
+    if response.status_code == 404:
+        raise VersionNotFoundException(version_id)
+    response.raise_for_status()
+    return cast("Version", response.json()["version"])
 
 
 def create_version(
@@ -17,34 +100,27 @@ def create_version(
     due_date: str | None = None,
     description: str | None = None,
     sharing: str | None = None,
-) -> None:
-    version_data: dict = {"name": name}
-    if status:
-        version_data["status"] = status
-    if due_date:
-        version_data["due_date"] = due_date
-    if description:
-        version_data["description"] = description
-    if sharing:
-        version_data["sharing"] = sharing
+) -> Version:
+    """バージョンを作成し、作成されたバージョンを返す
+
+    Raises:
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+        requests.exceptions.HTTPError: 422 以外の HTTP エラーが返った場合
+    """
+    body = _build_version_body(
+        name=name,
+        status=status,
+        due_date=due_date,
+        description=description,
+        sharing=sharing,
+    )
     response = client.post(
-        f"/projects/{project_id}/versions.json", json={"version": version_data}
+        f"/projects/{project_id}/versions.json", json={"version": body}
     )
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.version_create_failed)
-        sys.exit(1)
-    created = response.json()["version"]
-    print(
-        messages.version_created.format(
-            id=created["id"],
-            name=created["name"],
-            url=f"{config.redmine_url}/versions/{created['id']}",
-        )
-    )
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("version", "create", response)
+    response.raise_for_status()
+    return cast("Version", response.json()["version"])
 
 
 def update_version(
@@ -55,105 +131,36 @@ def update_version(
     description: str | None = None,
     sharing: str | None = None,
 ) -> None:
-    version_data: dict = {}
-    if name:
-        version_data["name"] = name
-    if status:
-        version_data["status"] = status
-    if due_date is not None:
-        version_data["due_date"] = due_date
-    if description is not None:
-        version_data["description"] = description
-    if sharing:
-        version_data["sharing"] = sharing
-    if len(version_data) == 0:
-        print(messages.update_canceled)
-        sys.exit()
-    response = client.put(
-        f"/versions/{version_id}.json", json={"version": version_data}
-    )
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.version_update_failed)
-        sys.exit(1)
-    print(
-        messages.version_updated.format(
-            id=version_id, url=f"{config.redmine_url}/versions/{version_id}"
-        )
-    )
+    """バージョンを更新する
 
-
-def fetch_version(version_id: str) -> dict:
-    response = client.get(f"/versions/{version_id}.json")
+    Raises:
+        VersionNotFoundException: 対象バージョンが存在しない場合（HTTP 404）
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
+        requests.exceptions.HTTPError: 404 / 422 以外の HTTP エラーが返った場合
+    """
+    body = _build_version_body(
+        name=name,
+        status=status,
+        due_date=due_date,
+        description=description,
+        sharing=sharing,
+    )
+    response = client.put(f"/versions/{version_id}.json", json={"version": body})
     if response.status_code == 404:
-        print(messages.version_not_found.format(id=version_id))
-        sys.exit(1)
+        raise VersionNotFoundException(version_id)
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("version", "update", response)
     response.raise_for_status()
-    return response.json()["version"]
-
-
-def read_version(version_id: str, full: bool = False, web: bool = False) -> None:
-    if web:
-        url = f"{config.redmine_url}/versions/{version_id}"
-        print(url)
-        webbrowser.open(url)
-        return
-    version = fetch_version(version_id)
-    if full:
-        print(json.dumps(version, ensure_ascii=False))
-        return
-
-    lines = []
-    lines.append(
-        f"{version['id']} {version['name']} ({version['status']}) {config.redmine_url}/versions/{version['id']}"
-    )
-    project = version.get("project")
-    if project:
-        lines.append(
-            messages.label_project_field.format(
-                id=project.get("id"), name=project.get("name", "")
-            )
-        )
-    if version.get("due_date"):
-        lines.append(messages.label_due_date_field.format(value=version["due_date"]))
-    if version.get("sharing"):
-        lines.append(messages.label_sharing_field.format(value=version["sharing"]))
-    if version.get("description"):
-        lines.append("")
-        lines.append(version["description"])
-    print("\n".join(lines))
 
 
 def delete_version(version_id: str) -> None:
+    """バージョンを削除する
+
+    Raises:
+        VersionNotFoundException: 対象バージョンが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     response = client.delete(f"/versions/{version_id}.json")
     if response.status_code == 404:
-        print(messages.version_not_found.format(id=version_id))
-        sys.exit(1)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        print_http_error_body(e)
-        print(messages.version_delete_failed)
-        sys.exit(1)
-    print(messages.version_deleted.format(id=version_id))
-
-
-def fetch_versions(project_id: str) -> list[dict]:
-    response = client.get(f"/projects/{project_id}/versions.json")
+        raise VersionNotFoundException(version_id)
     response.raise_for_status()
-    return response.json()["versions"]
-
-
-def list_versions(project_id: str, full: bool = False) -> None:
-    versions = fetch_versions(project_id)
-    if full:
-        print(json.dumps(versions, ensure_ascii=False))
-    else:
-        for version in versions:
-            print(
-                f"{version['id']} {version['name']} ({version['status']}) {config.redmine_url}/versions/{version['id']}"
-            )

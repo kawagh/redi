@@ -35,7 +35,6 @@ class En(MessagesProto):
     wiki_project_id_required = (
         "Specify project_id or set wiki_project_id/default_project_id"
     )
-    user_or_group_id_required = "Specify user_id or group_id"
     user_or_group_flag_required = "Specify --user_id or --group_id"
     issue_or_project_id_required = "Specify issue_id or project_id"
     delete_relation_requires_to = "--delete-relation requires --to"

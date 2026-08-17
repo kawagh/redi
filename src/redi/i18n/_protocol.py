@@ -61,8 +61,6 @@ class MessagesProto(Protocol):
     """project_id を指定するか default_project_id を設定"""
     wiki_project_id_required: str
     """project_id を指定するか wiki_project_id/default_project_id を設定"""
-    user_or_group_id_required: str
-    """user_id または group_id を指定"""
     user_or_group_flag_required: str
     """--user_id または --group_id を指定"""
     issue_or_project_id_required: str

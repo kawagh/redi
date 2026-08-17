@@ -1,11 +1,8 @@
-import json
-import sys
 from typing import Literal, NotRequired, TypedDict, cast
 
 from redi import cache
 from redi.api.types import IdName
 from redi.client import client
-from redi.i18n import messages
 
 CACHE_KEY = "custom_fields"
 
@@ -53,6 +50,7 @@ class CustomField(TypedDict):
 
 
 def fetch_custom_fields() -> list[CustomField] | None:
+    """カスタムフィールドの一覧を返す。管理者権限が無い場合は None を返す。"""
     cached = cache.load(CACHE_KEY)
     if cached is not None:
         return cast(list[CustomField], cached)
@@ -65,18 +63,6 @@ def fetch_custom_fields() -> list[CustomField] | None:
     data = response.json()["custom_fields"]
     cache.save(CACHE_KEY, data)
     return cast(list[CustomField], data)
-
-
-def list_custom_fields(full: bool = False) -> None:
-    custom_fields = fetch_custom_fields()
-    if custom_fields is None:
-        print(messages.custom_field_admin_required)
-        sys.exit(1)
-    if full:
-        print(json.dumps(custom_fields, ensure_ascii=False))
-    else:
-        for cf in custom_fields:
-            print(f"{cf['id']} {cf['name']}")
 
 
 def fetch_project_issue_custom_field_ids(project_id: str) -> set[int]:
