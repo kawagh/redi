@@ -314,6 +314,8 @@ class MessagesProto(Protocol):
     """{id}, {subject}"""
     activity_label: str
     """{value}"""
+    project_label: str
+    """{value}"""
     tracker_label: str
     """{value}"""
     priority_label: str
@@ -356,6 +358,7 @@ class MessagesProto(Protocol):
     prompt_page_title: str
     prompt_parent_page: str
     prompt_edit_page: str
+    prompt_select_project: str
     prompt_select_tracker: str
     prompt_select_template: str
     prompt_select_template_none: str
@@ -432,6 +435,7 @@ class MessagesProto(Protocol):
     error_no_matching_project: str
 
     # ---- field labels (interactive selection items) ----
+    field_project: str
     field_tracker: str
     field_subject: str
     field_title: str
@@ -756,6 +760,7 @@ class MessagesProto(Protocol):
     arg_help_issue_update_id: str
     arg_help_issue_subject_opt: str
     arg_help_issue_update_description: str
+    arg_help_issue_update_project_id: str
     arg_help_issue_update_tracker_id: str
     arg_help_issue_status_id: str
     arg_help_issue_fixed_version_id: str

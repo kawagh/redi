@@ -68,6 +68,19 @@ class TestIssueUpdateArgsFromNamespace:
         assert update_args.relate_to == "43"
         assert update_args.add_watcher_ids == [7]
 
+    def test_accepts_project_id(self):
+        """`--project_id` でイシューの移動先プロジェクトを受け取れる"""
+        args = parse_issue_args(["issue", "update", "42", "--project_id", "demo"])
+
+        update_args = IssueUpdateArgs.from_namespace(args)
+
+        assert update_args.project_id == "demo"
+
+    def test_short_option_is_not_assigned_to_project_id(self):
+        """`-p` は `issue list` のフィルタなので、誤爆を避けて update では受け付けない"""
+        with pytest.raises(SystemExit):
+            parse_issue_args(["issue", "update", "42", "-p", "demo"])
+
 
 class TestIssueCreateArgsFromNamespace:
     def test_accepts_parser_output(self):

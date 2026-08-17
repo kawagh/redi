@@ -212,6 +212,7 @@ class Ja(MessagesProto):
     sharing_label = "共有設定: {value}"
     issue_label = "イシュー: #{id} {subject}"
     activity_label = "作業分類: {value}"
+    project_label = "プロジェクト: {value}"
     tracker_label = "トラッカー: {value}"
     priority_label = "優先度: {value}"
     assignee_label = "担当者: {value}"
@@ -245,6 +246,7 @@ class Ja(MessagesProto):
     prompt_page_title = "ページタイトル: "
     prompt_parent_page = "親ページ"
     prompt_edit_page = "編集するページ"
+    prompt_select_project = "プロジェクトを選択"
     prompt_select_tracker = "トラッカーを選択"
     prompt_select_template = "テンプレートを選択"
     prompt_select_template_none = "（テンプレートを使用しない）"
@@ -317,6 +319,7 @@ class Ja(MessagesProto):
     error_no_matching_project = "該当するプロジェクトがありません"
 
     # ---- field labels ----
+    field_project = "プロジェクト (project)"
     field_tracker = "トラッカー (tracker)"
     field_subject = "題名 (subject)"
     field_title = "タイトル (title)"
@@ -611,6 +614,7 @@ class Ja(MessagesProto):
     arg_help_issue_update_id = "イシューID（省略で対話的に選択）"
     arg_help_issue_subject_opt = "題名"
     arg_help_issue_update_description = "説明（値省略でエディタ起動）"
+    arg_help_issue_update_project_id = "移動先のプロジェクトID"
     arg_help_issue_update_tracker_id = "トラッカーID"
     arg_help_issue_status_id = "ステータスID"
     arg_help_issue_fixed_version_id = "対象バージョンID"

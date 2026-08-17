@@ -57,6 +57,41 @@ class TestIssueUpdate:
 
         assert updated_subject in run_redi("issue", "view", issue_id).stdout
 
+    def test_moved_issue_appears_in_destination_project(self):
+        """--project_id に identifier を渡すとイシューが移動先プロジェクトの一覧に出る"""
+        subject = unique_identifier("e2e-issue-move")
+        issue_id = _create_issue(subject)
+        destination = unique_identifier("e2e-move-dest")
+        run_redi(
+            "project",
+            "create",
+            f"e2e move {destination}",
+            destination,
+            "--tracker_ids",
+            FEATURE_TRACKER_ID,
+        )
+
+        run_redi("issue", "update", issue_id, "--project_id", destination)
+
+        assert subject in run_redi("issue", "list", "--project_id", destination).stdout
+        assert (
+            subject not in run_redi("issue", "list", "--project_id", "reditest").stdout
+        )
+
+    def test_exits_with_error_for_missing_destination_project(self):
+        """Redmine は存在しない移動先を黙って無視するので、redi 側で弾いて exit 1 にする"""
+        issue_id = _create_issue(unique_identifier("e2e-issue-move-missing"))
+
+        with pytest.raises(subprocess.CalledProcessError) as update_error_info:
+            run_redi("issue", "update", issue_id, "--project_id", "e2e-no-such-project")
+
+        update_error = update_error_info.value
+        assert update_error.returncode == 1
+        assert "Project not found: e2e-no-such-project" in update_error.stdout, (
+            f"想定外のエラーで update が失敗\n"
+            f"stdout:\n{update_error.stdout}\nstderr:\n{update_error.stderr}"
+        )
+
 
 @pytest.mark.e2e
 class TestIssueComment:

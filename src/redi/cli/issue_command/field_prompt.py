@@ -15,7 +15,17 @@ from redi.cli.keybinding import date_key_bindings, digit_and_period_key_bindings
 from redi.cli.picker import inline_choice
 from redi.cli.validator import DateValidator, DueDateValidator, HourValidator
 from redi.i18n import messages
-from redi.service import version_service
+from redi.service import project_service, version_service
+
+
+def prompt_project(default: str = "") -> str:
+    """プロジェクトを選ばせて数値の id を返す。"""
+    projects = project_service.list_projects()
+    options: list[tuple[str, str]] = [(str(p["id"]), p["name"]) for p in projects]
+    labels = dict(options)
+    value = inline_choice(messages.prompt_select_project, options, default=default)
+    print(messages.project_label.format(value=labels[value]))
+    return value
 
 
 def prompt_assignee(project_id: str, default: str = "") -> str:
