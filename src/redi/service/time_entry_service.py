@@ -4,8 +4,8 @@ CLI と TUI で共通の手順をここに置く。HTTP とステータスコー
 """
 
 from redi.api import time_entry as time_entry_api
-from redi.api.project import resolve_project_id
 from redi.api.time_entry import TimeEntriesPageResponse, TimeEntry
+from redi.service.project_service import resolve_project_id
 
 COMMENT_PREVIEW_MAX_LEN = 30
 

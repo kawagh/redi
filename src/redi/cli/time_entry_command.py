@@ -10,7 +10,7 @@ from redi import config
 from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.exceptions import print_http_error_body
 from redi.api.issue import Issue, IssueNotFoundException
-from redi.api.project import fetch_projects
+from redi.api.project import ProjectNotFoundException
 from redi.api.time_entry import TimeEntry, TimeEntryNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
@@ -24,7 +24,7 @@ from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import SharedOptionParser
 from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
-from redi.service import issue_service, time_entry_service
+from redi.service import issue_service, project_service, time_entry_service
 
 
 def _read_issue(issue_id: str) -> Issue:
@@ -124,6 +124,9 @@ def create_time_entry(
             spent_on=spent_on,
             comments=comments,
         )
+    except ProjectNotFoundException as e:
+        print(messages.project_not_found.format(id=e.project_id))
+        sys.exit(1)
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
@@ -168,6 +171,9 @@ def _update_time_entry(
             spent_on=spent_on,
             comments=comments,
         )
+    except ProjectNotFoundException as e:
+        print(messages.project_not_found.format(id=e.project_id))
+        sys.exit(1)
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
@@ -320,7 +326,7 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
                     )
                 )
             else:
-                projects = fetch_projects()
+                projects = project_service.list_projects()
                 valid_values: set[str] = set()
                 for p in projects:
                     valid_values.add(str(p["id"]))

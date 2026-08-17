@@ -82,3 +82,27 @@ class TestProjectDelete:
         assert "Project not found" in view_error.stdout, (
             f"想定外のエラーで view が失敗\nstdout:\n{view_error.stdout}\nstderr:\n{view_error.stderr}"
         )
+
+
+@pytest.mark.e2e
+class TestProjectArchive:
+    """`redi project update --archive` / `--no-archive` はアーカイブを切り替える"""
+
+    def test_archives_then_unarchives(self):
+        """archive→unarchive した後 view で取得できる (create/view は正しい前提)"""
+        identifier = unique_identifier("e2e-archive")
+        name = f"e2e archive {identifier}"
+
+        run_redi("project", "create", name, identifier)
+        run_redi("project", "update", identifier, "--archive")
+        run_redi("project", "update", identifier, "--no-archive")
+
+        view_result = run_redi("project", "view", identifier)
+        assert name in view_result.stdout
+
+    def test_fails_for_missing_project(self):
+        """存在しないプロジェクトの archive は not found として失敗する"""
+        with pytest.raises(subprocess.CalledProcessError) as error_info:
+            run_redi("project", "update", "999999", "--archive")
+
+        assert "Project not found" in error_info.value.stdout
