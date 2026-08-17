@@ -15,7 +15,6 @@ from redi.api.enumeration import (
     list_time_entry_activities,
 )
 from redi.api.exceptions import RedmineValidationException
-from redi.api.issue_journal import delete_issue_journal, update_issue_journal
 from redi.api.issue_status import list_issue_statuses
 from redi.api.query import list_queries
 from redi.api.tracker import list_trackers
@@ -48,7 +47,9 @@ from redi.cli.issue_command import (
 )
 from redi.cli.issue_journal_command import (
     add_issue_journal_parser,
+    delete_issue_journal,
     handle_issue_journal,
+    update_issue_journal,
 )
 from redi.cli.issue_template_command import (
     add_issue_template_parser,
