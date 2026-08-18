@@ -11,10 +11,12 @@ def print_http_error_body(e: requests.exceptions.HTTPError) -> None:
 
 
 class ProjectNotFoundException(Exception):
-    """プロジェクトを指定した API が HTTP 404 を返したときに送出する例外。
+    """対象のプロジェクトが存在しないときに送出する例外。
 
-    `project_id` は呼び出し時に指定した値。プロジェクトを省略できる API では
-    None のこともある。
+    プロジェクトを指定した API が HTTP 404 を返した場合のほか、identifier や
+    名前からの解決に失敗した場合にも送出する。
+
+    `project_id` は呼び出し時に指定された値。
     """
 
     def __init__(self, project_id: str | None) -> None:

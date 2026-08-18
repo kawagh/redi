@@ -10,8 +10,8 @@ import webbrowser
 
 import requests
 
-from redi.api.exceptions import print_http_error_body
-from redi.api.project import Project, ProjectNotFoundException
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
+from redi.api.project import Project
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
 from redi.cli.shared_options import full_option_parser

@@ -3,7 +3,8 @@ from typing import cast
 
 import pytest
 
-from redi.api.project import Project, ProjectNotFoundException
+from redi.api.exceptions import ProjectNotFoundException
+from redi.api.project import Project
 from redi.service import project_service
 
 PROJECTS = cast(

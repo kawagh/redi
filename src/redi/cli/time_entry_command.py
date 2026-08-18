@@ -8,9 +8,8 @@ from prompt_toolkit.validation import Validator
 
 from redi import config
 from redi.api.enumeration import fetch_time_entry_activities
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.issue import Issue, IssueNotFoundException
-from redi.api.project import ProjectNotFoundException
 from redi.api.time_entry import TimeEntry, TimeEntryNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
