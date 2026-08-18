@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import NotRequired, TypedDict, cast
 
-from redi.api.exceptions import RedmineValidationException
+from redi.api.exceptions import ProjectNotFoundException, RedmineValidationException
 from redi.api.types import IdName
 from redi.client import RedmineClient, client
 
@@ -35,17 +35,6 @@ class Project(TypedDict):
     issue_categories: NotRequired[list[IdName]]
     time_entry_activities: NotRequired[list[IdName]]
     enabled_modules: NotRequired[list[IdName]]
-
-
-class ProjectNotFoundException(Exception):
-    """対象のプロジェクトが存在しないときに送出する例外。
-
-    `project_id` には呼び出し時に指定された値 (数値 id / identifier / 名前) を持つ。
-    """
-
-    def __init__(self, project_id: str) -> None:
-        super().__init__(project_id)
-        self.project_id = project_id
 
 
 def fetch_projects(api_client: RedmineClient | None = None) -> list[Project]:

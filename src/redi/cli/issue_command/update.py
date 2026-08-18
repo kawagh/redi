@@ -15,7 +15,7 @@ from redi.api.custom_field import (
     filter_required_issue_custom_fields,
 )
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.issue import (
     Issue,
     IssueNotFoundException,
@@ -23,7 +23,6 @@ from redi.api.issue import (
 )
 from redi.api.issue_relation import RelationNotFoundException
 from redi.api.issue_status import fetch_issue_statuses
-from redi.api.project import ProjectNotFoundException
 from redi.cli.custom_field_prompt import (
     SKIP_UNSUPPORTED_FIELD,
     prompt_custom_field_value,

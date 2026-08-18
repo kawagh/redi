@@ -7,7 +7,8 @@ from __future__ import annotations
 
 from redi import config
 from redi.api import project as project_api
-from redi.api.project import Project, ProjectNotFoundException
+from redi.api.exceptions import ProjectNotFoundException
+from redi.api.project import Project
 
 
 def project_url(project_id: str) -> str:

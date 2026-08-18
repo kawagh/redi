@@ -17,10 +17,9 @@ from redi.api.custom_field import (
     filter_optional_issue_custom_fields,
     filter_required_issue_custom_fields,
 )
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.issue import Issue
 from redi.api.issue_template import IssueTemplate, fetch_enabled_issue_templates
-from redi.api.project import ProjectNotFoundException
 from redi.cli.custom_field_prompt import (
     SKIP_UNSUPPORTED_FIELD,
     prompt_custom_field_value,
