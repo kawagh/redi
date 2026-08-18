@@ -7,6 +7,7 @@ import json
 import sys
 import webbrowser
 
+from redi.api.exceptions import ProjectNotFoundException
 from redi.api.issue import Issue, IssueNotFoundException
 from redi.i18n import messages
 from redi.service import issue_service
@@ -37,18 +38,25 @@ def list_issues(
     offset: int | None = None,
     full: bool = False,
 ) -> None:
-    """イシュー一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
-    issues = issue_service.list_issues(
-        project_id=project_id,
-        fixed_version_id=fixed_version_id,
-        assigned_to=assigned_to,
-        status_id=status_id,
-        tracker_id=tracker_id,
-        priority_id=priority_id,
-        query_id=query_id,
-        limit=limit,
-        offset=offset,
-    )
+    """イシュー一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。
+
+    存在しないプロジェクトを指定した場合は案内を出して exit 1。
+    """
+    try:
+        issues = issue_service.list_issues(
+            project_id=project_id,
+            fixed_version_id=fixed_version_id,
+            assigned_to=assigned_to,
+            status_id=status_id,
+            tracker_id=tracker_id,
+            priority_id=priority_id,
+            query_id=query_id,
+            limit=limit,
+            offset=offset,
+        )
+    except ProjectNotFoundException:
+        print(messages.project_not_found.format(id=project_id))
+        sys.exit(1)
     if full:
         print(json.dumps(issues, ensure_ascii=False))
         return

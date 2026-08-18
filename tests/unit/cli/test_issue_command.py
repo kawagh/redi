@@ -4,10 +4,13 @@ import json
 import pytest
 
 from redi import config
+from redi.api.exceptions import ProjectNotFoundException
 from redi.cli.issue_command import add_issue_parser
 from redi.cli.issue_command import create as create_module
+from redi.cli.issue_command import view as view_module
 from redi.cli.issue_command.create import IssueCreateArgs, handle_issue_create
 from redi.cli.issue_command.update import IssueUpdateArgs
+from redi.i18n import messages
 
 CREATED_ISSUE = {"id": 123, "subject": "件名"}
 
@@ -102,3 +105,23 @@ class TestIssueCreateArgsFromNamespace:
         create_args = IssueCreateArgs.from_namespace(args)
 
         assert create_args.full is True
+
+
+class TestIssueListNotFound:
+    """`issue list` で存在しないプロジェクトを指定したとき"""
+
+    def test_prints_guidance_and_exits(self, monkeypatch, capsys):
+        """スタックトレースではなく案内を出して exit 1 する"""
+
+        def _raise(**kwargs):
+            raise ProjectNotFoundException("missing")
+
+        monkeypatch.setattr(view_module.issue_service, "list_issues", _raise)
+
+        with pytest.raises(SystemExit) as exc_info:
+            view_module.list_issues(project_id="missing")
+
+        assert exc_info.value.code == 1
+        assert (
+            messages.project_not_found.format(id="missing") in capsys.readouterr().out
+        )
