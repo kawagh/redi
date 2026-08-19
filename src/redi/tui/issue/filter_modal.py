@@ -1,8 +1,8 @@
 """issues タブの f で開くフィルタ modal のレイアウトと描画。
 
-ステータスと担当者を 2 列に並べ、列ごとに独立してスクロールさせる。縦に連結
-すると modal の高さが選択肢数の合計になり、選択肢が多い環境で下部が端末外へ
-溢れてしまうため。
+ステータス・担当者・トラッカーを 3 列に並べ、列ごとに独立してスクロールさせる。
+縦に連結すると modal の高さが選択肢数の合計になり、選択肢が多い環境で下部が
+端末外へ溢れてしまうため。
 """
 
 from prompt_toolkit.data_structures import Point
@@ -19,7 +19,11 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Frame
 
 from redi.i18n import messages
-from redi.tui.choices import build_assignee_choices, build_status_choices
+from redi.tui.choices import (
+    build_assignee_choices,
+    build_status_choices,
+    build_tracker_choices,
+)
 from redi.tui.state import (
     FilterField,
     FilterModalState,
@@ -49,30 +53,71 @@ def _render_filter_section(
     return parts
 
 
-def render_filter_column(state: TuiState, section: FilterField) -> Renderable:
-    """フィルタ modal の 1 列 (status か assignee) を描画する。
+# 列の並び順。focus の左右移動もこの順に巡回する。
+FILTER_SECTIONS: tuple[FilterField, ...] = ("status", "assignee", "tracker")
 
-    2 列を縦に連結せず列ごとに描くことで、modal の高さが選択肢数の合計ではなく
-    max(status, assignee) で済み、選択肢が多くても縦に溢れにくくなる。
+
+def shift_focus(current: FilterField, step: int) -> FilterField:
+    """focus を step だけ動かす。端では反対側へ巡回する。"""
+    idx = FILTER_SECTIONS.index(current)
+    return FILTER_SECTIONS[(idx + step) % len(FILTER_SECTIONS)]
+
+
+def section_choices(
+    modal: FilterModalState, section: FilterField
+) -> list[tuple[str | None, str]]:
+    match section:
+        case "status":
+            return modal.status_choices
+        case "assignee":
+            return modal.assignee_choices
+        case "tracker":
+            return modal.tracker_choices
+
+
+def section_cursor(modal: FilterModalState, section: FilterField) -> int:
+    match section:
+        case "status":
+            return modal.status_cursor
+        case "assignee":
+            return modal.assignee_cursor
+        case "tracker":
+            return modal.tracker_cursor
+
+
+def set_section_cursor(
+    modal: FilterModalState, section: FilterField, cursor: int
+) -> None:
+    match section:
+        case "status":
+            modal.status_cursor = cursor
+        case "assignee":
+            modal.assignee_cursor = cursor
+        case "tracker":
+            modal.tracker_cursor = cursor
+
+
+def render_filter_column(state: TuiState, section: FilterField) -> Renderable:
+    """フィルタ modal の 1 列 (status / assignee / tracker) を描画する。
+
+    3 列を縦に連結せず列ごとに描くことで、modal の高さが選択肢数の合計ではなく
+    max(status, assignee, tracker) で済み、選択肢が多くても縦に溢れにくくなる。
     """
     f = state.issue_tab.filter
     modal = state.issue_tab.filter_modal
     if section == "status":
-        return _render_filter_section(
-            modal,
-            "status",
-            messages.tui_filter_status,
-            modal.status_choices,
-            modal.status_cursor,
-            f.status_id,
-        )
+        title, active_id = messages.tui_filter_status, f.status_id
+    elif section == "assignee":
+        title, active_id = messages.tui_filter_assignee, f.assigned_to_id
+    else:
+        title, active_id = messages.tui_filter_tracker, f.tracker_id
     return _render_filter_section(
         modal,
-        "assignee",
-        messages.tui_filter_assignee,
-        modal.assignee_choices,
-        modal.assignee_cursor,
-        f.assigned_to_id,
+        section,
+        title,
+        section_choices(modal, section),
+        section_cursor(modal, section),
+        active_id,
     )
 
 
@@ -82,8 +127,7 @@ def filter_column_cursor_y(modal: FilterModalState, section: FilterField) -> int
     Window にカーソル位置を伝えて選択中の行が常に画面内へ来るようスクロール
     させるために使う。0 行目はセクションヘッダなので選択肢は 1 行目から並ぶ。
     """
-    cursor = modal.status_cursor if section == "status" else modal.assignee_cursor
-    return 1 + cursor
+    return 1 + section_cursor(modal, section)
 
 
 def _filter_column_window(state: TuiState, section: FilterField) -> Window:
@@ -108,6 +152,15 @@ def _filter_column_window(state: TuiState, section: FilterField) -> Window:
     )
 
 
+def _column_separator() -> list[Window]:
+    """列と列の間に置く区切り (空白 + 罫線 + 空白)。"""
+    return [
+        Window(width=1, char=" "),
+        Window(width=1, char="│"),
+        Window(width=1, char=" "),
+    ]
+
+
 def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
     """フィルタ modal の Float を組み立てる。
 
@@ -125,10 +178,10 @@ def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
                                 VSplit(
                                     [
                                         _filter_column_window(state, "status"),
-                                        Window(width=1, char=" "),
-                                        Window(width=1, char="│"),
-                                        Window(width=1, char=" "),
+                                        *_column_separator(),
                                         _filter_column_window(state, "assignee"),
+                                        *_column_separator(),
+                                        _filter_column_window(state, "tracker"),
                                     ]
                                 ),
                                 # ヒントは列のスクロール対象から外して常に見せる
@@ -153,19 +206,23 @@ def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
 def open_filter_modal(state: TuiState) -> None:
     """フィルタ modal を開く。選択肢を取り直し、現在の絞り込みにカーソルを合わせる。"""
     modal = state.issue_tab.filter_modal
+    f = state.issue_tab.filter
     modal.status_choices = build_status_choices()
     modal.assignee_choices = build_assignee_choices(
         state.effective_project_id(), state.me_id
     )
-    modal.status_cursor = 0
-    for idx, (api_val, _label) in enumerate(modal.status_choices):
-        if api_val == state.issue_tab.filter.status_id:
-            modal.status_cursor = idx
-            break
-    modal.assignee_cursor = 0
-    for idx, (api_val, _label) in enumerate(modal.assignee_choices):
-        if api_val == state.issue_tab.filter.assigned_to_id:
-            modal.assignee_cursor = idx
-            break
+    modal.tracker_choices = build_tracker_choices()
+    actives: list[tuple[FilterField, str | None]] = [
+        ("status", f.status_id),
+        ("assignee", f.assigned_to_id),
+        ("tracker", f.tracker_id),
+    ]
+    for section, active_id in actives:
+        cursor = 0
+        for idx, (api_val, _label) in enumerate(section_choices(modal, section)):
+            if api_val == active_id:
+                cursor = idx
+                break
+        set_section_cursor(modal, section, cursor)
     modal.focus = "status"
     modal.show = True

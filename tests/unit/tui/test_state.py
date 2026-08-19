@@ -24,6 +24,11 @@ class TestIssueFilter:
             f = IssueFilter(assigned_to_id="me", assigned_to_label="自分")
             assert f.is_active() is True
 
+        def test_tracker_set_is_active(self):
+            """tracker_id だけ設定でもアクティブ"""
+            f = IssueFilter(tracker_id="1", tracker_label="バグ")
+            assert f.is_active() is True
+
     class TestShortLabel:
         """short_label()はステータスバー表示用のラベルを返す"""
 
@@ -41,15 +46,25 @@ class TestIssueFilter:
             f = IssueFilter(assigned_to_id="me", assigned_to_label="自分")
             assert f.short_label() == "assignee=自分"
 
-        def test_both_fields(self):
-            """両方設定なら両方を空白区切りで返す"""
+        def test_tracker_only(self):
+            """tracker のみ設定なら tracker= だけ返す"""
+            f = IssueFilter(tracker_id="1", tracker_label="バグ")
+            assert f.short_label() == "tracker=バグ"
+
+        def test_all_fields(self):
+            """全て設定なら status/assignee/tracker の順に空白区切りで返す"""
             f = IssueFilter(
                 status_id="*",
                 status_label="全て (open + closed)",
                 assigned_to_id="me",
                 assigned_to_label="自分",
+                tracker_id="1",
+                tracker_label="バグ",
             )
-            assert f.short_label() == "status=全て (open + closed) assignee=自分"
+            assert (
+                f.short_label()
+                == "status=全て (open + closed) assignee=自分 tracker=バグ"
+            )
 
 
 class TestTimeEntryFilter:

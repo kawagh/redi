@@ -590,6 +590,7 @@ class MessagesProto(Protocol):
     tui_tab_switch_hint: str
     tui_filter_status: str
     tui_filter_assignee: str
+    tui_filter_tracker: str
     tui_filter_user: str
     tui_filter_hint: str
     tui_filter_hint_single: str
@@ -622,6 +623,8 @@ class MessagesProto(Protocol):
     tui_status_hint_time_entries: str
     """{page_label}"""
     tui_flash_reloaded: str
+    # 列を問わず「絞り込まない」を表す選択肢のラベル
+    tui_filter_unspecified: str
     tui_filter_status_open_default: str
     tui_filter_status_all: str
     tui_filter_status_closed_only: str
@@ -1048,7 +1051,7 @@ class MessagesProto(Protocol):
     tui_help_preview_scroll_half_page: str
     tui_help_start_search: str
     tui_help_next_prev_match: str
-    tui_help_filter_status_assignee: str
+    tui_help_filter_issues: str
     tui_help_filter_user: str
     tui_help_switch_project: str
     tui_help_switch_profile: str
