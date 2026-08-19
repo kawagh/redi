@@ -59,7 +59,7 @@ def build_user_choices(
     「自分」項目との重複表示を避ける。
     """
     choices: list[tuple[str | None, str]] = [
-        (None, messages.tui_filter_assignee_none),
+        (None, messages.tui_filter_unspecified),
         ("me", messages.tui_filter_assignee_me),
     ]
     if project_id:
