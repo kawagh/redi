@@ -18,6 +18,12 @@ from redi.tui.issue.delete_modal import (
 from redi.tui.issue.delete_modal import (
     input_digit as issue_delete_input_digit,
 )
+from redi.tui.issue.filter_modal import (
+    section_choices,
+    section_cursor,
+    set_section_cursor,
+    shift_focus,
+)
 from redi.tui.issue.issue_tab import reload_with_filter
 from redi.tui.keybindings.keybinding_actions import reset_preview_scroll
 from redi.tui.profile_modal import request_profile_switch
@@ -77,63 +83,67 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     )
 
     @kb.add("tab", filter=show_filter_modal)
+    @kb.add("l", filter=show_filter_modal)
+    @kb.add("right", filter=show_filter_modal)
+    def _issue_filter_modal_focus_next(event):
+        modal = state.issue_tab.filter_modal
+        modal.focus = shift_focus(modal.focus, 1)
+
     @kb.add("s-tab", filter=show_filter_modal)
     @kb.add("h", filter=show_filter_modal)
-    @kb.add("l", filter=show_filter_modal)
     @kb.add("left", filter=show_filter_modal)
-    @kb.add("right", filter=show_filter_modal)
-    def _(event):
+    def _issue_filter_modal_focus_prev(event):
         modal = state.issue_tab.filter_modal
-        modal.focus = "assignee" if modal.focus == "status" else "status"
+        modal.focus = shift_focus(modal.focus, -1)
 
     @kb.add("j", filter=show_filter_modal)
     @kb.add("down", filter=show_filter_modal)
     @kb.add("c-n", filter=show_filter_modal)
     def _issue_filter_modal_cursor_down(event):
         modal = state.issue_tab.filter_modal
-        if modal.focus == "status":
-            modal.status_cursor = min(
-                len(modal.status_choices) - 1, modal.status_cursor + 1
-            )
-        else:
-            modal.assignee_cursor = min(
-                len(modal.assignee_choices) - 1, modal.assignee_cursor + 1
-            )
+        choices = section_choices(modal, modal.focus)
+        set_section_cursor(
+            modal,
+            modal.focus,
+            min(len(choices) - 1, section_cursor(modal, modal.focus) + 1),
+        )
 
     @kb.add("k", filter=show_filter_modal)
     @kb.add("up", filter=show_filter_modal)
     @kb.add("c-p", filter=show_filter_modal)
     def _issue_filter_modal_cursor_up(event):
         modal = state.issue_tab.filter_modal
-        if modal.focus == "status":
-            modal.status_cursor = max(0, modal.status_cursor - 1)
-        else:
-            modal.assignee_cursor = max(0, modal.assignee_cursor - 1)
+        set_section_cursor(
+            modal, modal.focus, max(0, section_cursor(modal, modal.focus) - 1)
+        )
 
     @kb.add("enter", filter=show_filter_modal)
-    def _(event):
+    def _issue_filter_modal_apply(event):
         modal = state.issue_tab.filter_modal
+        choices = section_choices(modal, modal.focus)
+        if not choices:
+            return
+        api_val, label = choices[section_cursor(modal, modal.focus)]
+        f = state.issue_tab.filter
         if modal.focus == "status":
-            if not modal.status_choices:
-                return
-            api_val, label = modal.status_choices[modal.status_cursor]
-            state.issue_tab.filter.status_id = api_val
-            state.issue_tab.filter.status_label = label
+            f.status_id = api_val
+            f.status_label = label
+        elif modal.focus == "assignee":
+            f.assigned_to_id = api_val
+            f.assigned_to_label = label
         else:
-            if not modal.assignee_choices:
-                return
-            api_val, label = modal.assignee_choices[modal.assignee_cursor]
-            state.issue_tab.filter.assigned_to_id = api_val
-            state.issue_tab.filter.assigned_to_label = label
+            f.tracker_id = api_val
+            f.tracker_label = label
         reset_preview_scroll(state)
         reload_with_filter(state)
 
     @kb.add("c", filter=show_filter_modal)
-    def _(event):
+    def _issue_filter_modal_clear(event):
         state.issue_tab.filter = IssueFilter()
         modal = state.issue_tab.filter_modal
         modal.status_cursor = 0
         modal.assignee_cursor = 0
+        modal.tracker_cursor = 0
         reset_preview_scroll(state)
         reload_with_filter(state)
 

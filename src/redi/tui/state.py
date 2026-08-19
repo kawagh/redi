@@ -19,7 +19,7 @@ TuiAction = Literal[
     "switch_profile",
 ]
 TuiTab = Literal["issues", "wiki", "time_entries"]
-FilterField = Literal["status", "assignee"]
+FilterField = Literal["status", "assignee", "tracker"]
 
 # prompt_toolkit の FormattedTextControl に渡す `(style, text)` 断片のリスト。
 Renderable = list[tuple[str, str]]
@@ -54,17 +54,23 @@ class TuiResult:
 class IssueFilter:
     """Issue 一覧のサーバーサイドフィルタ条件。
 
-    Redmine API の `status_id` / `assigned_to_id` パラメータに渡す値を保持する。
-    `status_id is None` のときは Redmine デフォルト挙動 (open のみ) になる。
+    Redmine API の `status_id` / `assigned_to_id` / `tracker_id` パラメータに渡す値を
+    保持する。`status_id is None` のときは Redmine デフォルト挙動 (open のみ) になる。
     """
 
     status_id: str | None = None
     status_label: str = messages.tui_filter_status_open_default
     assigned_to_id: str | None = None
     assigned_to_label: str = messages.tui_filter_assignee_none
+    tracker_id: str | None = None
+    tracker_label: str = messages.tui_filter_assignee_none
 
     def is_active(self) -> bool:
-        return self.status_id is not None or self.assigned_to_id is not None
+        return (
+            self.status_id is not None
+            or self.assigned_to_id is not None
+            or self.tracker_id is not None
+        )
 
     def short_label(self) -> str:
         parts = []
@@ -72,6 +78,8 @@ class IssueFilter:
             parts.append(f"status={self.status_label}")
         if self.assigned_to_id is not None:
             parts.append(f"assignee={self.assigned_to_label}")
+        if self.tracker_id is not None:
+            parts.append(f"tracker={self.tracker_label}")
         return " ".join(parts)
 
 
@@ -84,14 +92,16 @@ class FilterModalState:
     """
 
     show: bool = False
-    # 現在カーソルがあるセクション (status か assignee)
+    # 現在カーソルがあるセクション (status / assignee / tracker)
     focus: FilterField = "status"
     # 各セクションの選択肢: (Redmine API に渡す値, 表示ラベル) の組
     status_choices: list[tuple[str | None, str]] = field(default_factory=list)
     assignee_choices: list[tuple[str | None, str]] = field(default_factory=list)
+    tracker_choices: list[tuple[str | None, str]] = field(default_factory=list)
     # 各セクション内のカーソル位置
     status_cursor: int = 0
     assignee_cursor: int = 0
+    tracker_cursor: int = 0
 
 
 @dataclass

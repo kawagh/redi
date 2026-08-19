@@ -315,6 +315,7 @@ def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse
         project_id=state.effective_project_id(),
         status_id=f.status_id,
         assigned_to=f.assigned_to_id,
+        tracker_id=f.tracker_id,
         limit=state.page_size,
         offset=offset,
     )
@@ -423,7 +424,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  /", messages.tui_help_start_search),
     ("  n / N", messages.tui_help_next_prev_match),
     (messages.tui_help_section_filter, ""),
-    ("  f", messages.tui_help_filter_status_assignee),
+    ("  f", messages.tui_help_filter_issues),
     ("  p", messages.tui_help_switch_project),
     ("  P", messages.tui_help_switch_profile),
     (messages.tui_help_section_actions, ""),

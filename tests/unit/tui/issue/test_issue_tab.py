@@ -1,8 +1,9 @@
 from typing import cast
 
 from redi.api.issue import Issue
-from redi.tui.issue.issue_tab import _page_label
-from redi.tui.state import TuiState
+from redi.tui.issue import issue_tab
+from redi.tui.issue.issue_tab import _page_label, fetch_issues_with_filter
+from redi.tui.state import IssueFilter, TuiState
 
 
 def _make_state(
@@ -50,3 +51,33 @@ class TestPageLabel:
         """issues が空でも例外を投げない (例: 0件のフィルタ結果)"""
         state = _make_state(offset=0, page_size=25, total_count=0, issues_on_page=0)
         assert _page_label(state) == "Page 1/1 (0 / 0)"
+
+
+class TestFetchIssuesWithFilter:
+    """fetch_issues_with_filter() は現在の絞り込み条件を API に渡す"""
+
+    def test_passes_all_filter_fields(self, monkeypatch):
+        """status/assignee/tracker の絞り込みをそのまま API パラメータに渡す"""
+        captured = {}
+
+        def fake_fetch_issues_page(**kwargs):
+            captured.update(kwargs)
+            return {"issues": [], "total_count": 0}
+
+        monkeypatch.setattr(issue_tab, "fetch_issues_page", fake_fetch_issues_page)
+        state = TuiState()
+        state.page_size = 25
+        state.issue_tab.filter = IssueFilter(
+            status_id="closed",
+            status_label="closed only",
+            assigned_to_id="me",
+            assigned_to_label="me",
+            tracker_id="1",
+            tracker_label="Bug",
+        )
+
+        fetch_issues_with_filter(state, 0)
+
+        assert captured["status_id"] == "closed"
+        assert captured["assigned_to"] == "me"
+        assert captured["tracker_id"] == "1"
