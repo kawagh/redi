@@ -63,7 +63,7 @@ class IssueFilter:
     assigned_to_id: str | None = None
     assigned_to_label: str = messages.tui_filter_assignee_none
     tracker_id: str | None = None
-    tracker_label: str = messages.tui_filter_assignee_none
+    tracker_label: str = messages.tui_filter_unspecified
 
     def is_active(self) -> bool:
         return (

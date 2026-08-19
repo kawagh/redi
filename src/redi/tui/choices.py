@@ -21,7 +21,7 @@ def build_status_choices() -> list[tuple[str | None, str]]:
 def build_tracker_choices() -> list[tuple[str | None, str]]:
     """フィルタモーダルのトラッカー選択肢。先頭は特殊指定 (未設定)。"""
     choices: list[tuple[str | None, str]] = [
-        (None, messages.tui_filter_assignee_none),
+        (None, messages.tui_filter_unspecified),
     ]
     for t in fetch_trackers():
         choices.append((str(t["id"]), t.get("name", "")))

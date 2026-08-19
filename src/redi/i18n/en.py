@@ -467,6 +467,7 @@ class En(MessagesProto):
     )
     tui_status_hint_time_entries = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
     tui_flash_reloaded = "Reloaded"
+    tui_filter_unspecified = "(unspecified)"
     tui_filter_status_open_default = "open (default)"
     tui_filter_status_all = "all (open + closed)"
     tui_filter_status_closed_only = "closed only"

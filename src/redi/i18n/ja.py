@@ -472,6 +472,7 @@ class Ja(MessagesProto):
         " c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     )
     tui_flash_reloaded = "再読込しました"
+    tui_filter_unspecified = "(指定なし)"
     tui_filter_status_open_default = "open (デフォルト)"
     tui_filter_status_all = "全て (open + closed)"
     tui_filter_status_closed_only = "closed のみ"

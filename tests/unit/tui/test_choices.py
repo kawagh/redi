@@ -103,7 +103,7 @@ class TestBuildTrackerChoices:
             lambda: [{"id": 1, "name": "Bug"}, {"id": 2, "name": "Feature"}],
         )
         assert choices_module.build_tracker_choices() == [
-            (None, messages.tui_filter_assignee_none),
+            (None, messages.tui_filter_unspecified),
             ("1", "Bug"),
             ("2", "Feature"),
         ]
