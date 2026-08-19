@@ -62,7 +62,7 @@ class TestCustomFieldPermission:
 class TestRefreshIsPassedToFetch:
     """--refresh はハンドラから fetch にそのまま渡される"""
 
-    def test_passes_refresh_flag(self, monkeypatch, capsys):
+    def test_passes_refresh_flag(self, monkeypatch):
         """args.refresh が True なら fetch も refresh=True で呼ばれる"""
         received = {}
 

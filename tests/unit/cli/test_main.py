@@ -76,12 +76,7 @@ LIST_ONLY_RESOURCES = [
 
 # 応答をキャッシュするリソース。--refresh はこれらにだけ付く
 CACHED_RESOURCES = [
-    ("tracker", "t"),
-    ("issue_status", "is"),
-    ("issue_priority", "ip"),
-    ("time_entry_activity", "tea"),
-    ("document_category", "dc"),
-    ("custom_field", "cf"),
+    (resource, alias) for resource, alias in LIST_ONLY_RESOURCES if resource != "query"
 ]
 
 
@@ -101,32 +96,17 @@ class TestRefreshFlagPlacement:
         assert args.refresh is False
 
     @pytest.mark.parametrize("resource,alias", CACHED_RESOURCES)
-    def test_before_list_subcommand(self, parser, resource, alias):
-        """`<resource> --refresh list` を受け付ける"""
-        args = parser.parse_args([resource, "--refresh", "list"])
+    def test_refresh_flag_on_either_side(self, parser, resource, alias):
+        """--refresh は list の前後どちらに置いても、list を省いても有効になる"""
+        for argv in (
+            [resource, "list", "--refresh"],
+            # 前置した値が、後置の未指定によって False に戻されないことも兼ねる
+            [resource, "--refresh", "list"],
+            [alias, "--refresh"],
+        ):
+            args = parser.parse_args(argv)
 
-        assert args.refresh is True
-
-    @pytest.mark.parametrize("resource,alias", CACHED_RESOURCES)
-    def test_after_list_subcommand(self, parser, resource, alias):
-        """`<resource> list --refresh` を受け付ける"""
-        args = parser.parse_args([resource, "list", "--refresh"])
-
-        assert args.refresh is True
-
-    @pytest.mark.parametrize("resource,alias", CACHED_RESOURCES)
-    def test_before_flag_survives_list_subcommand(self, parser, resource, alias):
-        """前置した --refresh が、後置の未指定によって False に戻されない"""
-        args = parser.parse_args([resource, "--refresh", "list"])
-
-        assert args.refresh is True
-
-    @pytest.mark.parametrize("resource,alias", CACHED_RESOURCES)
-    def test_without_list_subcommand(self, parser, resource, alias):
-        """list を省いた `<alias> --refresh` も受け付ける"""
-        args = parser.parse_args([alias, "--refresh"])
-
-        assert args.refresh is True
+            assert args.refresh is True, argv
 
     def test_not_added_to_uncached_resource(self, parser):
         """キャッシュしない query には --refresh を生やさない"""
