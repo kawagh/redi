@@ -67,32 +67,37 @@ def section_choices(
     modal: FilterModalState, section: FilterField
 ) -> list[tuple[str | None, str]]:
     """セクションに対応する選択肢リストを返す。"""
-    if section == "status":
-        return modal.status_choices
-    if section == "assignee":
-        return modal.assignee_choices
-    return modal.tracker_choices
+    match section:
+        case "status":
+            return modal.status_choices
+        case "assignee":
+            return modal.assignee_choices
+        case "tracker":
+            return modal.tracker_choices
 
 
 def section_cursor(modal: FilterModalState, section: FilterField) -> int:
     """セクションに対応するカーソル位置を返す。"""
-    if section == "status":
-        return modal.status_cursor
-    if section == "assignee":
-        return modal.assignee_cursor
-    return modal.tracker_cursor
+    match section:
+        case "status":
+            return modal.status_cursor
+        case "assignee":
+            return modal.assignee_cursor
+        case "tracker":
+            return modal.tracker_cursor
 
 
 def set_section_cursor(
     modal: FilterModalState, section: FilterField, cursor: int
 ) -> None:
     """セクションに対応するカーソル位置を更新する。"""
-    if section == "status":
-        modal.status_cursor = cursor
-    elif section == "assignee":
-        modal.assignee_cursor = cursor
-    else:
-        modal.tracker_cursor = cursor
+    match section:
+        case "status":
+            modal.status_cursor = cursor
+        case "assignee":
+            modal.assignee_cursor = cursor
+        case "tracker":
+            modal.tracker_cursor = cursor
 
 
 def render_filter_column(state: TuiState, section: FilterField) -> Renderable:
