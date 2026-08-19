@@ -84,6 +84,9 @@ class En(MessagesProto):
     user_update_admin_required = "Admin privilege required to update user"
     user_delete_admin_required = "Admin privilege required to delete user"
     custom_field_admin_required = "Admin privilege required to fetch custom fields"
+    project_permission_denied = (
+        "Cannot access project: {id} (archived or no permission to view)"
+    )
     group_get_admin_required = "Admin privilege required to fetch group"
     group_create_admin_required = "Admin privilege required to create group"
     group_update_admin_required = "Admin privilege required to update group"

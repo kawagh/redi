@@ -24,6 +24,20 @@ class ProjectNotFoundException(Exception):
         self.project_id = project_id
 
 
+class ProjectPermissionDeniedException(Exception):
+    """対象のプロジェクトを参照する権限が無いときに送出する例外 (HTTP 403)。
+
+    Redmine はアーカイブ済みプロジェクトへの API アクセスにも 403 を返すため、
+    アーカイブ済みと権限不足はこの例外では区別しない。
+
+    `project_id` は呼び出し時に指定された値。
+    """
+
+    def __init__(self, project_id: str | None) -> None:
+        super().__init__(str(project_id))
+        self.project_id = project_id
+
+
 class RedmineValidationException(Exception):
     """Redmine API がバリデーションエラー (HTTP 422) を返したときに送出する例外。
 

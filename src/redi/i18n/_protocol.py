@@ -136,6 +136,8 @@ class MessagesProto(Protocol):
     user_update_admin_required: str
     user_delete_admin_required: str
     custom_field_admin_required: str
+    project_permission_denied: str
+    """プロジェクトを参照できない(アーカイブ済みか権限不足)。{id}"""
     group_get_admin_required: str
     group_create_admin_required: str
     group_update_admin_required: str

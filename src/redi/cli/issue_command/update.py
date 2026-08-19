@@ -15,7 +15,11 @@ from redi.api.custom_field import (
     filter_required_issue_custom_fields,
 )
 from redi.api.enumeration import fetch_issue_priorities, fetch_time_entry_activities
-from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
+from redi.api.exceptions import (
+    ProjectNotFoundException,
+    ProjectPermissionDeniedException,
+    print_http_error_body,
+)
 from redi.api.issue import (
     Issue,
     IssueNotFoundException,
@@ -187,6 +191,9 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
                 )
             except ProjectNotFoundException:
                 print(messages.project_not_found.format(id=project_id))
+                sys.exit(1)
+            except ProjectPermissionDeniedException:
+                print(messages.project_permission_denied.format(id=project_id))
                 sys.exit(1)
             trackers = project.get("trackers") or []
             tracker_options: list[tuple[str, str]] = [

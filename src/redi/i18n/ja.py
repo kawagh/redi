@@ -90,6 +90,9 @@ class Ja(MessagesProto):
     user_update_admin_required = "ユーザーの更新には管理者権限が必要です"
     user_delete_admin_required = "ユーザーの削除には管理者権限が必要です"
     custom_field_admin_required = "カスタムフィールドの取得には管理者権限が必要です"
+    project_permission_denied = (
+        "プロジェクトを参照できません: {id} (アーカイブ済みか閲覧権限がありません)"
+    )
     group_get_admin_required = "グループの取得には管理者権限が必要です"
     group_create_admin_required = "グループの作成には管理者権限が必要です"
     group_update_admin_required = "グループの更新には管理者権限が必要です"

@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from typing import NotRequired, TypedDict, cast
 
-from redi.api.exceptions import ProjectNotFoundException, RedmineValidationException
+from redi.api.exceptions import (
+    ProjectNotFoundException,
+    ProjectPermissionDeniedException,
+    RedmineValidationException,
+)
 from redi.api.types import IdName
 from redi.client import RedmineClient, client
 
@@ -66,9 +70,12 @@ def fetch_projects(api_client: RedmineClient | None = None) -> list[Project]:
 def fetch_project(project_id: str, include: str = "") -> Project:
     """プロジェクトを取得する
 
+    Redmine はアーカイブ済みプロジェクトの詳細にも 403 を返す。
+
     Raises:
         ProjectNotFoundException: 対象プロジェクトが存在しない場合（HTTP 404）
-        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+        ProjectPermissionDeniedException: アーカイブ済みか参照権限が無い場合（HTTP 403）
+        requests.exceptions.HTTPError: 403 / 404 以外の HTTP エラーが返った場合
     """
     params: dict = {}
     if include:
@@ -76,6 +83,8 @@ def fetch_project(project_id: str, include: str = "") -> Project:
     response = client.get(f"/projects/{project_id}.json", params=params)
     if response.status_code == 404:
         raise ProjectNotFoundException(project_id)
+    if response.status_code == 403:
+        raise ProjectPermissionDeniedException(project_id)
     response.raise_for_status()
     return cast("Project", response.json()["project"])
 
