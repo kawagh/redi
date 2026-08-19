@@ -66,7 +66,6 @@ def shift_focus(current: FilterField, step: int) -> FilterField:
 def section_choices(
     modal: FilterModalState, section: FilterField
 ) -> list[tuple[str | None, str]]:
-    """セクションに対応する選択肢リストを返す。"""
     match section:
         case "status":
             return modal.status_choices
@@ -77,7 +76,6 @@ def section_choices(
 
 
 def section_cursor(modal: FilterModalState, section: FilterField) -> int:
-    """セクションに対応するカーソル位置を返す。"""
     match section:
         case "status":
             return modal.status_cursor
@@ -90,7 +88,6 @@ def section_cursor(modal: FilterModalState, section: FilterField) -> int:
 def set_section_cursor(
     modal: FilterModalState, section: FilterField, cursor: int
 ) -> None:
-    """セクションに対応するカーソル位置を更新する。"""
     match section:
         case "status":
             modal.status_cursor = cursor

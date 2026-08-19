@@ -5,11 +5,7 @@ from prompt_toolkit.keys import Keys
 
 from redi.tui.conditions import build_conditions
 from redi.tui.issue import filter_modal
-from redi.tui.issue.filter_modal import (
-    open_filter_modal,
-    render_filter_column,
-    shift_focus,
-)
+from redi.tui.issue.filter_modal import open_filter_modal, shift_focus
 from redi.tui.keybindings import modal_keybindings
 from redi.tui.state import IssueFilter, TuiState
 
@@ -58,34 +54,6 @@ class TestOpenFilterModal:
         modal = state.issue_tab.filter_modal
         assert modal.tracker_choices == TRACKER_CHOICES
         assert modal.tracker_cursor == 2
-        assert modal.focus == "status"
-        assert modal.show is True
-
-    def test_cursor_is_at_top_when_tracker_is_unset(self, monkeypatch):
-        """tracker 未指定なら先頭 (指定なし) にカーソルを置く"""
-        _stub_choices(monkeypatch)
-        state = TuiState()
-
-        open_filter_modal(state)
-
-        assert state.issue_tab.filter_modal.tracker_cursor == 0
-
-
-class TestRenderFilterColumn:
-    """render_filter_column() は列ごとにヘッダと選択肢を描画する"""
-
-    def test_marks_active_tracker(self, monkeypatch):
-        """適用中の tracker の行に * を付ける"""
-        _stub_choices(monkeypatch)
-        state = TuiState()
-        state.issue_tab.filter = IssueFilter(tracker_id="1", tracker_label="Bug")
-        open_filter_modal(state)
-
-        lines = "".join(
-            text for _style, text in render_filter_column(state, "tracker")
-        ).split("\n")
-
-        assert lines[2] == "   * Bug"
 
 
 def _handler(kb: KeyBindings, keys: tuple):

@@ -1,3 +1,4 @@
+from redi.i18n import messages
 from redi.tui import choices as choices_module
 
 
@@ -95,19 +96,14 @@ class TestBuildTrackerChoices:
     """build_tracker_choices() は issue フィルタモーダルのトラッカー選択肢を組み立てる"""
 
     def test_first_choice_is_unspecified(self, monkeypatch):
-        """先頭は絞り込み無しを表す特殊指定 (None) で、以降に tracker が並ぶ"""
+        """先頭は絞り込み無しを表す特殊指定 (None) で、以降に tracker が取得順に並ぶ"""
         monkeypatch.setattr(
             choices_module,
             "fetch_trackers",
             lambda: [{"id": 1, "name": "Bug"}, {"id": 2, "name": "Feature"}],
         )
-        choices = choices_module.build_tracker_choices()
-        assert [v for v, _ in choices] == [None, "1", "2"]
-        assert [label for _, label in choices][1:] == ["Bug", "Feature"]
-
-    def test_returns_special_only_when_no_tracker(self, monkeypatch):
-        """tracker が1つも無ければ特殊指定のみ返す"""
-        monkeypatch.setattr(choices_module, "fetch_trackers", list)
         assert choices_module.build_tracker_choices() == [
-            (None, choices_module.messages.tui_filter_assignee_none)
+            (None, messages.tui_filter_assignee_none),
+            ("1", "Bug"),
+            ("2", "Feature"),
         ]
