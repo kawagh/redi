@@ -2,8 +2,8 @@ from redi import cache
 from redi.client import client
 
 
-def _fetch_enumeration(resource: str) -> list[dict]:
-    cached = cache.load(resource)
+def _fetch_enumeration(resource: str, refresh: bool = False) -> list[dict]:
+    cached = None if refresh else cache.load(resource)
     if cached is not None:
         return cached
     response = client.get(f"/enumerations/{resource}.json")
@@ -13,13 +13,16 @@ def _fetch_enumeration(resource: str) -> list[dict]:
     return data
 
 
-def fetch_issue_priorities() -> list[dict]:
-    return _fetch_enumeration("issue_priorities")
+def fetch_issue_priorities(refresh: bool = False) -> list[dict]:
+    """優先度一覧を返す。refresh=True ならキャッシュを読まず取り直す。"""
+    return _fetch_enumeration("issue_priorities", refresh)
 
 
-def fetch_time_entry_activities() -> list[dict]:
-    return _fetch_enumeration("time_entry_activities")
+def fetch_time_entry_activities(refresh: bool = False) -> list[dict]:
+    """作業分類一覧を返す。refresh=True ならキャッシュを読まず取り直す。"""
+    return _fetch_enumeration("time_entry_activities", refresh)
 
 
-def fetch_document_categories() -> list[dict]:
-    return _fetch_enumeration("document_categories")
+def fetch_document_categories(refresh: bool = False) -> list[dict]:
+    """文書カテゴリ一覧を返す。refresh=True ならキャッシュを読まず取り直す。"""
+    return _fetch_enumeration("document_categories", refresh)

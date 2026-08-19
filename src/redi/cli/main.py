@@ -7,7 +7,7 @@ from importlib.metadata import version
 
 import argcomplete
 
-from redi import cache, config
+from redi import config
 from redi.api.exceptions import RedmineValidationException
 from redi.api.wiki import WikiUpdateConflictException
 from redi.cli.attachment_command import add_attachment_parser, handle_attachment
@@ -82,8 +82,8 @@ def _format_validation_error(e: RedmineValidationException) -> str:
     )
 
 
-def _global_option_parser(profile_names: list[str]) -> argparse.ArgumentParser:
-    """--profile / --refresh を後置するためのパーサ"""
+def _profile_parser(profile_names: list[str]) -> argparse.ArgumentParser:
+    """--profile を後置するためのパーサ"""
     parser = argparse.ArgumentParser(
         # 親子でヘルプを衝突させない
         add_help=False,
@@ -95,13 +95,6 @@ def _global_option_parser(profile_names: list[str]) -> argparse.ArgumentParser:
         choices=profile_names or None,
         metavar="PROFILE",
         help=messages.arg_help_profile,
-    )
-    parser.add_argument(
-        "--refresh",
-        action="store_true",
-        # 未指定の store_true が上流パーサの True を False に戻すのを防ぐ
-        default=argparse.SUPPRESS,
-        help=messages.arg_help_refresh,
     )
     return parser
 
@@ -125,10 +118,7 @@ def build_redi_parser() -> argparse.ArgumentParser:
         metavar="PROFILE",
         help=messages.arg_help_profile,
     )
-    parser.add_argument(
-        "--refresh", action="store_true", help=messages.arg_help_refresh
-    )
-    parents = [_global_option_parser(profile_names)]
+    parents = [_profile_parser(profile_names)]
     subparsers = parser.add_subparsers(dest="command")
     add_project_parser(subparsers, parents)
     add_issue_parser(subparsers, parents)
@@ -167,9 +157,6 @@ def main() -> None:
 
     if args.debug_tui:
         args.tui = True
-
-    # キャッシュは TTL が実質無期限なので、取り直しは --refresh でしか起きない
-    cache.refresh = args.refresh
 
     if args.debug:
         log_path = CONFIG_PATH.parent / "redi-debug.log"

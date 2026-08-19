@@ -4,8 +4,9 @@ from redi.client import client
 CACHE_KEY = "issue_statuses"
 
 
-def fetch_issue_statuses() -> list[dict]:
-    cached = cache.load(CACHE_KEY)
+def fetch_issue_statuses(refresh: bool = False) -> list[dict]:
+    """ステータス一覧を返す。refresh=True ならキャッシュを読まず取り直す。"""
+    cached = None if refresh else cache.load(CACHE_KEY)
     if cached is not None:
         return cached
     response = client.get("/issue_statuses.json")

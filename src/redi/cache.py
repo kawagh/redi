@@ -7,11 +7,6 @@ CACHE_DIR = Path.home() / ".cache" / "redi"
 # キャッシュの生存時間[s]
 DEFAULT_TTL = 100 * 12 * 30 * 24 * 60 * 60  # 100 years
 
-# CLI の --refresh でセットする。TTL が実質無期限なので、Redmine 側で
-# トラッカーやカスタムフィールドを増やしても放っておくと古い値を返し続ける。
-# 読み込みだけを飛ばして保存は通常どおり行うので、次回以降は新しい値が使われる。
-refresh = False
-
 
 def _slugify_url(url: str) -> str:
     """redmineのURL をディレクトリ名に変換する
@@ -34,8 +29,6 @@ def _cache_path(key: str) -> Path:
 
 
 def load(key: str, ttl: int = DEFAULT_TTL) -> list[dict] | None:
-    if refresh:
-        return None
     path = _cache_path(key)
     if not path.exists():
         return None

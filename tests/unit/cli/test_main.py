@@ -63,41 +63,6 @@ class TestProfileFlagPlacement:
         assert args.command is None
 
 
-class TestRefreshFlagPlacement:
-    """--refresh はサブコマンドの前後どちらに置いても受け付けられる"""
-
-    @pytest.fixture
-    def parser(self, monkeypatch) -> argparse.ArgumentParser:
-        monkeypatch.setattr(main_module, "list_profile_names", list)
-        return build_redi_parser()
-
-    def test_defaults_to_false(self, parser):
-        """指定が無ければ False (キャッシュを読む)"""
-        args = parser.parse_args(["custom_field", "list"])
-
-        assert args.refresh is False
-
-    def test_before_subcommand(self, parser):
-        """ルート直後の `--refresh custom_field list` を受け付ける"""
-        args = parser.parse_args(["--refresh", "custom_field", "list"])
-
-        assert args.refresh is True
-        assert args.command == "custom_field"
-
-    def test_after_nested_subcommand(self, parser):
-        """ネストされたサブコマンドの後ろの `issue list --refresh` を受け付ける"""
-        args = parser.parse_args(["issue", "list", "--refresh"])
-
-        assert args.refresh is True
-        assert args.issue_command == "list"
-
-    def test_before_subcommand_is_kept(self, parser):
-        """前置した --refresh が、後置の未指定によって False に戻されない"""
-        args = parser.parse_args(["--refresh", "issue", "list"])
-
-        assert args.refresh is True
-
-
 LIST_ONLY_RESOURCES = [
     ("tracker", "t"),
     ("issue_status", "is"),
@@ -107,6 +72,66 @@ LIST_ONLY_RESOURCES = [
     ("query", "q"),
     ("custom_field", "cf"),
 ]
+
+
+# 応答をキャッシュするリソース。--refresh はこれらにだけ付く
+CACHED_RESOURCES = [
+    ("tracker", "t"),
+    ("issue_status", "is"),
+    ("issue_priority", "ip"),
+    ("time_entry_activity", "tea"),
+    ("document_category", "dc"),
+    ("custom_field", "cf"),
+]
+
+
+class TestRefreshFlagPlacement:
+    """--refresh はキャッシュを持つリソースで前後どちらに置いても受け付けられる"""
+
+    @pytest.fixture
+    def parser(self, monkeypatch) -> argparse.ArgumentParser:
+        monkeypatch.setattr(main_module, "list_profile_names", list)
+        return build_redi_parser()
+
+    @pytest.mark.parametrize("resource,alias", CACHED_RESOURCES)
+    def test_defaults_to_false(self, parser, resource, alias):
+        """指定が無ければ False (キャッシュを読む)"""
+        args = parser.parse_args([resource, "list"])
+
+        assert args.refresh is False
+
+    @pytest.mark.parametrize("resource,alias", CACHED_RESOURCES)
+    def test_before_list_subcommand(self, parser, resource, alias):
+        """`<resource> --refresh list` を受け付ける"""
+        args = parser.parse_args([resource, "--refresh", "list"])
+
+        assert args.refresh is True
+
+    @pytest.mark.parametrize("resource,alias", CACHED_RESOURCES)
+    def test_after_list_subcommand(self, parser, resource, alias):
+        """`<resource> list --refresh` を受け付ける"""
+        args = parser.parse_args([resource, "list", "--refresh"])
+
+        assert args.refresh is True
+
+    @pytest.mark.parametrize("resource,alias", CACHED_RESOURCES)
+    def test_before_flag_survives_list_subcommand(self, parser, resource, alias):
+        """前置した --refresh が、後置の未指定によって False に戻されない"""
+        args = parser.parse_args([resource, "--refresh", "list"])
+
+        assert args.refresh is True
+
+    @pytest.mark.parametrize("resource,alias", CACHED_RESOURCES)
+    def test_without_list_subcommand(self, parser, resource, alias):
+        """list を省いた `<alias> --refresh` も受け付ける"""
+        args = parser.parse_args([alias, "--refresh"])
+
+        assert args.refresh is True
+
+    def test_not_added_to_uncached_resource(self, parser):
+        """キャッシュしない query には --refresh を生やさない"""
+        with pytest.raises(SystemExit):
+            parser.parse_args(["query", "list", "--refresh"])
 
 
 class TestListOnlyResourceListSubcommand:

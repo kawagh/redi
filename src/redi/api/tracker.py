@@ -4,8 +4,9 @@ from redi.client import client
 CACHE_KEY = "trackers"
 
 
-def fetch_trackers() -> list[dict]:
-    cached = cache.load(CACHE_KEY)
+def fetch_trackers(refresh: bool = False) -> list[dict]:
+    """トラッカー一覧を返す。refresh=True ならキャッシュを読まず取り直す。"""
+    cached = None if refresh else cache.load(CACHE_KEY)
     if cached is not None:
         return cached
     response = client.get("/trackers.json")
