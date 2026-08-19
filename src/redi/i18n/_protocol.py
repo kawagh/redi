@@ -709,6 +709,7 @@ class MessagesProto(Protocol):
     arg_help_debug: str
     arg_help_debug_tui: str
     arg_help_profile: str
+    arg_help_refresh: str
 
     # ---- argparse helps (common) ----
     arg_help_full_json: str

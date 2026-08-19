@@ -85,6 +85,30 @@ class TestLoad:
         assert cache.load("statuses") is None
 
 
+class TestRefresh:
+    """cache.refresh が True の間は保存済みの値を返さず取り直させる"""
+
+    def test_returns_none_even_if_saved(self, tmp_path, monkeypatch):
+        """--refresh 相当のフラグが立っていれば、保存済みでも None が返る"""
+        monkeypatch.setattr(cache, "CACHE_DIR", tmp_path)
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3000")
+        cache.save("trackers", [{"id": 1, "name": "バグ"}])
+        monkeypatch.setattr(cache, "refresh", True)
+
+        assert cache.load("trackers") is None
+
+    def test_save_still_updates_cache(self, tmp_path, monkeypatch):
+        """フラグが立っていても保存は行われ、次回以降は新しい値が読める"""
+        monkeypatch.setattr(cache, "CACHE_DIR", tmp_path)
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3000")
+        cache.save("trackers", [{"id": 1, "name": "旧データ"}])
+        monkeypatch.setattr(cache, "refresh", True)
+        cache.save("trackers", [{"id": 1, "name": "新データ"}])
+        monkeypatch.setattr(cache, "refresh", False)
+
+        assert cache.load("trackers") == [{"id": 1, "name": "新データ"}]
+
+
 class TestSlugifyUrl:
     """_slugify_url() は URL をディレクトリ名に変換する"""
 

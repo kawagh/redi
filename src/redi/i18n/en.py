@@ -542,6 +542,9 @@ class En(MessagesProto):
     arg_help_profile = (
         "Profile name to use (overrides default_profile in config.toml temporarily)"
     )
+    arg_help_refresh = (
+        "Fetch without reading the cache (refreshes tracker / custom field choices)"
+    )
 
     # ---- argparse helps (common) ----
     arg_help_full_json = "Output full JSON"

@@ -63,6 +63,41 @@ class TestProfileFlagPlacement:
         assert args.command is None
 
 
+class TestRefreshFlagPlacement:
+    """--refresh はサブコマンドの前後どちらに置いても受け付けられる"""
+
+    @pytest.fixture
+    def parser(self, monkeypatch) -> argparse.ArgumentParser:
+        monkeypatch.setattr(main_module, "list_profile_names", list)
+        return build_redi_parser()
+
+    def test_defaults_to_false(self, parser):
+        """指定が無ければ False (キャッシュを読む)"""
+        args = parser.parse_args(["custom_field", "list"])
+
+        assert args.refresh is False
+
+    def test_before_subcommand(self, parser):
+        """ルート直後の `--refresh custom_field list` を受け付ける"""
+        args = parser.parse_args(["--refresh", "custom_field", "list"])
+
+        assert args.refresh is True
+        assert args.command == "custom_field"
+
+    def test_after_nested_subcommand(self, parser):
+        """ネストされたサブコマンドの後ろの `issue list --refresh` を受け付ける"""
+        args = parser.parse_args(["issue", "list", "--refresh"])
+
+        assert args.refresh is True
+        assert args.issue_command == "list"
+
+    def test_before_subcommand_is_kept(self, parser):
+        """前置した --refresh が、後置の未指定によって False に戻されない"""
+        args = parser.parse_args(["--refresh", "issue", "list"])
+
+        assert args.refresh is True
+
+
 LIST_ONLY_RESOURCES = [
     ("tracker", "t"),
     ("issue_status", "is"),

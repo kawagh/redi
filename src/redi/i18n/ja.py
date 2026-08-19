@@ -550,6 +550,7 @@ class Ja(MessagesProto):
     arg_help_profile = (
         "使用するプロファイル名（config.tomlのdefault_profileを一時的に上書き）"
     )
+    arg_help_refresh = "キャッシュを読まずに取得し直す（トラッカーやカスタムフィールドの候補を更新する）"
 
     # ---- argparse helps (common) ----
     arg_help_full_json = "JSON形式で全情報を出力"
