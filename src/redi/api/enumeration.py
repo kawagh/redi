@@ -1,8 +1,18 @@
+from typing import Literal
+
 from redi import cache
 from redi.client import client
 
+# Redmine の /enumerations/{resource}.json で引ける列挙リソース。
+# キャッシュキーとレスポンスのキーも同じ文字列を使う。
+EnumerationResource = Literal[
+    "issue_priorities", "time_entry_activities", "document_categories"
+]
 
-def _fetch_enumeration(resource: str, refresh: bool = False) -> list[dict]:
+
+def _fetch_enumeration(
+    resource: EnumerationResource, refresh: bool = False
+) -> list[dict]:
     cached = None if refresh else cache.load(resource)
     if cached is not None:
         return cached
