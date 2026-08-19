@@ -49,9 +49,12 @@ class CustomField(TypedDict):
     roles: list[dict]
 
 
-def fetch_custom_fields() -> list[CustomField] | None:
-    """カスタムフィールドの一覧を返す。管理者権限が無い場合は None を返す。"""
-    cached = cache.load(CACHE_KEY)
+def fetch_custom_fields(refresh: bool = False) -> list[CustomField] | None:
+    """カスタムフィールドの一覧を返す。管理者権限が無い場合は None を返す。
+
+    refresh=True ならキャッシュを読まず取り直す。
+    """
+    cached = None if refresh else cache.load(CACHE_KEY)
     if cached is not None:
         return cast(list[CustomField], cached)
     response = client.get("/custom_fields.json")

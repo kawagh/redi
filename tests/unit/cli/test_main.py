@@ -74,6 +74,46 @@ LIST_ONLY_RESOURCES = [
 ]
 
 
+# 応答をキャッシュするリソース。--refresh はこれらにだけ付く
+CACHED_RESOURCES = [
+    (resource, alias) for resource, alias in LIST_ONLY_RESOURCES if resource != "query"
+]
+
+
+class TestRefreshFlagPlacement:
+    """--refresh はキャッシュを持つリソースで前後どちらに置いても受け付けられる"""
+
+    @pytest.fixture
+    def parser(self, monkeypatch) -> argparse.ArgumentParser:
+        monkeypatch.setattr(main_module, "list_profile_names", list)
+        return build_redi_parser()
+
+    @pytest.mark.parametrize("resource,alias", CACHED_RESOURCES)
+    def test_defaults_to_false(self, parser, resource, alias):
+        """指定が無ければ False (キャッシュを読む)"""
+        args = parser.parse_args([resource, "list"])
+
+        assert args.refresh is False
+
+    @pytest.mark.parametrize("resource,alias", CACHED_RESOURCES)
+    def test_refresh_flag_on_either_side(self, parser, resource, alias):
+        """--refresh は list の前後どちらに置いても、list を省いても有効になる"""
+        for argv in (
+            [resource, "list", "--refresh"],
+            # 前置した値が、後置の未指定によって False に戻されないことも兼ねる
+            [resource, "--refresh", "list"],
+            [alias, "--refresh"],
+        ):
+            args = parser.parse_args(argv)
+
+            assert args.refresh is True, argv
+
+    def test_not_added_to_uncached_resource(self, parser):
+        """キャッシュしない query には --refresh を生やさない"""
+        with pytest.raises(SystemExit):
+            parser.parse_args(["query", "list", "--refresh"])
+
+
 class TestListOnlyResourceListSubcommand:
     """一覧専用リソースは list (alias: l) を付けても引数無しと同じに解釈される"""
 
