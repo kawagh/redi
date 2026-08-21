@@ -17,7 +17,11 @@ from redi.api.custom_field import (
     filter_optional_issue_custom_fields,
     filter_required_issue_custom_fields,
 )
-from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
+from redi.api.exceptions import (
+    ProjectNotFoundException,
+    ProjectPermissionDeniedException,
+    print_http_error_body,
+)
 from redi.api.issue import Issue
 from redi.api.issue_template import IssueTemplate, fetch_enabled_issue_templates
 from redi.cli.custom_field_prompt import (
@@ -299,6 +303,9 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
                 project = project_service.read_project(project_id, include="trackers")
             except ProjectNotFoundException:
                 print(messages.project_not_found.format(id=project_id))
+                sys.exit(1)
+            except ProjectPermissionDeniedException:
+                print(messages.project_permission_denied.format(id=project_id))
                 sys.exit(1)
             trackers = project.get("trackers") or []
             tracker_options: list[tuple[str, str]] = [

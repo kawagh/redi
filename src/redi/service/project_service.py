@@ -48,6 +48,7 @@ def read_project(project_id: str, include: str = "") -> Project:
 
     Raises:
         ProjectNotFoundException: 対象プロジェクトが存在しない (HTTP 404)
+        ProjectPermissionDeniedException: アーカイブ済みか参照権限が無い (HTTP 403)
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
     return project_api.fetch_project(project_id, include=include)

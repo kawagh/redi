@@ -10,7 +10,11 @@ import webbrowser
 
 import requests
 
-from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
+from redi.api.exceptions import (
+    ProjectNotFoundException,
+    ProjectPermissionDeniedException,
+    print_http_error_body,
+)
 from redi.api.project import Project
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
@@ -46,11 +50,14 @@ def _view_project(
 
 
 def _read_project_or_exit(project_id: str, include: str = "") -> Project:
-    """プロジェクトを取得する。存在しない場合は exit 1。"""
+    """プロジェクトを取得する。存在しない・参照できない場合は exit 1。"""
     try:
         return project_service.read_project(project_id, include=include)
     except ProjectNotFoundException:
         print(messages.project_not_found.format(id=project_id))
+        sys.exit(1)
+    except ProjectPermissionDeniedException:
+        print(messages.project_permission_denied.format(id=project_id))
         sys.exit(1)
 
 

@@ -100,6 +100,22 @@ class TestProjectArchive:
         view_result = run_redi("project", "view", identifier)
         assert name in view_result.stdout
 
+    def test_view_of_archived_project_fails_with_reason(self):
+        """アーカイブ済みプロジェクトの view は理由を示して失敗する (Redmine は 403 を返す)"""
+        identifier = unique_identifier("e2e-archived-view")
+        name = f"e2e archived view {identifier}"
+
+        run_redi("project", "create", name, identifier)
+        run_redi("project", "update", identifier, "--archive")
+
+        with pytest.raises(subprocess.CalledProcessError) as view_error_info:
+            run_redi("project", "view", identifier)
+        view_error = view_error_info.value
+        assert "Cannot access project" in view_error.stdout, (
+            f"想定外のエラーで view が失敗\nstdout:\n{view_error.stdout}\nstderr:\n{view_error.stderr}"
+        )
+        assert "Traceback" not in view_error.stderr
+
     def test_fails_for_missing_project(self):
         """存在しないプロジェクトの archive は not found として失敗する"""
         with pytest.raises(subprocess.CalledProcessError) as error_info:
