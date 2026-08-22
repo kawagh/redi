@@ -536,6 +536,7 @@ class En(MessagesProto):
     tui_status_hint_time_entries = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
     tui_status_search_active = "/{query} Esc:clear"
     tui_flash_reloaded = "Reloaded"
+    tui_flash_resize_reload_failed = "Failed to refetch after resize: {error}"
     tui_flash_find_cleared_by_filter = "Cleared the search and switched to filters"
     tui_filter_unspecified = "(unspecified)"
     tui_filter_status_open_default = "open (default)"

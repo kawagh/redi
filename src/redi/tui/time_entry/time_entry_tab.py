@@ -7,7 +7,13 @@ from redi.api.time_entry import TimeEntryNotFoundException
 from redi.i18n import messages
 from redi.service import time_entry_service
 from redi.text_format import highlight_segments, render_meta_table
-from redi.tui.state import Renderable, TuiPosition, TuiResult, TuiState
+from redi.tui.state import (
+    Renderable,
+    TuiPosition,
+    TuiResult,
+    TuiState,
+    realign_page,
+)
 from redi.tui.tab import TabView, noop, noop_jump
 
 
@@ -297,6 +303,26 @@ def _on_reload(state: TuiState) -> None:
     )
 
 
+def _on_resize(state: TuiState) -> None:
+    """新しい page_size でページを取り直す。選択していた entry は選ばれたまま保つ。
+
+    offset を新しい page_size のページ境界へ揃えるので、リサイズ後も
+    ステータスバーの Page 表示と実データが一致する。通信エラーは呼び出し元
+    (ResizeWatcher) に投げ、失敗時は一覧を書き換えない。
+    """
+    offset, cursor = realign_page(
+        state.time_entry_tab.offset, state.time_entry_tab.cursor, state.page_size
+    )
+    page = _fetch_page_with_subjects(state, offset)
+    state.time_entry_tab.offset = offset
+    state.time_entry_tab.entries = page["time_entries"]
+    state.time_entry_tab.total_count = page["total_count"]
+    state.time_entry_tab.issue_subjects = page["issue_subjects"]
+    state.time_entry_tab.cursor = min(
+        cursor, max(0, len(state.time_entry_tab.entries) - 1)
+    )
+
+
 def _on_page_forward(state: TuiState) -> None:
     next_offset = state.time_entry_tab.offset + state.page_size
     try:
@@ -378,6 +404,7 @@ TIME_ENTRY_TAB = TabView(
     on_open_web_by_id=noop_jump,
     on_activate=_load_time_entries,
     on_reload=_on_reload,
+    on_resize=_on_resize,
     on_action_key=_on_action_key,
     on_search=_on_search,
     get_cursor_y=lambda state: state.time_entry_tab.cursor,

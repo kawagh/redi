@@ -29,6 +29,30 @@ Renderable = list[tuple[str, str]]
 # Layout の HSplit に固定行を増減したらここも更新すること。
 FIXED_ROWS = 3
 
+# Redmine REST API の limit 上限。これより大きい limit を投げても 100 件しか
+# 返らないため、page_size がそれを超えると Page 表示と実データがずれる。
+MAX_PAGE_SIZE = 100
+
+
+def compute_page_size(rows: int) -> int:
+    """端末の行数から 1 ページの取得件数を求める。
+
+    固定行 (FIXED_ROWS) を除いた行数が一覧に使える行数。最低 1 件は取り、
+    Redmine の limit 上限で頭打ちにする。
+    """
+    return max(1, min(rows - FIXED_ROWS, MAX_PAGE_SIZE))
+
+
+def realign_page(offset: int, cursor: int, page_size: int) -> tuple[int, int]:
+    """カーソル行を保ったまま offset を新しい page_size のページ境界へ揃える。
+
+    `(offset, cursor)` を返す。offset が page_size の倍数になるので、
+    ステータスバーの Page 表示 (offset // page_size) が実データとずれない。
+    """
+    absolute = offset + cursor
+    new_offset = (absolute // page_size) * page_size
+    return new_offset, absolute - new_offset
+
 
 @dataclass
 class TuiPosition:
@@ -335,6 +359,14 @@ class TuiState:
     project_label: str = ""
     project_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
     profile_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
+
+    def apply_terminal_rows(self, rows: int) -> bool:
+        """端末の行数から page_size を更新する。値が変わったときだけ True を返す。"""
+        new_size = compute_page_size(rows)
+        if new_size == self.page_size:
+            return False
+        self.page_size = new_size
+        return True
 
     def effective_project_id(self) -> str | None:
         return self.project_id or config.default_project_id
