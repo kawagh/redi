@@ -6,6 +6,10 @@ import pytest
 from redi.cli import enumerations_command
 from redi.i18n import messages
 
+RESOURCES = {r.name: r for r in enumerations_command.ENUMERATION_RESOURCES}
+TRACKER = RESOURCES["tracker"]
+CUSTOM_FIELD = RESOURCES["custom_field"]
+
 
 class TestListOutput:
     """一覧専用リソースは既定で `{id} {name}`、--full で JSON を出す"""
@@ -23,16 +27,16 @@ class TestListOutput:
 
     def test_default_prints_id_and_name(self, capsys):
         """既定では 1 行に id と name を出す"""
-        enumerations_command.handle_tracker(
-            argparse.Namespace(full=False, refresh=False)
+        enumerations_command.handle_enumeration(
+            TRACKER, argparse.Namespace(full=False, refresh=False)
         )
 
         assert capsys.readouterr().out == "1 バグ\n2 機能\n"
 
     def test_full_prints_json(self, capsys):
         """--full ではレスポンスをそのまま JSON で出す"""
-        enumerations_command.handle_tracker(
-            argparse.Namespace(full=True, refresh=False)
+        enumerations_command.handle_enumeration(
+            TRACKER, argparse.Namespace(full=True, refresh=False)
         )
 
         assert json.loads(capsys.readouterr().out) == [
@@ -51,8 +55,8 @@ class TestCustomFieldPermission:
         )
 
         with pytest.raises(SystemExit) as e:
-            enumerations_command.handle_custom_field(
-                argparse.Namespace(full=False, refresh=False)
+            enumerations_command.handle_enumeration(
+                CUSTOM_FIELD, argparse.Namespace(full=False, refresh=False)
             )
 
         assert e.value.code == 1
@@ -72,8 +76,8 @@ class TestRefreshIsPassedToFetch:
 
         monkeypatch.setattr(enumerations_command, "fetch_trackers", _fetch)
 
-        enumerations_command.handle_tracker(
-            argparse.Namespace(full=False, refresh=True)
+        enumerations_command.handle_enumeration(
+            TRACKER, argparse.Namespace(full=False, refresh=True)
         )
 
         assert received["refresh"] is True
