@@ -16,9 +16,14 @@ from redi.api.exceptions import (
     print_http_error_body,
 )
 from redi.api.project import Project
+from redi.api.tracker import fetch_trackers
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
+from redi.cli.editor import open_editor, shorten_to_oneline
+from redi.cli.interactive import prompt
+from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import full_option_parser
+from redi.cli.validator import ProjectIdentifierValidator, RequiredValidator
 from redi.i18n import messages
 from redi.service import project_service
 
@@ -197,6 +202,130 @@ def _delete_project(project_id: str) -> None:
     print(messages.project_deleted.format(id=project_id))
 
 
+def _interactive_select_parent_id(current: str | None) -> str | None:
+    """親プロジェクトを一覧から選ばせる。「なし」を選んだ場合は None を返す。"""
+    options: list[tuple[str, str]] = [
+        ("", messages.prompt_select_parent_project_none)
+    ] + [
+        (str(project["id"]), f"{project['id']} {project['name']}")
+        for project in project_service.list_projects()
+    ]
+    labels = dict(options)
+    selected = inline_choice(
+        messages.prompt_select_parent_project, options, default=current
+    )
+    print(
+        messages.prompt_field_value.format(
+            name=messages.field_parent_project, value=labels[selected]
+        )
+    )
+    return selected or None
+
+
+def _interactive_select_tracker_ids(current: str | None) -> str | None:
+    """トラッカーを複数選ばせ、カンマ区切りの id 文字列を返す。"""
+    trackers = fetch_trackers()
+    options: list[tuple[str, str]] = [(str(t["id"]), t["name"]) for t in trackers]
+    labels = dict(options)
+    selected = inline_checkbox(
+        messages.prompt_select_trackers,
+        options,
+        initial_checked=current.split(",") if current else None,
+    )
+    if not selected:
+        return None
+    print(
+        messages.prompt_field_value.format(
+            name=messages.field_trackers,
+            value=", ".join(labels[v] for v in selected),
+        )
+    )
+    return ",".join(selected)
+
+
+def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
+    """アクションメニューで「任意項目を入力する」を選んだときの入力フロー。
+
+    入力結果は argparse が渡す形式のまま args へ書き戻し、
+    送信前の変換は `handle_project` の一箇所に閉じる。
+    """
+    field_options: list[tuple[str, str]] = [
+        ("description", messages.field_description),
+        ("is_public", messages.field_is_public),
+        ("parent_id", messages.field_parent_project),
+        ("tracker_ids", messages.field_trackers),
+    ]
+    try:
+        selected = inline_checkbox(
+            messages.prompt_select_create_optional_items, field_options
+        )
+        if not selected:
+            return
+        if "description" in selected:
+            args.description = open_editor(initial_text=args.description or "")
+            if args.description:
+                print(
+                    messages.prompt_field_value.format(
+                        name=messages.field_description,
+                        value=shorten_to_oneline(args.description),
+                    )
+                )
+        if "is_public" in selected:
+            is_public_options: list[tuple[str, str]] = [
+                ("true", messages.label_project_public),
+                ("false", messages.label_project_private),
+            ]
+            labels = dict(is_public_options)
+            args.is_public = inline_choice(
+                messages.prompt_select_is_public,
+                is_public_options,
+                default=args.is_public,
+            )
+            print(
+                messages.prompt_field_value.format(
+                    name=messages.field_is_public, value=labels[args.is_public]
+                )
+            )
+        if "parent_id" in selected:
+            args.parent_id = _interactive_select_parent_id(args.parent_id)
+        if "tracker_ids" in selected:
+            args.tracker_ids = _interactive_select_tracker_ids(args.tracker_ids)
+    except (KeyboardInterrupt, EOFError):
+        print(messages.canceled)
+        sys.exit(1)
+
+
+def _interactive_fill_create_args(args: argparse.Namespace) -> None:
+    """`project create` の必須項目を対話で埋め、送信前に任意項目の入力機会を挟む。"""
+    try:
+        if args.name is None:
+            args.name = prompt(
+                messages.prompt_project_name, validator=RequiredValidator()
+            ).strip()
+        if args.identifier is None:
+            args.identifier = prompt(
+                messages.prompt_project_identifier,
+                default=project_service.suggest_identifier(args.name),
+                validator=ProjectIdentifierValidator(),
+            ).strip()
+    except (KeyboardInterrupt, EOFError):
+        print(messages.canceled)
+        sys.exit(1)
+    action_options: list[tuple[str, str]] = [
+        ("submit", messages.action_submit),
+        ("optional", messages.action_fill_optional),
+    ]
+    while True:
+        try:
+            action = inline_choice(messages.prompt_what_next, action_options)
+        except (KeyboardInterrupt, EOFError):
+            print(messages.canceled)
+            sys.exit(1)
+        if action != "optional":
+            return
+        _interactive_fill_optional_create_fields(args)
+
+
 def add_project_parser(
     subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
 ) -> None:
@@ -230,9 +359,11 @@ def add_project_parser(
     p_create_parser = p_subparsers.add_parser(
         "create", aliases=["c"], help=messages.arg_help_project_create, parents=parents
     )
-    p_create_parser.add_argument("name", help=messages.arg_help_project_name)
     p_create_parser.add_argument(
-        "identifier", help=messages.arg_help_project_identifier
+        "name", nargs="?", help=messages.arg_help_project_name_arg
+    )
+    p_create_parser.add_argument(
+        "identifier", nargs="?", help=messages.arg_help_project_identifier
     )
     p_create_parser.add_argument(
         "--description", "-d", help=messages.arg_help_description
@@ -284,6 +415,8 @@ def handle_project(args: argparse.Namespace) -> None:
             web=args.web,
         )
     elif cmd == "create":
+        if args.name is None or args.identifier is None:
+            _interactive_fill_create_args(args)
         is_public = None
         if args.is_public is not None:
             is_public = args.is_public == "true"

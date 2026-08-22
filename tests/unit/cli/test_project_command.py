@@ -1,3 +1,5 @@
+import argparse
+
 import pytest
 
 from redi.api.exceptions import (
@@ -5,7 +7,35 @@ from redi.api.exceptions import (
     ProjectPermissionDeniedException,
 )
 from redi.cli import project_command
+from redi.cli.project_command import add_project_parser, handle_project
 from redi.i18n import messages
+
+CREATED_PROJECT = {"id": 7, "name": "新プロジェクト", "identifier": "new-project"}
+
+
+def parse_project_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    add_project_parser(parser.add_subparsers(dest="command"), [])
+    return parser.parse_args(argv)
+
+
+@pytest.fixture
+def created_project(monkeypatch):
+    """作成をスタブし、service に渡された引数を記録する。
+
+    Redmine に値が正しく届くかは E2E (`tests/e2e/test_project_cli.py`) で見る。
+    """
+
+    calls: list[dict] = []
+
+    def fake_create_project(**kwargs):
+        calls.append(kwargs)
+        return CREATED_PROJECT
+
+    monkeypatch.setattr(
+        project_command.project_service, "create_project", fake_create_project
+    )
+    return calls
 
 
 class TestView:
@@ -40,3 +70,94 @@ class TestView:
 
         assert e.value.code == 1
         assert expected in capsys.readouterr().out
+
+
+class TestCreate:
+    """`project create` は引数が足りなければ対話で補う"""
+
+    def test_arguments_only_skips_interaction(self, created_project, capsys):
+        """name と identifier が揃っていれば対話に入らず作成する"""
+        handle_project(
+            parse_project_args(["project", "create", "新プロジェクト", "new-project"])
+        )
+
+        assert created_project == [
+            {
+                "name": "新プロジェクト",
+                "identifier": "new-project",
+                "description": None,
+                "is_public": None,
+                "parent_id": None,
+                "tracker_ids": None,
+            }
+        ]
+        assert "7 新プロジェクト (new-project)" in capsys.readouterr().out
+
+    def test_options_are_passed(self, created_project):
+        """--is_public と --tracker_ids は送信できる形に変換して渡す"""
+        handle_project(
+            parse_project_args(
+                [
+                    "project",
+                    "create",
+                    "新プロジェクト",
+                    "new-project",
+                    "--is_public",
+                    "false",
+                    "--tracker_ids",
+                    "1,2",
+                ]
+            )
+        )
+
+        assert created_project[0]["is_public"] is False
+        assert created_project[0]["tracker_ids"] == [1, 2]
+
+    def test_missing_identifier_is_prompted(
+        self, created_project, tty_stdin, monkeypatch
+    ):
+        """identifier だけ足りない場合は identifier のみ聞き直す"""
+        asked: list[str] = []
+
+        def fake_prompt(message, **kwargs):
+            asked.append(message)
+            return "new-project"
+
+        monkeypatch.setattr(project_command, "prompt", fake_prompt)
+        monkeypatch.setattr(project_command, "inline_choice", lambda *_, **__: "submit")
+
+        handle_project(parse_project_args(["project", "create", "新プロジェクト"]))
+
+        assert asked == [messages.prompt_project_identifier]
+        assert created_project[0]["identifier"] == "new-project"
+
+    def test_optional_items_are_filled(self, created_project, tty_stdin, monkeypatch):
+        """アクションメニューで任意項目を選ぶと、その値を添えて作成する"""
+        actions = iter(["optional", "submit"])
+        monkeypatch.setattr(project_command, "prompt", lambda *_, **__: "new-project")
+        monkeypatch.setattr(
+            project_command, "inline_choice", lambda *_, **__: next(actions)
+        )
+        monkeypatch.setattr(
+            project_command, "inline_checkbox", lambda *_, **__: ["tracker_ids"]
+        )
+        monkeypatch.setattr(
+            project_command, "_interactive_select_tracker_ids", lambda _current: "3"
+        )
+
+        handle_project(parse_project_args(["project", "create", "新プロジェクト"]))
+
+        assert created_project[0]["tracker_ids"] == [3]
+
+    def test_non_interactive_names_missing_input(self, capsys):
+        """非TTY環境では対話に入らず、求めた入力を示して exit 1 する"""
+        with pytest.raises(SystemExit) as e:
+            handle_project(parse_project_args(["project", "create"]))
+
+        assert e.value.code == 1
+        assert (
+            messages.non_interactive_input_required.format(
+                message=messages.prompt_project_name.strip().rstrip(":").strip()
+            )
+            in capsys.readouterr().out
+        )
