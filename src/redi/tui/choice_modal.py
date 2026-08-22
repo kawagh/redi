@@ -100,6 +100,9 @@ def register_choice_keys(
     """選択肢 modal の移動・決定・閉じるキーを登録する。
 
     `close_key` は modal を開いたキー自身 (トグルで閉じられるようにする)。
+
+    候補は環境が増えるほど伸びるので、一覧側の normal mode と同じ `gg` / `G` で
+    先頭・末尾へ飛べるようにする。
     """
 
     @kb.add("j", filter=show)
@@ -115,6 +118,15 @@ def register_choice_keys(
     def _cursor_up(event):
         modal = get_modal()
         modal.cursor = max(0, modal.cursor - 1)
+
+    @kb.add("g", "g", filter=show)
+    def _cursor_top(event):
+        get_modal().cursor = 0
+
+    @kb.add("G", filter=show)
+    def _cursor_bottom(event):
+        modal = get_modal()
+        modal.cursor = max(0, len(modal.choices) - 1)
 
     @kb.add("enter", filter=show)
     def _select(event):
