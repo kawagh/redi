@@ -10,11 +10,11 @@ from redi.cli.editor import open_editor, shorten_to_oneline
 from redi.cli.interactive import prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.validator import (
-    CustomFieldValidator,
     DateValidator,
     FloatValidator,
     IntValidator,
     RequiredValidator,
+    build_custom_field_validator,
     check_custom_field_constraints,
 )
 from redi.i18n import messages
@@ -121,12 +121,7 @@ def prompt_custom_field_value(
             while True:
                 value = open_editor(initial_text=default_value)
                 if value:
-                    err = check_custom_field_constraints(
-                        value,
-                        min_length=custom_field.get("min_length"),
-                        max_length=custom_field.get("max_length"),
-                        regexp=custom_field.get("regexp"),
-                    )
+                    err = check_custom_field_constraints(custom_field, value)
                     if err:
                         print(err)
                         continue
@@ -181,11 +176,8 @@ def prompt_custom_field_value(
         case _:
             return prompt(
                 messages.prompt_custom_field_label.format(name=label),
-                validator=CustomFieldValidator(
-                    inner=RequiredValidator(),
-                    min_length=custom_field.get("min_length"),
-                    max_length=custom_field.get("max_length"),
-                    regexp=custom_field.get("regexp"),
+                validator=build_custom_field_validator(
+                    custom_field, base=RequiredValidator()
                 ),
                 default=default_value,
             ).strip()

@@ -4,6 +4,7 @@ from datetime import date
 from prompt_toolkit.document import Document
 from prompt_toolkit.validation import ValidationError, Validator
 
+from redi.api.custom_field import CustomField
 from redi.i18n import messages
 
 _URL_PREFIXES = ("http://", "https://")
@@ -129,6 +130,67 @@ class DueDateValidator(Validator):
             )
 
 
+class CompositeValidator(Validator):
+    """複数の Validator を宣言順に適用し、最初に失敗したものを送出する Validator。"""
+
+    def __init__(self, *validators: Validator) -> None:
+        self.validators = validators
+
+    def validate(self, document: Document) -> None:
+        for validator in self.validators:
+            validator.validate(document)
+
+
+class MinLengthValidator(Validator):
+    """min_length 以上の長さを要求する Validator。空文字は必須チェックに委ねて通す。"""
+
+    def __init__(self, min_length: int | None) -> None:
+        self.min_length = min_length or None
+
+    def validate(self, document: Document) -> None:
+        text = document.text.strip()
+        if text == "" or self.min_length is None:
+            return
+        if len(text) < self.min_length:
+            raise ValidationError(
+                message=messages.error_min_length.format(min=self.min_length)
+            )
+
+
+class MaxLengthValidator(Validator):
+    """max_length 以下の長さを要求する Validator。空文字は必須チェックに委ねて通す。"""
+
+    def __init__(self, max_length: int | None) -> None:
+        self.max_length = max_length or None
+
+    def validate(self, document: Document) -> None:
+        text = document.text.strip()
+        if text == "" or self.max_length is None:
+            return
+        if len(text) > self.max_length:
+            raise ValidationError(
+                message=messages.error_max_length.format(max=self.max_length)
+            )
+
+
+class RegexpValidator(Validator):
+    """regexp への部分一致 (re.search) を要求する Validator。
+
+    正規表現として不正な文字列は検証不能とみなして無視する。
+    空文字は必須チェックに委ねて通す。
+    """
+
+    def __init__(self, regexp: str | None) -> None:
+        self._regex = _compile_regexp(regexp)
+
+    def validate(self, document: Document) -> None:
+        text = document.text.strip()
+        if text == "" or self._regex is None:
+            return
+        if not self._regex.search(text):
+            raise ValidationError(message=messages.error_regexp_mismatch)
+
+
 def _compile_regexp(regexp: str | None) -> re.Pattern[str] | None:
     if not regexp:
         return None
@@ -138,66 +200,33 @@ def _compile_regexp(regexp: str | None) -> re.Pattern[str] | None:
         return None
 
 
-def check_custom_field_constraints(
-    text: str,
-    min_length: int | None = None,
-    max_length: int | None = None,
-    regexp: str | None = None,
-) -> str | None:
-    """カスタムフィールドの min_length/max_length/regexp を検証する。
+def _custom_field_constraints(custom_field: CustomField) -> list[Validator]:
+    return [
+        MinLengthValidator(custom_field.get("min_length")),
+        MaxLengthValidator(custom_field.get("max_length")),
+        RegexpValidator(custom_field.get("regexp")),
+    ]
 
-    違反していれば該当するエラーメッセージを返し、問題なければ None を返す。
-    text が空の場合は呼び出し側の責務（空文字はキャンセル扱い等）として通す。
+
+def build_custom_field_validator(
+    custom_field: CustomField, base: Validator | None = None
+) -> Validator:
+    """カスタムフィールドの制約を送信前に検証する Validator を組み立てる。
+
+    base（必須チェックや field_format ごとの Validator）は制約より先に適用する。
     """
-    if text == "":
-        return None
-    min_v = min_length if min_length else None
-    max_v = max_length if max_length else None
-    regex = _compile_regexp(regexp)
-    if min_v is not None and len(text) < min_v:
-        return messages.error_min_length.format(min=min_v)
-    if max_v is not None and len(text) > max_v:
-        return messages.error_max_length.format(max=max_v)
-    if regex is not None and not regex.search(text):
-        return messages.error_regexp_mismatch
+    base_validators = [base] if base is not None else []
+    return CompositeValidator(
+        *base_validators, *_custom_field_constraints(custom_field)
+    )
+
+
+def check_custom_field_constraints(custom_field: CustomField, text: str) -> str | None:
+    """prompt を介さないフロー（エディタ入力など）で制約を検証し、違反メッセージを返す。"""
+    try:
+        CompositeValidator(*_custom_field_constraints(custom_field)).validate(
+            Document(text=text)
+        )
+    except ValidationError as e:
+        return e.message
     return None
-
-
-class CustomFieldValidator(Validator):
-    """カスタムフィールド入力用 Validator。
-
-    Redmine のカスタムフィールドが持つ min_length / max_length / regexp を
-    送信前にローカルで検証し、API リクエストでバリデーションエラーになるのを防ぐ。
-
-    inner Validator を渡すと、min_length/max_length/regexp の前にそちらを適用する
-    （例: RequiredValidator と組み合わせて必須+長さ/正規表現を一度に検証）。
-    """
-
-    def __init__(
-        self,
-        inner: Validator | None = None,
-        min_length: int | None = None,
-        max_length: int | None = None,
-        regexp: str | None = None,
-    ) -> None:
-        self.inner = inner
-        self.min_length = min_length if min_length else None
-        self.max_length = max_length if max_length else None
-        self._regex = _compile_regexp(regexp)
-
-    def validate(self, document: Document) -> None:
-        if self.inner is not None:
-            self.inner.validate(document)
-        text = document.text.strip()
-        if text == "":
-            return
-        if self.min_length is not None and len(text) < self.min_length:
-            raise ValidationError(
-                message=messages.error_min_length.format(min=self.min_length)
-            )
-        if self.max_length is not None and len(text) > self.max_length:
-            raise ValidationError(
-                message=messages.error_max_length.format(max=self.max_length)
-            )
-        if self._regex is not None and not self._regex.search(text):
-            raise ValidationError(message=messages.error_regexp_mismatch)
