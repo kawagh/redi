@@ -11,6 +11,7 @@ from prompt_toolkit.layout.containers import (
     Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.widgets import Frame
 
 from redi.i18n import messages
@@ -34,11 +35,22 @@ from redi.tui.time_entry.filter_modal import (
 )
 from redi.tui.wiki.delete_modal import build_delete_float as build_wiki_delete_float
 
+HALF = Dimension(weight=1, preferred=0)
+
 
 def build_layout(state: TuiState, conditions: Conditions) -> Layout:
+    list_window = Window(
+        FormattedTextControl(
+            lambda: render_list_current(state),
+            show_cursor=False,
+            get_cursor_position=lambda: Point(0, TABS[state.tab].get_cursor_y(state)),
+        ),
+        width=HALF,
+    )
     preview_window = Window(
         FormattedTextControl(lambda: render_preview_current(state)),
         wrap_lines=True,
+        width=HALF,
     )
 
     main_layout = HSplit(
@@ -50,15 +62,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
             Window(height=1, char="─"),
             VSplit(
                 [
-                    Window(
-                        FormattedTextControl(
-                            lambda: render_list_current(state),
-                            show_cursor=False,
-                            get_cursor_position=lambda: Point(
-                                0, TABS[state.tab].get_cursor_y(state)
-                            ),
-                        )
-                    ),
+                    list_window,
                     Window(width=1, char="│"),
                     preview_window,
                 ]
