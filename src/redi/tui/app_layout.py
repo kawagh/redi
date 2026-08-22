@@ -1,5 +1,6 @@
 """画面のレイアウト (Window / Float) の組み立て。"""
 
+from prompt_toolkit.application import get_app
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import (
@@ -34,6 +35,21 @@ from redi.tui.time_entry.filter_modal import (
 )
 from redi.tui.wiki.delete_modal import build_delete_float as build_wiki_delete_float
 
+SEPARATOR_WIDTH = 1
+"""左右ペインを区切る縦線 (`│`) の桁数。"""
+
+
+def list_pane_width(columns: int) -> int:
+    """端末幅 `columns` に対する左ペイン (一覧) の桁数を返す。
+
+    幅を指定しないと prompt_toolkit は一覧の中身 (描画された行のうち最長のもの)
+    から左ペインの幅を決めるため、ページ送りやフィルタで件名の長さが変わるたびに
+    境界の桁位置が動いてしまう。内容によらず境界を固定するため、区切り線を除いた
+    幅を左右で半分ずつに分ける。
+    """
+    available = max(columns - SEPARATOR_WIDTH, 0)
+    return available // 2
+
 
 def build_layout(state: TuiState, conditions: Conditions) -> Layout:
     preview_window = Window(
@@ -57,9 +73,12 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
                             get_cursor_position=lambda: Point(
                                 0, TABS[state.tab].get_cursor_y(state)
                             ),
-                        )
+                        ),
+                        width=lambda: list_pane_width(
+                            get_app().output.get_size().columns
+                        ),
                     ),
-                    Window(width=1, char="│"),
+                    Window(width=SEPARATOR_WIDTH, char="│"),
                     preview_window,
                 ]
             ),
