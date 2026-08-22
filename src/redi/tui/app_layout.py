@@ -63,6 +63,8 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
             VSplit(
                 [
                     list_window,
+                    # 行末の CJK 文字が区切り線の桁へはみ出すのを空白で受ける
+                    Window(width=1, char=" "),
                     Window(width=1, char="│"),
                     preview_window,
                 ]
