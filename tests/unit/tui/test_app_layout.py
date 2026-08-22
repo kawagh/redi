@@ -7,7 +7,7 @@ from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
 
 from redi.api.issue import Issue
-from redi.tui.app_layout import build_layout, list_pane_width
+from redi.tui.app_layout import build_layout
 from redi.tui.conditions import build_conditions
 from redi.tui.state import TuiState
 
@@ -47,32 +47,14 @@ def _separator_columns(columns: int, subjects: list[str]) -> set[int]:
     return {line.index(SEPARATOR) for line in lines if SEPARATOR in line}
 
 
-class TestListPaneWidth:
-    """list_pane_width() は端末幅だけから左ペインの桁数を決める"""
-
-    def test_splits_in_half_excluding_separator(self):
-        """区切り線の1桁を除いた幅を左右で半分ずつに分ける"""
-        assert list_pane_width(80) == 39
-
-    def test_odd_remainder_goes_to_preview(self):
-        """半分に割り切れない1桁は右ペイン(詳細)に渡す"""
-        assert list_pane_width(81) == 40
-
-    def test_never_negative_on_narrow_terminal(self):
-        """区切り線も置けない幅でも負の桁数を返さない"""
-        assert list_pane_width(1) == 0
-        assert list_pane_width(0) == 0
-
-
 class TestPaneBoundary:
     """左右ペインの境界は一覧の内容によらず同じ桁位置に来る"""
 
     def test_boundary_does_not_move_with_subject_length(self):
-        """件名の長さが変わっても区切り線の桁位置は動かない"""
-        short = _separator_columns(80, ["a", "b"])
-        long = _separator_columns(80, ["x" * 60, "y" * 55])
-        assert short == long == {list_pane_width(80)}
+        """件名の長さが変わっても区切り線は端末幅の半分の桁位置に来る"""
+        assert _separator_columns(80, ["a", "b"]) == {40}
+        assert _separator_columns(80, ["x" * 60, "y" * 55]) == {40}
 
     def test_boundary_does_not_move_when_list_is_empty(self):
         """一覧が空でも区切り線の桁位置は変わらない"""
-        assert _separator_columns(80, []) == {list_pane_width(80)}
+        assert _separator_columns(80, []) == {40}
