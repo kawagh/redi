@@ -437,6 +437,7 @@ class MessagesProto(Protocol):
     error_max_length: str
     """{max}"""
     error_regexp_mismatch: str
+    """{regexp}"""
     error_page_title_required: str
     error_page_title_duplicate: str
     error_no_matching_project: str

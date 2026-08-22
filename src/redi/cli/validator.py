@@ -188,7 +188,11 @@ class RegexpValidator(Validator):
         if text == "" or self._regex is None:
             return
         if not self._regex.search(text):
-            raise ValidationError(message=messages.error_regexp_mismatch)
+            raise ValidationError(
+                message=messages.error_regexp_mismatch.format(
+                    regexp=self._regex.pattern
+                )
+            )
 
 
 def _compile_regexp(regexp: str | None) -> re.Pattern[str] | None:

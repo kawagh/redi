@@ -319,7 +319,7 @@ class Ja(MessagesProto):
     error_numeric_required = "数値を入力してください"
     error_min_length = "{min}文字以上で入力してください"
     error_max_length = "{max}文字以下で入力してください"
-    error_regexp_mismatch = "形式が正しくありません"
+    error_regexp_mismatch = "形式が正しくありません(パターン: {regexp})"
     error_page_title_required = "ページタイトルを入力してください"
     error_page_title_duplicate = "既存のページタイトルと重複しています"
     error_no_matching_project = "該当するプロジェクトがありません"

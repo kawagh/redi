@@ -406,9 +406,14 @@ class TestRegexpValidator:
 
     def test_mismatch_raises(self):
         """regexp に一致しなければエラーになる"""
-        expected = re.escape(messages.error_regexp_mismatch)
+        expected = re.escape(messages.error_regexp_mismatch.format(regexp=r"^\d+$"))
         with pytest.raises(ValidationError, match=expected):
             RegexpValidator(r"^\d+$").validate(Document(text="abc"))
+
+    def test_message_includes_the_pattern(self):
+        """何を入力すべきか分かるよう、エラーメッセージにパターンを含める"""
+        with pytest.raises(ValidationError, match=re.escape(r"^[0-9]{3,5}$")):
+            RegexpValidator(r"^[0-9]{3,5}$").validate(Document(text="12"))
 
     def test_uses_search_not_fullmatch(self):
         """regexp は部分一致 (re.search) で評価される"""
@@ -455,7 +460,8 @@ class TestBuildCustomFieldValidator:
             custom_field(min_length=3, max_length=10, regexp=r"^\d+$")
         )
         with pytest.raises(
-            ValidationError, match=re.escape(messages.error_regexp_mismatch)
+            ValidationError,
+            match=re.escape(messages.error_regexp_mismatch.format(regexp=r"^\d+$")),
         ):
             validator.validate(Document(text="abcd"))
 
@@ -523,10 +529,9 @@ class TestCheckCustomFieldConstraints:
 
     def test_regexp_violation_returns_message(self):
         """regexp 違反でエラーメッセージを返す"""
-        assert (
-            check_custom_field_constraints(custom_field(regexp=r"^\d+$"), "abc")
-            == messages.error_regexp_mismatch
-        )
+        assert check_custom_field_constraints(
+            custom_field(regexp=r"^\d+$"), "abc"
+        ) == messages.error_regexp_mismatch.format(regexp=r"^\d+$")
 
     def test_all_satisfied_returns_none(self):
         """すべて満たしていれば None"""

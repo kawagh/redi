@@ -87,7 +87,8 @@ class TestFreeInputFormatsUseConstraints:
         """regexp に一致しない入力はエラーになる"""
         validator = captured_validator(custom_field(field_format, regexp=r"^9"))
         with pytest.raises(
-            ValidationError, match=re.escape(messages.error_regexp_mismatch)
+            ValidationError,
+            match=re.escape(messages.error_regexp_mismatch.format(regexp=r"^9")),
         ):
             validator.validate(Document(text=text))
 

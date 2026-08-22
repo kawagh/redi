@@ -316,7 +316,7 @@ class En(MessagesProto):
     error_numeric_required = "Enter a number"
     error_min_length = "Enter at least {min} characters"
     error_max_length = "Enter no more than {max} characters"
-    error_regexp_mismatch = "Invalid format"
+    error_regexp_mismatch = "Invalid format (pattern: {regexp})"
     error_page_title_required = "Enter a page title"
     error_page_title_duplicate = "Duplicate page title"
     error_no_matching_project = "No matching project"
