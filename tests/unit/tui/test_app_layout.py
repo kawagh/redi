@@ -40,8 +40,10 @@ def _separator_columns(columns: int, subjects: list[str]) -> set[int]:
         app.renderer.render(app, app.layout)
         screen = app.renderer._last_screen
         assert screen is not None
+        # 全角文字は 2 セルを占め、2 セル目の char は空文字列になる。そのまま
+        # 連結すると文字列上の位置が桁位置とずれるので、空文字列は空白で埋める。
         lines = [
-            "".join(screen.data_buffer[y][x].char for x in range(columns))
+            "".join(screen.data_buffer[y][x].char or " " for x in range(columns))
             for y in range(ROWS)
         ]
     return {line.index(SEPARATOR) for line in lines if SEPARATOR in line}
