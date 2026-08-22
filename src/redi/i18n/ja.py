@@ -31,6 +31,7 @@ class Ja(MessagesProto):
         "引数・オプションで指定して再実行してください"
     )
     prompt_editor_input = "エディタでの入力"
+    prompt_press_enter_to_reopen = "Enter でエディタに戻る"
 
     # ---- common indicators ----
     project_id_required = "project_idを指定するか、default_project_idを設定してください"

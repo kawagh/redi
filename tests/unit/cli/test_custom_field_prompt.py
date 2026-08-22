@@ -111,14 +111,29 @@ class TestFreeInputFormatsUseConstraints:
 class TestTextFormatUsesConstraints:
     """text はエディタ入力のため、閉じたあとに制約を検証して開き直す"""
 
+    @pytest.fixture
+    def editor(self, monkeypatch: pytest.MonkeyPatch):
+        """エディタの入力列を差し替え、渡された初期テキストを記録する。"""
+
+        def install(*texts: str) -> list[str]:
+            inputs = iter(texts)
+            initial_texts: list[str] = []
+
+            def fake_open_editor(initial_text: str = "") -> str:
+                initial_texts.append(initial_text)
+                return next(inputs)
+
+            monkeypatch.setattr(custom_field_prompt, "open_editor", fake_open_editor)
+            monkeypatch.setattr(custom_field_prompt, "prompt", lambda _message: "")
+            return initial_texts
+
+        return install
+
     def test_violating_input_reopens_editor(
-        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+        self, editor, capsys: pytest.CaptureFixture[str]
     ):
         """max_length を超えていたらエラーを出してエディタを開き直す"""
-        inputs = iter(["1234", "12"])
-        monkeypatch.setattr(
-            custom_field_prompt, "open_editor", lambda initial_text="": next(inputs)
-        )
+        editor("1234", "12")
 
         value = prompt_custom_field_value(
             custom_field("text", max_length=3), project_id="1"
@@ -126,3 +141,35 @@ class TestTextFormatUsesConstraints:
 
         assert value == "12"
         assert messages.error_max_length.format(max=3) in capsys.readouterr().out
+
+    def test_violating_input_is_kept_on_reopen(self, editor):
+        """書いた内容を失わないよう、違反した入力を初期テキストにして開き直す"""
+        initial_texts = editor("1234", "12")
+
+        prompt_custom_field_value(custom_field("text", max_length=3), project_id="1")
+
+        assert initial_texts == ["", "1234"]
+
+    def test_waits_before_reopening_editor(self, editor, monkeypatch):
+        """エディタがメッセージを流すため、開き直す前に入力を待つ"""
+        waited: list[str] = []
+        editor("1234", "12")
+        monkeypatch.setattr(
+            custom_field_prompt,
+            "prompt",
+            lambda message: waited.append(message) or "",
+        )
+
+        prompt_custom_field_value(custom_field("text", max_length=3), project_id="1")
+
+        assert waited == [messages.prompt_press_enter_to_reopen]
+
+    def test_empty_input_reopens_with_default_value(self, editor):
+        """空のまま閉じたときは既定値を出し直す"""
+        cf = custom_field("text")
+        cf["default_value"] = "default"
+        initial_texts = editor("", "written")
+
+        prompt_custom_field_value(cf, project_id="1")
+
+        assert initial_texts == ["default", "default"]

@@ -29,6 +29,7 @@ class En(MessagesProto):
         "Rerun with the required arguments or options"
     )
     prompt_editor_input = "input in the editor"
+    prompt_press_enter_to_reopen = "Press Enter to return to the editor"
 
     # ---- common indicators ----
     project_id_required = "Specify project_id or set default_project_id"
