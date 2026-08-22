@@ -87,11 +87,15 @@ def _list_users(
     status: str | None = None,
     name: str | None = None,
     group_id: int | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
     full: bool = False,
 ) -> None:
     """ユーザー一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
     try:
-        users = user_service.list_users(status=status, name=name, group_id=group_id)
+        users = user_service.list_users(
+            status=status, name=name, group_id=group_id, limit=limit, offset=offset
+        )
     except UserPermissionDeniedException:
         print(messages.user_list_admin_required)
         print(messages.user_list_member_hint)
@@ -221,6 +225,8 @@ def _user_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParse
     )
     parser.add_argument("--name", help=messages.arg_help_user_name_filter)
     parser.add_argument("--group_id", type=int, help=messages.arg_help_user_group_id)
+    parser.add_argument("--limit", type=int, help=messages.arg_help_limit)
+    parser.add_argument("--offset", type=int, help=messages.arg_help_offset)
     parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
     return parser
 
@@ -375,5 +381,7 @@ def handle_user(args: argparse.Namespace) -> None:
             status=args.status,
             name=args.name,
             group_id=args.group_id,
+            limit=args.limit,
+            offset=args.offset,
             full=args.full,
         )

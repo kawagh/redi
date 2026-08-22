@@ -17,8 +17,18 @@ def stub_user_api(monkeypatch):
     calls: list[dict] = []
     list_calls: list[dict] = []
 
-    def fake_fetch_users(status=None, name=None, group_id=None):
-        list_calls.append({"status": status, "name": name, "group_id": group_id})
+    def fake_fetch_users(
+        status=None, name=None, group_id=None, limit=None, offset=None
+    ):
+        list_calls.append(
+            {
+                "status": status,
+                "name": name,
+                "group_id": group_id,
+                "limit": limit,
+                "offset": offset,
+            }
+        )
         return [
             {"id": 1, "login": "admin", "api_key": "secret1"},
             {"id": 2, "login": "member", "api_key": "secret2"},
@@ -70,7 +80,13 @@ class TestListUsers:
         user_service.list_users()
 
         assert stub_user_api.list_calls == [
-            {"status": None, "name": None, "group_id": None}
+            {
+                "status": None,
+                "name": None,
+                "group_id": None,
+                "limit": None,
+                "offset": None,
+            }
         ]
 
     @pytest.mark.parametrize(
@@ -88,7 +104,13 @@ class TestListUsers:
         user_service.list_users(name="kawagh", group_id=6)
 
         assert stub_user_api.list_calls == [
-            {"status": None, "name": "kawagh", "group_id": 6}
+            {
+                "status": None,
+                "name": "kawagh",
+                "group_id": 6,
+                "limit": None,
+                "offset": None,
+            }
         ]
 
 

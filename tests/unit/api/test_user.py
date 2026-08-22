@@ -36,7 +36,7 @@ def captured_params(monkeypatch) -> list[dict]:
 
 
 class TestFetchUsersPaging:
-    """fetch_users は既定の件数で打ち切らず、条件に合うユーザーを全件返す"""
+    """fetch_users は limit / offset 未指定なら、既定の件数で打ち切らず全件返す"""
 
     def test_sends_paging_params(self, captured_params):
         """絞り込み条件を足さずページングだけを指定し、既定の件数で切られないようにする"""
@@ -62,6 +62,34 @@ class TestFetchUsersPaging:
 
         assert offsets == [0, USERS_PAGE_LIMIT]
         assert len(users) == 150
+
+
+class TestFetchUsersExplicitPaging:
+    """limit / offset を指定したときは、その1ページだけを返す"""
+
+    @pytest.mark.parametrize(
+        ("kwargs", "expected"),
+        [
+            ({"limit": 5}, {"limit": 5}),
+            ({"offset": 10}, {"offset": 10}),
+            ({"limit": 5, "offset": 10}, {"limit": 5, "offset": 10}),
+        ],
+        ids=["limit", "offset", "both"],
+    )
+    def test_takes_one_page(self, monkeypatch, kwargs, expected):
+        """指定された分だけを送り、total_count が残っていても追わない"""
+        calls: list[dict] = []
+
+        def fake_get(path: str, **get_kwargs) -> FakeResponse:
+            calls.append(get_kwargs["params"])
+            return FakeResponse({"users": _users(1, 5), "total_count": 150})
+
+        monkeypatch.setattr(user_module.client, "get", fake_get)
+
+        users = user_module.fetch_users(**kwargs)
+
+        assert calls == [expected]
+        assert len(users) == 5
 
 
 class TestFetchUsersPermission:

@@ -68,6 +68,10 @@ class TestListFilterOptions:
                 "kawagh",
                 "--group_id",
                 "6",
+                "--limit",
+                "5",
+                "--offset",
+                "10",
             ],
             [
                 "user",
@@ -77,6 +81,10 @@ class TestListFilterOptions:
                 "kawagh",
                 "--group_id",
                 "6",
+                "--limit",
+                "5",
+                "--offset",
+                "10",
                 "list",
             ],
         ],
@@ -89,6 +97,8 @@ class TestListFilterOptions:
         assert args.status == "locked"
         assert args.name == "kawagh"
         assert args.group_id == 6
+        assert args.limit == 5
+        assert args.offset == 10
 
     def test_unknown_status_is_rejected(self, parser):
         """status は Redmine が定める 3 種以外を受け付けない"""
@@ -105,9 +115,19 @@ class TestListFilterOptions:
 
         monkeypatch.setattr(user_command.user_service, "list_users", fake_list_users)
 
-        user_command._list_users(status="locked", name="kawagh", group_id=6)
+        user_command._list_users(
+            status="locked", name="kawagh", group_id=6, limit=5, offset=10
+        )
 
-        assert calls == [{"status": "locked", "name": "kawagh", "group_id": 6}]
+        assert calls == [
+            {
+                "status": "locked",
+                "name": "kawagh",
+                "group_id": 6,
+                "limit": 5,
+                "offset": 10,
+            }
+        ]
 
 
 class TestView:

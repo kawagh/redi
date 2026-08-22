@@ -34,6 +34,8 @@ def list_users(
     status: str | None = None,
     name: str | None = None,
     group_id: int | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
 ) -> list[User]:
     """ユーザー一覧を取得する。
 
@@ -41,6 +43,8 @@ def list_users(
         status: `USER_STATUS_CHOICES` のいずれか。未指定なら Redmine の既定 (active のみ)
         name: login / firstname / lastname / mail への部分一致
         group_id: 所属グループ
+        limit: 取得件数。offset と共に未指定なら全件
+        offset: 取得開始位置
 
     Raises:
         UserPermissionDeniedException: 管理者権限が無い (HTTP 403)
@@ -50,6 +54,8 @@ def list_users(
         status=user_api.USER_STATUS[status] if status is not None else None,
         name=name,
         group_id=group_id,
+        limit=limit,
+        offset=offset,
     )
     return [pop_apikey(user) for user in users]
 
