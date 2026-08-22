@@ -29,7 +29,6 @@ class EnumerationResource:
     alias: str
     command_help: str
     list_help: str
-    # 遅延束縛のため関数そのものではなく呼び出し式を保持する
     fetch: Callable[[bool], Sequence[Mapping[str, Any]] | None]
     # 応答をキャッシュするリソースにだけ --refresh を生やす
     cached: bool = True
@@ -43,41 +42,42 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
         "t",
         messages.arg_help_tracker_command,
         messages.arg_help_tracker_list,
-        lambda refresh: fetch_trackers(refresh=refresh),
+        fetch_trackers,
     ),
     EnumerationResource(
         "issue_status",
         "is",
         messages.arg_help_issue_status_command,
         messages.arg_help_issue_status_list,
-        lambda refresh: fetch_issue_statuses(refresh=refresh),
+        fetch_issue_statuses,
     ),
     EnumerationResource(
         "issue_priority",
         "ip",
         messages.arg_help_issue_priority_command,
         messages.arg_help_issue_priority_list,
-        lambda refresh: fetch_issue_priorities(refresh=refresh),
+        fetch_issue_priorities,
     ),
     EnumerationResource(
         "time_entry_activity",
         "tea",
         messages.arg_help_time_entry_activity_command,
         messages.arg_help_time_entry_activity_list,
-        lambda refresh: fetch_time_entry_activities(refresh=refresh),
+        fetch_time_entry_activities,
     ),
     EnumerationResource(
         "document_category",
         "dc",
         messages.arg_help_document_category_command,
         messages.arg_help_document_category_list,
-        lambda refresh: fetch_document_categories(refresh=refresh),
+        fetch_document_categories,
     ),
     EnumerationResource(
         "query",
         "q",
         messages.arg_help_query_command,
         messages.arg_help_query_list,
+        # fetch_queries だけ refresh を取らないので合わせる
         lambda refresh: fetch_queries(),
         cached=False,
     ),
@@ -86,7 +86,7 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
         "cf",
         messages.arg_help_custom_field_command,
         messages.arg_help_custom_field_list,
-        lambda refresh: fetch_custom_fields(refresh=refresh),
+        fetch_custom_fields,
         unavailable_message=messages.custom_field_admin_required,
     ),
 )
