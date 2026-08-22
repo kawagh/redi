@@ -42,6 +42,14 @@ HALF = Dimension(weight=1, preferred=0)
 
 
 def build_layout(state: TuiState, conditions: Conditions) -> Layout:
+    list_window = Window(
+        FormattedTextControl(
+            lambda: render_list_current(state),
+            show_cursor=False,
+            get_cursor_position=lambda: Point(0, TABS[state.tab].get_cursor_y(state)),
+        ),
+        width=HALF,
+    )
     preview_window = Window(
         FormattedTextControl(lambda: render_preview_current(state)),
         wrap_lines=True,
@@ -57,16 +65,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
             Window(height=1, char="─"),
             VSplit(
                 [
-                    Window(
-                        FormattedTextControl(
-                            lambda: render_list_current(state),
-                            show_cursor=False,
-                            get_cursor_position=lambda: Point(
-                                0, TABS[state.tab].get_cursor_y(state)
-                            ),
-                        ),
-                        width=HALF,
-                    ),
+                    list_window,
                     Window(width=1, char="│"),
                     preview_window,
                 ]
