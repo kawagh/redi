@@ -1,20 +1,40 @@
 import re
 from datetime import date
+from typing import cast
 
 import pytest
 from prompt_toolkit.document import Document
-from prompt_toolkit.validation import ValidationError
+from prompt_toolkit.validation import ValidationError, Validator
 
+from redi.api.custom_field import CustomField
 from redi.cli.validator import (
+    CompositeValidator,
     DateValidator,
     DueDateValidator,
     FloatValidator,
     HourValidator,
     IntValidator,
+    MaxLengthValidator,
+    MinLengthValidator,
+    RegexpValidator,
     RequiredValidator,
     UrlValidator,
+    build_custom_field_validator,
+    check_custom_field_constraints,
 )
 from redi.i18n import messages
+
+
+def custom_field(
+    min_length: int | None = None,
+    max_length: int | None = None,
+    regexp: str = "",
+) -> CustomField:
+    """制約だけを持つカスタムフィールドを組み立てるテスト用ヘルパー。"""
+    return cast(
+        CustomField,
+        {"min_length": min_length, "max_length": max_length, "regexp": regexp},
+    )
 
 
 class TestRequiredValidator:
@@ -283,3 +303,248 @@ class TestDueDateValidator:
         """形式は合っていてもカレンダー上不正な日付は形式エラーになる"""
         with pytest.raises(ValidationError, match="YYYY-MM-DD"):
             DueDateValidator(start_date=None).validate(Document(text=text))
+
+
+class TestCompositeValidator:
+    """CompositeValidator()は複数の Validator を宣言順に適用する"""
+
+    def test_all_pass(self):
+        """すべての Validator を満たせば通る"""
+        CompositeValidator(RequiredValidator(), MinLengthValidator(3)).validate(
+            Document(text="abc")
+        )
+
+    def test_first_failure_is_raised(self):
+        """複数が違反していても宣言順で最初のものが送出される"""
+        composite = CompositeValidator(MinLengthValidator(3), RegexpValidator(r"^\d+$"))
+        with pytest.raises(
+            ValidationError, match=re.escape(messages.error_min_length.format(min=3))
+        ):
+            composite.validate(Document(text="a"))
+
+    def test_no_validators_passes(self):
+        """Validator が空なら常に通る"""
+        CompositeValidator().validate(Document(text="anything"))
+
+    def test_later_validator_is_not_evaluated_after_failure(self):
+        """先の Validator が落ちたら後続は評価しない"""
+
+        class ExplodingValidator(Validator):
+            def validate(self, document: Document) -> None:
+                raise AssertionError("評価されてはいけない")
+
+        composite = CompositeValidator(MinLengthValidator(3), ExplodingValidator())
+        with pytest.raises(ValidationError):
+            composite.validate(Document(text="a"))
+
+
+class TestMinLengthValidator:
+    """MinLengthValidator()は min_length 以上の長さを要求する"""
+
+    @pytest.mark.parametrize("text", ["abc", "abcd"])
+    def test_satisfied_passes(self, text: str):
+        """min_length 以上の長さなら通る"""
+        MinLengthValidator(3).validate(Document(text=text))
+
+    def test_violation_raises(self):
+        """min_length より短ければエラーになる"""
+        expected = re.escape(messages.error_min_length.format(min=3))
+        with pytest.raises(ValidationError, match=expected):
+            MinLengthValidator(3).validate(Document(text="ab"))
+
+    def test_empty_text_passes(self):
+        """空文字は未入力として必須チェック側に委ねるため通す"""
+        MinLengthValidator(3).validate(Document(text=""))
+
+    def test_none_disables_check(self):
+        """min_length が未設定(None)なら短い入力でも通る"""
+        MinLengthValidator(None).validate(Document(text="a"))
+
+    def test_surrounding_whitespace_is_stripped(self):
+        """前後の空白は除去してから長さを数えるため、空白で長さは稼げない"""
+        with pytest.raises(ValidationError):
+            MinLengthValidator(3).validate(Document(text="a    "))
+
+    def test_whitespace_only_is_treated_as_empty(self):
+        """空白のみは空文字として扱い、制約の対象外にする"""
+        MinLengthValidator(3).validate(Document(text="   "))
+
+
+class TestMaxLengthValidator:
+    """MaxLengthValidator()は max_length 以下の長さを要求する"""
+
+    @pytest.mark.parametrize("text", ["abc", "ab"])
+    def test_satisfied_passes(self, text: str):
+        """max_length 以下の長さなら通る"""
+        MaxLengthValidator(3).validate(Document(text=text))
+
+    def test_violation_raises(self):
+        """max_length より長ければエラーになる"""
+        expected = re.escape(messages.error_max_length.format(max=3))
+        with pytest.raises(ValidationError, match=expected):
+            MaxLengthValidator(3).validate(Document(text="abcd"))
+
+    def test_empty_text_passes(self):
+        """空文字は未入力として必須チェック側に委ねるため通す"""
+        MaxLengthValidator(3).validate(Document(text=""))
+
+    def test_none_disables_check(self):
+        """max_length が未設定(None)なら長い入力でも通る"""
+        MaxLengthValidator(None).validate(Document(text="a" * 100))
+
+    def test_surrounding_whitespace_is_stripped(self):
+        """前後の空白は除去してから長さを数える"""
+        MaxLengthValidator(3).validate(Document(text="  abc  "))
+
+
+class TestRegexpValidator:
+    """RegexpValidator()は regexp への部分一致を要求する"""
+
+    def test_match_passes(self):
+        """regexp に一致すれば通る"""
+        RegexpValidator(r"^\d+$").validate(Document(text="12345"))
+
+    def test_mismatch_raises(self):
+        """regexp に一致しなければエラーになる"""
+        expected = re.escape(messages.error_regexp_mismatch.format(regexp=r"^\d+$"))
+        with pytest.raises(ValidationError, match=expected):
+            RegexpValidator(r"^\d+$").validate(Document(text="abc"))
+
+    def test_message_includes_the_pattern(self):
+        """何を入力すべきか分かるよう、エラーメッセージにパターンを含める"""
+        with pytest.raises(ValidationError, match=re.escape(r"^[0-9]{3,5}$")):
+            RegexpValidator(r"^[0-9]{3,5}$").validate(Document(text="12"))
+
+    def test_uses_search_not_fullmatch(self):
+        """regexp は部分一致 (re.search) で評価される"""
+        RegexpValidator(r"foo").validate(Document(text="xxfooxx"))
+
+    def test_empty_text_passes(self):
+        """空文字は未入力として必須チェック側に委ねるため通す"""
+        RegexpValidator(r"^\d+$").validate(Document(text=""))
+
+    @pytest.mark.parametrize("regexp", ["", None])
+    def test_blank_regexp_disables_check(self, regexp: str | None):
+        """regexp が未設定なら任意の入力が通る"""
+        RegexpValidator(regexp).validate(Document(text="anything"))
+
+    def test_invalid_regexp_is_ignored(self):
+        """正規表現として不正な文字列が来ても例外にせず無視する"""
+        RegexpValidator("[unclosed").validate(Document(text="anything"))
+
+    def test_surrounding_whitespace_is_stripped(self):
+        """前後の空白は除去してから照合する"""
+        RegexpValidator(r"^\d+$").validate(Document(text="  123  "))
+
+
+class TestBuildCustomFieldValidator:
+    """build_custom_field_validator()はカスタムフィールドの制約を Validator に組み立てる"""
+
+    def test_no_constraints_passes_any_text(self):
+        """制約なしの場合は任意の入力が通る"""
+        build_custom_field_validator(custom_field()).validate(Document(text="hello"))
+
+    def test_constraints_are_checked_in_min_max_regexp_order(self):
+        """複数違反しているときは min_length -> max_length -> regexp の順で報告される"""
+        validator = build_custom_field_validator(
+            custom_field(min_length=3, max_length=10, regexp=r"^\d+$")
+        )
+        with pytest.raises(
+            ValidationError, match=re.escape(messages.error_min_length.format(min=3))
+        ):
+            validator.validate(Document(text="a"))
+
+    def test_regexp_violation_raises(self):
+        """min/max を満たしていても regexp 違反はエラーになる"""
+        validator = build_custom_field_validator(
+            custom_field(min_length=3, max_length=10, regexp=r"^\d+$")
+        )
+        with pytest.raises(
+            ValidationError,
+            match=re.escape(messages.error_regexp_mismatch.format(regexp=r"^\d+$")),
+        ):
+            validator.validate(Document(text="abcd"))
+
+    def test_surrounding_whitespace_is_stripped(self):
+        """prompt は strip した値を送るため、strip 後の値で制約を評価する"""
+        validator = build_custom_field_validator(custom_field(min_length=3))
+        with pytest.raises(ValidationError):
+            validator.validate(Document(text="  ab  "))
+
+    def test_base_validator_is_applied_first(self):
+        """base Validator が指定されていれば制約より先に適用される（必須チェックなど）"""
+        validator = build_custom_field_validator(
+            custom_field(min_length=3), base=RequiredValidator()
+        )
+        with pytest.raises(
+            ValidationError, match=re.escape(messages.error_input_required)
+        ):
+            validator.validate(Document(text=""))
+
+    def test_base_validator_passes_then_constraint_checks(self):
+        """base Validator を通過したあとに長さ等の制約が評価される"""
+        validator = build_custom_field_validator(
+            custom_field(min_length=3), base=RequiredValidator()
+        )
+        validator.validate(Document(text="abc"))
+        with pytest.raises(
+            ValidationError, match=re.escape(messages.error_min_length.format(min=3))
+        ):
+            validator.validate(Document(text="ab"))
+
+    def test_empty_text_passes_without_base_validator(self):
+        """base が無ければ空文字は呼び出し側のキャンセル扱いとして通す"""
+        build_custom_field_validator(
+            custom_field(min_length=5, max_length=10, regexp=r"^\d+$")
+        ).validate(Document(text=""))
+
+
+class TestCheckCustomFieldConstraints:
+    """check_custom_field_constraints() は editor 経由など prompt を介さないフローで制約を検証する"""
+
+    def test_empty_text_returns_none(self):
+        """空文字は呼び出し側に委ねるため常に None"""
+        assert (
+            check_custom_field_constraints(
+                custom_field(min_length=3, max_length=10, regexp=r"^\d+$"), ""
+            )
+            is None
+        )
+
+    def test_no_constraints_returns_none(self):
+        """制約がなければ None"""
+        assert check_custom_field_constraints(custom_field(), "anything") is None
+
+    def test_min_length_violation_returns_message(self):
+        """min_length 違反でエラーメッセージを返す"""
+        assert check_custom_field_constraints(
+            custom_field(min_length=3), "ab"
+        ) == messages.error_min_length.format(min=3)
+
+    def test_max_length_violation_returns_message(self):
+        """max_length 違反でエラーメッセージを返す"""
+        assert check_custom_field_constraints(
+            custom_field(max_length=3), "abcd"
+        ) == messages.error_max_length.format(max=3)
+
+    def test_regexp_violation_returns_message(self):
+        """regexp 違反でエラーメッセージを返す"""
+        assert check_custom_field_constraints(
+            custom_field(regexp=r"^\d+$"), "abc"
+        ) == messages.error_regexp_mismatch.format(regexp=r"^\d+$")
+
+    def test_all_satisfied_returns_none(self):
+        """すべて満たしていれば None"""
+        assert (
+            check_custom_field_constraints(
+                custom_field(min_length=3, max_length=10, regexp=r"^[a-z]+$"), "abcd"
+            )
+            is None
+        )
+
+    def test_invalid_regexp_is_ignored(self):
+        """不正な正規表現は無視して None を返す"""
+        assert (
+            check_custom_field_constraints(custom_field(regexp="[unclosed"), "anything")
+            is None
+        )

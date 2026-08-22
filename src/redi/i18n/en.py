@@ -29,6 +29,7 @@ class En(MessagesProto):
         "Rerun with the required arguments or options"
     )
     prompt_editor_input = "input in the editor"
+    prompt_press_enter_to_reopen = "Press Enter to return to the editor"
 
     # ---- common indicators ----
     project_id_required = "Specify project_id or set default_project_id"
@@ -314,6 +315,9 @@ class En(MessagesProto):
     error_date_format = "Use YYYY-MM-DD"
     error_date_after_start = "Enter a date on or after start date {date}"
     error_numeric_required = "Enter a number"
+    error_min_length = "Enter at least {min} characters"
+    error_max_length = "Enter no more than {max} characters"
+    error_regexp_mismatch = "Invalid format (pattern: {regexp})"
     error_page_title_required = "Enter a page title"
     error_page_title_duplicate = "Duplicate page title"
     error_no_matching_project = "No matching project"

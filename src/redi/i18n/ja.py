@@ -31,6 +31,7 @@ class Ja(MessagesProto):
         "引数・オプションで指定して再実行してください"
     )
     prompt_editor_input = "エディタでの入力"
+    prompt_press_enter_to_reopen = "Enter でエディタに戻る"
 
     # ---- common indicators ----
     project_id_required = "project_idを指定するか、default_project_idを設定してください"
@@ -317,6 +318,9 @@ class Ja(MessagesProto):
     error_date_format = "YYYY-MM-DD で入力してください"
     error_date_after_start = "開始日 {date} 以降の日付を入力してください"
     error_numeric_required = "数値を入力してください"
+    error_min_length = "{min}文字以上で入力してください"
+    error_max_length = "{max}文字以下で入力してください"
+    error_regexp_mismatch = "形式が正しくありません(パターン: {regexp})"
     error_page_title_required = "ページタイトルを入力してください"
     error_page_title_duplicate = "既存のページタイトルと重複しています"
     error_no_matching_project = "該当するプロジェクトがありません"

@@ -54,6 +54,7 @@ class MessagesProto(Protocol):
     non_interactive_input_required: str
     """非TTY環境で対話入力に入ろうとした。求めていた入力を {message} に埋め込む。"""
     prompt_editor_input: str
+    prompt_press_enter_to_reopen: str
     """non_interactive_input_required の {message} に埋めるエディタ入力の呼び名"""
 
     # ---- common indicators ----
@@ -432,6 +433,12 @@ class MessagesProto(Protocol):
     error_date_after_start: str
     """{date}"""
     error_numeric_required: str
+    error_min_length: str
+    """{min}"""
+    error_max_length: str
+    """{max}"""
+    error_regexp_mismatch: str
+    """{regexp}"""
     error_page_title_required: str
     error_page_title_duplicate: str
     error_no_matching_project: str

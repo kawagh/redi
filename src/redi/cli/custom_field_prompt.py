@@ -14,6 +14,8 @@ from redi.cli.validator import (
     FloatValidator,
     IntValidator,
     RequiredValidator,
+    build_custom_field_validator,
+    check_custom_field_constraints,
 )
 from redi.i18n import messages
 from redi.service import version_service
@@ -115,10 +117,17 @@ def prompt_custom_field_value(
 
         # 長いテキスト
         case "text":
-            # 空のまま閉じられたらエディタを開き直す
+            # 空のまま閉じられたら開き直す。制約違反のときは書いた内容を残す
+            value = ""
             while True:
-                value = open_editor(initial_text=default_value)
+                value = open_editor(initial_text=value or default_value)
                 if value:
+                    err = check_custom_field_constraints(custom_field, value)
+                    if err:
+                        print(err)
+                        # エディタが画面を占有してメッセージを流してしまうため待つ
+                        prompt(messages.prompt_press_enter_to_reopen)
+                        continue
                     print(
                         messages.prompt_field_value.format(
                             name=name, value=shorten_to_oneline(value)
@@ -130,7 +139,9 @@ def prompt_custom_field_value(
         case "date":
             return prompt(
                 messages.prompt_custom_field_label.format(name=label),
-                validator=DateValidator(),
+                validator=build_custom_field_validator(
+                    custom_field, base=DateValidator()
+                ),
                 default=default_value,
             ).strip()
 
@@ -149,7 +160,9 @@ def prompt_custom_field_value(
         case "int":
             return prompt(
                 messages.prompt_custom_field_label.format(name=label),
-                validator=IntValidator(),
+                validator=build_custom_field_validator(
+                    custom_field, base=IntValidator()
+                ),
                 default=default_value,
             ).strip()
 
@@ -157,7 +170,9 @@ def prompt_custom_field_value(
         case "float":
             return prompt(
                 messages.prompt_custom_field_label.format(name=label),
-                validator=FloatValidator(),
+                validator=build_custom_field_validator(
+                    custom_field, base=FloatValidator()
+                ),
                 default=default_value,
             ).strip()
 
@@ -170,6 +185,8 @@ def prompt_custom_field_value(
         case _:
             return prompt(
                 messages.prompt_custom_field_label.format(name=label),
-                validator=RequiredValidator(),
+                validator=build_custom_field_validator(
+                    custom_field, base=RequiredValidator()
+                ),
                 default=default_value,
             ).strip()
