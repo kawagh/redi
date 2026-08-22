@@ -356,10 +356,9 @@ class TestMinLengthValidator:
         """空文字は未入力として必須チェック側に委ねるため通す"""
         MinLengthValidator(3).validate(Document(text=""))
 
-    @pytest.mark.parametrize("min_length", [0, None])
-    def test_zero_or_none_disables_check(self, min_length: int | None):
-        """min_length が 0 または None なら短い入力でも通る"""
-        MinLengthValidator(min_length).validate(Document(text="a"))
+    def test_none_disables_check(self):
+        """min_length が未設定(None)なら短い入力でも通る"""
+        MinLengthValidator(None).validate(Document(text="a"))
 
     def test_surrounding_whitespace_is_stripped(self):
         """前後の空白は除去してから長さを数えるため、空白で長さは稼げない"""
@@ -389,10 +388,9 @@ class TestMaxLengthValidator:
         """空文字は未入力として必須チェック側に委ねるため通す"""
         MaxLengthValidator(3).validate(Document(text=""))
 
-    @pytest.mark.parametrize("max_length", [0, None])
-    def test_zero_or_none_disables_check(self, max_length: int | None):
-        """max_length が 0 または None なら長い入力でも通る"""
-        MaxLengthValidator(max_length).validate(Document(text="a" * 100))
+    def test_none_disables_check(self):
+        """max_length が未設定(None)なら長い入力でも通る"""
+        MaxLengthValidator(None).validate(Document(text="a" * 100))
 
     def test_surrounding_whitespace_is_stripped(self):
         """前後の空白は除去してから長さを数える"""

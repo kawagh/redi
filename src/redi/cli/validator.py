@@ -145,7 +145,7 @@ class MinLengthValidator(Validator):
     """min_length 以上の長さを要求する Validator。空文字は必須チェックに委ねて通す。"""
 
     def __init__(self, min_length: int | None) -> None:
-        self.min_length = min_length or None
+        self.min_length = min_length
 
     def validate(self, document: Document) -> None:
         text = document.text.strip()
@@ -161,7 +161,7 @@ class MaxLengthValidator(Validator):
     """max_length 以下の長さを要求する Validator。空文字は必須チェックに委ねて通す。"""
 
     def __init__(self, max_length: int | None) -> None:
-        self.max_length = max_length or None
+        self.max_length = max_length
 
     def validate(self, document: Document) -> None:
         text = document.text.strip()
