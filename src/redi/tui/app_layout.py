@@ -35,9 +35,6 @@ from redi.tui.time_entry.filter_modal import (
 )
 from redi.tui.wiki.delete_modal import build_delete_float as build_wiki_delete_float
 
-# 幅を指定しないと prompt_toolkit は一覧の中身 (描画された行のうち最長のもの) から
-# 左ペインの幅を決めるため、ページ送りやフィルタで件名の長さが変わるたびに境界の桁位置が
-# 動いてしまう。preferred=0 で中身の幅を無視させ、余った幅を weight で左右に等分する。
 HALF = Dimension(weight=1, preferred=0)
 
 
