@@ -713,6 +713,9 @@ class Ja(MessagesProto):
     # ---- argparse helps (user) ----
     arg_help_user_command = arg_help_crud_subcommands
     arg_help_user_list = "ユーザー一覧"
+    arg_help_user_status = "ステータスで絞り込む（既定は active のみ）"
+    arg_help_user_name_filter = "ログイン名・氏名・メールアドレスへの部分一致で絞り込む"
+    arg_help_user_group_id = "所属グループIDで絞り込む"
     arg_help_user_create = "ユーザー作成（管理者権限が必要）"
     arg_help_user_login = "ログイン名"
     arg_help_user_firstname = "名"

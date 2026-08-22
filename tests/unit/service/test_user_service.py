@@ -8,14 +8,27 @@ from redi.service import user_service
 
 @pytest.fixture
 def stub_user_api(monkeypatch):
-    """api.user の取得系を差し替え、fetch_user に渡った include を `calls` に記録する。
+    """api.user の取得系を差し替え、渡った引数を記録する。
 
+    fetch_user の include は `calls` に、fetch_users のフィルタは `list_calls` に入る。
     Redmine は管理者で取得したときだけ `api_key` を返すため、スタブは常に含めて返す。
     """
 
     calls: list[dict] = []
+    list_calls: list[dict] = []
 
-    def fake_fetch_users():
+    def fake_fetch_users(
+        status=None, name=None, group_id=None, limit=None, offset=None
+    ):
+        list_calls.append(
+            {
+                "status": status,
+                "name": name,
+                "group_id": group_id,
+                "limit": limit,
+                "offset": offset,
+            }
+        )
         return [
             {"id": 1, "login": "admin", "api_key": "secret1"},
             {"id": 2, "login": "member", "api_key": "secret2"},
@@ -31,7 +44,7 @@ def stub_user_api(monkeypatch):
     monkeypatch.setattr(user_service.user_api, "fetch_users", fake_fetch_users)
     monkeypatch.setattr(user_service.user_api, "fetch_user", fake_fetch_user)
     monkeypatch.setattr(user_service.user_api, "create_user", fake_create_user)
-    return SimpleNamespace(calls=calls)
+    return SimpleNamespace(calls=calls, list_calls=list_calls)
 
 
 class TestApiKey:
@@ -57,6 +70,48 @@ class TestApiKey:
         )
 
         assert created == {"id": 3, "login": "new"}
+
+
+class TestListUsers:
+    """list_users がフィルタを API に渡す範囲"""
+
+    def test_no_filter_passes_nothing(self, stub_user_api):
+        """フィルタ未指定なら API にも渡さず、Redmine の既定 (active のみ) に任せる"""
+        user_service.list_users()
+
+        assert stub_user_api.list_calls == [
+            {
+                "status": None,
+                "name": None,
+                "group_id": None,
+                "limit": None,
+                "offset": None,
+            }
+        ]
+
+    @pytest.mark.parametrize(
+        ("status", "expected"),
+        [("active", 1), ("registered", 2), ("locked", 3)],
+    )
+    def test_status_is_mapped_to_api_number(self, stub_user_api, status, expected):
+        """status の名前を Redmine が定める数値に変換して渡す"""
+        user_service.list_users(status=status)
+
+        assert stub_user_api.list_calls[0]["status"] == expected
+
+    def test_name_and_group_id_are_passed_through(self, stub_user_api):
+        """name と group_id はそのまま渡す"""
+        user_service.list_users(name="kawagh", group_id=6)
+
+        assert stub_user_api.list_calls == [
+            {
+                "status": None,
+                "name": "kawagh",
+                "group_id": 6,
+                "limit": None,
+                "offset": None,
+            }
+        ]
 
 
 class TestReadUser:

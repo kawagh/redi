@@ -36,6 +36,13 @@ class User(TypedDict):
     groups: NotRequired[list[IdName]]
 
 
+# GET /users.json の status パラメータ。Redmine が定める数値との対応。
+USER_STATUS: dict[str, int] = {"active": 1, "registered": 2, "locked": 3}
+
+# 一覧を1回のリクエストで取る件数 (Redmine の上限は 100)
+USERS_PAGE_LIMIT = 100
+
+
 class UserNotFoundException(Exception):
     def __init__(self, user_id: str) -> None:
         super().__init__(user_id)
@@ -51,19 +58,73 @@ class UserPermissionDeniedException(Exception):
     """
 
 
-def fetch_users() -> list[User]:
-    """ユーザー一覧を取得する
+def _fetch_users_page(params: dict) -> dict:
+    """ユーザー一覧を1ページ分取得する
 
     Raises:
         UserPermissionDeniedException: 管理者権限が無い場合（HTTP 403）
         requests.exceptions.HTTPError: 403 以外の HTTP エラーが返った場合
     """
-    response = client.get("/users.json")
+    response = client.get("/users.json", params=params)
     if response.status_code == 403:
         raise UserPermissionDeniedException
     # 未知のステータスコードに遭遇した際にエラーをraiseする(jsonのdecodeエラーよりは原因がわかりやすい)
     response.raise_for_status()
-    return cast("list[User]", response.json()["users"])
+    return response.json()
+
+
+def fetch_users(
+    status: int | None = None,
+    name: str | None = None,
+    group_id: int | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> list[User]:
+    """条件に合うユーザーを取得する
+
+    limit / offset のどちらかを指定するとその1ページだけを返す。
+    どちらも未指定なら、Redmine の一覧 API が既定件数で打ち切るのを避けるため
+    `total_count` を見て全件揃うまで offset を進める。
+
+    Args:
+        status: `USER_STATUS` の数値。未指定なら Redmine の既定 (active のみ)
+        name: login / firstname / lastname / mail への部分一致
+        group_id: 所属グループ
+        limit: 取得件数
+        offset: 取得開始位置
+
+    Raises:
+        UserPermissionDeniedException: 管理者権限が無い場合（HTTP 403）
+        requests.exceptions.HTTPError: 403 以外の HTTP エラーが返った場合
+    """
+    filters: dict = {}
+    if status is not None:
+        filters["status"] = status
+    if name is not None:
+        filters["name"] = name
+    if group_id is not None:
+        filters["group_id"] = group_id
+
+    if limit is not None or offset is not None:
+        page_params = dict(filters)
+        if limit is not None:
+            page_params["limit"] = limit
+        if offset is not None:
+            page_params["offset"] = offset
+        return cast("list[User]", _fetch_users_page(page_params).get("users", []))
+
+    users: list[User] = []
+    page_offset = 0
+    while True:
+        data = _fetch_users_page(
+            {**filters, "limit": USERS_PAGE_LIMIT, "offset": page_offset}
+        )
+        page = cast("list[User]", data.get("users", []))
+        users.extend(page)
+        total_count = data.get("total_count")
+        if not page or total_count is None or len(users) >= total_count:
+            return users
+        page_offset += len(page)
 
 
 def fetch_user(user_id: str, include: list[str] | None = None) -> User:

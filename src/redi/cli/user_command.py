@@ -8,7 +8,7 @@ from redi.api.exceptions import print_http_error_body
 from redi.api.user import User, UserNotFoundException, UserPermissionDeniedException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
-from redi.cli.shared_options import full_option_parser
+from redi.cli.shared_options import SharedOptionParser
 from redi.i18n import messages
 from redi.service import user_service
 
@@ -83,10 +83,19 @@ def _create_user(
     )
 
 
-def _list_users(full: bool = False) -> None:
+def _list_users(
+    status: str | None = None,
+    name: str | None = None,
+    group_id: int | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    full: bool = False,
+) -> None:
     """ユーザー一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
     try:
-        users = user_service.list_users()
+        users = user_service.list_users(
+            status=status, name=name, group_id=group_id, limit=limit, offset=offset
+        )
     except UserPermissionDeniedException:
         print(messages.user_list_admin_required)
         print(messages.user_list_member_hint)
@@ -206,6 +215,22 @@ def _delete_user(user_id: str) -> None:
     print(messages.user_deleted.format(id=user_id))
 
 
+def _user_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
+    """user の一覧フィルタと出力形式のオプション"""
+    parser = SharedOptionParser(postfix=postfix)
+    parser.add_argument(
+        "--status",
+        choices=user_service.USER_STATUS_CHOICES,
+        help=messages.arg_help_user_status,
+    )
+    parser.add_argument("--name", help=messages.arg_help_user_name_filter)
+    parser.add_argument("--group_id", type=int, help=messages.arg_help_user_group_id)
+    parser.add_argument("--limit", type=int, help=messages.arg_help_limit)
+    parser.add_argument("--offset", type=int, help=messages.arg_help_offset)
+    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    return parser
+
+
 def add_user_parser(
     subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
 ) -> None:
@@ -213,14 +238,14 @@ def add_user_parser(
         "user",
         aliases=["u"],
         help=messages.arg_help_user_command,
-        parents=[*parents, full_option_parser()],
+        parents=[*parents, _user_list_option_parser()],
     )
     u_subparsers = u_parser.add_subparsers(dest="user_command")
     u_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_user_list,
-        parents=[*parents, full_option_parser(postfix=True)],
+        parents=[*parents, _user_list_option_parser(postfix=True)],
     )
     u_create_parser = u_subparsers.add_parser(
         "create", aliases=["c"], help=messages.arg_help_user_create, parents=parents
@@ -352,4 +377,11 @@ def handle_user(args: argparse.Namespace) -> None:
         _delete_user(args.user_id)
         return
     if cmd == "list" or cmd is None:
-        _list_users(full=args.full)
+        _list_users(
+            status=args.status,
+            name=args.name,
+            group_id=args.group_id,
+            limit=args.limit,
+            offset=args.offset,
+            full=args.full,
+        )

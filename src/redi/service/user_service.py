@@ -12,6 +12,9 @@ from redi.api.user import User
 # 詳細表示で併せて取得する情報
 _DETAIL_INCLUDE = ["memberships", "groups"]
 
+# `--status` で受け付ける値。API の数値は呼び出し元に見せない
+USER_STATUS_CHOICES = list(user_api.USER_STATUS)
+
 
 def user_url(user_id: str | int) -> str:
     """ユーザーの Web UI 上の URL を組み立てる。"""
@@ -27,14 +30,34 @@ def pop_apikey(user: User) -> User:
     return user
 
 
-def list_users() -> list[User]:
+def list_users(
+    status: str | None = None,
+    name: str | None = None,
+    group_id: int | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> list[User]:
     """ユーザー一覧を取得する。
+
+    Args:
+        status: `USER_STATUS_CHOICES` のいずれか。未指定なら Redmine の既定 (active のみ)
+        name: login / firstname / lastname / mail への部分一致
+        group_id: 所属グループ
+        limit: 取得件数。offset と共に未指定なら全件
+        offset: 取得開始位置
 
     Raises:
         UserPermissionDeniedException: 管理者権限が無い (HTTP 403)
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
-    return [pop_apikey(user) for user in user_api.fetch_users()]
+    users = user_api.fetch_users(
+        status=user_api.USER_STATUS[status] if status is not None else None,
+        name=name,
+        group_id=group_id,
+        limit=limit,
+        offset=offset,
+    )
+    return [pop_apikey(user) for user in users]
 
 
 def read_user(user_id: str, detail: bool = False) -> User:

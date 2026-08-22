@@ -252,8 +252,16 @@ redi search "keyword" --attachments only # 0: description only, 1: description a
 redi search "keyword" --limit 10 --offset 10
 redi search "keyword" --full # output full JSON
 
+# user (alias: u, admin required)
+redi user # list users
+redi user list --status locked # active / registered / locked (default: active only)
+redi user list --name kawagh # partial match on login / firstname / lastname / mail
+redi user list --group_id <group_id> # members of the group
+redi user --status locked list # filters can be placed before the subcommand too
+redi user list --limit 10 --offset 10 # `list` returns all users unless limited
+redi user list --full # output full JSON
+
 # others
-redi user # list users (alias: u)
 redi tracker # list trackers (alias: t)
 redi tracker list # 同上 (以下の一覧専用リソースも `list` / `l` を受け付ける)
 redi issue_status # list issue statuses (alias: is)

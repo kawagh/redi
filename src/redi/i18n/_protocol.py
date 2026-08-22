@@ -856,6 +856,9 @@ class MessagesProto(Protocol):
     # ---- argparse helps (user) ----
     arg_help_user_command: str
     arg_help_user_list: str
+    arg_help_user_status: str
+    arg_help_user_name_filter: str
+    arg_help_user_group_id: str
     arg_help_user_create: str
     arg_help_user_login: str
     arg_help_user_firstname: str
