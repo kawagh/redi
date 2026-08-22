@@ -136,7 +136,9 @@ def prompt_custom_field_value(
         case "date":
             return prompt(
                 messages.prompt_custom_field_label.format(name=label),
-                validator=DateValidator(),
+                validator=build_custom_field_validator(
+                    custom_field, base=DateValidator()
+                ),
                 default=default_value,
             ).strip()
 
@@ -155,7 +157,9 @@ def prompt_custom_field_value(
         case "int":
             return prompt(
                 messages.prompt_custom_field_label.format(name=label),
-                validator=IntValidator(),
+                validator=build_custom_field_validator(
+                    custom_field, base=IntValidator()
+                ),
                 default=default_value,
             ).strip()
 
@@ -163,7 +167,9 @@ def prompt_custom_field_value(
         case "float":
             return prompt(
                 messages.prompt_custom_field_label.format(name=label),
-                validator=FloatValidator(),
+                validator=build_custom_field_validator(
+                    custom_field, base=FloatValidator()
+                ),
                 default=default_value,
             ).strip()
 
