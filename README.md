@@ -155,6 +155,7 @@ redi issue view <issue_id> --include children,watchers # relations, attachments 
 redi issue create # (interactive)
 redi issue create "subject" -p <project_id> -t <tracker_id> -a <user_id> -d "description"
 redi issue create "subject" -p <project_id> --full # output created issue as full JSON
+redi issue create -d "description" -- "-subject starting with a hyphen" # put options before --
 redi issue update <issue_id> # (interactive)
 redi issue update <issue_id> --status_id <status_id> -n "notes"
 redi issue update <issue_id> --start_date 2026-04-26 --due_date 2026-05-31 --estimated_hours 1.5

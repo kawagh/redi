@@ -556,8 +556,23 @@ class En(MessagesProto):
     tui_wiki_delete_modal_empty = 'Enter "{expected}"'
     tui_wiki_delete_modal_hint = "Enter:confirm Esc:close"
 
+    # ---- argparse errors ----
+    arg_error_hyphen_prefixed_value = (
+        "'{arg}' is parsed as the value of option '{option}', "
+        "so it never reaches the positional argument\n"
+        "To pass it as a positional argument (a subject, for example), "
+        "put the other options first and place it after '--':\n"
+        "  {prog} [SUBCOMMAND/OPTIONS...] -- '{arg}'\n"
+        "To pass it as an option value, join them with '=': {option}='...'"
+    )
+
     # ---- argparse helps (root) ----
     arg_help_root_description = "Redmine CLI"
+    arg_help_root_epilog = (
+        "A subject or title starting with '-' cannot be told apart from an option. "
+        "Put the other options first and place it after '--' "
+        "(e.g. redi issue create --description body -- '-d subject')"
+    )
     arg_help_tui = "TUI"
     arg_help_debug = "Enable debug logging"
     arg_help_debug_tui = "Dump TUI screen contents to a YAML log"
