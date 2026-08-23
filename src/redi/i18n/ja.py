@@ -521,7 +521,7 @@ class Ja(MessagesProto):
     meta_issue = "イシュー"
     tui_preview_comments_header = "コメント:"
     tui_comment_select_status_hint = (
-        "コメント選択: jk:移動 u:更新 D:削除 Esc/q:キャンセル"
+        "コメント選択: jk:移動 C-d/C-u:スクロール u:更新 D:削除 Esc/q:キャンセル"
     )
     tui_comment_edit_canceled_empty = "コメントが空のためキャンセル"
     tui_comment_delete_prompt = "コメントを削除しますか? {summary} [y/N]"
