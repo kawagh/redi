@@ -510,6 +510,50 @@ class TestReadProfile:
         )
 
 
+class TestShowConfig:
+    """show_config()は現在参照しているプロファイルが分かる形で設定値を表示する"""
+
+    def test_outputs_current_profile_as_default(self, monkeypatch, capsys):
+        """default_profile 由来のプロファイル名が既定として先頭に出る"""
+        monkeypatch.setattr(config, "current_profile", "main")
+        monkeypatch.setattr(config, "profile_explicit", False)
+
+        config.show_config()
+
+        out = capsys.readouterr().out
+        assert out.splitlines()[0].startswith('profile = "main"')
+        assert "--profile" not in out
+
+    def test_marks_profile_overridden_by_option(self, monkeypatch, capsys):
+        """--profile での一時上書きは既定と区別できる表記になる"""
+        monkeypatch.setattr(config, "current_profile", "sub")
+        monkeypatch.setattr(config, "profile_explicit", True)
+
+        config.show_config()
+
+        out = capsys.readouterr().out
+        assert out.splitlines()[0].startswith('profile = "sub"')
+        assert "--profile" in out
+
+    def test_output_is_valid_toml(self, monkeypatch, capsys):
+        """プロファイル名を足してもTOMLとして読める(由来はコメントで添える)"""
+        monkeypatch.setattr(config, "current_profile", "main")
+        monkeypatch.setattr(config, "profile_explicit", True)
+
+        config.show_config()
+
+        doc = tomllib.loads(capsys.readouterr().out)
+        assert doc["profile"] == "main"
+
+    def test_omits_profile_line_when_unknown(self, monkeypatch, capsys):
+        """プロファイルが決まっていない場合はプロファイル行を出さない"""
+        monkeypatch.setattr(config, "current_profile", None)
+
+        config.show_config()
+
+        assert "profile = " not in capsys.readouterr().out
+
+
 class TestShowAllProfiles:
     """show_all_profiles()はconfig_path指定時にそのファイルの全プロファイルを表示する"""
 
@@ -537,6 +581,31 @@ class TestShowAllProfiles:
         assert doc["default_profile"] == "main"
         assert doc["main"]["redmine_url"] == "https://redmine.example.com/main"
         assert doc["sub"]["redmine_url"] == "https://redmine.example.com/sub"
+
+    def test_shows_current_profile(self, tmp_path, monkeypatch, capsys):
+        """default_profileとは別に、今回使われたプロファイルが分かる"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+
+            [sub]
+            redmine_url = "https://redmine.example.com/sub"
+        """)
+        )
+        monkeypatch.setattr(config, "current_profile", "sub")
+        monkeypatch.setattr(config, "profile_explicit", True)
+
+        config.show_all_profiles(config_path=config_path)
+
+        out = capsys.readouterr().out
+        assert "sub" in out.splitlines()[0]
+        assert "--profile" in out.splitlines()[0]
+        # コメント行を足してもTOMLとして読めるまま
+        assert tomllib.loads(out)["default_profile"] == "main"
 
     def test_hides_api_key(self, tmp_path, capsys):
         """APIキーは出力に含まれない"""
@@ -648,8 +717,9 @@ class TestResolveMergedConfig:
 def restore_config():
     """apply_profile() は設定値のグローバルを書き換えるので、テスト後に元へ戻す"""
     original_profile = config.current_profile
+    original_explicit = config.profile_explicit
     yield
-    config.apply_profile(original_profile)
+    config.apply_profile(original_profile, explicit=original_explicit)
 
 
 @pytest.mark.usefixtures("restore_config")
@@ -663,6 +733,16 @@ class TestApplyProfile:
         assert config.current_profile == "sub"
         assert config.redmine_url == "https://sub.example.com"
         assert config.redmine_api_key == "secret-sub"
+
+    def test_records_whether_profile_was_given_by_option(
+        self, two_profiles, no_redmine_env
+    ):
+        """--profile 由来かどうかを保持し、既定との区別に使えるようにする"""
+        config.apply_profile("sub", config_path=two_profiles, explicit=True)
+        assert config.profile_explicit is True
+
+        config.apply_profile("main", config_path=two_profiles)
+        assert config.profile_explicit is False
 
     def test_clears_previous_profile_values(self, two_profiles, no_redmine_env):
         """前のプロファイルにしか無い項目は切替後に残らない"""

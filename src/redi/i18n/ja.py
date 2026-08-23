@@ -923,6 +923,9 @@ class Ja(MessagesProto):
 
     # ---- config_command suffix ----
     config_profile_suffix = "（profile: {name}）"
+    config_profile_source_default = "既定"
+    config_profile_source_option = "--profile 指定"
+    config_current_profile_comment = "# 現在のプロファイル: {name}（{source}）"
 
     # ---- TUI help labels (sections / common) ----
     tui_help_section_navigation = "移動"

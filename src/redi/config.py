@@ -103,6 +103,8 @@ def resolve_profile_name(toml: dict, argv: list[str]) -> tuple[str | None, bool]
 
 # 設定値。下の起動時解決で `apply_profile()` が入れる。
 current_profile: str | None = None
+# 現在のプロファイルが `--profile` による一時上書きか(False なら default_profile 由来)
+profile_explicit: bool = False
 redmine_url: str = ""
 redmine_api_key: str = ""
 default_project_id: str | None = None
@@ -126,17 +128,25 @@ def resolve_merged_config(profile_name: str | None, toml_doc: dict) -> Profile:
     return DEFAULT_PROFILE.merge(profile).merge(load_env_config())
 
 
-def apply_profile(profile_name: str | None, config_path: Path | None = None) -> None:
+def apply_profile(
+    profile_name: str | None,
+    config_path: Path | None = None,
+    explicit: bool = False,
+) -> None:
     """プロファイルを適用して設定値を貼り替える。起動時も実行時の切替もここを通る。
 
     各モジュールは `config.X` で都度参照するので貼り替えるだけで伝わるが、`client` は
     接続先を抱えているので呼び出し側で `reconfigure()` も呼ぶこと。
+
+    `explicit` は `--profile` による一時上書きかどうか。`redi config` の出力で
+    既定のプロファイルと区別して見せるために持つ。
     """
-    global current_profile, redmine_url, redmine_api_key
+    global current_profile, profile_explicit, redmine_url, redmine_api_key
     global default_project_id, wiki_project_id, editor, language
 
     profile = resolve_merged_config(profile_name, load_toml(config_path))
     current_profile = profile_name
+    profile_explicit = explicit
     # 未設定は None だが、参照側が常に文字列を前提にしているため空文字に均す
     redmine_url = profile.redmine_url or ""
     redmine_api_key = profile.redmine_api_key or ""
@@ -166,7 +176,7 @@ if (
 ):
     print(f"profile '{_profile_name}' not found in {CONFIG_PATH}", file=sys.stderr)
     sys.exit(1)
-apply_profile(_profile_name)
+apply_profile(_profile_name, explicit=_profile_explicit)
 
 
 def check_config() -> None:
@@ -299,11 +309,25 @@ def read_profile(profile_name: str, config_path: Path | None = None) -> Profile:
     return Profile.from_dict(value) if isinstance(value, dict) else Profile()
 
 
+def profile_source_label() -> str:
+    """今のプロファイルが既定か `--profile` 上書きかを表す表示用ラベルを返す。"""
+    from redi.i18n import messages
+
+    return (
+        messages.config_profile_source_option
+        if profile_explicit
+        else messages.config_profile_source_default
+    )
+
+
 def show_config(full: bool = False, config_path: Path | None = None) -> None:
     if full:
         show_all_profiles(config_path=config_path)
         return
     doc = tomlkit.document()
+    # 出力を TOML として読めるまま保つため、由来はコメントで添える
+    if current_profile:
+        doc["profile"] = tomlkit.item(current_profile).comment(profile_source_label())
     doc["redmine_url"] = redmine_url
     doc["default_project_id"] = default_project_id or ""
     doc["wiki_project_id"] = wiki_project_id or ""
@@ -323,4 +347,13 @@ def show_all_profiles(config_path: Path | None = None) -> None:
         value = doc[key]
         if isinstance(value, Table) and "redmine_api_key" in value:
             del value["redmine_api_key"]
+    # default_profile は既定値でしかないので、今回使われたプロファイルを別に示す
+    if current_profile:
+        from redi.i18n import messages
+
+        print(
+            messages.config_current_profile_comment.format(
+                name=current_profile, source=profile_source_label()
+            )
+        )
     print(tomlkit.dumps(doc).rstrip())
