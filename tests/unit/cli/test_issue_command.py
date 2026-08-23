@@ -3,19 +3,33 @@ import json
 from typing import cast
 
 import pytest
+import requests
 
 from redi import config
-from redi.api.exceptions import ProjectNotFoundException
+from redi.api.exceptions import ProjectNotFoundException, RedmineValidationException
 from redi.api.issue import Issue
+from redi.cli import editor as editor_module
 from redi.cli.issue_command import add_issue_parser
 from redi.cli.issue_command import create as create_module
 from redi.cli.issue_command import dispatch as dispatch_module
+from redi.cli.issue_command import update as update_module
 from redi.cli.issue_command import view as view_module
 from redi.cli.issue_command.create import IssueCreateArgs, handle_issue_create
-from redi.cli.issue_command.update import IssueUpdateArgs
+from redi.cli.issue_command.update import IssueUpdateArgs, handle_issue_update
 from redi.i18n import messages
 
 CREATED_ISSUE = {"id": 123, "subject": "件名"}
+
+
+def _raise_http_error(status_code: int):
+    """指定したステータスコードの HTTPError を投げるスタブを返す"""
+    response = requests.Response()
+    response.status_code = status_code
+
+    def _raise(**kwargs):
+        raise requests.exceptions.HTTPError(f"{status_code} Error", response=response)
+
+    return _raise
 
 
 def parse_issue_args(argv: list[str]) -> argparse.Namespace:
@@ -108,6 +122,102 @@ class TestIssueCreateArgsFromNamespace:
         create_args = IssueCreateArgs.from_namespace(args)
 
         assert create_args.full is True
+
+
+class TestBodyIsSavedOnFailure:
+    """送信に失敗したとき、エディタで書いた本文を一時ファイルへ退避する
+
+    422 (バリデーションエラー) だけでなく 404 / 500 などの HTTP エラーでも
+    退避されること。失敗経路によって本文が失われるのを防ぐ。
+    """
+
+    @pytest.fixture
+    def saved_paths(self, monkeypatch):
+        """退避先を固定し、退避された本文を集める"""
+        saved: list[str] = []
+
+        def fake_save(text: str) -> str:
+            saved.append(text)
+            return "/tmp/redi-test.md"
+
+        monkeypatch.setattr(editor_module, "save_text_to_tempfile", fake_save)
+        return saved
+
+    @pytest.mark.parametrize("status_code", [404, 500])
+    def test_create_saves_body_on_http_error(
+        self, monkeypatch, capsys, saved_paths, status_code
+    ):
+        """`issue create` が HTTP エラーで失敗しても本文が退避される"""
+        monkeypatch.setattr(
+            create_module.issue_service,
+            "create_issue",
+            _raise_http_error(status_code),
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            handle_issue_create(
+                parse_issue_args(
+                    ["issue", "create", "件名", "-p", "demo", "-d", "消えると困る本文"]
+                )
+            )
+
+        assert exc_info.value.code == 1
+        assert saved_paths == ["消えると困る本文"]
+        assert "/tmp/redi-test.md" in capsys.readouterr().out
+
+    def test_create_saves_body_on_validation_error(self, monkeypatch, saved_paths):
+        """`issue create` が 422 で失敗しても本文が退避される"""
+
+        def _raise(**kwargs):
+            raise RedmineValidationException("issue", "create", ["Subject is invalid"])
+
+        monkeypatch.setattr(create_module.issue_service, "create_issue", _raise)
+
+        with pytest.raises(RedmineValidationException):
+            handle_issue_create(
+                parse_issue_args(
+                    ["issue", "create", "件名", "-p", "demo", "-d", "消えると困る本文"]
+                )
+            )
+
+        assert saved_paths == ["消えると困る本文"]
+
+    @pytest.mark.parametrize("status_code", [404, 500])
+    def test_update_saves_body_on_http_error(
+        self, monkeypatch, capsys, saved_paths, status_code
+    ):
+        """`issue update` が HTTP エラーで失敗しても本文が退避される"""
+        monkeypatch.setattr(
+            update_module.issue_service,
+            "update_issue",
+            _raise_http_error(status_code),
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            handle_issue_update(
+                parse_issue_args(["issue", "update", "1", "-d", "消えると困る本文"])
+            )
+
+        assert exc_info.value.code == 1
+        assert saved_paths == ["消えると困る本文"]
+        assert "/tmp/redi-test.md" in capsys.readouterr().out
+
+    def test_update_saves_body_on_validation_error(self, monkeypatch, saved_paths):
+        """`issue update` が 422 で失敗しても本文が退避される"""
+
+        def _raise(**kwargs):
+            raise RedmineValidationException(
+                "issue", "update", ["Parent task is invalid"]
+            )
+
+        monkeypatch.setattr(update_module.issue_service, "update_issue", _raise)
+
+        with pytest.raises(RedmineValidationException):
+            handle_issue_update(
+                parse_issue_args(["issue", "update", "1", "-d", "消えると困る本文"])
+            )
+
+        assert saved_paths == ["消えると困る本文"]
 
 
 class TestIssueListNotFound:
