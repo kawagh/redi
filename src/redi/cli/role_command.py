@@ -108,7 +108,7 @@ def add_role_parser(
         "view", aliases=["v"], help=messages.arg_help_role_view, parents=parents
     )
     role_view_parser.add_argument("role_id", help=messages.arg_help_role_view_id)
-    add_format_options(role_view_parser)
+    add_format_options(role_view_parser, postfix=True)
 
 
 def handle_role(args: argparse.Namespace) -> None:
