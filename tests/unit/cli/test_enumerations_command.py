@@ -59,6 +59,117 @@ class TestCustomFieldPermission:
         assert messages.custom_field_admin_required in capsys.readouterr().out
 
 
+class TestCustomFieldView:
+    """`custom_field view <id>` は一覧から 1 件を絞り込んで詳細を表示する"""
+
+    @pytest.fixture(autouse=True)
+    def custom_fields(self, monkeypatch):
+        monkeypatch.setattr(
+            enumerations_command,
+            "fetch_custom_fields",
+            lambda refresh=False: [
+                {
+                    "id": 1,
+                    "name": "ドロップダウン",
+                    "description": "選べる値",
+                    "customized_type": "issue",
+                    "field_format": "list",
+                    "regexp": "^A",
+                    "min_length": 1,
+                    "max_length": 10,
+                    "is_required": True,
+                    "default_value": "A",
+                    "possible_values": [{"value": "A", "label": "A"}],
+                    "trackers": [{"id": 1, "name": "バグ"}],
+                    "roles": [{"id": 3, "name": "開発者"}],
+                },
+                {
+                    "id": 2,
+                    "name": "キーバリュー",
+                    "description": "",
+                    "customized_type": "issue",
+                    "field_format": "enumeration",
+                    "regexp": "",
+                    "min_length": None,
+                    "max_length": None,
+                    "is_required": False,
+                    "default_value": None,
+                    "possible_values": [{"value": "10", "label": "高"}],
+                    "trackers": [],
+                    "roles": [],
+                },
+            ],
+        )
+
+    def _view(self, custom_field_id, full=False):
+        enumerations_command.handle_custom_field(
+            argparse.Namespace(
+                full=full,
+                refresh=False,
+                custom_field_command="view",
+                custom_field_id=custom_field_id,
+            )
+        )
+
+    def test_prints_detail_of_the_specified_id(self, capsys):
+        """id で指定した 1 件の項目と選択肢を出す"""
+        self._view("1")
+
+        out = capsys.readouterr().out
+        assert out.startswith("1 ドロップダウン\n")
+        assert messages.label_description_field.format(value="選べる値") in out
+        assert messages.label_customized_type.format(value="issue") in out
+        assert messages.label_field_format.format(value="list") in out
+        assert messages.label_is_required.format(value=messages.label_bool_true) in out
+        assert messages.label_default_value.format(value="A") in out
+        assert messages.label_regexp.format(value="^A") in out
+        assert messages.label_min_length.format(value=1) in out
+        assert messages.label_max_length.format(value=10) in out
+        assert messages.label_possible_values_header in out
+        assert "  A\n" in out
+        assert messages.label_trackers_header in out
+        assert "  1 バグ\n" in out
+        assert messages.label_roles_header in out
+        assert "  3 開発者" in out
+        # 一覧ではなく指定した 1 件だけを出す
+        assert "キーバリュー" not in out
+
+    def test_prints_value_and_label_for_enumeration(self, capsys):
+        """enumeration 形式の選択肢は value(id) と label を並べて出す"""
+        self._view("2")
+
+        assert "  10 高\n" in capsys.readouterr().out
+
+    def test_omits_empty_fields(self, capsys):
+        """空・未設定の項目は行ごと出さない"""
+        self._view("2")
+
+        out = capsys.readouterr().out
+        assert messages.label_description_field.format(value="") not in out
+        assert messages.label_regexp.format(value="") not in out
+        assert messages.label_min_length.format(value="") not in out
+        assert messages.label_max_length.format(value="") not in out
+        assert messages.label_default_value.format(value="") not in out
+        assert messages.label_trackers_header not in out
+        assert messages.label_roles_header not in out
+
+    def test_full_prints_json_of_the_single_custom_field(self, capsys):
+        """--full では該当する 1 件だけを JSON で出す"""
+        self._view("1", full=True)
+
+        assert json.loads(capsys.readouterr().out)["id"] == 1
+
+    def test_exits_when_id_is_unknown(self, capsys):
+        """存在しない id を指定したときは理由を示して終了する"""
+        with pytest.raises(SystemExit) as e:
+            self._view("99")
+
+        assert e.value.code == 1
+        assert (
+            messages.custom_field_not_found.format(id="99") in capsys.readouterr().out
+        )
+
+
 class TestRefreshIsPassedToFetch:
     """--refresh はハンドラから fetch にそのまま渡される"""
 

@@ -4,7 +4,7 @@ import sys
 from collections.abc import Iterable, Mapping
 from typing import Any
 
-from redi.api.custom_field import fetch_custom_fields
+from redi.api.custom_field import CustomField, fetch_custom_fields, find_custom_field
 from redi.api.enumeration import (
     fetch_document_categories,
     fetch_issue_priorities,
@@ -13,6 +13,7 @@ from redi.api.enumeration import (
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.query import fetch_queries
 from redi.api.tracker import fetch_trackers
+from redi.cli.alias import resolve_alias
 from redi.i18n import messages
 
 
@@ -33,11 +34,12 @@ def _add_list_subparser(
     parents: list[argparse.ArgumentParser],
     *,
     cached: bool = False,
-) -> None:
-    """一覧専用リソースに list (alias: l) サブコマンドを追加する
+) -> argparse._SubParsersAction:
+    """リソースに list (alias: l) サブコマンドを追加し、その subparsers を返す
 
     引数無しの呼び出しと同じ挙動になるよう、handle 側では dest を参照しない。
     cached=True のリソースは応答をキャッシュするので --refresh も受け付ける。
+    戻り値の subparsers に list 以外のサブコマンドを足せる。
     """
     subparsers = parser.add_subparsers(dest=dest)
     list_parser = subparsers.add_parser(
@@ -52,6 +54,7 @@ def _add_list_subparser(
     )
     if cached:
         _add_refresh_option(list_parser, postfix=True)
+    return subparsers
 
 
 def _add_refresh_option(
@@ -232,13 +235,98 @@ def add_custom_field_parser(
         "--full", action="store_true", help=messages.arg_help_full_json
     )
     _add_refresh_option(cf_parser)
-    _add_list_subparser(
+    cf_subparsers = _add_list_subparser(
         cf_parser,
         "custom_field_command",
         messages.arg_help_custom_field_list,
         parents,
         cached=True,
     )
+    cf_view_parser = cf_subparsers.add_parser(
+        "view",
+        aliases=["v"],
+        help=messages.arg_help_custom_field_view,
+        parents=parents,
+    )
+    cf_view_parser.add_argument(
+        "custom_field_id", help=messages.arg_help_custom_field_view_id
+    )
+    cf_view_parser.add_argument(
+        "--full",
+        action="store_true",
+        # 未指定時に親パーサの --full を上書きしないようにする
+        default=argparse.SUPPRESS,
+        help=messages.arg_help_full_json,
+    )
+    _add_refresh_option(cf_view_parser, postfix=True)
+
+
+def _format_bool(value: bool) -> str:
+    return messages.label_bool_true if value else messages.label_bool_false
+
+
+def _format_possible_value(possible_value: Mapping[str, Any]) -> str:
+    """possible_values の 1 件を表示用の文字列にする。
+
+    enumeration 形式は value が id・label が表示名なので両方出す。
+    list 形式は value と label が同じ値なので value だけ出す。
+    """
+    value = str(possible_value.get("value", ""))
+    label = str(possible_value.get("label", ""))
+    if label and label != value:
+        return f"{value} {label}"
+    return value
+
+
+def _print_custom_field(custom_field: CustomField, full: bool) -> None:
+    """カスタムフィールド 1 件の詳細を表示する。"""
+    if full:
+        print(json.dumps(custom_field, ensure_ascii=False))
+        return
+    lines = [f"{custom_field['id']} {custom_field['name']}"]
+    if custom_field.get("description"):
+        lines.append(
+            messages.label_description_field.format(value=custom_field["description"])
+        )
+    if custom_field.get("customized_type"):
+        lines.append(
+            messages.label_customized_type.format(value=custom_field["customized_type"])
+        )
+    if custom_field.get("field_format"):
+        lines.append(
+            messages.label_field_format.format(value=custom_field["field_format"])
+        )
+    lines.append(
+        messages.label_is_required.format(
+            value=_format_bool(bool(custom_field.get("is_required")))
+        )
+    )
+    if custom_field.get("default_value"):
+        lines.append(
+            messages.label_default_value.format(value=custom_field["default_value"])
+        )
+    if custom_field.get("regexp"):
+        lines.append(messages.label_regexp.format(value=custom_field["regexp"]))
+    if custom_field.get("min_length") is not None:
+        lines.append(messages.label_min_length.format(value=custom_field["min_length"]))
+    if custom_field.get("max_length") is not None:
+        lines.append(messages.label_max_length.format(value=custom_field["max_length"]))
+    possible_values = custom_field.get("possible_values") or []
+    if possible_values:
+        lines.append(messages.label_possible_values_header)
+        for pv in possible_values:
+            lines.append(f"  {_format_possible_value(pv)}")
+    trackers = custom_field.get("trackers") or []
+    if trackers:
+        lines.append(messages.label_trackers_header)
+        for tracker in trackers:
+            lines.append(f"  {tracker['id']} {tracker['name']}")
+    roles = custom_field.get("roles") or []
+    if roles:
+        lines.append(messages.label_roles_header)
+        for role in roles:
+            lines.append(f"  {role['id']} {role['name']}")
+    print("\n".join(lines))
 
 
 def handle_custom_field(args: argparse.Namespace) -> None:
@@ -246,4 +334,12 @@ def handle_custom_field(args: argparse.Namespace) -> None:
     if custom_fields is None:
         print(messages.custom_field_admin_required)
         sys.exit(1)
+    if resolve_alias(args.custom_field_command) == "view":
+        # /custom_fields/:id.json が無いので一覧から絞り込む
+        custom_field = find_custom_field(custom_fields, args.custom_field_id)
+        if custom_field is None:
+            print(messages.custom_field_not_found.format(id=args.custom_field_id))
+            sys.exit(1)
+        _print_custom_field(custom_field, args.full)
+        return
     _print_id_name_list(custom_fields, args.full)

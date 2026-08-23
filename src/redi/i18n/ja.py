@@ -91,6 +91,7 @@ class Ja(MessagesProto):
     user_update_admin_required = "ユーザーの更新には管理者権限が必要です"
     user_delete_admin_required = "ユーザーの削除には管理者権限が必要です"
     custom_field_admin_required = "カスタムフィールドの取得には管理者権限が必要です"
+    custom_field_not_found = "カスタムフィールドが見つかりません: #{id}"
     project_permission_denied = (
         "プロジェクトを参照できません: {id} (アーカイブ済みか閲覧権限がありません)"
     )
@@ -427,6 +428,14 @@ class Ja(MessagesProto):
     label_comments_field = "  コメント: {value}"
     label_user_in_te = "  ユーザー: {name} (id={id})"
     label_project_in_te = "  プロジェクト: {name} (id={id})"
+    label_customized_type = "対象: {value}"
+    label_field_format = "形式: {value}"
+    label_is_required = "必須: {value}"
+    label_default_value = "デフォルト値: {value}"
+    label_regexp = "正規表現: {value}"
+    label_min_length = "最小長: {value}"
+    label_max_length = "最大長: {value}"
+    label_possible_values_header = "選択肢:"
 
     # ---- relation labels ----
     relation_label_relates = "関連している"
@@ -568,7 +577,7 @@ class Ja(MessagesProto):
 
     # ---- argparse helps (subcommand summary) ----
     arg_help_crud_subcommands = "list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除"
-    arg_help_role_subcommands = "list(l): 一覧, view(v): 詳細"
+    arg_help_list_view_subcommands = "list(l): 一覧, view(v): 詳細"
     arg_help_file_subcommands = "list(l): 一覧, create(c): アップロード"
     arg_help_list_only_subcommands = "list(l): 一覧"
 
@@ -856,7 +865,7 @@ class Ja(MessagesProto):
     arg_help_file_description = "説明"
 
     # ---- argparse helps (role) ----
-    arg_help_role_command = arg_help_role_subcommands
+    arg_help_role_command = arg_help_list_view_subcommands
     arg_help_role_list = "ロール一覧"
     arg_help_role_view = "ロール詳細"
     arg_help_role_view_id = "ロールID"
@@ -909,8 +918,10 @@ class Ja(MessagesProto):
     arg_help_document_category_list = "文書カテゴリ一覧"
     arg_help_query_command = arg_help_list_only_subcommands
     arg_help_query_list = "カスタムクエリ一覧"
-    arg_help_custom_field_command = arg_help_list_only_subcommands
+    arg_help_custom_field_command = arg_help_list_view_subcommands
     arg_help_custom_field_list = "カスタムフィールド一覧"
+    arg_help_custom_field_view = "カスタムフィールド詳細"
+    arg_help_custom_field_view_id = "カスタムフィールドID"
 
     # ---- argparse helps (issue_template) ----
     arg_help_issue_template_command = (
