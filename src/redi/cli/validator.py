@@ -103,11 +103,12 @@ class IntValidator(Validator):
             raise ValidationError(message=messages.error_numeric_required)
 
 
-def is_iso_date(text: str) -> bool:
+def is_yyyy_mm_dd(text: str) -> bool:
     """YYYY-MM-DD 形式で、かつ実在する日付かどうかを返す。
 
-    `date.fromisoformat` だけでは `20260426` のような別の ISO 表記も通るため、
-    書式の判定と実在の判定を両方行う。
+    ISO 8601 には `20260426` (区切りなし) や `2026-W18-1` (週日付) も含まれ、
+    `date.fromisoformat` はそれらも解釈する。Redmine へ渡せるのは YYYY-MM-DD
+    だけなので、書式の判定と実在の判定を両方行う。
     """
     if not _DATE_PATTERN.fullmatch(text):
         return False
@@ -133,7 +134,7 @@ class DateValidator(Validator):
             if self.allow_empty:
                 return
             raise ValidationError(message=messages.error_input_required)
-        if not is_iso_date(text):
+        if not is_yyyy_mm_dd(text):
             raise ValidationError(message=messages.error_date_format)
 
 

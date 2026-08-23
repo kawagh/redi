@@ -21,7 +21,7 @@ from redi.cli.keybinding import (
 )
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import SharedOptionParser
-from redi.cli.validator import DateValidator, HourValidator, is_iso_date
+from redi.cli.validator import DateValidator, HourValidator, is_yyyy_mm_dd
 from redi.i18n import messages
 from redi.service import issue_service, project_service, time_entry_service
 
@@ -203,7 +203,7 @@ def _date_filter(value: str) -> str:
     argparse の段階で使用方法を示して終了する。
     """
     text = value.strip()
-    if not is_iso_date(text):
+    if not is_yyyy_mm_dd(text):
         raise argparse.ArgumentTypeError(
             messages.error_invalid_date_arg.format(value=value)
         )
