@@ -456,6 +456,7 @@ class Ja(MessagesProto):
     tui_project_modal_title = "プロジェクト切替 (Esc/p で閉じる)"
     tui_project_modal_hint = "jk:移動 gg/G:先頭/末尾 Enter:切替 Esc/p:閉じる"
     tui_current_project = "  [project: {name}]"
+    tui_current_query = "  [query: {name}]"
     tui_flash_project_switched = "プロジェクトを {name} に切り替えました"
     tui_project_load_failed = "プロジェクト一覧の取得に失敗しました: {error}"
     tui_profile_modal_title = "プロファイル切替 (Esc/P で閉じる)"

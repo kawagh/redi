@@ -609,6 +609,7 @@ class MessagesProto(Protocol):
     tui_project_modal_title: str
     tui_project_modal_hint: str
     tui_current_project: str
+    tui_current_query: str
     """{name}"""
     tui_flash_project_switched: str
     """{name}"""

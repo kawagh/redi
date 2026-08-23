@@ -71,10 +71,10 @@ class TestIssueFilter:
                 == "status=全て (open + closed) assignee=自分 tracker=バグ"
             )
 
-        def test_query_only(self):
-            """query が有効なら query= だけ返す"""
+        def test_query_is_not_included(self):
+            """クエリはタブバーに出すのでステータスバーのラベルには含めない"""
             f = IssueFilter(query_id="7", query_label="未完了")
-            assert f.short_label() == "query=未完了"
+            assert f.short_label() == ""
 
     class TestApply:
         """apply() は選ばれた1項目を反映し、クエリとの排他を保つ"""

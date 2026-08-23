@@ -118,8 +118,11 @@ class IssueFilter:
         )
 
     def short_label(self) -> str:
-        if self.query_id is not None:
-            return f"query={self.query_label}"
+        """ステータスバーに出す絞り込み条件。
+
+        クエリはタブバーに `[query: <名前>]` として出すのでここには含めない。
+        クエリと排他なので、クエリが有効なときは空文字になる。
+        """
         parts = []
         if self.status_id is not None:
             parts.append(f"status={self.status_label}")
