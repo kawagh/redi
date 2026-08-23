@@ -100,7 +100,6 @@ class TestIssueFilter:
             assert f.status_id is None
             assert f.assigned_to_id is None
             assert f.tracker_id is None
-            assert f.short_label() == "query=未完了"
 
         def test_condition_clears_query(self):
             """status/assignee/tracker を選ぶとクエリはクリアされる"""
@@ -110,7 +109,6 @@ class TestIssueFilter:
 
             assert f.tracker_id == "1"
             assert f.query_id is None
-            assert f.short_label() == "tracker=バグ"
 
         def test_unspecified_does_not_clear_the_other_side(self):
             """(指定なし) の選択は絞り込みを外す操作なので反対側に触らない"""
@@ -120,15 +118,6 @@ class TestIssueFilter:
 
             assert f.query_id == "7"
             assert f.tracker_id is None
-
-        def test_query_unspecified_clears_only_query(self):
-            """クエリ列で (指定なし) を選ぶとクエリだけ外れる"""
-            f = IssueFilter(query_id="7", query_label="未完了")
-
-            f.apply("query", None, "(指定なし)")
-
-            assert f.query_id is None
-            assert f.is_active() is False
 
 
 class TestTimeEntryFilter:

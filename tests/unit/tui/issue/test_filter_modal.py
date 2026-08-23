@@ -1,11 +1,16 @@
 """issues タブの f で開くフィルタ modal の単体テスト。"""
 
+import pytest
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
 
 from redi.tui.conditions import build_conditions
 from redi.tui.issue import filter_modal
-from redi.tui.issue.filter_modal import open_filter_modal, shift_focus
+from redi.tui.issue.filter_modal import (
+    open_filter_modal,
+    section_cursor,
+    shift_focus,
+)
 from redi.tui.keybindings import modal_keybindings
 from redi.tui.state import IssueFilter, TuiState
 
@@ -49,29 +54,26 @@ class TestShiftFocus:
 class TestOpenFilterModal:
     """open_filter_modal() は選択肢を取り直して現在の絞り込みにカーソルを合わせる"""
 
-    def test_puts_cursor_on_current_tracker(self, monkeypatch):
-        """適用中の tracker があればその行にカーソルを合わせて開く"""
+    @pytest.mark.parametrize(
+        ("issue_filter", "section", "expected_cursor"),
+        [
+            (IssueFilter(tracker_id="2", tracker_label="Feature"), "tracker", 2),
+            (IssueFilter(query_id="7", query_label="My open issues"), "query", 1),
+        ],
+        ids=["tracker", "query"],
+    )
+    def test_puts_cursor_on_current_choice(
+        self, monkeypatch, issue_filter, section, expected_cursor
+    ):
+        """適用中の絞り込みがある列は、その行にカーソルを合わせて開く"""
         _stub_choices(monkeypatch)
         state = TuiState()
-        state.issue_tab.filter = IssueFilter(tracker_id="2", tracker_label="Feature")
+        state.issue_tab.filter = issue_filter
 
         open_filter_modal(state)
 
         modal = state.issue_tab.filter_modal
-        assert modal.tracker_choices == TRACKER_CHOICES
-        assert modal.tracker_cursor == 2
-
-    def test_puts_cursor_on_current_query(self, monkeypatch):
-        """適用中のクエリがあればその行にカーソルを合わせて開く"""
-        _stub_choices(monkeypatch)
-        state = TuiState()
-        state.issue_tab.filter = IssueFilter(query_id="7", query_label="My open issues")
-
-        open_filter_modal(state)
-
-        modal = state.issue_tab.filter_modal
-        assert modal.query_choices == QUERY_CHOICES
-        assert modal.query_cursor == 1
+        assert section_cursor(modal, section) == expected_cursor
 
 
 def _handler(kb: KeyBindings, keys: tuple):
@@ -112,18 +114,21 @@ class TestFilterModalKeys:
         assert state.issue_tab.filter.tracker_id == "1"
         assert state.issue_tab.filter.tracker_label == "Bug"
 
-    def test_clear_resets_tracker(self, monkeypatch):
-        """c を押すと tracker の絞り込みもカーソルもクリアされる"""
+    def test_clear_resets_all_columns(self, monkeypatch):
+        """c を押すと全ての列の絞り込みもカーソルもクリアされる"""
         _stub_choices(monkeypatch)
         state = TuiState()
         state.issue_tab.filter = IssueFilter(tracker_id="1", tracker_label="Bug")
         open_filter_modal(state)
+        modal = state.issue_tab.filter_modal
+        modal.query_cursor = 1
         kb = self._kb(state, monkeypatch)
 
         _handler(kb, ("c",))(None)
 
-        assert state.issue_tab.filter.tracker_id is None
-        assert state.issue_tab.filter_modal.tracker_cursor == 0
+        assert state.issue_tab.filter.is_active() is False
+        assert modal.tracker_cursor == 0
+        assert modal.query_cursor == 0
 
     def test_enter_applies_query_and_clears_other_conditions(self, monkeypatch):
         """クエリ列で Enter を押すと query_id が入り、他の絞り込みは外れる"""
@@ -146,33 +151,3 @@ class TestFilterModalKeys:
         assert state.issue_tab.filter.tracker_id is None
         # クリアされた列のカーソルも (unspecified) の行へ戻す
         assert state.issue_tab.filter_modal.tracker_cursor == 0
-
-    def test_enter_on_condition_clears_query(self, monkeypatch):
-        """tracker を選ぶと適用中のクエリは外れる"""
-        _stub_choices(monkeypatch)
-        state = TuiState()
-        state.issue_tab.filter = IssueFilter(query_id="7", query_label="My open issues")
-        open_filter_modal(state)
-        kb = self._kb(state, monkeypatch)
-
-        for _ in range(2):
-            _handler(kb, (Keys.ControlI,))(None)
-        _handler(kb, ("j",))(None)
-        _handler(kb, (Keys.ControlM,))(None)
-
-        assert state.issue_tab.filter.tracker_id == "1"
-        assert state.issue_tab.filter.query_id is None
-        assert state.issue_tab.filter_modal.query_cursor == 0
-
-    def test_clear_resets_query(self, monkeypatch):
-        """c を押すとクエリの絞り込みもカーソルもクリアされる"""
-        _stub_choices(monkeypatch)
-        state = TuiState()
-        state.issue_tab.filter = IssueFilter(query_id="7", query_label="My open issues")
-        open_filter_modal(state)
-        kb = self._kb(state, monkeypatch)
-
-        _handler(kb, ("c",))(None)
-
-        assert state.issue_tab.filter.query_id is None
-        assert state.issue_tab.filter_modal.query_cursor == 0

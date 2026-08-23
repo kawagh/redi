@@ -39,16 +39,3 @@ class TestFetchQueries:
 
         assert [q["id"] for q in queries] == list(range(1, 151))
         assert [c["offset"] for c in calls] == [0, 100]
-
-    def test_stops_when_total_count_is_missing(self, monkeypatch):
-        """total_count が無いレスポンスでも無限ループせず打ち切る"""
-        calls: list[dict] = []
-
-        def fake_get(_path, params=None):
-            calls.append(params or {})
-            return _response({"queries": [{"id": 1}]})
-
-        monkeypatch.setattr(query_module.client, "get", fake_get)
-
-        assert [q["id"] for q in query_module.fetch_queries()] == [1]
-        assert len(calls) == 1

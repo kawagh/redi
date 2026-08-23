@@ -112,16 +112,8 @@ class TestBuildTrackerChoices:
 class TestBuildQueryChoices:
     """build_query_choices() はフィルタモーダルのクエリ選択肢を組み立てる"""
 
-    def test_starts_with_unspecified(self, monkeypatch):
-        """先頭は絞り込みを外すための (指定なし)"""
-        monkeypatch.setattr(
-            choices_module, "list_queries_for_project", lambda _project_id: []
-        )
-        choices = choices_module.build_query_choices("1")
-        assert choices == [(None, messages.tui_filter_unspecified)]
-
-    def test_lists_queries_with_string_ids(self, monkeypatch):
-        """クエリは API に渡せる文字列 id と名前の組で並ぶ"""
+    def test_lists_queries_after_unspecified(self, monkeypatch):
+        """先頭に (指定なし) を置き、クエリは API に渡せる文字列 id と名前で並ぶ"""
         monkeypatch.setattr(
             choices_module,
             "list_queries_for_project",
@@ -131,4 +123,8 @@ class TestBuildQueryChoices:
             ],
         )
         choices = choices_module.build_query_choices("1")
-        assert choices[1:] == [("3", "My open issues"), ("7", "Updated this week")]
+        assert choices == [
+            (None, messages.tui_filter_unspecified),
+            ("3", "My open issues"),
+            ("7", "Updated this week"),
+        ]
