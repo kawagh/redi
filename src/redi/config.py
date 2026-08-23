@@ -88,16 +88,24 @@ def load_env_config() -> Profile:
     )
 
 
+def profile_from_option(argv: list[str]) -> str | None:
+    """argvの--profileに与えられた値を返す。指定が無ければNone。"""
+    for i, arg in enumerate(argv):
+        if arg == "--profile" and i + 1 < len(argv):
+            return argv[i + 1]
+        if arg.startswith("--profile="):
+            return arg.split("=", 1)[1]
+    return None
+
+
 def resolve_profile_name(toml: dict, argv: list[str]) -> tuple[str | None, bool]:
     """argvに--profileがあればそれを、なければdefault_profileを返す。
 
     第二要素はCLI(--profile)で明示指定されたかどうかを示す。
     """
-    for i, arg in enumerate(argv):
-        if arg == "--profile" and i + 1 < len(argv):
-            return argv[i + 1], True
-        if arg.startswith("--profile="):
-            return arg.split("=", 1)[1], True
+    name = profile_from_option(argv)
+    if name is not None:
+        return name, True
     return toml.get("default_profile"), False
 
 
@@ -299,16 +307,42 @@ def read_profile(profile_name: str, config_path: Path | None = None) -> Profile:
     return Profile.from_dict(value) if isinstance(value, dict) else Profile()
 
 
+def profile_source_label() -> str:
+    """今のプロファイルが既定か `--profile` 上書きかを表す表示用ラベルを返す。
+
+    由来は起動時の argv で決まりきっているので、状態として抱えず都度引き直す。
+    """
+    from redi.i18n import messages
+
+    return (
+        messages.config_profile_source_option
+        if profile_from_option(sys.argv) is not None
+        else messages.config_profile_source_default
+    )
+
+
 def show_config(full: bool = False, config_path: Path | None = None) -> None:
     if full:
         show_all_profiles(config_path=config_path)
         return
+    values = {
+        "redmine_url": redmine_url,
+        "default_project_id": default_project_id or "",
+        "wiki_project_id": wiki_project_id or "",
+        "editor": editor,
+        "language": language,
+    }
     doc = tomlkit.document()
-    doc["redmine_url"] = redmine_url
-    doc["default_project_id"] = default_project_id or ""
-    doc["wiki_project_id"] = wiki_project_id or ""
-    doc["editor"] = editor
-    doc["language"] = language
+    # config.toml と同じく `[profile_name]` の見出しで示し、由来はコメントで添える。
+    # 出力は TOML として読めるまま保つ。
+    if current_profile:
+        table = tomlkit.table()
+        for key, value in values.items():
+            table[key] = value
+        doc[current_profile] = table.comment(profile_source_label())
+    else:
+        for key, value in values.items():
+            doc[key] = value
     print(tomlkit.dumps(doc).rstrip())
 
 
@@ -323,4 +357,14 @@ def show_all_profiles(config_path: Path | None = None) -> None:
         value = doc[key]
         if isinstance(value, Table) and "redmine_api_key" in value:
             del value["redmine_api_key"]
+    # default_profile は既定値でしかないので、今回使われたプロファイルの見出しに印を付ける
+    current_table = doc.get(current_profile) if current_profile else None
+    if isinstance(current_table, Table):
+        from redi.i18n import messages
+
+        current_table.comment(
+            messages.config_current_profile_comment.format(
+                source=profile_source_label()
+            )
+        )
     print(tomlkit.dumps(doc).rstrip())

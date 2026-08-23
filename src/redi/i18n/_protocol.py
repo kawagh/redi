@@ -1049,6 +1049,14 @@ class MessagesProto(Protocol):
     config_profile_suffix: str
     """{name}"""
 
+    # ---- config 出力に添える現在のプロファイル ----
+    config_profile_source_default: str
+    """default_profile 由来であることを示すラベル"""
+    config_profile_source_option: str
+    """--profile による一時上書きであることを示すラベル"""
+    config_current_profile_comment: str
+    """--full 出力で今回使われたプロファイルの見出しに添えるコメント。{source} を埋め込む。"""
+
     # ---- TUI help labels (sections / common) ----
     tui_help_section_navigation: str
     tui_help_section_search: str
