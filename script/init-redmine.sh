@@ -93,6 +93,66 @@ API_KEYS_OUTPUT=$(docker compose exec -T "$SERVICE" rails runner - <<RUBY
       member.save!
     end
 
+    # reditest 以外のプロジェクトを作成
+    # (他プロジェクト固有のクエリを query_id に渡したときの挙動を確かめるために使う)
+    other_project = Project.find_or_initialize_by(identifier: 'reditother')
+    other_project.name = 'reditest以外のプロジェクト'
+    other_project.description = 'rediのtest用に作成された、reditest以外のプロジェクト'
+    other_project.is_public = true
+    other_project.enabled_module_names = %w[issue_tracking]
+    other_project.save!
+
+    # カスタムクエリを作成
+    # Redmine の REST API にクエリの作成系エンドポイントが無い (/queries.json は GET のみ) ため、
+    # クエリまわりの E2E はここで仕込んだものを redi query list で引いて検証する。
+    # 検証したい軸ごとに 1 件ずつ用意する。
+    feature_and_support_tracker_ids = Tracker.where(name: %w[機能 サポート]).pluck(:id).map(&:to_s)
+    # 実行のたびに増えるイシューに左右されないよう、E2E が作る件名だけを対象にする
+    e2e_subject_filter = ['subject', '~', ['e2e-query']]
+    # トラッカーの OR は TUI のフィルタモーダル (単一選択) では表現できないので、
+    # query_id を渡したときだけ効く条件として使う
+    tracker_or_filter = ['tracker_id', '=', feature_and_support_tracker_ids]
+    query_defs = [
+      # 全プロジェクトで見えるグローバルクエリ
+      {
+        name: 'e2e 全プロジェクト (機能 or サポート)',
+        project: nil,
+        visibility: Query::VISIBILITY_PUBLIC,
+        filters: [e2e_subject_filter, tracker_or_filter],
+      },
+      # 現在プロジェクトの選択肢に出るプロジェクト固有のクエリ
+      {
+        name: 'e2e reditest 限定 (機能 or サポート)',
+        project: project,
+        visibility: Query::VISIBILITY_PUBLIC,
+        filters: [e2e_subject_filter, tracker_or_filter],
+      },
+      # 他プロジェクト固有のクエリ (reditest のイシュー一覧に渡すと Redmine が 404 を返す)
+      {
+        name: 'e2e 別プロジェクト限定 (reditother)',
+        project: other_project,
+        visibility: Query::VISIBILITY_PUBLIC,
+        filters: [e2e_subject_filter],
+      },
+      # 作成者 (admin) にしか見えない非公開クエリ
+      {
+        name: 'e2e 非公開 (作成者のみ)',
+        project: nil,
+        visibility: Query::VISIBILITY_PRIVATE,
+        filters: [e2e_subject_filter],
+      },
+    ]
+    query_defs.each do |attrs|
+      query = IssueQuery.find_or_initialize_by(name: attrs[:name])
+      query.project = attrs[:project]
+      query.user = admin
+      query.visibility = attrs[:visibility]
+      query.filters = {}
+      attrs[:filters].each { |field, operator, values| query.add_filter(field, operator, values) }
+      query.column_names = %i[id tracker status subject]
+      query.save!
+    end
+
     puts "ADMIN_KEY=#{admin.api_key}"
     puts "DEVELOPER_KEY=#{developer.api_key}"
 RUBY
