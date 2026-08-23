@@ -488,6 +488,7 @@ class En(MessagesProto):
         " jk:move /:search p:project c:create u:update D:delete v:web ?:help q:quit "
     )
     tui_status_hint_time_entries = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
+    tui_status_search_active = "/{query} Esc:clear"
     tui_flash_reloaded = "Reloaded"
     tui_filter_unspecified = "(unspecified)"
     tui_filter_status_open_default = "open (default)"
@@ -956,6 +957,7 @@ class En(MessagesProto):
     tui_help_preview_scroll_half_page = "Scroll preview up / down by half page"
     tui_help_start_search = "Start search"
     tui_help_next_prev_match = "Next / previous match"
+    tui_help_clear_search = "Clear search (when a search query is set)"
     tui_help_filter_issues = "Filter by status/assignee/tracker (floating)"
     tui_help_filter_user = "Filter by user (floating)"
     tui_help_switch_project = "Switch project (floating)"

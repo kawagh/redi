@@ -644,6 +644,9 @@ class MessagesProto(Protocol):
     tui_status_hint_wiki: str
     tui_status_hint_time_entries: str
     """{page_label}"""
+    # 検索確定後もクエリが残っていることをステータスバーに出す
+    tui_status_search_active: str
+    """{query}"""
     tui_flash_reloaded: str
     # 列を問わず「絞り込まない」を表す選択肢のラベル
     tui_filter_unspecified: str
@@ -1088,6 +1091,7 @@ class MessagesProto(Protocol):
     tui_help_preview_scroll_half_page: str
     tui_help_start_search: str
     tui_help_next_prev_match: str
+    tui_help_clear_search: str
     tui_help_filter_issues: str
     tui_help_filter_user: str
     tui_help_switch_project: str

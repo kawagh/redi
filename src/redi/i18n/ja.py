@@ -493,6 +493,7 @@ class Ja(MessagesProto):
         " {page_label}  jk:移動 /:検索 f:フィルタ p:プロジェクト"
         " c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     )
+    tui_status_search_active = "/{query} Esc:解除"
     tui_flash_reloaded = "再読込しました"
     tui_filter_unspecified = "(指定なし)"
     tui_filter_status_open_default = "open (デフォルト)"
@@ -961,6 +962,7 @@ class Ja(MessagesProto):
     tui_help_preview_scroll_half_page = "プレビューを半ページスクロール (上 / 下)"
     tui_help_start_search = "検索開始"
     tui_help_next_prev_match = "次 / 前の検索結果"
+    tui_help_clear_search = "検索を解除 (検索クエリ設定時)"
     tui_help_filter_issues = "ステータス/担当者/トラッカーでフィルタ (フローティング)"
     tui_help_filter_user = "ユーザーでフィルタ (フローティング)"
     tui_help_switch_project = "プロジェクトを切り替え (フローティング)"

@@ -175,6 +175,13 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         state.search_mode = True
         state.search_query = ""
 
+    @kb.add("escape", filter=normal_mode)
+    def _(event):
+        # 検索クエリは確定後も残って n/N の挙動を変えるので、vim と同じく
+        # Esc で解除できるようにする。クエリが無ければ何も起きない
+        clear_temporary_state(state)
+        state.search_query = ""
+
     @kb.add("D", filter=normal_mode)
     def _(event):
         clear_temporary_state(state)

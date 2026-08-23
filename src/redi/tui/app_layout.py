@@ -69,7 +69,9 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
                     preview_window,
                 ]
             ),
-            Window(FormattedTextControl(lambda: render_status(state)), height=1),
+            Window(
+                FormattedTextControl(lambda: render_status(state, conditions)), height=1
+            ),
         ]
     )
 
