@@ -7,6 +7,7 @@ from redi import config
 from redi.api.exceptions import ProjectNotFoundException
 from redi.cli.issue_command import add_issue_parser
 from redi.cli.issue_command import create as create_module
+from redi.cli.issue_command import dispatch as dispatch_module
 from redi.cli.issue_command import view as view_module
 from redi.cli.issue_command.create import IssueCreateArgs, handle_issue_create
 from redi.cli.issue_command.update import IssueUpdateArgs
@@ -125,3 +126,57 @@ class TestIssueListNotFound:
         assert (
             messages.project_not_found.format(id="missing") in capsys.readouterr().out
         )
+
+
+class TestIssueListQueryIdFilters:
+    """`issue list` の `--query_id` と他フィルタの併用
+
+    Redmine はカスタムクエリの条件を優先して他の条件を捨てるため、
+    絞り込んだつもりで別の結果を見ないよう、渡させずに落とす。
+    """
+
+    @pytest.mark.parametrize(
+        ("option", "value", "shown"),
+        [
+            ("-v", "3", "--version"),
+            ("-a", "me", "--assigned_to"),
+            ("-s", "closed", "--status_id"),
+            ("-t", "1", "--tracker_id"),
+            ("--priority_id", "2", "--priority_id"),
+        ],
+    )
+    def test_ignored_filter_exits(self, option, value, shown, capsys):
+        """無視されるフィルタ名を示して exit 1 する"""
+        args = parse_issue_args(["issue", "list", "-q", "5", option, value])
+
+        with pytest.raises(SystemExit) as exc_info:
+            dispatch_module.handle_issue(args)
+
+        assert exc_info.value.code == 1
+        assert shown in capsys.readouterr().out
+
+    def test_lists_all_ignored_filters(self, capsys):
+        """複数指定した場合はすべての名前を示す"""
+        args = parse_issue_args(["issue", "list", "-q", "5", "-s", "closed", "-t", "1"])
+
+        with pytest.raises(SystemExit):
+            dispatch_module.handle_issue(args)
+
+        out = capsys.readouterr().out
+        assert "--status_id" in out
+        assert "--tracker_id" in out
+
+    def test_project_id_is_allowed(self, monkeypatch):
+        """`--project_id` は Redmine 側でも併用が効くので通す"""
+        called = {}
+        monkeypatch.setattr(
+            view_module.issue_service,
+            "list_issues",
+            lambda **kwargs: called.update(kwargs) or [],
+        )
+        args = parse_issue_args(["issue", "list", "-q", "5", "-p", "demo"])
+
+        dispatch_module.handle_issue(args)
+
+        assert called["query_id"] == "5"
+        assert called["project_id"] == "demo"

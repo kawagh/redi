@@ -594,7 +594,14 @@ class En(MessagesProto):
     arg_help_issue_filter_status = "Filter by status ID ('open'/'closed'/'*' allowed)"
     arg_help_issue_filter_tracker = "Filter by tracker ID"
     arg_help_issue_filter_priority = "Filter by priority ID"
-    arg_help_issue_filter_query = "Filter by custom query ID (see `redi query`)"
+    arg_help_issue_filter_query = (
+        "Filter by custom query ID (see `redi query`; "
+        "cannot be combined with filters other than --project_id)"
+    )
+    error_query_id_conflicts_filters = (
+        "--query_id cannot be used with {options} "
+        "(the custom query takes precedence and {options} is ignored)"
+    )
     arg_help_limit = "Limit"
     arg_help_offset = "Offset"
     arg_help_issue_list = "List issues"
