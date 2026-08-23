@@ -846,6 +846,9 @@ class En(MessagesProto):
     arg_help_time_entry_hours = "Hours (e.g. 1.5; omit to enter interactively)"
     arg_help_time_entry_issue_id = "Issue ID"
     arg_help_time_entry_activity_id = "Activity ID"
+    arg_help_time_entry_create_activity_id = (
+        "Activity ID (required; selected interactively if omitted)"
+    )
     arg_help_time_entry_spent_on = "Date (YYYY-MM-DD, empty for today)"
     arg_help_time_entry_comments = "Comments"
     arg_help_time_entry_view = "Time entry details"

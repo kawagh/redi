@@ -982,6 +982,7 @@ class MessagesProto(Protocol):
     arg_help_time_entry_hours: str
     arg_help_time_entry_issue_id: str
     arg_help_time_entry_activity_id: str
+    arg_help_time_entry_create_activity_id: str
     arg_help_time_entry_spent_on: str
     arg_help_time_entry_comments: str
     arg_help_time_entry_view: str
