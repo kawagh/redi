@@ -8,7 +8,10 @@ from importlib.metadata import version
 import argcomplete
 
 from redi import config
-from redi.api.exceptions import RedmineValidationException
+from redi.api.exceptions import (
+    RedmineConnectionException,
+    RedmineValidationException,
+)
 from redi.api.wiki import WikiUpdateConflictException
 from redi.cli.attachment_command import add_attachment_parser, handle_attachment
 from redi.cli.config_command import add_config_parser, handle_config
@@ -69,6 +72,18 @@ def _format_validation_error(e: RedmineValidationException) -> str:
         action=action_label,
         errors="\n".join(f"- {err}" for err in e.errors),
     )
+
+
+def _format_connection_error(e: RedmineConnectionException) -> str:
+    """接続できなかった旨を 1 行で組み立てる。
+
+    プロファイルの指定間違いで別インスタンスを指しているケースが多いので、
+    分かるならプロファイル名も添える。
+    """
+    message = messages.connection_unreachable.format(url=e.base_url)
+    if config.current_profile:
+        message += messages.config_profile_suffix.format(name=config.current_profile)
+    return message
 
 
 def _profile_parser(profile_names: list[str]) -> argparse.ArgumentParser:
@@ -134,6 +149,18 @@ def build_redi_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    """エントリポイント。redi の例外をここで人向けのメッセージに落とす。
+
+    個々のコマンドで捕まえ損ねてもトレースバックを出さないための最後の受け皿。
+    """
+    try:
+        _run()
+    except RedmineConnectionException as e:
+        print(_format_connection_error(e))
+        sys.exit(1)
+
+
+def _run() -> None:
     parser = build_redi_parser()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()

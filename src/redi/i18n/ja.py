@@ -939,6 +939,9 @@ class Ja(MessagesProto):
         "(redmine_issue_templates プラグインが必要です)"
     )
 
+    # ---- connection error ----
+    connection_unreachable = "接続できません: {url}"
+
     # ---- config_command suffix ----
     config_profile_suffix = "（profile: {name}）"
     config_profile_source_default = "既定"

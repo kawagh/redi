@@ -1060,6 +1060,10 @@ class MessagesProto(Protocol):
     arg_help_issue_template_command: str
     issue_template_not_available: str
 
+    # ---- connection error ----
+    connection_unreachable: str
+    """{url}"""
+
     # ---- config_command suffix ----
     config_profile_suffix: str
     """{name}"""

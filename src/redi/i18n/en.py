@@ -934,6 +934,9 @@ class En(MessagesProto):
         "issue_templates endpoint not found (requires redmine_issue_templates plugin)"
     )
 
+    # ---- connection error ----
+    connection_unreachable = "Cannot connect to Redmine: {url}"
+
     # ---- config_command suffix ----
     config_profile_suffix = " (profile: {name})"
     config_profile_source_default = "default"
