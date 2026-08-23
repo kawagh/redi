@@ -6,6 +6,7 @@ from redi.api.role import fetch_role, fetch_roles
 from redi.cli.alias import resolve_alias
 from redi.cli.shared_options import full_option_parser
 from redi.i18n import messages
+from redi.service.role_service import CATEGORY_OTHER, group_permissions
 
 
 def _print_roles(full: bool) -> None:
@@ -15,6 +16,24 @@ def _print_roles(full: bool) -> None:
         return
     for role in roles:
         print(f"{role['id']} {role['name']}")
+
+
+def _category_labels() -> dict[str, str]:
+    """カテゴリ名の表示ラベルを返す。"""
+    return {
+        "project": messages.permission_category_project,
+        "issue_tracking": messages.permission_category_issue_tracking,
+        "time_tracking": messages.permission_category_time_tracking,
+        "news": messages.permission_category_news,
+        "documents": messages.permission_category_documents,
+        "files": messages.permission_category_files,
+        "wiki": messages.permission_category_wiki,
+        "repository": messages.permission_category_repository,
+        "boards": messages.permission_category_boards,
+        "calendar": messages.permission_category_calendar,
+        "gantt": messages.permission_category_gantt,
+        CATEGORY_OTHER: messages.permission_category_other,
+    }
 
 
 def _print_role(role_id: str, full: bool) -> None:
@@ -44,9 +63,12 @@ def _print_role(role_id: str, full: bool) -> None:
         )
     permissions = role.get("permissions") or []
     if permissions:
-        lines.append(messages.label_permissions_header)
-        for p in permissions:
-            lines.append(f"  {p}")
+        lines.append(messages.label_permissions_header.format(count=len(permissions)))
+        labels = _category_labels()
+        for category, members in group_permissions(permissions):
+            lines.append(f"  [{labels[category]}]")
+            for p in members:
+                lines.append(f"    {p}")
     print("\n".join(lines))
 
 

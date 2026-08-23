@@ -536,6 +536,19 @@ class MessagesProto(Protocol):
     label_users_visibility: str
     """{value}"""
     label_permissions_header: str
+    """{count}"""
+    permission_category_project: str
+    permission_category_issue_tracking: str
+    permission_category_time_tracking: str
+    permission_category_news: str
+    permission_category_documents: str
+    permission_category_files: str
+    permission_category_wiki: str
+    permission_category_repository: str
+    permission_category_boards: str
+    permission_category_calendar: str
+    permission_category_gantt: str
+    permission_category_other: str
     label_mail: str
     """{value}"""
     label_admin: str
