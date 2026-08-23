@@ -977,6 +977,8 @@ class MessagesProto(Protocol):
     arg_help_time_entry_user_id: str
     arg_help_time_entry_from: str
     arg_help_time_entry_to: str
+    error_invalid_date_arg: str
+    """{value}"""
     arg_help_time_entry_list: str
     arg_help_time_entry_create: str
     arg_help_time_entry_hours: str

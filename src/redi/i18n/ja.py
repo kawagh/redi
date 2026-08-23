@@ -849,6 +849,7 @@ class Ja(MessagesProto):
     arg_help_time_entry_user_id = "ユーザーIDでフィルタリング（'me'も可）"
     arg_help_time_entry_from = "開始日でフィルタリング（YYYY-MM-DD、以降）"
     arg_help_time_entry_to = "終了日でフィルタリング（YYYY-MM-DD、以前）"
+    error_invalid_date_arg = "YYYY-MM-DD 形式の日付ではありません: {value}"
     arg_help_time_entry_list = "作業時間一覧"
     arg_help_time_entry_create = "作業時間登録"
     arg_help_time_entry_hours = "時間（例: 1.5、省略で対話的に入力）"

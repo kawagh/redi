@@ -103,6 +103,21 @@ class IntValidator(Validator):
             raise ValidationError(message=messages.error_numeric_required)
 
 
+def is_iso_date(text: str) -> bool:
+    """YYYY-MM-DD 形式で、かつ実在する日付かどうかを返す。
+
+    `date.fromisoformat` だけでは `20260426` のような別の ISO 表記も通るため、
+    書式の判定と実在の判定を両方行う。
+    """
+    if not _DATE_PATTERN.fullmatch(text):
+        return False
+    try:
+        date.fromisoformat(text)
+    except ValueError:
+        return False
+    return True
+
+
 class DateValidator(Validator):
     """YYYY-MM-DD 形式の日付のみを許容する Validator。
 
@@ -118,11 +133,7 @@ class DateValidator(Validator):
             if self.allow_empty:
                 return
             raise ValidationError(message=messages.error_input_required)
-        if not _DATE_PATTERN.fullmatch(text):
-            raise ValidationError(message=messages.error_date_format)
-        try:
-            date.fromisoformat(text)
-        except ValueError:
+        if not is_iso_date(text):
             raise ValidationError(message=messages.error_date_format)
 
 
