@@ -2,6 +2,7 @@
 
 from typing import cast
 
+from redi.api.exceptions import ProjectNotFoundException
 from redi.api.query import Query
 from redi.service import query_service
 
@@ -31,5 +32,35 @@ class TestListQueriesForProject:
         monkeypatch.setattr(query_service, "list_queries", lambda: QUERIES)
 
         result = query_service.list_queries_for_project(None)
+
+        assert [q["id"] for q in result] == [1]
+
+    def test_resolves_identifier_before_matching(self, monkeypatch):
+        """identifier で指定されても数値 id に解決して突き合わせる
+
+        config の default_project_id には identifier も書けるが、クエリが持つ
+        project_id は数値なので、解決しないとプロジェクト固有のクエリを落とす。
+        """
+        monkeypatch.setattr(query_service, "list_queries", lambda: QUERIES)
+        monkeypatch.setattr(
+            query_service,
+            "resolve_project_id",
+            lambda value: "1" if value == "alpha" else value,
+        )
+
+        result = query_service.list_queries_for_project("alpha")
+
+        assert [q["id"] for q in result] == [1, 2]
+
+    def test_falls_back_to_global_when_project_is_unknown(self, monkeypatch):
+        """プロジェクトを解決できなければグローバルクエリだけでも選べるようにする"""
+        monkeypatch.setattr(query_service, "list_queries", lambda: QUERIES)
+
+        def raise_not_found(value):
+            raise ProjectNotFoundException(value)
+
+        monkeypatch.setattr(query_service, "resolve_project_id", raise_not_found)
+
+        result = query_service.list_queries_for_project("missing")
 
         assert [q["id"] for q in result] == [1]
