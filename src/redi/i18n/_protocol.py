@@ -640,24 +640,24 @@ class MessagesProto(Protocol):
     tui_filter_assignee_none: str
     tui_filter_assignee_me: str
     tui_filter_assignee_unassigned: str
-    tui_meta_status: str
-    tui_meta_priority: str
-    tui_meta_tracker: str
-    tui_meta_assignee: str
-    tui_meta_author: str
-    tui_meta_start_date: str
-    tui_meta_due_date: str
-    tui_meta_progress: str
-    tui_meta_estimated_hours: str
-    tui_meta_spent_hours: str
-    tui_meta_created: str
-    tui_meta_updated: str
-    tui_meta_parent: str
-    tui_meta_version: str
-    tui_meta_project: str
-    tui_meta_user: str
-    tui_meta_activity: str
-    tui_meta_issue: str
+    meta_status: str
+    meta_priority: str
+    meta_tracker: str
+    meta_assignee: str
+    meta_author: str
+    meta_start_date: str
+    meta_due_date: str
+    meta_progress: str
+    meta_estimated_hours: str
+    meta_spent_hours: str
+    meta_created: str
+    meta_updated: str
+    meta_parent: str
+    meta_version: str
+    meta_project: str
+    meta_user: str
+    meta_activity: str
+    meta_issue: str
     tui_preview_comments_header: str
     tui_comment_select_status_hint: str
     tui_comment_edit_canceled_empty: str

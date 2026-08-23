@@ -105,7 +105,7 @@ class TestIssueComment:
         added = run_redi("issue", "comment", issue_id, notes).stdout
 
         assert f"/issues/{issue_id}#note-1" in added
-        assert notes in run_redi("issue", "view", issue_id, "--full").stdout
+        assert notes in run_redi("issue", "view", issue_id).stdout
 
 
 @pytest.mark.e2e

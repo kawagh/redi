@@ -150,7 +150,7 @@ redi issue -p <project_id> -a me -s open
 redi issue -q <query_id>
 redi issue view <issue_id>
 redi issue view <issue_id> --web # view issue with web browser
-redi issue view <issue_id> --include journals,attachments,relations
+redi issue view <issue_id> --include children,watchers # relations, attachments and journals are shown by default
 redi issue create # (interactive)
 redi issue create "subject" -p <project_id> -t <tracker_id> -a <user_id> -d "description"
 redi issue create "subject" -p <project_id> --full # output created issue as full JSON
