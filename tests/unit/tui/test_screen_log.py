@@ -1,6 +1,11 @@
+from pathlib import Path
+
+import jsonschema
 import yaml
 
 from redi.tui.screen_log import _append_screen_yaml
+
+SCHEMA_PATH = Path(__file__).parents[3] / "doc" / "redi-debug-tui.schema.yaml"
 
 
 def _dump(lines: list[str]) -> dict:
@@ -58,3 +63,15 @@ def test_YAMLの特殊文字をキーにしても読み戻せる(tmp_path):
     entries = yaml.safe_load(path.read_text(encoding="utf-8"))
 
     assert [e["key"] for e in entries] == keys
+
+
+def test_出力した画面ログがスキーマに適合する(tmp_path):
+    """画面ログは doc/redi-debug-tui.schema.yaml のスキーマに適合する"""
+    path = tmp_path / "screen.yaml"
+    _append_screen_yaml(path, _dump([" Issues  Tab", "────", "", "#1 title"]), key="j")
+    _append_screen_yaml(path, _dump([]), key="")
+
+    entries = yaml.safe_load(path.read_text(encoding="utf-8"))
+    schema = yaml.safe_load(SCHEMA_PATH.read_text(encoding="utf-8"))
+
+    jsonschema.validate(entries, schema)
