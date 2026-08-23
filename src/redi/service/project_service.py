@@ -3,8 +3,6 @@
 CLI と TUI で共通の手順をここに置く。HTTP とステータスコードの解釈は `api.project` が持つ。
 """
 
-from __future__ import annotations
-
 import re
 
 from redi import config
