@@ -14,20 +14,9 @@ from redi.cli.attachment_command import add_attachment_parser, handle_attachment
 from redi.cli.config_command import add_config_parser, handle_config
 from redi.cli.editor import open_editor
 from redi.cli.enumerations_command import (
-    add_custom_field_parser,
-    add_document_category_parser,
-    add_issue_priority_parser,
-    add_issue_status_parser,
-    add_query_parser,
-    add_time_entry_activity_parser,
-    add_tracker_parser,
-    handle_custom_field,
-    handle_document_category,
-    handle_issue_priority,
-    handle_issue_status,
-    handle_query,
-    handle_time_entry_activity,
-    handle_tracker,
+    add_enumeration_parsers,
+    find_enumeration_resource,
+    handle_enumeration,
 )
 from redi.cli.file_command import add_file_parser, handle_file
 from redi.cli.group_command import add_group_parser, handle_group
@@ -130,15 +119,9 @@ def build_redi_parser() -> argparse.ArgumentParser:
     add_me_parser(subparsers, parents)
     add_membership_parser(subparsers, parents)
     add_news_parser(subparsers, parents)
-    add_tracker_parser(subparsers, parents)
-    add_issue_status_parser(subparsers, parents)
-    add_issue_priority_parser(subparsers, parents)
-    add_time_entry_activity_parser(subparsers, parents)
-    add_document_category_parser(subparsers, parents)
+    add_enumeration_parsers(subparsers, parents)
     add_role_parser(subparsers, parents)
     add_group_parser(subparsers, parents)
-    add_query_parser(subparsers, parents)
-    add_custom_field_parser(subparsers, parents)
     add_issue_category_parser(subparsers, parents)
     add_search_parser(subparsers, parents)
     add_attachment_parser(subparsers, parents)
@@ -348,24 +331,12 @@ def main() -> None:
             sys.exit(1)
     elif args.command in ("news", "n"):
         handle_news(args)
-    elif args.command in ("tracker", "t"):
-        handle_tracker(args)
-    elif args.command in ("issue_status", "is"):
-        handle_issue_status(args)
-    elif args.command in ("issue_priority", "ip"):
-        handle_issue_priority(args)
-    elif args.command in ("time_entry_activity", "tea"):
-        handle_time_entry_activity(args)
-    elif args.command in ("document_category", "dc"):
-        handle_document_category(args)
+    elif (enumeration := find_enumeration_resource(args.command)) is not None:
+        handle_enumeration(enumeration, args)
     elif args.command in ("role", "r"):
         handle_role(args)
     elif args.command in ("group", "g"):
         handle_group(args)
-    elif args.command in ("query", "q"):
-        handle_query(args)
-    elif args.command in ("custom_field", "cf"):
-        handle_custom_field(args)
     elif args.command in ("issue_category", "ic"):
         try:
             handle_issue_category(args)

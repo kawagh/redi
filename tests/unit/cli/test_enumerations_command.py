@@ -1,39 +1,53 @@
 import argparse
+import dataclasses
 import json
 
 import pytest
 
-from redi.cli import enumerations_command
+from redi.cli.enumerations_command import (
+    ENUMERATION_RESOURCES,
+    EnumerationResource,
+    handle_enumeration,
+)
 from redi.i18n import messages
+
+RESOURCES = {resource.name: resource for resource in ENUMERATION_RESOURCES}
+
+
+def with_fetch(name: str, fetch) -> EnumerationResource:
+    """リソース定義の fetch だけ差し替えたものを返す"""
+    return dataclasses.replace(RESOURCES[name], fetch=fetch)
+
+
+def recording_fetch(received: list[bool]):
+    """呼ばれたときの refresh を received に積む fetch を返す"""
+
+    def _fetch(refresh: bool):
+        received.append(refresh)
+        return [{"id": 1, "name": "バグ"}]
+
+    return _fetch
 
 
 class TestListOutput:
     """一覧専用リソースは既定で `{id} {name}`、--full で JSON を出す"""
 
-    @pytest.fixture(autouse=True)
-    def trackers(self, monkeypatch):
-        monkeypatch.setattr(
-            enumerations_command,
-            "fetch_trackers",
-            lambda refresh=False: [
-                {"id": 1, "name": "バグ"},
-                {"id": 2, "name": "機能"},
-            ],
+    @pytest.fixture
+    def tracker(self) -> EnumerationResource:
+        return with_fetch(
+            "tracker",
+            lambda refresh: [{"id": 1, "name": "バグ"}, {"id": 2, "name": "機能"}],
         )
 
-    def test_default_prints_id_and_name(self, capsys):
+    def test_default_prints_id_and_name(self, tracker, capsys):
         """既定では 1 行に id と name を出す"""
-        enumerations_command.handle_tracker(
-            argparse.Namespace(full=False, refresh=False)
-        )
+        handle_enumeration(tracker, argparse.Namespace(full=False, refresh=False))
 
         assert capsys.readouterr().out == "1 バグ\n2 機能\n"
 
-    def test_full_prints_json(self, capsys):
+    def test_full_prints_json(self, tracker, capsys):
         """--full ではレスポンスをそのまま JSON で出す"""
-        enumerations_command.handle_tracker(
-            argparse.Namespace(full=True, refresh=False)
-        )
+        handle_enumeration(tracker, argparse.Namespace(full=True, refresh=False))
 
         assert json.loads(capsys.readouterr().out) == [
             {"id": 1, "name": "バグ"},
@@ -44,15 +58,13 @@ class TestListOutput:
 class TestCustomFieldPermission:
     """カスタムフィールドは管理者権限が無いと取得できない"""
 
-    def test_exits_when_not_admin(self, monkeypatch, capsys):
+    def test_exits_when_not_admin(self, capsys):
         """権限が無いとき (取得結果が None) は理由を示して終了する"""
-        monkeypatch.setattr(
-            enumerations_command, "fetch_custom_fields", lambda refresh=False: None
-        )
+        custom_field = with_fetch("custom_field", lambda refresh: None)
 
         with pytest.raises(SystemExit) as e:
-            enumerations_command.handle_custom_field(
-                argparse.Namespace(full=False, refresh=False)
+            handle_enumeration(
+                custom_field, argparse.Namespace(full=False, refresh=False)
             )
 
         assert e.value.code == 1
@@ -62,18 +74,25 @@ class TestCustomFieldPermission:
 class TestRefreshIsPassedToFetch:
     """--refresh はハンドラから fetch にそのまま渡される"""
 
-    def test_passes_refresh_flag(self, monkeypatch):
+    @pytest.mark.parametrize(
+        "resource",
+        [resource for resource in ENUMERATION_RESOURCES if resource.cached],
+        ids=lambda resource: resource.name,
+    )
+    def test_passes_refresh_flag(self, resource):
         """args.refresh が True なら fetch も refresh=True で呼ばれる"""
-        received = {}
+        received: list[bool] = []
+        target = dataclasses.replace(resource, fetch=recording_fetch(received))
 
-        def _fetch(refresh=False):
-            received["refresh"] = refresh
-            return [{"id": 1, "name": "バグ"}]
+        handle_enumeration(target, argparse.Namespace(full=False, refresh=True))
 
-        monkeypatch.setattr(enumerations_command, "fetch_trackers", _fetch)
+        assert received == [True]
 
-        enumerations_command.handle_tracker(
-            argparse.Namespace(full=False, refresh=True)
-        )
+    def test_defaults_to_false_when_option_is_absent(self):
+        """--refresh を持たないリソースでは refresh=False で呼ばれる"""
+        received: list[bool] = []
+        query = with_fetch("query", recording_fetch(received))
 
-        assert received["refresh"] is True
+        handle_enumeration(query, argparse.Namespace(full=False))
+
+        assert received == [False]
