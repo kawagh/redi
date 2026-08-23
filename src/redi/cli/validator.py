@@ -11,6 +11,9 @@ _URL_PREFIXES = ("http://", "https://")
 _DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
 _FLOAT_PATTERN = re.compile(r"-?\d+(\.\d+)?")
 _INT_PATTERN = re.compile(r"-?\d+")
+# Redmine のプロジェクト識別子。英小文字・数字・ハイフン・アンダースコアのみで、
+# 数字だけの識別子は Redmine 側で拒否される
+_PROJECT_IDENTIFIER_PATTERN = re.compile(r"(?!\d+\Z)[a-z0-9\-_]{1,100}")
 
 
 class RequiredValidator(Validator):
@@ -37,6 +40,20 @@ class UrlValidator(Validator):
         if any(p.startswith(text) for p in _URL_PREFIXES):
             return
         raise ValidationError(message=messages.error_url_format)
+
+
+class ProjectIdentifierValidator(Validator):
+    """Redmine のプロジェクト識別子として使える文字列だけを許容する Validator。
+
+    識別子は作成後に変更できないため、送信して 422 を受け取る前に入力段階で弾く。
+    """
+
+    def validate(self, document: Document) -> None:
+        text = document.text.strip()
+        if not text:
+            raise ValidationError(message=messages.error_input_required)
+        if not _PROJECT_IDENTIFIER_PATTERN.fullmatch(text):
+            raise ValidationError(message=messages.error_project_identifier_format)
 
 
 class HourValidator(Validator):

@@ -287,6 +287,12 @@ class En(MessagesProto):
         "Select items to update (Space to toggle, Enter to confirm)"
     )
     prompt_version_name = "Version name: "
+    prompt_project_name = "Project name: "
+    prompt_project_identifier = "Project identifier: "
+    prompt_select_is_public = "Visibility"
+    prompt_select_parent_project = "Parent project"
+    prompt_select_parent_project_none = "(No parent project)"
+    prompt_select_trackers = "Select trackers (Space to toggle, Enter to confirm)"
     prompt_description_optional = "Description (optional): "
     prompt_wiki_comments = "Comment (optional): "
     prompt_due_date_optional = "Due date (YYYY-MM-DD, optional): "
@@ -301,6 +307,8 @@ class En(MessagesProto):
     prompt_custom_field_label = "{name}: "
     label_bool_true = "Yes"
     label_bool_false = "No"
+    label_project_public = "Public"
+    label_project_private = "Private"
     prompt_what_next = "What's next?"
     action_submit = "Submit"
     action_fill_optional = "Fill in optional items"
@@ -321,6 +329,10 @@ class En(MessagesProto):
     error_page_title_required = "Enter a page title"
     error_page_title_duplicate = "Duplicate page title"
     error_no_matching_project = "No matching project"
+    error_project_identifier_format = (
+        "Use up to 100 lowercase letters, digits, hyphens, and underscores "
+        "(digits only is not allowed)"
+    )
 
     # ---- field labels ----
     field_project = "project"
@@ -340,6 +352,9 @@ class En(MessagesProto):
     field_estimated_hours = "estimated_hours"
     field_notes = "notes"
     field_time_entry = "time_entry"
+    field_is_public = "is_public"
+    field_parent_project = "parent project"
+    field_trackers = "trackers"
     field_version_name = "name"
     field_sharing = "sharing"
     field_hours = "hours"
@@ -448,6 +463,7 @@ class En(MessagesProto):
     tui_filter_status = "Status"
     tui_filter_assignee = "Assignee"
     tui_filter_tracker = "Tracker"
+    tui_filter_query = "Query"
     tui_filter_user = "User"
     tui_filter_hint = "Tab/h/l:column jk:move Enter:apply c:clear all Esc/f:close"
     tui_filter_hint_single = "jk:move Enter:apply c:clear Esc/f:close"
@@ -573,8 +589,11 @@ class En(MessagesProto):
     arg_help_project_view_id = "Project ID"
     arg_help_project_include = "Additional info (trackers,issue_categories,enabled_modules,time_entry_activities,issue_custom_fields)"
     arg_help_project_create = "Create project"
+    arg_help_project_name_arg = "Project name (omit to enter interactively)"
     arg_help_project_name = "Project name"
-    arg_help_project_identifier = "Project identifier (alphanumeric and hyphens)"
+    arg_help_project_identifier = (
+        "Project identifier (alphanumeric and hyphens; omit to enter interactively)"
+    )
     label_project_identifier = "Project identifier"
     arg_help_description = "Description"
     arg_help_project_is_public = "Public visibility"
@@ -921,6 +940,9 @@ class En(MessagesProto):
 
     # ---- config_command suffix ----
     config_profile_suffix = " (profile: {name})"
+    config_profile_source_default = "default"
+    config_profile_source_option = "via --profile"
+    config_current_profile_comment = "current profile ({source})"
 
     # ---- TUI help labels (sections / common) ----
     tui_help_section_navigation = "Navigation"
@@ -938,10 +960,10 @@ class En(MessagesProto):
     tui_help_preview_scroll_half_page = "Scroll preview up / down by half page"
     tui_help_start_search = "Start search"
     tui_help_next_prev_match = "Next / previous match"
-    tui_help_filter_issues = "Filter by status/assignee/tracker (floating)"
-    tui_help_filter_user = "Filter by user (floating)"
-    tui_help_switch_project = "Switch project (floating)"
-    tui_help_switch_profile = "Switch profile (floating)"
+    tui_help_filter_issues = "Filter by status/assignee/tracker/query"
+    tui_help_filter_user = "Filter by user"
+    tui_help_switch_project = "Switch project"
+    tui_help_switch_profile = "Switch profile"
     tui_help_reload = "Reload the current tab"
     tui_help_show_or_close = "Show / close this help"
     tui_help_quit = "Quit"

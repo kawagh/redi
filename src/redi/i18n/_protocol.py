@@ -396,6 +396,12 @@ class MessagesProto(Protocol):
     prompt_time_comments: str
     prompt_select_update_items: str
     prompt_version_name: str
+    prompt_project_name: str
+    prompt_project_identifier: str
+    prompt_select_is_public: str
+    prompt_select_parent_project: str
+    prompt_select_parent_project_none: str
+    prompt_select_trackers: str
     prompt_description_optional: str
     prompt_wiki_comments: str
     prompt_due_date_optional: str
@@ -415,6 +421,10 @@ class MessagesProto(Protocol):
     """カスタムフィールド bool 形式の真の表示ラベル"""
     label_bool_false: str
     """カスタムフィールド bool 形式の偽の表示ラベル"""
+    label_project_public: str
+    """プロジェクトの is_public=true の表示ラベル"""
+    label_project_private: str
+    """プロジェクトの is_public=false の表示ラベル"""
     prompt_what_next: str
     """イシュー作成時に次のアクションを選ばせるメニューのタイトル"""
     action_submit: str
@@ -442,6 +452,7 @@ class MessagesProto(Protocol):
     error_page_title_required: str
     error_page_title_duplicate: str
     error_no_matching_project: str
+    error_project_identifier_format: str
 
     # ---- field labels (interactive selection items) ----
     field_project: str
@@ -462,6 +473,9 @@ class MessagesProto(Protocol):
     field_notes: str
     field_time_entry: str
     field_version_name: str
+    field_is_public: str
+    field_parent_project: str
+    field_trackers: str
     field_sharing: str
     field_hours: str
     field_activity: str
@@ -599,6 +613,7 @@ class MessagesProto(Protocol):
     tui_filter_status: str
     tui_filter_assignee: str
     tui_filter_tracker: str
+    tui_filter_query: str
     tui_filter_user: str
     tui_filter_hint: str
     tui_filter_hint_single: str
@@ -733,6 +748,7 @@ class MessagesProto(Protocol):
     arg_help_project_view_id: str
     arg_help_project_include: str
     arg_help_project_create: str
+    arg_help_project_name_arg: str
     arg_help_project_name: str
     arg_help_project_identifier: str
     label_project_identifier: str
@@ -1052,6 +1068,14 @@ class MessagesProto(Protocol):
     # ---- config_command suffix ----
     config_profile_suffix: str
     """{name}"""
+
+    # ---- config 出力に添える現在のプロファイル ----
+    config_profile_source_default: str
+    """default_profile 由来であることを示すラベル"""
+    config_profile_source_option: str
+    """--profile による一時上書きであることを示すラベル"""
+    config_current_profile_comment: str
+    """--full 出力で今回使われたプロファイルの見出しに添えるコメント。{source} を埋め込む。"""
 
     # ---- TUI help labels (sections / common) ----
     tui_help_section_navigation: str
