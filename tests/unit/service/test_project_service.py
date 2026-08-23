@@ -64,3 +64,36 @@ class TestSortProjectsByIdDesc:
         sorted_projects = project_service.sort_projects_by_id_desc(PROJECTS)
 
         assert [p["id"] for p in sorted_projects] == [2, 1]
+
+
+class TestSuggestIdentifier:
+    """suggest_identifier はプロジェクト名から識別子の候補を作る"""
+
+    @pytest.mark.parametrize(
+        ("name", "expected"),
+        [
+            ("Alpha", "alpha"),
+            ("My New Project", "my-new-project"),
+            ("Redmine 6.1 / CLI", "redmine-6-1-cli"),
+            ("--Edge--", "edge"),
+        ],
+        ids=["lowercase", "spaces", "symbols", "trim_hyphens"],
+    )
+    def test_builds_candidate(self, name: str, expected: str):
+        """使えない文字はハイフンに寄せ、前後のハイフンは落とす"""
+        assert project_service.suggest_identifier(name) == expected
+
+    @pytest.mark.parametrize(
+        ("name", "reason"),
+        [("プロジェクト", "no_ascii"), ("2026", "digits_only"), ("", "empty")],
+        ids=["no_ascii", "digits_only", "empty"],
+    )
+    def test_returns_empty_when_unusable(self, name: str, reason: str):
+        """Redmine が受け付けない候補しか作れない場合は空文字を返す"""
+        assert project_service.suggest_identifier(name) == ""
+
+    def test_truncated_to_max_length(self):
+        """識別子の最大長を超えないよう切り詰める"""
+        candidate = project_service.suggest_identifier("a" * 150)
+
+        assert len(candidate) == project_service.IDENTIFIER_MAX_LENGTH

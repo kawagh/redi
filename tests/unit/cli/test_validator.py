@@ -16,6 +16,7 @@ from redi.cli.validator import (
     IntValidator,
     MaxLengthValidator,
     MinLengthValidator,
+    ProjectIdentifierValidator,
     RegexpValidator,
     RequiredValidator,
     UrlValidator,
@@ -52,6 +53,27 @@ class TestRequiredValidator:
             ValidationError, match=re.escape(messages.error_input_required)
         ):
             RequiredValidator().validate(Document(text=text))
+
+
+class TestProjectIdentifierValidator:
+    """ProjectIdentifierValidator()はRedmineが受け付ける識別子だけを通す"""
+
+    @pytest.mark.parametrize(
+        "text", ["alpha", "my-project", "my_project", "redmine6", "a" * 100]
+    )
+    def test_valid_identifier_passes(self, text: str):
+        """英小文字・数字・ハイフン・アンダースコアの100文字以内は通る"""
+        ProjectIdentifierValidator().validate(Document(text=text))
+
+    @pytest.mark.parametrize(
+        "text",
+        ["", "Alpha", "my project", "プロジェクト", "123", "a" * 101],
+        ids=["empty", "uppercase", "space", "non_ascii", "digits_only", "too_long"],
+    )
+    def test_invalid_identifier_rejected(self, text: str):
+        """識別子として使えない入力は送信前に弾く"""
+        with pytest.raises(ValidationError):
+            ProjectIdentifierValidator().validate(Document(text=text))
 
 
 class TestUrlValidator:

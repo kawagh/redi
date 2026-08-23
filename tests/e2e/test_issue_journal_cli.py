@@ -46,7 +46,7 @@ class TestIssueJournalUpdate:
 
         run_redi("issue_journal", "update", journal_id, updated_notes)
 
-        viewed = run_redi("issue", "view", issue_id, "--full").stdout
+        viewed = run_redi("issue", "view", issue_id).stdout
         assert updated_notes in viewed
         assert notes not in viewed
 
@@ -71,8 +71,8 @@ class TestIssueJournalDelete:
         """削除したコメントの本文はイシューの詳細表示に出てこなくなる"""
         notes = unique_identifier("e2e-journal-delete")
         issue_id, journal_id = _create_issue_with_comment(notes)
-        assert notes in run_redi("issue", "view", issue_id, "--full").stdout
+        assert notes in run_redi("issue", "view", issue_id).stdout
 
         run_redi("issue_journal", "delete", journal_id, "--yes")
 
-        assert notes not in run_redi("issue", "view", issue_id, "--full").stdout
+        assert notes not in run_redi("issue", "view", issue_id).stdout

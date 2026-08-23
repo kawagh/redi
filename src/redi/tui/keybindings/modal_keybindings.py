@@ -23,6 +23,7 @@ from redi.tui.issue.filter_modal import (
     section_cursor,
     set_section_cursor,
     shift_focus,
+    sync_cursors_to_filter,
 )
 from redi.tui.issue.issue_tab import reload_with_filter
 from redi.tui.keybindings.keybinding_actions import reset_preview_scroll
@@ -124,16 +125,9 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         if not choices:
             return
         api_val, label = choices[section_cursor(modal, modal.focus)]
-        f = state.issue_tab.filter
-        if modal.focus == "status":
-            f.status_id = api_val
-            f.status_label = label
-        elif modal.focus == "assignee":
-            f.assigned_to_id = api_val
-            f.assigned_to_label = label
-        else:
-            f.tracker_id = api_val
-            f.tracker_label = label
+        # クエリと status/assignee/tracker の排他は IssueFilter.apply が持つ。
+        state.issue_tab.filter.apply(modal.focus, api_val, label)
+        sync_cursors_to_filter(state)
         reset_preview_scroll(state)
         reload_with_filter(state)
 
@@ -144,6 +138,7 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         modal.status_cursor = 0
         modal.assignee_cursor = 0
         modal.tracker_cursor = 0
+        modal.query_cursor = 0
         reset_preview_scroll(state)
         reload_with_filter(state)
 

@@ -9,6 +9,7 @@ from redi.api.user import User, UserNotFoundException, UserPermissionDeniedExcep
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
 from redi.cli.shared_options import SharedOptionParser
+from redi.cli.user_format import format_user_detail, user_summary
 from redi.i18n import messages
 from redi.service import user_service
 
@@ -20,12 +21,6 @@ MAIL_NOTIFICATION_CHOICES = [
     "only_owner",
     "none",
 ]
-
-
-def _user_summary(user: User) -> str:
-    """`id login 氏名` の 1 行表現を作る。取得できなかった項目は詰めて表示する。"""
-    name = f"{user.get('firstname', '')} {user.get('lastname', '')}".strip()
-    return f"{user['id']} {user.get('login', '')} {name}".rstrip()
 
 
 def _read_user(user_id: str, detail: bool = False) -> User:
@@ -113,34 +108,7 @@ def _view_user(user_id: str, full: bool = False) -> None:
     if full:
         print(json.dumps(user, ensure_ascii=False))
         return
-    lines = [
-        _user_summary(user),
-        "  " + messages.label_mail.format(value=user.get("mail", "")),
-    ]
-    if user.get("admin"):
-        lines.append(messages.label_admin_yes)
-    created_on = user.get("created_on")
-    if created_on:
-        lines.append("  " + messages.label_created_on.format(value=created_on))
-    last_login_on = user.get("last_login_on")
-    if last_login_on:
-        lines.append("  " + messages.label_last_login_on.format(value=last_login_on))
-    memberships = user.get("memberships") or []
-    if memberships:
-        lines.append("  " + messages.label_membership_header)
-        for m in memberships:
-            project = m.get("project") or {}
-            roles = m.get("roles") or []
-            role_str = ", ".join(r.get("name", "") for r in roles)
-            lines.append(
-                f"    {project.get('id', '?')} {project.get('name', '')} - {role_str}"
-            )
-    groups = user.get("groups") or []
-    if groups:
-        lines.append("  " + messages.label_groups_header)
-        for g in groups:
-            lines.append(f"    {g.get('id', '?')} {g.get('name', '')}")
-    print("\n".join(lines))
+    print("\n".join(format_user_detail(user)))
 
 
 def _update_user(
@@ -370,7 +338,7 @@ def handle_user(args: argparse.Namespace) -> None:
     if cmd == "delete":
         if not args.yes:
             user = _read_user(args.user_id)
-            summary = messages.delete_target_user.format(summary=_user_summary(user))
+            summary = messages.delete_target_user.format(summary=user_summary(user))
             confirm_delete_with_identifier(
                 summary, user.get("login", ""), messages.arg_help_user_login
             )

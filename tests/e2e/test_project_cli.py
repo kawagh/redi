@@ -45,6 +45,32 @@ class TestProjectCreate:
         assert name in view_result.stdout
         assert identifier in view_result.stdout
 
+    def test_creates_with_options(self):
+        """--description と --is_public を付けた作成が view に反映される"""
+        identifier = unique_identifier("e2e-create-opt")
+        name = f"e2e create options {identifier}"
+
+        run_redi(
+            "project",
+            "create",
+            name,
+            identifier,
+            "--description",
+            "e2e description",
+            "--is_public",
+            "false",
+        )
+
+        view_result = run_redi("project", "view", identifier)
+        assert "e2e description" in view_result.stdout
+
+    def test_exits_without_prompting_in_non_interactive(self):
+        """引数が足りない場合、非TTYでは対話に入らず exit 1 で終わる"""
+        with pytest.raises(subprocess.CalledProcessError) as e:
+            run_redi("project", "create")
+
+        assert e.value.returncode == 1
+
 
 @pytest.mark.e2e
 class TestProjectUpdate:
