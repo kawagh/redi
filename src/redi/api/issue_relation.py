@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TypedDict, cast
 
+from redi.api.exceptions import RedmineValidationException
 from redi.client import client
 
 
@@ -53,7 +54,8 @@ def create_relation(
     """関係性を作成し、作成された関係性を返す
 
     Raises:
-        requests.exceptions.HTTPError: HTTP エラーが返った場合
+        RedmineValidationException: 関係先が存在しない・種別が不正など (HTTP 422)
+        requests.exceptions.HTTPError: 422 以外の HTTP エラーが返った場合
     """
     response = client.post(
         f"/issues/{issue_id}/relations.json",
@@ -64,6 +66,10 @@ def create_relation(
             }
         },
     )
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response(
+            "issue_relation", "create", response
+        )
     response.raise_for_status()
     return cast("IssueRelation", response.json()["relation"])
 

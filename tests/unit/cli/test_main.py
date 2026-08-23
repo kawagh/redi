@@ -4,7 +4,10 @@ import copy
 import pytest
 import requests
 
-from redi.api.exceptions import RedmineConnectionException
+from redi.api.exceptions import (
+    RedmineConnectionException,
+    RedmineValidationException,
+)
 from redi.cli import main as main_module
 from redi.cli.main import build_redi_parser
 from redi.i18n import messages
@@ -398,3 +401,29 @@ class TestUnhandledHttpErrorIsNotATraceback:
         assert capsys.readouterr().out.splitlines() == [
             messages.http_error_unhandled_unknown
         ]
+
+
+class TestValidationErrorIsHandledOnce:
+    """入力エラー (422) はエントリポイントでまとめて整形する
+
+    以前は 9 つの分岐が同じ try/except を書いており、書き忘れたリソース
+    (group / news / relation) だけ生の JSON が露出していた (github#442)。
+    """
+
+    def test_prints_formatted_message_and_exits(self, monkeypatch, capsys):
+        """どのリソースでも `〜の作成に失敗しました(入力エラー)` に揃う"""
+
+        def _raise():
+            raise RedmineValidationException(
+                "group", "create", ["Name cannot be blank"]
+            )
+
+        monkeypatch.setattr(main_module, "_run", _raise)
+
+        with pytest.raises(SystemExit) as e:
+            main_module.main()
+
+        out = capsys.readouterr().out
+        assert e.value.code == 1
+        assert "group" in out
+        assert "- Name cannot be blank" in out

@@ -172,6 +172,11 @@ def main() -> None:
     except RedmineConnectionException as e:
         print(_format_connection_error(e))
         sys.exit(1)
+    except RedmineValidationException as e:
+        # 入力エラーはどのリソースでも同じ出し方なので、分岐ごとに書かず
+        # ここでまとめて受ける (TUI ループは画面内に出すので中で捕まえている)
+        print(_format_validation_error(e))
+        sys.exit(1)
     except requests.exceptions.HTTPError as e:
         # 個々の api で変換し切れていない経路の保険。ここまで来たら
         # 原因は特定できないので、状態行だけ出してトレースバックは見せない
@@ -335,46 +340,23 @@ def _run() -> None:
                 )
 
     if args.command in ("project", "p"):
-        try:
-            handle_project(args)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
+        handle_project(args)
     elif args.command in ("issue", "i"):
-        try:
-            handle_issue(args)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
+        handle_issue(args)
     elif args.command in ("version", "v"):
-        try:
-            handle_version(args)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
+        handle_version(args)
     elif args.command in ("wiki", "w"):
         try:
             handle_wiki(args)
         except WikiUpdateConflictException as e:
             print(messages.wiki_page_update_conflict.format(title=e.title))
             sys.exit(1)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
     elif args.command in ("user", "u"):
         handle_user(args)
     elif args.command == "me":
-        try:
-            handle_me(args)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
+        handle_me(args)
     elif args.command in ("membership", "m"):
-        try:
-            handle_membership(args)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
+        handle_membership(args)
     elif args.command in ("news", "n"):
         handle_news(args)
     elif (enumeration := find_enumeration_resource(args.command)) is not None:
@@ -384,11 +366,7 @@ def _run() -> None:
     elif args.command in ("group", "g"):
         handle_group(args)
     elif args.command in ("issue_category", "ic"):
-        try:
-            handle_issue_category(args)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
+        handle_issue_category(args)
     elif args.command in ("search", "s"):
         handle_search(args)
     elif args.command in ("attachment", "a"):
@@ -396,11 +374,7 @@ def _run() -> None:
     elif args.command == "relation":
         handle_relation(args)
     elif args.command in ("time_entry", "te"):
-        try:
-            handle_time_entry(args)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
+        handle_time_entry(args)
     elif args.command in ("file", "f"):
         handle_file(args)
     elif args.command in ("issue_journal", "ij"):

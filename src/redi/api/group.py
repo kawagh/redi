@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import NotRequired, TypedDict, cast
 
+from redi.api.exceptions import RedmineValidationException
 from redi.api.types import IdName
 from redi.client import client
 
@@ -90,6 +91,7 @@ def create_group(name: str, user_ids: list[int] | None = None) -> Group:
 
     Raises:
         GroupAdminRequiredException: 管理者権限が無い (HTTP 403)
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
     group_data: dict = {"name": name}
@@ -98,6 +100,8 @@ def create_group(name: str, user_ids: list[int] | None = None) -> Group:
     response = client.post("/groups.json", json={"group": group_data})
     if response.status_code == 403:
         raise GroupAdminRequiredException
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("group", "create", response)
     response.raise_for_status()
     return cast("Group", response.json()["group"])
 
@@ -112,6 +116,7 @@ def update_group(
     Raises:
         GroupNotFoundException: 対象グループが存在しない (HTTP 404)
         GroupAdminRequiredException: 管理者権限が無い (HTTP 403)
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
     data: dict = {}
@@ -124,6 +129,8 @@ def update_group(
         raise GroupNotFoundException(group_id)
     if response.status_code == 403:
         raise GroupAdminRequiredException
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("group", "update", response)
     response.raise_for_status()
 
 
