@@ -50,6 +50,7 @@ class Ja(MessagesProto):
     relation_not_found = "関係性が見つかりません: #{id}"
     relation_between_not_found = "#{from_id} と #{to_id} の間に関係性が見つかりません"
     issue_not_found = "イシューが見つかりません: #{id}"
+    related_issue_not_found = "関係先のイシューが見つかりません: #{id}"
     issue_or_user_not_found = (
         "イシューまたはユーザーが見つかりません: #{issue_id} / #{user_id}"
     )

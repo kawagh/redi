@@ -50,7 +50,10 @@ from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
 from redi.service import issue_relation_service, issue_service, project_service
 from redi.service.attachment_service import LocalFileNotFoundException
-from redi.service.issue_relation_service import RelationBetweenNotFoundException
+from redi.service.issue_relation_service import (
+    RelatedIssueNotFoundException,
+    RelationBetweenNotFoundException,
+)
 
 
 @dataclass
@@ -437,6 +440,9 @@ def _create_relation(issue_id: str, issue_to_id: str, relation_type: str) -> Non
             issue_to_id=issue_to_id,
             relation_type=relation_type,
         )
+    except RelatedIssueNotFoundException as e:
+        print(messages.related_issue_not_found.format(id=e.issue_to_id))
+        sys.exit(1)
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)

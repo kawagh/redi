@@ -84,6 +84,8 @@ class MessagesProto(Protocol):
     """{from_id} と {to_id} の間に関係性が見つからない"""
     issue_not_found: str
     """イシューが見つからない。{id}"""
+    related_issue_not_found: str
+    """関係先のイシューが見つからない。{id}"""
     issue_or_user_not_found: str
     """イシューまたはユーザーが見つからない。{issue_id} / {user_id}"""
     user_not_found: str

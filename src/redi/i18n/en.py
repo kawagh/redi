@@ -50,6 +50,7 @@ class En(MessagesProto):
     relation_not_found = "Relation not found: #{id}"
     relation_between_not_found = "No relation found between #{from_id} and #{to_id}"
     issue_not_found = "Issue not found: #{id}"
+    related_issue_not_found = "Related issue not found: #{id}"
     issue_or_user_not_found = "Issue or user not found: #{issue_id} / #{user_id}"
     user_not_found = "User not found: {id}"
     project_not_found = "Project not found: {id}"
