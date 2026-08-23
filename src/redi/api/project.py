@@ -93,9 +93,13 @@ def create_project(
     name: str,
     identifier: str,
     description: str | None = None,
+    homepage: str | None = None,
     is_public: bool | None = None,
     parent_id: str | None = None,
+    inherit_members: bool | None = None,
     tracker_ids: list[int] | None = None,
+    enabled_module_names: list[str] | None = None,
+    issue_custom_field_ids: list[int] | None = None,
 ) -> Project:
     """プロジェクトを作成し、作成されたプロジェクトを返す
 
@@ -109,12 +113,20 @@ def create_project(
     }
     if description is not None:
         data["description"] = description
+    if homepage is not None:
+        data["homepage"] = homepage
     if is_public is not None:
         data["is_public"] = is_public
     if parent_id is not None:
         data["parent_id"] = parent_id
+    if inherit_members is not None:
+        data["inherit_members"] = inherit_members
     if tracker_ids is not None:
         data["tracker_ids"] = tracker_ids
+    if enabled_module_names is not None:
+        data["enabled_module_names"] = enabled_module_names
+    if issue_custom_field_ids is not None:
+        data["issue_custom_field_ids"] = issue_custom_field_ids
     response = client.post("/projects.json", json={"project": data})
     if response.status_code == 422:
         raise RedmineValidationException.from_response("project", "create", response)
@@ -126,9 +138,13 @@ def update_project(
     project_id: str,
     name: str | None = None,
     description: str | None = None,
+    homepage: str | None = None,
     is_public: bool | None = None,
     parent_id: str | None = None,
+    inherit_members: bool | None = None,
     tracker_ids: list[int] | None = None,
+    enabled_module_names: list[str] | None = None,
+    issue_custom_field_ids: list[int] | None = None,
 ) -> None:
     """プロジェクトを更新する
 
@@ -142,12 +158,20 @@ def update_project(
         data["name"] = name
     if description is not None:
         data["description"] = description
+    if homepage is not None:
+        data["homepage"] = homepage
     if is_public is not None:
         data["is_public"] = is_public
     if parent_id is not None:
         data["parent_id"] = parent_id
+    if inherit_members is not None:
+        data["inherit_members"] = inherit_members
     if tracker_ids is not None:
         data["tracker_ids"] = tracker_ids
+    if enabled_module_names is not None:
+        data["enabled_module_names"] = enabled_module_names
+    if issue_custom_field_ids is not None:
+        data["issue_custom_field_ids"] = issue_custom_field_ids
     response = client.put(f"/projects/{project_id}.json", json={"project": data})
     if response.status_code == 404:
         raise ProjectNotFoundException(project_id)

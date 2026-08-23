@@ -290,7 +290,9 @@ class Ja(MessagesProto):
     prompt_version_name = "バージョン名: "
     prompt_project_name = "プロジェクト名: "
     prompt_project_identifier = "プロジェクト識別子: "
+    prompt_project_homepage = "ホームページURL: "
     prompt_select_is_public = "公開設定"
+    prompt_select_inherit_members = "メンバーの継承"
     prompt_select_parent_project = "親プロジェクト"
     prompt_select_parent_project_none = "（親プロジェクトなし）"
     prompt_select_trackers = "トラッカーを選択 (Spaceで選択、Enterで確定)"
@@ -355,8 +357,10 @@ class Ja(MessagesProto):
     field_estimated_hours = "予定工数 (estimated_hours)"
     field_notes = "コメント (notes)"
     field_time_entry = "作業時間 (time_entry)"
+    field_homepage = "ホームページ (homepage)"
     field_is_public = "公開設定 (is_public)"
     field_parent_project = "親プロジェクト (parent)"
+    field_inherit_members = "メンバーの継承 (inherit_members)"
     field_trackers = "トラッカー (trackers)"
     field_version_name = "バージョン名 (name)"
     field_sharing = "共有設定 (sharing)"
@@ -601,9 +605,17 @@ class Ja(MessagesProto):
     )
     label_project_identifier = "プロジェクト識別子"
     arg_help_description = "説明"
+    arg_help_project_homepage = "ホームページURL"
     arg_help_project_is_public = "公開設定"
     arg_help_parent_id = "親プロジェクトID"
+    arg_help_project_inherit_members = "親プロジェクトのメンバーを継承する"
     arg_help_tracker_ids = "トラッカーID（カンマ区切り。例: 1,2,3）"
+    arg_help_enabled_module_names = (
+        "有効化するモジュール名（カンマ区切り。例: issue_tracking,wiki）"
+    )
+    arg_help_issue_custom_field_ids = (
+        "有効化するイシューのカスタムフィールドID（カンマ区切り。例: 1,2,3）"
+    )
     arg_help_project_delete = "プロジェクト削除"
     arg_help_project_delete_id = "プロジェクトID"
     arg_help_project_update = "プロジェクト更新"

@@ -107,9 +107,13 @@ def _create_project(
     name: str,
     identifier: str,
     description: str | None = None,
+    homepage: str | None = None,
     is_public: bool | None = None,
     parent_id: str | None = None,
+    inherit_members: bool | None = None,
     tracker_ids: list[int] | None = None,
+    enabled_module_names: list[str] | None = None,
+    issue_custom_field_ids: list[int] | None = None,
 ) -> None:
     """プロジェクトを作成し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
@@ -117,9 +121,13 @@ def _create_project(
             name=name,
             identifier=identifier,
             description=description,
+            homepage=homepage,
             is_public=is_public,
             parent_id=parent_id,
+            inherit_members=inherit_members,
             tracker_ids=tracker_ids,
+            enabled_module_names=enabled_module_names,
+            issue_custom_field_ids=issue_custom_field_ids,
         )
     except requests.exceptions.HTTPError as e:
         print(e)
@@ -132,9 +140,13 @@ def _update_project(
     project_id: str,
     name: str | None = None,
     description: str | None = None,
+    homepage: str | None = None,
     is_public: bool | None = None,
     parent_id: str | None = None,
+    inherit_members: bool | None = None,
     tracker_ids: list[int] | None = None,
+    enabled_module_names: list[str] | None = None,
+    issue_custom_field_ids: list[int] | None = None,
 ) -> None:
     """プロジェクトを更新し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
@@ -142,9 +154,13 @@ def _update_project(
             project_id,
             name=name,
             description=description,
+            homepage=homepage,
             is_public=is_public,
             parent_id=parent_id,
+            inherit_members=inherit_members,
             tracker_ids=tracker_ids,
+            enabled_module_names=enabled_module_names,
+            issue_custom_field_ids=issue_custom_field_ids,
         )
     except ProjectNotFoundException:
         print(messages.project_not_found.format(id=project_id))
@@ -202,6 +218,23 @@ def _delete_project(project_id: str) -> None:
     print(messages.project_deleted.format(id=project_id))
 
 
+def _split_int_ids(value: str | None) -> list[int] | None:
+    """カンマ区切りの id 文字列を int のリストにする。未指定なら None を返す。"""
+    if not value:
+        return None
+    return [int(x) for x in value.split(",")]
+
+
+def _split_names(value: str | None) -> list[str] | None:
+    """カンマ区切りの名前を strip したリストにする。未指定なら None を返す。
+
+    空文字は「モジュールを全て無効にする」の意味になるため空リストを返す。
+    """
+    if value is None:
+        return None
+    return [x.strip() for x in value.split(",") if x.strip()]
+
+
 def _interactive_select_parent_id(current: str | None) -> str | None:
     """親プロジェクトを一覧から選ばせる。「なし」を選んだ場合は None を返す。"""
     options: list[tuple[str, str]] = [
@@ -251,8 +284,10 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
     """
     field_options: list[tuple[str, str]] = [
         ("description", messages.field_description),
+        ("homepage", messages.field_homepage),
         ("is_public", messages.field_is_public),
         ("parent_id", messages.field_parent_project),
+        ("inherit_members", messages.field_inherit_members),
         ("tracker_ids", messages.field_trackers),
     ]
     try:
@@ -270,6 +305,10 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
                         value=shorten_to_oneline(args.description),
                     )
                 )
+        if "homepage" in selected:
+            args.homepage = prompt(
+                messages.prompt_project_homepage, default=args.homepage or ""
+            ).strip()
         if "is_public" in selected:
             is_public_options: list[tuple[str, str]] = [
                 ("true", messages.label_project_public),
@@ -288,6 +327,23 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
             )
         if "parent_id" in selected:
             args.parent_id = _interactive_select_parent_id(args.parent_id)
+        if "inherit_members" in selected:
+            inherit_options: list[tuple[str, str]] = [
+                ("true", messages.label_bool_true),
+                ("false", messages.label_bool_false),
+            ]
+            inherit_labels = dict(inherit_options)
+            args.inherit_members = inline_choice(
+                messages.prompt_select_inherit_members,
+                inherit_options,
+                default=args.inherit_members,
+            )
+            print(
+                messages.prompt_field_value.format(
+                    name=messages.field_inherit_members,
+                    value=inherit_labels[args.inherit_members],
+                )
+            )
         if "tracker_ids" in selected:
             args.tracker_ids = _interactive_select_tracker_ids(args.tracker_ids)
     except (KeyboardInterrupt, EOFError):
@@ -368,13 +424,25 @@ def add_project_parser(
     p_create_parser.add_argument(
         "--description", "-d", help=messages.arg_help_description
     )
+    p_create_parser.add_argument("--homepage", help=messages.arg_help_project_homepage)
     p_create_parser.add_argument(
         "--is_public",
         choices=["true", "false"],
         help=messages.arg_help_project_is_public,
     )
     p_create_parser.add_argument("--parent_id", help=messages.arg_help_parent_id)
+    p_create_parser.add_argument(
+        "--inherit_members",
+        choices=["true", "false"],
+        help=messages.arg_help_project_inherit_members,
+    )
     p_create_parser.add_argument("--tracker_ids", help=messages.arg_help_tracker_ids)
+    p_create_parser.add_argument(
+        "--enabled_module_names", help=messages.arg_help_enabled_module_names
+    )
+    p_create_parser.add_argument(
+        "--issue_custom_field_ids", help=messages.arg_help_issue_custom_field_ids
+    )
     p_delete_parser = p_subparsers.add_parser(
         "delete", aliases=["d"], help=messages.arg_help_project_delete, parents=parents
     )
@@ -390,13 +458,25 @@ def add_project_parser(
     p_update_parser.add_argument(
         "--description", "-d", help=messages.arg_help_description
     )
+    p_update_parser.add_argument("--homepage", help=messages.arg_help_project_homepage)
     p_update_parser.add_argument(
         "--is_public",
         choices=["true", "false"],
         help=messages.arg_help_project_is_public,
     )
     p_update_parser.add_argument("--parent_id", help=messages.arg_help_parent_id)
+    p_update_parser.add_argument(
+        "--inherit_members",
+        choices=["true", "false"],
+        help=messages.arg_help_project_inherit_members,
+    )
     p_update_parser.add_argument("--tracker_ids", help=messages.arg_help_tracker_ids)
+    p_update_parser.add_argument(
+        "--enabled_module_names", help=messages.arg_help_enabled_module_names
+    )
+    p_update_parser.add_argument(
+        "--issue_custom_field_ids", help=messages.arg_help_issue_custom_field_ids
+    )
     p_update_parser.add_argument(
         "--archive",
         action=argparse.BooleanOptionalAction,
@@ -420,16 +500,20 @@ def handle_project(args: argparse.Namespace) -> None:
         is_public = None
         if args.is_public is not None:
             is_public = args.is_public == "true"
-        tracker_ids = None
-        if args.tracker_ids:
-            tracker_ids = [int(x) for x in args.tracker_ids.split(",")]
+        inherit_members = None
+        if args.inherit_members is not None:
+            inherit_members = args.inherit_members == "true"
         _create_project(
             name=args.name,
             identifier=args.identifier,
             description=args.description,
+            homepage=args.homepage,
             is_public=is_public,
             parent_id=args.parent_id,
-            tracker_ids=tracker_ids,
+            inherit_members=inherit_members,
+            tracker_ids=_split_int_ids(args.tracker_ids),
+            enabled_module_names=_split_names(args.enabled_module_names),
+            issue_custom_field_ids=_split_int_ids(args.issue_custom_field_ids),
         )
     elif cmd == "delete":
         if not args.yes:
@@ -451,24 +535,35 @@ def handle_project(args: argparse.Namespace) -> None:
         is_public = None
         if args.is_public is not None:
             is_public = args.is_public == "true"
-        tracker_ids = None
-        if args.tracker_ids:
-            tracker_ids = [int(x) for x in args.tracker_ids.split(",")]
+        inherit_members = None
+        if args.inherit_members is not None:
+            inherit_members = args.inherit_members == "true"
+        tracker_ids = _split_int_ids(args.tracker_ids)
+        enabled_module_names = _split_names(args.enabled_module_names)
+        issue_custom_field_ids = _split_int_ids(args.issue_custom_field_ids)
         should_update = (
             args.name is not None
             or args.description is not None
+            or args.homepage is not None
             or is_public is not None
             or args.parent_id is not None
+            or inherit_members is not None
             or tracker_ids is not None
+            or enabled_module_names is not None
+            or issue_custom_field_ids is not None
         )
         if should_update:
             _update_project(
                 args.project_id,
                 name=args.name,
                 description=args.description,
+                homepage=args.homepage,
                 is_public=is_public,
                 parent_id=args.parent_id,
+                inherit_members=inherit_members,
                 tracker_ids=tracker_ids,
+                enabled_module_names=enabled_module_names,
+                issue_custom_field_ids=issue_custom_field_ids,
             )
         if args.archive is True:
             _archive_project(args.project_id)

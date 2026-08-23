@@ -398,7 +398,9 @@ class MessagesProto(Protocol):
     prompt_version_name: str
     prompt_project_name: str
     prompt_project_identifier: str
+    prompt_project_homepage: str
     prompt_select_is_public: str
+    prompt_select_inherit_members: str
     prompt_select_parent_project: str
     prompt_select_parent_project_none: str
     prompt_select_trackers: str
@@ -473,8 +475,10 @@ class MessagesProto(Protocol):
     field_notes: str
     field_time_entry: str
     field_version_name: str
+    field_homepage: str
     field_is_public: str
     field_parent_project: str
+    field_inherit_members: str
     field_trackers: str
     field_sharing: str
     field_hours: str
@@ -752,9 +756,13 @@ class MessagesProto(Protocol):
     arg_help_project_identifier: str
     label_project_identifier: str
     arg_help_description: str
+    arg_help_project_homepage: str
     arg_help_project_is_public: str
     arg_help_parent_id: str
+    arg_help_project_inherit_members: str
     arg_help_tracker_ids: str
+    arg_help_enabled_module_names: str
+    arg_help_issue_custom_field_ids: str
     arg_help_project_delete: str
     arg_help_project_delete_id: str
     arg_help_project_update: str

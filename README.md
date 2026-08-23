@@ -143,7 +143,10 @@ redi project view <project_id> --include trackers,issue_categories
 redi project create # (interactive)
 redi project create <name> <identifier>
 redi project create <name> <identifier> -d "description" --is_public true
+redi project create <name> <identifier> --homepage https://example.com --inherit_members true
+redi project create <name> <identifier> --enabled_module_names issue_tracking,wiki --issue_custom_field_ids 1,2
 redi project update <project_id> --name renamed_project
+redi project update <project_id> --enabled_module_names issue_tracking,time_tracking,wiki
 
 # issue (alias: i)
 redi issue # list issues

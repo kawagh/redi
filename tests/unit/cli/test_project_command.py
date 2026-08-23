@@ -20,6 +20,24 @@ def parse_project_args(argv: list[str]) -> argparse.Namespace:
 
 
 @pytest.fixture
+def updated_project(monkeypatch):
+    """更新をスタブし、service に渡された引数を記録する。
+
+    Redmine に値が正しく届くかは E2E (`tests/e2e/test_project_cli.py`) で見る。
+    """
+
+    calls: list[dict] = []
+
+    def fake_update_project(project_id, **kwargs):
+        calls.append({"project_id": project_id, **kwargs})
+
+    monkeypatch.setattr(
+        project_command.project_service, "update_project", fake_update_project
+    )
+    return calls
+
+
+@pytest.fixture
 def created_project(monkeypatch):
     """作成をスタブし、service に渡された引数を記録する。
 
@@ -86,9 +104,13 @@ class TestCreate:
                 "name": "新プロジェクト",
                 "identifier": "new-project",
                 "description": None,
+                "homepage": None,
                 "is_public": None,
                 "parent_id": None,
+                "inherit_members": None,
                 "tracker_ids": None,
+                "enabled_module_names": None,
+                "issue_custom_field_ids": None,
             }
         ]
         assert "7 新プロジェクト (new-project)" in capsys.readouterr().out
@@ -112,6 +134,49 @@ class TestCreate:
 
         assert created_project[0]["is_public"] is False
         assert created_project[0]["tracker_ids"] == [1, 2]
+
+    def test_additional_fields_are_passed(self, created_project):
+        """homepage / inherit_members / モジュール / カスタムフィールドも送信できる形で渡す"""
+        handle_project(
+            parse_project_args(
+                [
+                    "project",
+                    "create",
+                    "新プロジェクト",
+                    "new-project",
+                    "--homepage",
+                    "https://example.com",
+                    "--inherit_members",
+                    "true",
+                    "--enabled_module_names",
+                    "issue_tracking,wiki",
+                    "--issue_custom_field_ids",
+                    "1,2",
+                ]
+            )
+        )
+
+        assert created_project[0]["homepage"] == "https://example.com"
+        assert created_project[0]["inherit_members"] is True
+        assert created_project[0]["enabled_module_names"] == ["issue_tracking", "wiki"]
+        assert created_project[0]["issue_custom_field_ids"] == [1, 2]
+
+    def test_empty_enabled_module_names_disables_all(self, created_project):
+        """--enabled_module_names "" は空リストとして渡し、全モジュールの無効化を表す"""
+        handle_project(
+            parse_project_args(
+                [
+                    "project",
+                    "create",
+                    "新プロジェクト",
+                    "new-project",
+                    "--enabled_module_names",
+                    "",
+                ]
+            )
+        )
+
+        assert created_project[0]["enabled_module_names"] == []
 
     def test_missing_identifier_is_prompted(
         self, created_project, tty_stdin, monkeypatch
@@ -149,6 +214,23 @@ class TestCreate:
 
         assert created_project[0]["tracker_ids"] == [3]
 
+    def test_optional_inherit_members_is_filled(
+        self, created_project, tty_stdin, monkeypatch
+    ):
+        """任意項目で inherit_members を選ぶと bool に変換して作成する"""
+        choices = iter(["optional", "true", "submit"])
+        monkeypatch.setattr(project_command, "prompt", lambda *_, **__: "new-project")
+        monkeypatch.setattr(
+            project_command, "inline_choice", lambda *_, **__: next(choices)
+        )
+        monkeypatch.setattr(
+            project_command, "inline_checkbox", lambda *_, **__: ["inherit_members"]
+        )
+
+        handle_project(parse_project_args(["project", "create", "新プロジェクト"]))
+
+        assert created_project[0]["inherit_members"] is True
+
     def test_non_interactive_names_missing_input(self, capsys):
         """非TTY環境では対話に入らず、求めた入力を示して exit 1 する"""
         with pytest.raises(SystemExit) as e:
@@ -161,3 +243,65 @@ class TestCreate:
             )
             in capsys.readouterr().out
         )
+
+
+class TestUpdate:
+    """`project update` は create と同じフィールドを更新できる"""
+
+    def test_additional_fields_are_passed(self, updated_project):
+        """homepage / inherit_members / モジュール / カスタムフィールドを送信できる形で渡す"""
+        handle_project(
+            parse_project_args(
+                [
+                    "project",
+                    "update",
+                    "7",
+                    "--homepage",
+                    "https://example.com",
+                    "--inherit_members",
+                    "false",
+                    "--enabled_module_names",
+                    "issue_tracking,wiki",
+                    "--issue_custom_field_ids",
+                    "1,2",
+                ]
+            )
+        )
+
+        assert updated_project == [
+            {
+                "project_id": "7",
+                "name": None,
+                "description": None,
+                "homepage": "https://example.com",
+                "is_public": None,
+                "parent_id": None,
+                "inherit_members": False,
+                "tracker_ids": None,
+                "enabled_module_names": ["issue_tracking", "wiki"],
+                "issue_custom_field_ids": [1, 2],
+            }
+        ]
+
+    @pytest.mark.parametrize(
+        ("option", "value"),
+        [
+            ("--homepage", "https://example.com"),
+            ("--inherit_members", "true"),
+            ("--enabled_module_names", "wiki"),
+            ("--issue_custom_field_ids", "1"),
+        ],
+    )
+    def test_single_option_triggers_update(self, updated_project, option, value):
+        """新しく足したオプションだけを指定しても「更新なし」で終わらせない"""
+        handle_project(parse_project_args(["project", "update", "7", option, value]))
+
+        assert len(updated_project) == 1
+
+    def test_no_option_cancels(self, updated_project, capsys):
+        """更新するフィールドが1つも無ければ何も送らずに終わる"""
+        with pytest.raises(SystemExit):
+            handle_project(parse_project_args(["project", "update", "7"]))
+
+        assert updated_project == []
+        assert messages.update_canceled in capsys.readouterr().out
