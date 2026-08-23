@@ -457,7 +457,6 @@ class En(MessagesProto):
     tui_project_modal_title = "Switch project (Esc/p to close)"
     tui_project_modal_hint = "jk:move gg/G:top/bottom Enter:switch Esc/p:close"
     tui_current_project = "  [project: {name}]"
-    tui_current_query = "  [query: {name}]"
     tui_flash_project_switched = "Switched project to {name}"
     tui_project_load_failed = "Failed to load projects: {error}"
     tui_profile_modal_title = "Switch profile (Esc/P to close)"

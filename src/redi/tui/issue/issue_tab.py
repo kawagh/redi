@@ -146,10 +146,8 @@ def _status_hint(state: TuiState) -> str:
     if state.issue_tab.comment_select.active:
         return messages.tui_comment_select_status_hint
     hint = messages.tui_status_hint_issues.format(page_label=_page_label(state))
-    # クエリで絞り込んでいるときは short_label が空になる (タブバーに出している)。
-    condition_label = state.issue_tab.filter.short_label()
-    if condition_label:
-        hint = f" [{condition_label}]" + hint
+    if state.issue_tab.filter.is_active():
+        hint = f" [{state.issue_tab.filter.short_label()}]" + hint
     return hint
 
 

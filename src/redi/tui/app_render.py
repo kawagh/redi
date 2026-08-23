@@ -38,16 +38,6 @@ def render_tabs(state: TuiState) -> Renderable:
                 messages.tui_current_project.format(name=project),
             )
         )
-    # クエリは issues タブの絞り込みなので、そのタブを見ているときだけ出す。
-    # profile / project と並べて「今どこを見ているか」をこの行に集める。
-    issue_filter = state.issue_tab.filter
-    if state.tab == "issues" and issue_filter.query_id is not None:
-        parts.append(
-            (
-                "bold fg:ansigreen",
-                messages.tui_current_query.format(name=issue_filter.query_label),
-            )
-        )
     return parts
 
 

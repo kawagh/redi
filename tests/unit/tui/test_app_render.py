@@ -1,8 +1,7 @@
 from prompt_toolkit.utils import get_cwidth
 
-from redi.i18n import messages
 from redi.tui import app_render
-from redi.tui.state import IssueFilter, TuiState
+from redi.tui.state import TuiState
 from redi.tui.tabs import TABS
 
 
@@ -32,26 +31,3 @@ class TestRenderHelp:
         """バージョン行の直前は空行にして本文と分ける"""
         lines = _rendered_lines(app_render.render_help(TuiState()))
         assert lines[-2] == ""
-
-
-class TestRenderTabs:
-    """render_tabs() はタブの並びと、今どこを見ているかの情報を組み立てる"""
-
-    def test_shows_query_name_when_filtering_by_query(self):
-        """クエリで絞り込み中はタブバーにクエリ名を出す"""
-        state = TuiState()
-        state.issue_tab.filter = IssueFilter(query_id="7", query_label="バグOR機能")
-
-        line = _rendered_lines(app_render.render_tabs(state))[0]
-
-        assert messages.tui_current_query.format(name="バグOR機能") in line
-
-    def test_hides_query_name_on_other_tabs(self):
-        """クエリは issues タブの絞り込みなので、他のタブでは出さない"""
-        state = TuiState()
-        state.issue_tab.filter = IssueFilter(query_id="7", query_label="バグOR機能")
-        state.tab = "wiki"
-
-        line = _rendered_lines(app_render.render_tabs(state))[0]
-
-        assert "バグOR機能" not in line
