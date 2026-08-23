@@ -3,6 +3,7 @@ import json
 from typing import cast
 
 import pytest
+import requests
 
 from redi import config
 from redi.api.exceptions import ProjectNotFoundException
@@ -10,6 +11,7 @@ from redi.api.issue import Issue
 from redi.cli.issue_command import add_issue_parser
 from redi.cli.issue_command import create as create_module
 from redi.cli.issue_command import dispatch as dispatch_module
+from redi.cli.issue_command import filters as filters_module
 from redi.cli.issue_command import view as view_module
 from redi.cli.issue_command.create import IssueCreateArgs, handle_issue_create
 from redi.cli.issue_command.update import IssueUpdateArgs
@@ -182,6 +184,117 @@ class TestIssueListQueryIdFilters:
 
         assert called["query_id"] == "5"
         assert called["project_id"] == "demo"
+
+
+class TestIssueListFilterValidation:
+    """`issue list` のフィルタ値の検証
+
+    Redmine は未知の ID でも 0 件を返すだけなので、「該当なし」と「指定ミス」を
+    区別できるよう、送信前に落とす。
+    """
+
+    @pytest.fixture
+    def masters(self, monkeypatch):
+        """マスタ取得をスタブし、一覧取得の呼び出し引数を記録する"""
+        monkeypatch.setattr(
+            filters_module, "fetch_issue_statuses", lambda: [{"id": 1}, {"id": 2}]
+        )
+        monkeypatch.setattr(filters_module, "fetch_trackers", lambda: [{"id": 3}])
+        monkeypatch.setattr(
+            filters_module, "fetch_issue_priorities", lambda: [{"id": 4}]
+        )
+        called = {}
+        monkeypatch.setattr(
+            view_module.issue_service,
+            "list_issues",
+            lambda **kwargs: called.update(kwargs) or [],
+        )
+        return called
+
+    @pytest.mark.parametrize(
+        ("option", "value"),
+        [
+            ("-s", "zzz"),
+            ("-s", "999"),
+            ("-t", "999"),
+            ("--priority_id", "999"),
+            ("-a", "zzz"),
+            ("-v", "zzz"),
+        ],
+    )
+    def test_unknown_value_exits(self, masters, option, value, capsys):
+        """マスタに無い ID や数値でない値は、その値を示して exit 1 する"""
+        args = parse_issue_args(["issue", "list", option, value])
+
+        with pytest.raises(SystemExit) as exc_info:
+            dispatch_module.handle_issue(args)
+
+        assert exc_info.value.code == 1
+        assert value in capsys.readouterr().out
+
+    def test_shows_available_values(self, masters, capsys):
+        """指定できる値（マスタの ID とキーワード）を併せて示す"""
+        args = parse_issue_args(["issue", "list", "-s", "zzz"])
+
+        with pytest.raises(SystemExit):
+            dispatch_module.handle_issue(args)
+
+        out = capsys.readouterr().out
+        assert "1,2,open,closed,*" in out
+
+    @pytest.mark.parametrize(
+        ("option", "value", "sent_as"),
+        [
+            ("-s", "1", "status_id"),
+            ("-s", "open", "status_id"),
+            ("-s", "closed", "status_id"),
+            ("-s", "*", "status_id"),
+            ("-t", "3", "tracker_id"),
+            ("--priority_id", "4", "priority_id"),
+            ("-a", "me", "assigned_to"),
+            ("-a", "5", "assigned_to"),
+            ("-v", "6", "fixed_version_id"),
+        ],
+    )
+    def test_valid_value_is_sent(self, masters, option, value, sent_as):
+        """マスタにある ID とキーワードはそのまま送る"""
+        args = parse_issue_args(["issue", "list", option, value])
+
+        dispatch_module.handle_issue(args)
+
+        assert masters[sent_as] == value
+
+    @pytest.mark.parametrize("value", ["!1", "1|2", "!1|2"])
+    def test_negation_and_multiple_values_are_allowed(self, masters, value):
+        """`!` の否定と `|` の複数指定は個々の値を見て通す"""
+        args = parse_issue_args(["issue", "list", "-s", value])
+
+        dispatch_module.handle_issue(args)
+
+        assert masters["status_id"] == value
+
+    def test_unknown_value_in_multiple_values_exits(self, masters, capsys):
+        """`|` で並べた値の中に未知の ID があれば exit 1 する"""
+        args = parse_issue_args(["issue", "list", "-s", "1|999"])
+
+        with pytest.raises(SystemExit) as exc_info:
+            dispatch_module.handle_issue(args)
+
+        assert exc_info.value.code == 1
+        assert "999" in capsys.readouterr().out
+
+    def test_master_fetch_failure_does_not_block_list(self, masters, monkeypatch):
+        """マスタを取得できないときは検証を諦めて一覧を続ける"""
+
+        def _raise():
+            raise requests.exceptions.ConnectionError
+
+        monkeypatch.setattr(filters_module, "fetch_issue_statuses", _raise)
+        args = parse_issue_args(["issue", "list", "-s", "999"])
+
+        dispatch_module.handle_issue(args)
+
+        assert masters["status_id"] == "999"
 
 
 VIEWED_ISSUE = cast(

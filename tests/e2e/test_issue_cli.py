@@ -138,3 +138,40 @@ class TestIssueDelete:
             f"想定外のエラーで delete が失敗\n"
             f"stdout:\n{delete_error.stdout}\nstderr:\n{delete_error.stderr}"
         )
+
+
+@pytest.mark.e2e
+class TestIssueListFilter:
+    """`redi issue list` のフィルタは指定できない ID を送信前に落とす"""
+
+    def test_exits_with_error_for_unknown_status(self):
+        """マスタに無いステータス ID は 0 件ではなくエラーになる"""
+        with pytest.raises(subprocess.CalledProcessError) as list_error_info:
+            run_redi("issue", "list", "--project_id", "reditest", "-s", "9999")
+
+        list_error = list_error_info.value
+        assert list_error.returncode == 1
+        assert "9999" in list_error.stdout, (
+            f"想定外のエラーで list が失敗\n"
+            f"stdout:\n{list_error.stdout}\nstderr:\n{list_error.stderr}"
+        )
+
+    def test_lists_issues_for_known_status(self):
+        """マスタにあるステータス ID とキーワードはそのまま Redmine に送る"""
+        subject = unique_identifier("e2e-issue-filter")
+        issue_id = _create_issue(subject)
+        created = json.loads(run_redi("issue", "view", issue_id, "--full").stdout)
+        status_id = str(created["status"]["id"])
+
+        assert (
+            subject
+            in run_redi(
+                "issue", "list", "--project_id", "reditest", "-s", "open"
+            ).stdout
+        )
+        assert (
+            subject
+            in run_redi(
+                "issue", "list", "--project_id", "reditest", "-s", status_id
+            ).stdout
+        )

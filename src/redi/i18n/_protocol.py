@@ -772,6 +772,9 @@ class MessagesProto(Protocol):
     arg_help_issue_filter_query: str
     error_query_id_conflicts_filters: str
     """{options}"""
+    error_unknown_filter_value: str
+    """{label} {value} {available}"""
+    filter_available_numeric_id: str
     arg_help_limit: str
     arg_help_offset: str
     arg_help_issue_list: str
