@@ -1,10 +1,12 @@
 import argparse
 import json
+from typing import cast
 
 import pytest
 
 from redi import config
 from redi.api.exceptions import ProjectNotFoundException
+from redi.api.issue import Issue
 from redi.cli.issue_command import add_issue_parser
 from redi.cli.issue_command import create as create_module
 from redi.cli.issue_command import dispatch as dispatch_module
@@ -180,3 +182,68 @@ class TestIssueListQueryIdFilters:
 
         assert called["query_id"] == "5"
         assert called["project_id"] == "demo"
+
+
+VIEWED_ISSUE = cast(
+    Issue,
+    {
+        "id": 42,
+        "subject": "件名",
+        "description": "本文",
+        "status": {"name": "終了"},
+        "priority": {"name": "通常"},
+        "tracker": {"name": "バグ"},
+        "author": {"name": "報告者"},
+        "start_date": "2026-04-01",
+        "due_date": None,
+        "done_ratio": 70,
+        "estimated_hours": 1.5,
+        "spent_hours": 0.5,
+        "created_on": "2026-04-01T00:00:00Z",
+        "updated_on": "2026-04-02T00:00:00Z",
+        "journals": [
+            {
+                "user": {"name": "コメントした人"},
+                "created_on": "2026-04-29T02:26:43Z",
+                "notes": "テストコメント",
+            }
+        ],
+    },
+)
+
+
+class TestFormatIssueDetail:
+    """`issue view` の整形出力"""
+
+    def test_shows_meta_table(self):
+        """件名の次にメタ情報を `[ラベル] 値` の表で出す (先頭はステータス)"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
+        assert lines[0] == "#42 件名"
+        # ラベル列の幅は言語設定で変わるため、ラベルと値を前後から挟んで見る
+        assert lines[2].startswith(f"[{messages.meta_status}")
+        assert lines[2].endswith("] 終了")
+
+    def test_separates_description(self):
+        """メタ情報と説明の間は `----` で区切る"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
+        assert lines[lines.index("本文") - 1] == "----"
+
+
+class TestViewIssueComments:
+    """`issue view` のコメント表示"""
+
+    def test_shows_comments_without_include(self, monkeypatch, capsys):
+        """`--include journals` 無しでも journals を取得して本文まで出す"""
+        called = {}
+        monkeypatch.setattr(
+            view_module.issue_service,
+            "read_issue",
+            lambda issue_id, include: called.update(include=include) or VIEWED_ISSUE,
+        )
+
+        view_module.view_issue("42")
+
+        assert "journals" in called["include"].split(",")
+        assert "テストコメント" in capsys.readouterr().out

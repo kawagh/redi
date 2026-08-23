@@ -171,6 +171,17 @@ class TestApplyProjectSwitch:
         assert state.issue_tab.filter.assigned_to_id is None
         assert state.time_entry_tab.filter.user_id == TimeEntryFilter().user_id
 
+    def test_query_filter_is_cleared(self, monkeypatch):
+        """クエリはプロジェクト固有のものが混ざるので切替時にクリアされる"""
+        monkeypatch.setattr(project_modal, "reload_with_filter", lambda state: None)
+        state = TuiState()
+        state.issue_tab.filter = IssueFilter(query_id="7", query_label="My open issues")
+
+        project_modal.apply_project_switch(state, "2", "Beta")
+
+        assert state.issue_tab.filter.query_id is None
+        assert state.issue_tab.filter.is_active() is False
+
     def test_special_filters_are_preserved(self, monkeypatch):
         """me / 未割当などの特殊値はプロジェクト非依存なので保持される"""
         monkeypatch.setattr(project_modal, "reload_with_filter", lambda state: None)

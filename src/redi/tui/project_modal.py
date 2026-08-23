@@ -60,6 +60,8 @@ def apply_project_switch(state: TuiState, project_id: str, label: str) -> None:
     if issue_filter.assigned_to_id not in (None, "me", "!*"):
         issue_filter.assigned_to_id = None
         issue_filter.assigned_to_label = messages.tui_filter_assignee_none
+    # クエリはプロジェクト固有のものが混ざるので、切り替えたら必ず外す。
+    issue_filter.clear_query()
     te_filter = state.time_entry_tab.filter
     if te_filter.user_id not in (None, "me"):
         te_filter = TimeEntryFilter()

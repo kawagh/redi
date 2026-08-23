@@ -510,6 +510,53 @@ class TestReadProfile:
         )
 
 
+class TestShowConfig:
+    """show_config()は現在参照しているプロファイルが分かる形で設定値を表示する"""
+
+    def test_outputs_current_profile_as_default(self, monkeypatch, capsys):
+        """config.tomlと同じ`[profile_name]`の見出しで出し、既定であることを添える"""
+        monkeypatch.setattr(config, "current_profile", "main")
+        monkeypatch.setattr(config.sys, "argv", ["redi", "config"])
+
+        config.show_config()
+
+        out = capsys.readouterr().out
+        assert out.splitlines()[0].startswith("[main]")
+        assert "--profile" not in out
+
+    def test_marks_profile_overridden_by_option(self, monkeypatch, capsys):
+        """--profile での一時上書きは既定と区別できる表記になる"""
+        monkeypatch.setattr(config, "current_profile", "sub")
+        monkeypatch.setattr(config.sys, "argv", ["redi", "--profile", "sub", "config"])
+
+        config.show_config()
+
+        out = capsys.readouterr().out
+        assert out.splitlines()[0].startswith("[sub]")
+        assert "--profile" in out.splitlines()[0]
+
+    def test_output_is_valid_toml(self, monkeypatch, capsys):
+        """見出しを足してもTOMLとして読める(由来はコメントで添える)"""
+        monkeypatch.setattr(config, "current_profile", "main")
+        monkeypatch.setattr(config.sys, "argv", ["redi", "--profile=main", "config"])
+        monkeypatch.setattr(config, "editor", "nvim")
+
+        config.show_config()
+
+        doc = tomllib.loads(capsys.readouterr().out)
+        assert doc["main"]["editor"] == "nvim"
+
+    def test_omits_heading_when_profile_is_unknown(self, monkeypatch, capsys):
+        """プロファイルが決まっていない場合は見出し無しで設定値だけ出す"""
+        monkeypatch.setattr(config, "current_profile", None)
+        monkeypatch.setattr(config, "editor", "nvim")
+
+        config.show_config()
+
+        doc = tomllib.loads(capsys.readouterr().out)
+        assert doc["editor"] == "nvim"
+
+
 class TestShowAllProfiles:
     """show_all_profiles()はconfig_path指定時にそのファイルの全プロファイルを表示する"""
 
@@ -537,6 +584,32 @@ class TestShowAllProfiles:
         assert doc["default_profile"] == "main"
         assert doc["main"]["redmine_url"] == "https://redmine.example.com/main"
         assert doc["sub"]["redmine_url"] == "https://redmine.example.com/sub"
+
+    def test_shows_current_profile(self, tmp_path, monkeypatch, capsys):
+        """default_profileとは別に、今回使われたプロファイルが分かる"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+
+            [sub]
+            redmine_url = "https://redmine.example.com/sub"
+        """)
+        )
+        monkeypatch.setattr(config, "current_profile", "sub")
+        monkeypatch.setattr(config.sys, "argv", ["redi", "--profile", "sub", "config"])
+
+        config.show_all_profiles(config_path=config_path)
+
+        out = capsys.readouterr().out
+        heading = next(line for line in out.splitlines() if line.startswith("[sub]"))
+        assert "--profile" in heading
+        assert "[main]" in out
+        # 見出しにコメントを足してもTOMLとして読めるまま
+        assert tomllib.loads(out)["default_profile"] == "main"
 
     def test_hides_api_key(self, tmp_path, capsys):
         """APIキーは出力に含まれない"""

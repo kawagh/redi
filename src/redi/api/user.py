@@ -31,6 +31,7 @@ class User(TypedDict):
     admin: NotRequired[bool]
     last_login_on: NotRequired[str]
     api_key: NotRequired[str]
+    custom_fields: NotRequired[list[dict]]
     # include 指定時のみ存在
     memberships: NotRequired[list[UserMembership]]
     groups: NotRequired[list[IdName]]

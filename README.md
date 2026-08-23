@@ -140,6 +140,7 @@ redi project # list projects
 redi project list # same as above (`redi project l` / `redi p list` / `redi p l` / `redi p` also work)
 redi project view <project_id> # view project
 redi project view <project_id> --include trackers,issue_categories
+redi project create # (interactive)
 redi project create <name> <identifier>
 redi project create <name> <identifier> -d "description" --is_public true
 redi project update <project_id> --name renamed_project
@@ -150,7 +151,7 @@ redi issue -p <project_id> -a me -s open
 redi issue -q <query_id>
 redi issue view <issue_id>
 redi issue view <issue_id> --web # view issue with web browser
-redi issue view <issue_id> --include journals,attachments,relations
+redi issue view <issue_id> --include children,watchers # relations, attachments and journals are shown by default
 redi issue create # (interactive)
 redi issue create "subject" -p <project_id> -t <tracker_id> -a <user_id> -d "description"
 redi issue create "subject" -p <project_id> --full # output created issue as full JSON
