@@ -83,6 +83,7 @@ class TestCustomFieldView:
                     "trackers": [{"id": 1, "name": "バグ"}],
                     "roles": [{"id": 3, "name": "開発者"}],
                 },
+                # 未設定の項目を持つ、キーバリューリスト形式のカスタムフィールド
                 {
                     "id": 2,
                     "name": "キーバリュー",
@@ -111,47 +112,52 @@ class TestCustomFieldView:
             )
         )
 
-    def test_prints_detail_of_the_specified_id(self, capsys):
-        """id で指定した 1 件の項目と選択肢を出す"""
+    def test_prints_all_fields_of_the_specified_id(self, capsys):
+        """id で指定した 1 件だけを、選択肢・トラッカー・ロールまで並べる"""
         self._view("1")
 
-        out = capsys.readouterr().out
-        assert out.startswith("1 ドロップダウン\n")
-        assert messages.label_description_field.format(value="選べる値") in out
-        assert messages.label_customized_type.format(value="issue") in out
-        assert messages.label_field_format.format(value="list") in out
-        assert messages.label_is_required.format(value=messages.label_bool_true) in out
-        assert messages.label_default_value.format(value="A") in out
-        assert messages.label_regexp.format(value="^A") in out
-        assert messages.label_min_length.format(value=1) in out
-        assert messages.label_max_length.format(value=10) in out
-        assert messages.label_possible_values_header in out
-        assert "  A\n" in out
-        assert messages.label_trackers_header in out
-        assert "  1 バグ\n" in out
-        assert messages.label_roles_header in out
-        assert "  3 開発者" in out
-        # 一覧ではなく指定した 1 件だけを出す
-        assert "キーバリュー" not in out
+        assert (
+            capsys.readouterr().out
+            == "\n".join(
+                [
+                    "1 ドロップダウン",
+                    messages.label_description_field.format(value="選べる値"),
+                    messages.label_customized_type.format(value="issue"),
+                    messages.label_field_format.format(value="list"),
+                    messages.label_is_required.format(value=messages.label_bool_true),
+                    messages.label_default_value.format(value="A"),
+                    messages.label_regexp.format(value="^A"),
+                    messages.label_min_length.format(value=1),
+                    messages.label_max_length.format(value=10),
+                    messages.label_possible_values_header,
+                    "  A",
+                    messages.label_trackers_header,
+                    "  1 バグ",
+                    messages.label_roles_header,
+                    "  3 開発者",
+                ]
+            )
+            + "\n"
+        )
 
-    def test_prints_value_and_label_for_enumeration(self, capsys):
-        """enumeration 形式の選択肢は value(id) と label を並べて出す"""
+    def test_prints_value_with_label_and_omits_empty_fields(self, capsys):
+        """キーバリューリスト形式は value と label を並べ、未設定の項目は行ごと出さない"""
         self._view("2")
 
-        assert "  10 高\n" in capsys.readouterr().out
-
-    def test_omits_empty_fields(self, capsys):
-        """空・未設定の項目は行ごと出さない"""
-        self._view("2")
-
-        out = capsys.readouterr().out
-        assert messages.label_description_field.format(value="") not in out
-        assert messages.label_regexp.format(value="") not in out
-        assert messages.label_min_length.format(value="") not in out
-        assert messages.label_max_length.format(value="") not in out
-        assert messages.label_default_value.format(value="") not in out
-        assert messages.label_trackers_header not in out
-        assert messages.label_roles_header not in out
+        assert (
+            capsys.readouterr().out
+            == "\n".join(
+                [
+                    "2 キーバリュー",
+                    messages.label_customized_type.format(value="issue"),
+                    messages.label_field_format.format(value="enumeration"),
+                    messages.label_is_required.format(value=messages.label_bool_false),
+                    messages.label_possible_values_header,
+                    "  10 高",
+                ]
+            )
+            + "\n"
+        )
 
     def test_full_prints_json_of_the_single_custom_field(self, capsys):
         """--full では該当する 1 件だけを JSON で出す"""

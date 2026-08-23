@@ -26,7 +26,7 @@ class TestCustomFieldView:
     """`redi custom_field view <id>` はカスタムフィールド 1 件の詳細を表示する"""
 
     def test_prints_detail_of_the_specified_custom_field(self):
-        """一覧に載っている id を指定すると、その 1 件の詳細を出す"""
+        """一覧 API から取れた id を渡すと、その 1 件の詳細を出す"""
         custom_fields = json.loads(run_redi("custom_field", "--full").stdout)
         custom_field = next(cf for cf in custom_fields if cf["name"] == "バージョン")
 
@@ -34,17 +34,4 @@ class TestCustomFieldView:
 
         assert out.startswith(f"{custom_field['id']} バージョン\n")
         assert "redi --version の出力" in out
-        assert "issue" in out
-        assert "string" in out
-        assert "バグ" in out
-
-    def test_full_prints_json_of_the_single_custom_field(self):
-        """--full では該当する 1 件だけを JSON で出す"""
-        custom_fields = json.loads(run_redi("custom_field", "--full").stdout)
-        custom_field = next(cf for cf in custom_fields if cf["name"] == "バージョン")
-
-        out = json.loads(
-            run_redi("custom_field", "view", str(custom_field["id"]), "--full").stdout
-        )
-
-        assert out["id"] == custom_field["id"]
+        assert "  1 バグ\n" in out
