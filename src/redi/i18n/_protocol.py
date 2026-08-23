@@ -114,6 +114,12 @@ class MessagesProto(Protocol):
     """グループまたはユーザーが見つからない。{group_id} / {user_id}"""
     category_not_found: str
     """カテゴリが見つからない。{id}"""
+    tracker_not_found: str
+    """トラッカーが見つからない。{id}"""
+    status_not_found: str
+    """ステータスが見つからない。{id}"""
+    available_ids: str
+    """指定できる id と名前の一覧。{items}"""
     news_not_found: str
     """ニュースが見つからない。{id}"""
     no_search_results: str

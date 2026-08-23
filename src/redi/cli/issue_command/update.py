@@ -27,6 +27,7 @@ from redi.api.issue import (
 )
 from redi.api.issue_relation import RelationNotFoundException
 from redi.api.issue_status import fetch_issue_statuses
+from redi.api.tracker import fetch_trackers
 from redi.cli.custom_field_prompt import (
     SKIP_UNSUPPORTED_FIELD,
     prompt_custom_field_value,
@@ -355,6 +356,38 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         sys.exit(1)
 
 
+def _ensure_known_id(
+    value: str, candidates: list[dict], not_found_message: str
+) -> None:
+    """候補に無い id なら、指定できる値を示して exit 1 する。"""
+    if any(str(candidate["id"]) == value for candidate in candidates):
+        return
+    print(not_found_message.format(id=value))
+    print(
+        messages.available_ids.format(
+            items=", ".join(
+                f"{candidate['id']}:{candidate.get('name', '')}"
+                for candidate in candidates
+            )
+        )
+    )
+    sys.exit(1)
+
+
+def _validate_tracker_and_status(args: IssueUpdateArgs) -> None:
+    """存在しない tracker_id / status_id を送る前に弾く。
+
+    Redmine は不正な tracker_id / status_id を 200 で黙って無視するため、
+    そのまま送ると「更新しました」と出たまま値が変わらない。
+    """
+    if args.tracker_id:
+        _ensure_known_id(args.tracker_id, fetch_trackers(), messages.tracker_not_found)
+    if args.status_id:
+        _ensure_known_id(
+            args.status_id, fetch_issue_statuses(), messages.status_not_found
+        )
+
+
 def _update_issue(args: IssueUpdateArgs, description: str | None) -> None:
     """イシューを更新し、結果を標準出力に出す。HTTP エラーは exit 1。"""
     # 呼び出し側で issue_id は解決済み
@@ -548,6 +581,7 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
     )
     should_create_time_entry = args.hours is not None
     if should_update_issue:
+        _validate_tracker_and_status(args)
         try:
             _update_issue(args, description)
         except Exception:
