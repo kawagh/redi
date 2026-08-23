@@ -941,12 +941,10 @@ class Ja(MessagesProto):
     tui_help_preview_scroll_half_page = "プレビューを半ページスクロール (上 / 下)"
     tui_help_start_search = "検索開始"
     tui_help_next_prev_match = "次 / 前の検索結果"
-    tui_help_filter_issues = (
-        "ステータス/担当者/トラッカー/クエリでフィルタ (フローティング)"
-    )
-    tui_help_filter_user = "ユーザーでフィルタ (フローティング)"
-    tui_help_switch_project = "プロジェクトを切り替え (フローティング)"
-    tui_help_switch_profile = "プロファイルを切り替え (フローティング)"
+    tui_help_filter_issues = "ステータス/担当者/トラッカー/クエリでフィルタ"
+    tui_help_filter_user = "ユーザーでフィルタ"
+    tui_help_switch_project = "プロジェクトを切り替え"
+    tui_help_switch_profile = "プロファイルを切り替え"
     tui_help_reload = "現在のタブを再読込"
     tui_help_show_or_close = "このヘルプを表示 / 閉じる"
     tui_help_quit = "終了"
