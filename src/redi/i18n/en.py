@@ -433,6 +433,9 @@ class En(MessagesProto):
     label_allowed_statuses_header = "Allowed statuses:"
     label_revisions_header = "Revisions:"
     label_journals_header = "Journals/changes:"
+    issue_list_truncated = (
+        "Showing {start}-{end} of {total} issues (use --limit / --offset)"
+    )
     label_due_date_field = "Due date: {value}"
     label_sharing_field = "Sharing: {value}"
     label_parent_project = "Parent project: {id} {name}"

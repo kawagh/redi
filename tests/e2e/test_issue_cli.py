@@ -1,4 +1,5 @@
 import json
+import re
 import subprocess
 
 import pytest
@@ -138,3 +139,36 @@ class TestIssueDelete:
             f"想定外のエラーで delete が失敗\n"
             f"stdout:\n{delete_error.stdout}\nstderr:\n{delete_error.stderr}"
         )
+
+
+@pytest.mark.e2e
+class TestIssueListTruncation:
+    """`redi issue list` は結果が打ち切られたことを伝える
+
+    Redmine は既定 25 件で一覧を打ち切るが、総件数が出ないと全件見えていると
+    取り違えるため、Redmine が返す total_count を落とさずに伝える。
+    """
+
+    def test_notice_reports_the_range_and_total(self):
+        """打ち切られたら表示範囲と総件数を標準エラーで伝え、一覧には混ぜない"""
+        _create_issue(unique_identifier("e2e-issue-list-truncation"))
+        _create_issue(unique_identifier("e2e-issue-list-truncation"))
+
+        listed = run_redi("issue", "list", "--project_id", "reditest", "--limit", "1")
+
+        assert len(listed.stdout.splitlines()) == 1
+        assert re.search(r"Showing 1-1 of \d+ issues", listed.stderr), listed.stderr
+
+    def test_full_includes_total_count(self):
+        """--full では issues だけでなく total_count も返す"""
+        _create_issue(unique_identifier("e2e-issue-list-total"))
+        _create_issue(unique_identifier("e2e-issue-list-total"))
+
+        page = json.loads(
+            run_redi(
+                "issue", "list", "--project_id", "reditest", "--limit", "1", "--full"
+            ).stdout
+        )
+
+        assert len(page["issues"]) == 1
+        assert page["total_count"] >= 2

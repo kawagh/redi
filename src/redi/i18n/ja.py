@@ -432,6 +432,7 @@ class Ja(MessagesProto):
     label_allowed_statuses_header = "遷移可能なステータス:"
     label_revisions_header = "リビジョン:"
     label_journals_header = "コメント/変更履歴:"
+    issue_list_truncated = "{total} 件中 {start}-{end} 件目を表示しています (--limit / --offset で指定できます)"
     label_due_date_field = "期日: {value}"
     label_sharing_field = "共有: {value}"
     label_parent_project = "親プロジェクト: {id} {name}"

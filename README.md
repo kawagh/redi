@@ -146,7 +146,9 @@ redi project create <name> <identifier> -d "description" --is_public true
 redi project update <project_id> --name renamed_project
 
 # issue (alias: i)
-redi issue # list issues
+redi issue # list issues (25 issues at a time; the shown range and total go to stderr)
+redi issue -l 100 # more issues at a time
+redi issue -o 25 -l 25 # next page
 redi issue -p <project_id> -a me -s open
 redi issue -q <query_id>
 redi issue view <issue_id>
