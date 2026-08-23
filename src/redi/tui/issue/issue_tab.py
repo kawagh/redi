@@ -316,6 +316,7 @@ def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse
         status_id=f.status_id,
         assigned_to=f.assigned_to_id,
         tracker_id=f.tracker_id,
+        query_id=f.query_id,
         limit=state.page_size,
         offset=offset,
     )

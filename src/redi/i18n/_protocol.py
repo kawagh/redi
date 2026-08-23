@@ -600,6 +600,7 @@ class MessagesProto(Protocol):
     tui_filter_status: str
     tui_filter_assignee: str
     tui_filter_tracker: str
+    tui_filter_query: str
     tui_filter_user: str
     tui_filter_hint: str
     tui_filter_hint_single: str

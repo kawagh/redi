@@ -447,6 +447,7 @@ class Ja(MessagesProto):
     tui_filter_status = "ステータス"
     tui_filter_assignee = "担当者"
     tui_filter_tracker = "トラッカー"
+    tui_filter_query = "クエリ"
     tui_filter_user = "ユーザー"
     tui_filter_hint = "Tab/h/l:列切替 jk:移動 Enter:適用 c:全クリア Esc/f:閉じる"
     tui_filter_hint_single = "jk:移動 Enter:適用 c:クリア Esc/f:閉じる"
@@ -940,7 +941,9 @@ class Ja(MessagesProto):
     tui_help_preview_scroll_half_page = "プレビューを半ページスクロール (上 / 下)"
     tui_help_start_search = "検索開始"
     tui_help_next_prev_match = "次 / 前の検索結果"
-    tui_help_filter_issues = "ステータス/担当者/トラッカーでフィルタ (フローティング)"
+    tui_help_filter_issues = (
+        "ステータス/担当者/トラッカー/クエリでフィルタ (フローティング)"
+    )
     tui_help_filter_user = "ユーザーでフィルタ (フローティング)"
     tui_help_switch_project = "プロジェクトを切り替え (フローティング)"
     tui_help_switch_profile = "プロファイルを切り替え (フローティング)"
