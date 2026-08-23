@@ -522,13 +522,12 @@ class MessagesProto(Protocol):
     label_users_visibility: str
     """{value}"""
     label_permissions_header: str
-    label_name: str
-    """{value}"""
     label_mail: str
     """{value}"""
     label_admin: str
     """{value}"""
-    label_admin_yes: str
+    label_yes: str
+    label_no: str
     label_created_on: str
     """{value}"""
     label_last_login_on: str
