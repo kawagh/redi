@@ -4,7 +4,7 @@ import sys
 
 from redi.api.role import fetch_role, fetch_roles
 from redi.cli.alias import resolve_alias
-from redi.cli.shared_options import full_option_parser
+from redi.cli.shared_options import add_full_argument, full_option_parser
 from redi.i18n import messages
 
 
@@ -70,9 +70,7 @@ def add_role_parser(
         "view", aliases=["v"], help=messages.arg_help_role_view, parents=parents
     )
     role_view_parser.add_argument("role_id", help=messages.arg_help_role_view_id)
-    role_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_full_argument(role_view_parser, postfix=True)
 
 
 def handle_role(args: argparse.Namespace) -> None:

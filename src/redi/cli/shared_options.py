@@ -25,10 +25,28 @@ class SharedOptionParser(argparse.ArgumentParser):
         return super().add_argument(*args, **kwargs)
 
 
+def add_full_argument(
+    parser: argparse.ArgumentParser, *, postfix: bool = False
+) -> None:
+    """`--full` をパーサに直接足す
+
+    postfix=True は親パーサも `--full` を持つサブパーサ側で使う。
+    未指定なら namespace に載せないので `<resource> --full <action>` と
+    `<resource> <action> --full` のどちらでも `--full` が効く。
+    False をデフォルトにすると、前者が silent に無視される。
+    """
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        default=argparse.SUPPRESS if postfix else False,
+        help=messages.arg_help_full_json,
+    )
+
+
 def full_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
     """`--full` だけを共有するパーサ"""
     parser = SharedOptionParser(postfix=postfix)
-    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    add_full_argument(parser, postfix=postfix)
     return parser
 
 
@@ -36,5 +54,5 @@ def project_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
     """`--project_id` と `--full` を共有するパーサ"""
     parser = SharedOptionParser(postfix=postfix)
     parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
-    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    add_full_argument(parser, postfix=postfix)
     return parser

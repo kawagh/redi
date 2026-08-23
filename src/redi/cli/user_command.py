@@ -8,7 +8,7 @@ from redi.api.exceptions import print_http_error_body
 from redi.api.user import User, UserNotFoundException, UserPermissionDeniedException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
-from redi.cli.shared_options import SharedOptionParser
+from redi.cli.shared_options import SharedOptionParser, add_full_argument
 from redi.cli.user_format import format_user_detail, user_summary
 from redi.i18n import messages
 from redi.service import user_service
@@ -255,9 +255,7 @@ def add_user_parser(
         "view", aliases=["v"], help=messages.arg_help_user_view, parents=parents
     )
     u_view_parser.add_argument("user_id", help=messages.arg_help_user_view_id)
-    u_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_full_argument(u_view_parser, postfix=True)
 
     u_update_parser = u_subparsers.add_parser(
         "update", aliases=["u"], help=messages.arg_help_user_update, parents=parents

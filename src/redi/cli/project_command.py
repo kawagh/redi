@@ -22,7 +22,7 @@ from redi.cli.confirm import confirm_delete_with_identifier
 from redi.cli.editor import open_editor, shorten_to_oneline
 from redi.cli.interactive import prompt
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.shared_options import full_option_parser
+from redi.cli.shared_options import add_full_argument, full_option_parser
 from redi.cli.validator import ProjectIdentifierValidator, RequiredValidator
 from redi.i18n import messages
 from redi.service import project_service
@@ -350,9 +350,7 @@ def add_project_parser(
         "--include",
         help=messages.arg_help_project_include,
     )
-    p_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_full_argument(p_view_parser, postfix=True)
     p_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )

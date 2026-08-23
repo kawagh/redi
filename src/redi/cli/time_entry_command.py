@@ -20,7 +20,7 @@ from redi.cli.keybinding import (
     digit_only_key_bindings,
 )
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.shared_options import SharedOptionParser
+from redi.cli.shared_options import SharedOptionParser, add_full_argument
 from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
 from redi.service import issue_service, project_service, time_entry_service
@@ -263,9 +263,7 @@ def add_time_entry_parser(
     te_view_parser.add_argument(
         "time_entry_id", help=messages.arg_help_time_entry_view_id
     )
-    te_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_full_argument(te_view_parser, postfix=True)
     te_update_parser = te_subparsers.add_parser(
         "update",
         aliases=["u"],
