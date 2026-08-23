@@ -3,8 +3,6 @@
 CLI と TUI で共通の手順をここに置く。HTTP とレスポンスの解釈は `api.query` が持つ。
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterable, Mapping
 from typing import Any
 
