@@ -83,6 +83,23 @@ class TestFetchIssuesWithFilter:
         assert captured["assigned_to"] == "me"
         assert captured["tracker_id"] == "1"
 
+    def test_passes_query_id(self, monkeypatch):
+        """クエリで絞り込んでいるときは query_id を API パラメータに渡す"""
+        captured = {}
+
+        def fake_fetch_issues_page(**kwargs):
+            captured.update(kwargs)
+            return {"issues": [], "total_count": 0}
+
+        monkeypatch.setattr(issue_tab, "fetch_issues_page", fake_fetch_issues_page)
+        state = TuiState()
+        state.page_size = 25
+        state.issue_tab.filter = IssueFilter(query_id="7", query_label="My open issues")
+
+        fetch_issues_with_filter(state, 0)
+
+        assert captured["query_id"] == "7"
+
 
 def _make_comment_state(
     *, description_lines: int, comment_count: int, page_size: int
