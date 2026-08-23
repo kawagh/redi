@@ -88,23 +88,29 @@ def load_env_config() -> Profile:
     )
 
 
+def profile_from_option(argv: list[str]) -> str | None:
+    """argvの--profileに与えられた値を返す。指定が無ければNone。"""
+    for i, arg in enumerate(argv):
+        if arg == "--profile" and i + 1 < len(argv):
+            return argv[i + 1]
+        if arg.startswith("--profile="):
+            return arg.split("=", 1)[1]
+    return None
+
+
 def resolve_profile_name(toml: dict, argv: list[str]) -> tuple[str | None, bool]:
     """argvに--profileがあればそれを、なければdefault_profileを返す。
 
     第二要素はCLI(--profile)で明示指定されたかどうかを示す。
     """
-    for i, arg in enumerate(argv):
-        if arg == "--profile" and i + 1 < len(argv):
-            return argv[i + 1], True
-        if arg.startswith("--profile="):
-            return arg.split("=", 1)[1], True
+    name = profile_from_option(argv)
+    if name is not None:
+        return name, True
     return toml.get("default_profile"), False
 
 
 # 設定値。下の起動時解決で `apply_profile()` が入れる。
 current_profile: str | None = None
-# 現在のプロファイルが `--profile` による一時上書きか(False なら default_profile 由来)
-profile_explicit: bool = False
 redmine_url: str = ""
 redmine_api_key: str = ""
 default_project_id: str | None = None
@@ -128,25 +134,17 @@ def resolve_merged_config(profile_name: str | None, toml_doc: dict) -> Profile:
     return DEFAULT_PROFILE.merge(profile).merge(load_env_config())
 
 
-def apply_profile(
-    profile_name: str | None,
-    config_path: Path | None = None,
-    explicit: bool = False,
-) -> None:
+def apply_profile(profile_name: str | None, config_path: Path | None = None) -> None:
     """プロファイルを適用して設定値を貼り替える。起動時も実行時の切替もここを通る。
 
     各モジュールは `config.X` で都度参照するので貼り替えるだけで伝わるが、`client` は
     接続先を抱えているので呼び出し側で `reconfigure()` も呼ぶこと。
-
-    `explicit` は `--profile` による一時上書きかどうか。`redi config` の出力で
-    既定のプロファイルと区別して見せるために持つ。
     """
-    global current_profile, profile_explicit, redmine_url, redmine_api_key
+    global current_profile, redmine_url, redmine_api_key
     global default_project_id, wiki_project_id, editor, language
 
     profile = resolve_merged_config(profile_name, load_toml(config_path))
     current_profile = profile_name
-    profile_explicit = explicit
     # 未設定は None だが、参照側が常に文字列を前提にしているため空文字に均す
     redmine_url = profile.redmine_url or ""
     redmine_api_key = profile.redmine_api_key or ""
@@ -176,7 +174,7 @@ if (
 ):
     print(f"profile '{_profile_name}' not found in {CONFIG_PATH}", file=sys.stderr)
     sys.exit(1)
-apply_profile(_profile_name, explicit=_profile_explicit)
+apply_profile(_profile_name)
 
 
 def check_config() -> None:
@@ -310,12 +308,15 @@ def read_profile(profile_name: str, config_path: Path | None = None) -> Profile:
 
 
 def profile_source_label() -> str:
-    """今のプロファイルが既定か `--profile` 上書きかを表す表示用ラベルを返す。"""
+    """今のプロファイルが既定か `--profile` 上書きかを表す表示用ラベルを返す。
+
+    由来は起動時の argv で決まりきっているので、状態として抱えず都度引き直す。
+    """
     from redi.i18n import messages
 
     return (
         messages.config_profile_source_option
-        if profile_explicit
+        if profile_from_option(sys.argv) is not None
         else messages.config_profile_source_default
     )
 

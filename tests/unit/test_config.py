@@ -516,7 +516,7 @@ class TestShowConfig:
     def test_outputs_current_profile_as_default(self, monkeypatch, capsys):
         """config.tomlと同じ`[profile_name]`の見出しで出し、既定であることを添える"""
         monkeypatch.setattr(config, "current_profile", "main")
-        monkeypatch.setattr(config, "profile_explicit", False)
+        monkeypatch.setattr(config.sys, "argv", ["redi", "config"])
 
         config.show_config()
 
@@ -527,7 +527,7 @@ class TestShowConfig:
     def test_marks_profile_overridden_by_option(self, monkeypatch, capsys):
         """--profile での一時上書きは既定と区別できる表記になる"""
         monkeypatch.setattr(config, "current_profile", "sub")
-        monkeypatch.setattr(config, "profile_explicit", True)
+        monkeypatch.setattr(config.sys, "argv", ["redi", "--profile", "sub", "config"])
 
         config.show_config()
 
@@ -538,7 +538,7 @@ class TestShowConfig:
     def test_output_is_valid_toml(self, monkeypatch, capsys):
         """見出しを足してもTOMLとして読める(由来はコメントで添える)"""
         monkeypatch.setattr(config, "current_profile", "main")
-        monkeypatch.setattr(config, "profile_explicit", True)
+        monkeypatch.setattr(config.sys, "argv", ["redi", "--profile=main", "config"])
         monkeypatch.setattr(config, "editor", "nvim")
 
         config.show_config()
@@ -600,7 +600,7 @@ class TestShowAllProfiles:
         """)
         )
         monkeypatch.setattr(config, "current_profile", "sub")
-        monkeypatch.setattr(config, "profile_explicit", True)
+        monkeypatch.setattr(config.sys, "argv", ["redi", "--profile", "sub", "config"])
 
         config.show_all_profiles(config_path=config_path)
 
@@ -721,9 +721,8 @@ class TestResolveMergedConfig:
 def restore_config():
     """apply_profile() は設定値のグローバルを書き換えるので、テスト後に元へ戻す"""
     original_profile = config.current_profile
-    original_explicit = config.profile_explicit
     yield
-    config.apply_profile(original_profile, explicit=original_explicit)
+    config.apply_profile(original_profile)
 
 
 @pytest.mark.usefixtures("restore_config")
@@ -737,16 +736,6 @@ class TestApplyProfile:
         assert config.current_profile == "sub"
         assert config.redmine_url == "https://sub.example.com"
         assert config.redmine_api_key == "secret-sub"
-
-    def test_records_whether_profile_was_given_by_option(
-        self, two_profiles, no_redmine_env
-    ):
-        """--profile 由来かどうかを保持し、既定との区別に使えるようにする"""
-        config.apply_profile("sub", config_path=two_profiles, explicit=True)
-        assert config.profile_explicit is True
-
-        config.apply_profile("main", config_path=two_profiles)
-        assert config.profile_explicit is False
 
     def test_clears_previous_profile_values(self, two_profiles, no_redmine_env):
         """前のプロファイルにしか無い項目は切替後に残らない"""
