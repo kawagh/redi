@@ -3,8 +3,6 @@
 CLI と TUI で共通の手順をここに置く。HTTP とステータスコードの解釈は `api.membership` が持つ。
 """
 
-from __future__ import annotations
-
 from redi.api import membership as membership_api
 from redi.api.membership import Membership
 
