@@ -34,7 +34,9 @@ def _append_screen_yaml(path: Path, dumped: dict, key: str) -> None:
     lines = dumped["lines"]
     indented = "\n".join(f"    {line}" for line in lines) if lines else "    "
     entry = (
-        f"- timestamp: {timestamp}\n"
+        # クォートしないと YAML の timestamp 型 (datetime) として読まれるので
+        # 文字列に固定する
+        f'- timestamp: "{timestamp}"\n'
         # 任意の文字が入るのでクォートして YAML の特殊構文と解釈させない
         f"  key: {json.dumps(key, ensure_ascii=False)}\n"
         f"  width: {dumped['width']}\n"
