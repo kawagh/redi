@@ -909,6 +909,9 @@ class Ja(MessagesProto):
     arg_help_document_category_list = "文書カテゴリ一覧"
     arg_help_query_command = arg_help_list_only_subcommands
     arg_help_query_list = "カスタムクエリ一覧"
+    query_list_private = "[非公開]"
+    query_list_all_projects = "(全プロジェクト)"
+    query_list_unknown_project = "プロジェクト{id}"
     arg_help_custom_field_command = arg_help_list_only_subcommands
     arg_help_custom_field_list = "カスタムフィールド一覧"
 

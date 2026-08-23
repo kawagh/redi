@@ -12,9 +12,9 @@ from redi.api.enumeration import (
     fetch_time_entry_activities,
 )
 from redi.api.issue_status import fetch_issue_statuses
-from redi.api.query import fetch_queries
 from redi.api.tracker import fetch_trackers
 from redi.i18n import messages
+from redi.service import query_service
 
 
 @dataclass(frozen=True)
@@ -34,6 +34,36 @@ class EnumerationResource:
     cached: bool = True
     # fetch が None を返し得るリソースで、返ったときに表示する理由
     unavailable_message: str | None = None
+    # `{id} {name}` では情報が落ちるリソースだけ整形を差し替える。
+    # 一覧全体を受けるのは、行を組み立てる前に一括で引きたい情報があるため
+    format_lines: Callable[[Sequence[Mapping[str, Any]]], list[str]] | None = None
+
+
+def _format_query_lines(queries: Sequence[Mapping[str, Any]]) -> list[str]:
+    """カスタムクエリを `{id} {name} [非公開] {プロジェクト}` の 1 行で表示する。
+
+    `/queries.json` はクエリのフィルタ内容を返さないため、素性の手がかりは
+    名前と `is_public` / `project_id` しかない。共通整形はこのうち 2 つを
+    捨ててしまうので、query だけ整形を差し替える。
+    """
+    project_names = query_service.resolve_query_project_names(queries)
+    lines = []
+    for query in queries:
+        parts = [f"{query['id']} {query['name']}"]
+        if not query.get("is_public", True):
+            parts.append(messages.query_list_private)
+        project_id = query.get("project_id")
+        if project_id is None:
+            parts.append(messages.query_list_all_projects)
+        else:
+            parts.append(
+                project_names.get(
+                    project_id,
+                    messages.query_list_unknown_project.format(id=project_id),
+                )
+            )
+        lines.append(" ".join(parts))
+    return lines
 
 
 ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
@@ -77,9 +107,10 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
         "q",
         messages.arg_help_query_command,
         messages.arg_help_query_list,
-        # fetch_queries だけ refresh を取らないので合わせる
-        lambda refresh: fetch_queries(),
+        # list_queries だけ refresh を取らないので合わせる
+        lambda refresh: query_service.list_queries(),
         cached=False,
+        format_lines=_format_query_lines,
     ),
     EnumerationResource(
         "custom_field",
@@ -92,14 +123,23 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
 )
 
 
-def _print_id_name_list(items: Iterable[Mapping[str, Any]], full: bool) -> None:
-    """一覧専用リソースを `{id} {name}` の 1 行で表示する。"""
+def _print_enumeration(
+    items: Iterable[Mapping[str, Any]], full: bool, resource: EnumerationResource
+) -> None:
+    """一覧専用リソースを 1 行ずつ表示する。
+
+    既定は `{id} {name}` で、リソースが整形を持つ場合はそちらに任せる。
+    """
     items = list(items)
     if full:
         print(json.dumps(items, ensure_ascii=False))
         return
-    for item in items:
-        print(f"{item['id']} {item['name']}")
+    if resource.format_lines is not None:
+        lines = resource.format_lines(items)
+    else:
+        lines = [f"{item['id']} {item['name']}" for item in items]
+    for line in lines:
+        print(line)
 
 
 def _add_list_subparser(
@@ -177,4 +217,4 @@ def handle_enumeration(resource: EnumerationResource, args: argparse.Namespace) 
     if items is None:
         print(resource.unavailable_message)
         sys.exit(1)
-    _print_id_name_list(items, args.full)
+    _print_enumeration(items, args.full, resource)
