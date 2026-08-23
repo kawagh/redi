@@ -1,9 +1,6 @@
-from wcwidth import wcswidth
+from redi.text_format import display_width, pad_display
 
-
-def pad_display(text: str, width: int) -> str:
-    padding = max(0, width - wcswidth(text))
-    return text + " " * padding
+__all__ = ["highlight_segments", "pad_display", "render_meta_table"]
 
 
 def highlight_segments(
@@ -44,7 +41,7 @@ def render_meta_table(meta: list[tuple[str, str]]) -> list[str]:
     """
     if not meta:
         return []
-    label_width = max(wcswidth(label) for label, _ in meta)
+    label_width = max(display_width(label) for label, _ in meta)
     return [
         f"[{pad_display(label, label_width)}] {value if value else '-'}"
         for label, value in meta

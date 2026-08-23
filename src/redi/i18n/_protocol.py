@@ -761,6 +761,8 @@ class MessagesProto(Protocol):
     arg_help_limit: str
     arg_help_offset: str
     arg_help_issue_list: str
+    arg_help_issue_list_url: str
+    issue_list_unassigned: str
     arg_help_issue_view: str
     arg_help_issue_view_id: str
     arg_help_issue_include: str

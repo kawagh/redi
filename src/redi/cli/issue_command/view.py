@@ -4,6 +4,7 @@
 """
 
 import json
+import shutil
 import sys
 import webbrowser
 
@@ -11,6 +12,7 @@ from redi.api.exceptions import ProjectNotFoundException
 from redi.api.issue import Issue, IssueNotFoundException
 from redi.i18n import messages
 from redi.service import issue_service
+from redi.service.issue_format import format_issue_list
 
 # Redmine の関連は片側にだけ記録されるため、相手側から見た関連名に読み替える
 INVERSE_RELATION = {
@@ -37,6 +39,7 @@ def list_issues(
     limit: int | None = None,
     offset: int | None = None,
     full: bool = False,
+    show_url: bool = False,
 ) -> None:
     """イシュー一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。
 
@@ -60,11 +63,19 @@ def list_issues(
     if full:
         print(json.dumps(issues, ensure_ascii=False))
         return
-    for issue in issues:
-        print(
-            f"{issue['id']} {issue['subject']} "
-            f"{issue_service.issue_url(str(issue['id']))}"
-        )
+    for line in format_issue_list(issues, width=_output_width(), show_url=show_url):
+        print(line)
+
+
+def _output_width() -> int | None:
+    """件名を切り詰める表示幅を返す。端末でなければ切り詰めない(None)。
+
+    パイプやリダイレクト先では読み手が端末幅に縛られないので、`…` で欠けた
+    件名を渡さないようにする。
+    """
+    if not sys.stdout.isatty():
+        return None
+    return shutil.get_terminal_size().columns
 
 
 def view_issue(

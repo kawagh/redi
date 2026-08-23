@@ -66,6 +66,7 @@ redi project list --full
 redi issue list                              # default project
 redi issue list --project_id 15              # one project
 redi issue list --status_id 1 --limit 10
+redi issue list --url                        # + issue URLs
 redi issue view 160                          # one issue
 redi issue view 160 --include journals       # + comments
 redi issue view 160 --full                   # JSON

@@ -605,6 +605,8 @@ class En(MessagesProto):
     arg_help_limit = "Limit"
     arg_help_offset = "Offset"
     arg_help_issue_list = "List issues"
+    arg_help_issue_list_url = "Also show the URL of each issue"
+    issue_list_unassigned = "unassigned"
     arg_help_issue_view = "Issue details"
     arg_help_issue_view_id = "Issue ID"
     arg_help_issue_include = "Additional info (children,attachments,relations,changesets,journals,watchers,allowed_statuses)"
