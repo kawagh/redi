@@ -920,7 +920,7 @@ class En(MessagesProto):
     config_profile_suffix = " (profile: {name})"
     config_profile_source_default = "default"
     config_profile_source_option = "via --profile"
-    config_current_profile_comment = "# current profile: {name} ({source})"
+    config_current_profile_comment = "current profile ({source})"
 
     # ---- TUI help labels (sections / common) ----
     tui_help_section_navigation = "Navigation"

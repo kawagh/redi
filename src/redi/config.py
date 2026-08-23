@@ -324,15 +324,24 @@ def show_config(full: bool = False, config_path: Path | None = None) -> None:
     if full:
         show_all_profiles(config_path=config_path)
         return
+    values = {
+        "redmine_url": redmine_url,
+        "default_project_id": default_project_id or "",
+        "wiki_project_id": wiki_project_id or "",
+        "editor": editor,
+        "language": language,
+    }
     doc = tomlkit.document()
-    # 出力を TOML として読めるまま保つため、由来はコメントで添える
+    # config.toml と同じく `[profile_name]` の見出しで示し、由来はコメントで添える。
+    # 出力は TOML として読めるまま保つ。
     if current_profile:
-        doc["profile"] = tomlkit.item(current_profile).comment(profile_source_label())
-    doc["redmine_url"] = redmine_url
-    doc["default_project_id"] = default_project_id or ""
-    doc["wiki_project_id"] = wiki_project_id or ""
-    doc["editor"] = editor
-    doc["language"] = language
+        table = tomlkit.table()
+        for key, value in values.items():
+            table[key] = value
+        doc[current_profile] = table.comment(profile_source_label())
+    else:
+        for key, value in values.items():
+            doc[key] = value
     print(tomlkit.dumps(doc).rstrip())
 
 
@@ -347,13 +356,14 @@ def show_all_profiles(config_path: Path | None = None) -> None:
         value = doc[key]
         if isinstance(value, Table) and "redmine_api_key" in value:
             del value["redmine_api_key"]
-    # default_profile は既定値でしかないので、今回使われたプロファイルを別に示す
-    if current_profile:
+    # default_profile は既定値でしかないので、今回使われたプロファイルの見出しに印を付ける
+    current_table = doc.get(current_profile) if current_profile else None
+    if isinstance(current_table, Table):
         from redi.i18n import messages
 
-        print(
+        current_table.comment(
             messages.config_current_profile_comment.format(
-                name=current_profile, source=profile_source_label()
+                source=profile_source_label()
             )
         )
     print(tomlkit.dumps(doc).rstrip())
