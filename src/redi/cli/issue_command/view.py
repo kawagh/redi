@@ -11,6 +11,7 @@ from redi.api.exceptions import ProjectNotFoundException
 from redi.api.issue import Issue, IssueNotFoundException
 from redi.i18n import messages
 from redi.service import issue_service
+from redi.text_format import issue_meta_rows, render_meta_table
 
 # Redmine の関連は片側にだけ記録されるため、相手側から見た関連名に読み替える
 INVERSE_RELATION = {
@@ -76,9 +77,8 @@ def view_issue(
         print(url)
         webbrowser.open(url)
         return
-    includes = ["relations", "attachments"]
-    if full:
-        includes.append("journals")
+    # コメントは既定で表示するため journals も常に取得する
+    includes = ["relations", "attachments", "journals"]
     if include:
         for name in include.split(","):
             name = name.strip()
@@ -96,11 +96,18 @@ def view_issue(
 
 
 def format_issue_detail(issue: Issue) -> list[str]:
-    """イシューの詳細表示を行のリストに整形する。"""
+    """イシューの詳細表示を行のリストに整形する。
+
+    件名の下にメタ情報テーブルを出し、`----` で区切って説明・コメントを続ける。
+    TUI の右ペイン(プレビュー)と同じ見た目になるよう `text_format` を共有する。
+    """
     lines = []
-    lines.append(f"{issue['id']} {issue['subject']}")
+    lines.append(f"#{issue['id']} {issue['subject']}")
+    lines.append("")
+    lines.extend(render_meta_table(issue_meta_rows(issue)))
     if issue.get("description"):
         lines.append("")
+        lines.append("----")
         lines.append(issue["description"])
     relations = issue.get("relations") or []
     if relations:
@@ -164,6 +171,7 @@ def format_issue_detail(issue: Issue) -> list[str]:
     journals = issue.get("journals") or []
     if journals:
         lines.append("")
+        lines.append("----")
         lines.append(messages.label_journals_header)
         for j in journals:
             author = (j.get("user") or {}).get("name", "")

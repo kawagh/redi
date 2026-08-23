@@ -1,10 +1,12 @@
 import argparse
 import json
+from typing import cast
 
 import pytest
 
 from redi import config
 from redi.api.exceptions import ProjectNotFoundException
+from redi.api.issue import Issue
 from redi.cli.issue_command import add_issue_parser
 from redi.cli.issue_command import create as create_module
 from redi.cli.issue_command import dispatch as dispatch_module
@@ -180,3 +182,82 @@ class TestIssueListQueryIdFilters:
 
         assert called["query_id"] == "5"
         assert called["project_id"] == "demo"
+
+
+VIEWED_ISSUE = cast(
+    Issue,
+    {
+        "id": 42,
+        "subject": "件名",
+        "description": "本文",
+        "status": {"id": 5, "name": "終了"},
+        "priority": {"id": 2, "name": "通常"},
+        "tracker": {"id": 1, "name": "バグ"},
+        "author": {"id": 1, "name": "報告者"},
+        "start_date": "2026-04-01",
+        "due_date": None,
+        "done_ratio": 70,
+        "estimated_hours": 1.5,
+        "spent_hours": 0.5,
+        "created_on": "2026-04-01T00:00:00Z",
+        "updated_on": "2026-04-02T00:00:00Z",
+        "journals": [
+            {
+                "user": {"id": 1, "name": "コメントした人"},
+                "created_on": "2026-04-29T02:26:43Z",
+                "notes": "テストコメント",
+            }
+        ],
+    },
+)
+
+
+class TestFormatIssueDetail:
+    """`issue view` の整形出力"""
+
+    def test_shows_meta_table(self):
+        """件名の下にステータスなどのメタ情報を `[ラベル] 値` で出す"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
+        assert lines[0] == "#42 件名"
+        assert f"[{messages.meta_status}] 終了" in "\n".join(lines)
+        assert f"[{messages.meta_tracker}] バグ" in "\n".join(lines)
+
+    def test_shows_placeholder_for_empty_meta(self):
+        """値の無いメタ情報(期日未設定など)は `-` を出す"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
+        due = next(
+            line for line in lines if line.startswith(f"[{messages.meta_due_date}")
+        )
+        assert due.endswith("] -")
+
+    def test_shows_comments(self):
+        """コメントは `--include journals` 無しでも本文まで出す"""
+        out = "\n".join(view_module.format_issue_detail(VIEWED_ISSUE))
+
+        assert "コメントした人" in out
+        assert "テストコメント" in out
+
+    def test_separates_description(self):
+        """メタ情報と説明の間は `----` で区切る"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
+        assert lines[lines.index("本文") - 1] == "----"
+
+
+class TestViewIssueIncludes:
+    """`issue view` が Redmine に渡す include"""
+
+    def test_requests_journals_by_default(self, monkeypatch):
+        """コメントを既定で表示するため journals を常に取得する"""
+        called = {}
+        monkeypatch.setattr(
+            view_module.issue_service,
+            "read_issue",
+            lambda issue_id, include: called.update(include=include) or VIEWED_ISSUE,
+        )
+
+        view_module.view_issue("42")
+
+        assert "journals" in called["include"].split(",")

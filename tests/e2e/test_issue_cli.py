@@ -43,6 +43,20 @@ class TestIssueView:
         assert subject in viewed
         assert "e2e issue body" in viewed
 
+    def test_shows_meta_and_comments_by_default(self):
+        """--include 無しでもステータスなどのメタ情報とコメントが出る"""
+        issue_id = _create_issue(unique_identifier("e2e-issue-view-meta"))
+        notes = unique_identifier("e2e-view-comment")
+        run_redi("issue", "comment", issue_id, notes)
+
+        viewed = run_redi("issue", "view", issue_id).stdout
+
+        # ラベルは言語設定で変わるため `[ラベル] 値` の形だけを見る
+        assert any(
+            line.startswith("[") and "] " in line for line in viewed.splitlines()
+        )
+        assert notes in viewed
+
 
 @pytest.mark.e2e
 class TestIssueUpdate:
