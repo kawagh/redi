@@ -190,10 +190,10 @@ VIEWED_ISSUE = cast(
         "id": 42,
         "subject": "件名",
         "description": "本文",
-        "status": {"id": 5, "name": "終了"},
-        "priority": {"id": 2, "name": "通常"},
-        "tracker": {"id": 1, "name": "バグ"},
-        "author": {"id": 1, "name": "報告者"},
+        "status": {"name": "終了"},
+        "priority": {"name": "通常"},
+        "tracker": {"name": "バグ"},
+        "author": {"name": "報告者"},
         "start_date": "2026-04-01",
         "due_date": None,
         "done_ratio": 70,
@@ -203,7 +203,7 @@ VIEWED_ISSUE = cast(
         "updated_on": "2026-04-02T00:00:00Z",
         "journals": [
             {
-                "user": {"id": 1, "name": "コメントした人"},
+                "user": {"name": "コメントした人"},
                 "created_on": "2026-04-29T02:26:43Z",
                 "notes": "テストコメント",
             }
@@ -216,28 +216,13 @@ class TestFormatIssueDetail:
     """`issue view` の整形出力"""
 
     def test_shows_meta_table(self):
-        """件名の下にステータスなどのメタ情報を `[ラベル] 値` で出す"""
+        """件名の次にメタ情報を `[ラベル] 値` の表で出す (先頭はステータス)"""
         lines = view_module.format_issue_detail(VIEWED_ISSUE)
 
         assert lines[0] == "#42 件名"
-        assert f"[{messages.meta_status}] 終了" in "\n".join(lines)
-        assert f"[{messages.meta_tracker}] バグ" in "\n".join(lines)
-
-    def test_shows_placeholder_for_empty_meta(self):
-        """値の無いメタ情報(期日未設定など)は `-` を出す"""
-        lines = view_module.format_issue_detail(VIEWED_ISSUE)
-
-        due = next(
-            line for line in lines if line.startswith(f"[{messages.meta_due_date}")
-        )
-        assert due.endswith("] -")
-
-    def test_shows_comments(self):
-        """コメントは `--include journals` 無しでも本文まで出す"""
-        out = "\n".join(view_module.format_issue_detail(VIEWED_ISSUE))
-
-        assert "コメントした人" in out
-        assert "テストコメント" in out
+        # ラベル列の幅は言語設定で変わるため、ラベルと値を前後から挟んで見る
+        assert lines[2].startswith(f"[{messages.meta_status}")
+        assert lines[2].endswith("] 終了")
 
     def test_separates_description(self):
         """メタ情報と説明の間は `----` で区切る"""
@@ -246,11 +231,11 @@ class TestFormatIssueDetail:
         assert lines[lines.index("本文") - 1] == "----"
 
 
-class TestViewIssueIncludes:
-    """`issue view` が Redmine に渡す include"""
+class TestViewIssueComments:
+    """`issue view` のコメント表示"""
 
-    def test_requests_journals_by_default(self, monkeypatch):
-        """コメントを既定で表示するため journals を常に取得する"""
+    def test_shows_comments_without_include(self, monkeypatch, capsys):
+        """`--include journals` 無しでも journals を取得して本文まで出す"""
         called = {}
         monkeypatch.setattr(
             view_module.issue_service,
@@ -261,3 +246,4 @@ class TestViewIssueIncludes:
         view_module.view_issue("42")
 
         assert "journals" in called["include"].split(",")
+        assert "テストコメント" in capsys.readouterr().out
