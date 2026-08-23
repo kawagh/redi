@@ -756,6 +756,8 @@ class MessagesProto(Protocol):
     arg_help_issue_filter_tracker: str
     arg_help_issue_filter_priority: str
     arg_help_issue_filter_query: str
+    error_query_id_conflicts_filters: str
+    """{options}"""
     arg_help_limit: str
     arg_help_offset: str
     arg_help_issue_list: str

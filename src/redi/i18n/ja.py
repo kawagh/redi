@@ -603,7 +603,12 @@ class Ja(MessagesProto):
     arg_help_issue_filter_tracker = "トラッカーIDでフィルタリング"
     arg_help_issue_filter_priority = "優先度IDでフィルタリング"
     arg_help_issue_filter_query = (
-        "カスタムクエリIDでフィルタリング（`redi query`で取得可）"
+        "カスタムクエリIDでフィルタリング"
+        "（`redi query`で取得可、--project_id 以外のフィルタと併用不可）"
+    )
+    error_query_id_conflicts_filters = (
+        "--query_id は {options} と併用できません"
+        "（カスタムクエリの条件が優先され {options} は無視されます）"
     )
     arg_help_limit = "取得件数"
     arg_help_offset = "オフセット"
