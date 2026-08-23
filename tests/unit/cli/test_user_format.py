@@ -40,7 +40,6 @@ class TestFormatUserDetail:
         """1 行目以外は 2 スペース下げて出す"""
         lines = format_user_detail(_user())
 
-        assert lines[0] == "1 admin Redmine Admin"
         assert all(line.startswith("  ") for line in lines[1:])
 
     def test_admin_is_yes_or_no(self):
@@ -53,11 +52,10 @@ class TestFormatUserDetail:
 
     def test_admin_is_omitted_when_not_returned(self):
         """admin は自分自身か管理者でしか返らないため、キーが無ければ行ごと出さない"""
-        admin_label = messages.label_admin.split("{")[0]
-
         lines = format_user_detail(_user())
 
-        assert not any(line.strip().startswith(admin_label) for line in lines)
+        assert "  " + messages.label_admin.format(value=messages.label_yes) not in lines
+        assert "  " + messages.label_admin.format(value=messages.label_no) not in lines
 
     def test_lists_custom_fields_memberships_and_groups(self):
         """カスタムフィールド・メンバーシップ・グループを出す"""

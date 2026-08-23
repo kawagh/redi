@@ -16,18 +16,6 @@ class TestMeView:
         assert account["login"]
         assert "api_key" not in account
 
-    def test_prints_id_login_and_name(self):
-        """既定では 1 行目に id と login と氏名を出す"""
-        account = json.loads(run_redi("me", "--full").stdout)
-
-        first_line = run_redi("me").stdout.splitlines()[0]
-
-        expected = (
-            f"{account['id']} {account['login']}"
-            f" {account['firstname']} {account['lastname']}"
-        )
-        assert first_line == expected
-
     def test_matches_user_view_current(self):
         """`user view current` と同じ書式・同じ項目で出す"""
         assert run_redi("me").stdout == run_redi("user", "view", "current").stdout

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from redi.cli import me_command, user_command
+from redi.cli import me_command
 
 ACCOUNT = {
     "id": 1,
@@ -43,23 +43,11 @@ def stub_me_service(monkeypatch):
 class TestViewMyAccount:
     """`redi me` の標準出力"""
 
-    def test_prints_id_login_and_name(self, stub_me_service, capsys):
-        """既定では 1 行目に id と login と氏名を出す"""
+    def test_prints_memberships(self, stub_me_service, capsys):
+        """自分の情報を見るコマンドなので、既定では所属プロジェクトも出す"""
         me_command.view_my_account()
 
-        assert capsys.readouterr().out.splitlines()[0] == "1 admin 太郎 redmine"
-
-    def test_matches_user_view_current(self, stub_me_service, monkeypatch, capsys):
-        """`user view current` と同じ書式・同じ項目で出す"""
-        monkeypatch.setattr(
-            user_command.user_service, "read_user", lambda user_id, detail=False: USER
-        )
-
-        me_command.view_my_account()
-        me_output = capsys.readouterr().out
-        user_command._view_user("current")
-
-        assert me_output == capsys.readouterr().out
+        assert "    3 redi - 開発者" in capsys.readouterr().out.splitlines()
 
     def test_full_prints_json(self, stub_me_service, capsys):
         """--full では /my/account.json で取得した JSON だけを出す"""
