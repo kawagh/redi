@@ -5,10 +5,29 @@ CLI と TUI で共通の手順をここに置く。HTTP とステータスコー
 
 from __future__ import annotations
 
+import re
+
 from redi import config
 from redi.api import project as project_api
 from redi.api.exceptions import ProjectNotFoundException
 from redi.api.project import Project
+
+# Redmine のプロジェクト識別子の最大長
+IDENTIFIER_MAX_LENGTH = 100
+
+
+def suggest_identifier(name: str) -> str:
+    """プロジェクト名から識別子の候補を作る。候補を作れない場合は空文字を返す。
+
+    Redmine の識別子に使えるのは英小文字・数字・ハイフン・アンダースコアだけで、
+    数字のみの識別子は拒否される。日本語名のように候補を作れない場合は空文字を返し、
+    呼び出し側で入力を促す。
+    """
+    candidate = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+    candidate = candidate[:IDENTIFIER_MAX_LENGTH].strip("-")
+    if not candidate or candidate.isdigit():
+        return ""
+    return candidate
 
 
 def project_url(project_id: str) -> str:
