@@ -24,6 +24,17 @@ class ProjectNotFoundException(Exception):
         self.project_id = project_id
 
 
+class QueryNotFoundException(Exception):
+    """指定したカスタムクエリが存在しない (または閲覧できない) ときに送出する例外。
+
+    `query_id` は呼び出し時に指定された値。
+    """
+
+    def __init__(self, query_id: str) -> None:
+        super().__init__(str(query_id))
+        self.query_id = query_id
+
+
 class ProjectPermissionDeniedException(Exception):
     """対象のプロジェクトを参照する権限が無いときに送出する例外 (HTTP 403)。
 

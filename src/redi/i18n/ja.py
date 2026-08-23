@@ -55,6 +55,8 @@ class Ja(MessagesProto):
     )
     user_not_found = "ユーザーが見つかりません: {id}"
     project_not_found = "プロジェクトが見つかりません: {id}"
+    query_not_found = "カスタムクエリが見つかりません: {id}"
+    query_not_found_hint = "カスタムクエリの一覧は `redi query list` で確認できます"
     wiki_page_not_found = "Wikiページが見つかりません: {title}"
     wiki_page_with_version_not_found = (
         "Wikiページが見つかりません: {title} (version={version})"

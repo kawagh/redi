@@ -53,6 +53,8 @@ class En(MessagesProto):
     issue_or_user_not_found = "Issue or user not found: #{issue_id} / #{user_id}"
     user_not_found = "User not found: {id}"
     project_not_found = "Project not found: {id}"
+    query_not_found = "Custom query not found: {id}"
+    query_not_found_hint = "Run `redi query list` to see available custom queries"
     wiki_page_not_found = "Wiki page not found: {title}"
     wiki_page_with_version_not_found = (
         "Wiki page not found: {title} (version={version})"
