@@ -6,6 +6,7 @@ from datetime import datetime
 from importlib.metadata import version
 
 import argcomplete
+import requests
 
 from redi import config
 from redi.api.exceptions import (
@@ -86,6 +87,19 @@ def _format_connection_error(e: RedmineConnectionException) -> str:
     return message
 
 
+def _format_unhandled_http_error(e: requests.exceptions.HTTPError) -> str:
+    """変換されずに来た HTTP エラーを 1 行にする。
+
+    リクエスト URL や requests の例外文字列は内部の事情なので出さない。
+    調べたいときは `--debug` のログにリクエストが残る。
+    """
+    if e.response is None:
+        return messages.http_error_unhandled_unknown
+    return messages.http_error_unhandled.format(
+        status=e.response.status_code, reason=e.response.reason
+    )
+
+
 def _profile_parser(profile_names: list[str]) -> argparse.ArgumentParser:
     """--profile を後置するためのパーサ"""
     parser = argparse.ArgumentParser(
@@ -157,6 +171,11 @@ def main() -> None:
         _run()
     except RedmineConnectionException as e:
         print(_format_connection_error(e))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        # 個々の api で変換し切れていない経路の保険。ここまで来たら
+        # 原因は特定できないので、状態行だけ出してトレースバックは見せない
+        print(_format_unhandled_http_error(e))
         sys.exit(1)
 
 

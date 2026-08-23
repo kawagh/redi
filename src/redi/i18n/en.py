@@ -934,6 +934,15 @@ class En(MessagesProto):
         "issue_templates endpoint not found (requires redmine_issue_templates plugin)"
     )
 
+    # ---- project files ----
+    project_files_permission_denied = (
+        "Cannot access project files: {id} (files module disabled or no permission)"
+    )
+
+    # ---- unhandled http error ----
+    http_error_unhandled = "Redmine returned an error: {status} {reason}"
+    http_error_unhandled_unknown = "Redmine returned an error"
+
     # ---- connection error ----
     connection_unreachable = "Cannot connect to Redmine: {url}"
 

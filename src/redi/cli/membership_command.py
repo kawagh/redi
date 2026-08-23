@@ -5,7 +5,7 @@ import sys
 import requests
 
 from redi import config
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.membership import Membership, MembershipNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
@@ -30,7 +30,11 @@ def _format_membership_line(membership: Membership) -> str:
 
 def _list_memberships(project_id: str, full: bool = False) -> None:
     """メンバーシップ一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
-    memberships = membership_service.list_memberships(project_id)
+    try:
+        memberships = membership_service.list_memberships(project_id)
+    except ProjectNotFoundException:
+        print(messages.project_not_found.format(id=project_id))
+        sys.exit(1)
     if full:
         print(json.dumps(memberships, ensure_ascii=False))
         return

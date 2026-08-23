@@ -5,7 +5,11 @@ import sys
 import requests
 
 from redi import config
-from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
+from redi.api.exceptions import (
+    ProjectNotFoundException,
+    ProjectPermissionDeniedException,
+    print_http_error_body,
+)
 from redi.cli.alias import resolve_alias
 from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
@@ -50,6 +54,9 @@ def _list_files(project_id: str, full: bool = False) -> None:
         files = file_service.list_files(project_id)
     except ProjectNotFoundException:
         print(messages.project_not_found.format(id=project_id))
+        sys.exit(1)
+    except ProjectPermissionDeniedException:
+        print(messages.project_files_permission_denied.format(id=project_id))
         sys.exit(1)
     if full:
         print(json.dumps(files, ensure_ascii=False))

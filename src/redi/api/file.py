@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import NotRequired, TypedDict, cast
 
-from redi.api.exceptions import ProjectNotFoundException
+from redi.api.exceptions import (
+    ProjectNotFoundException,
+    ProjectPermissionDeniedException,
+)
 from redi.api.types import IdName
 from redi.client import client
 
@@ -40,13 +43,19 @@ class ProjectFileBody(TypedDict):
 def fetch_files(project_id: str) -> list[ProjectFile]:
     """プロジェクトのファイル一覧を取得する
 
+    Redmine はファイルモジュールが無効なプロジェクトにも 403 を返すため、
+    モジュール無効と権限不足はここでは区別しない。
+
     Raises:
         ProjectNotFoundException: 対象プロジェクトが存在しない場合（HTTP 404）
-        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+        ProjectPermissionDeniedException: ファイルモジュールが無効か参照権限が無い場合（HTTP 403）
+        requests.exceptions.HTTPError: 403 / 404 以外の HTTP エラーが返った場合
     """
     response = client.get(f"/projects/{project_id}/files.json")
     if response.status_code == 404:
         raise ProjectNotFoundException(project_id)
+    if response.status_code == 403:
+        raise ProjectPermissionDeniedException(project_id)
     response.raise_for_status()
     return cast("list[ProjectFile]", response.json()["files"])
 

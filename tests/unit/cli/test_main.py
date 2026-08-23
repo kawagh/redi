@@ -2,6 +2,7 @@ import argparse
 import copy
 
 import pytest
+import requests
 
 from redi.api.exceptions import RedmineConnectionException
 from redi.cli import main as main_module
@@ -352,3 +353,48 @@ class TestConnectionErrorIsNotATraceback:
             main_module.main()
 
         assert "sandbox_admin" in capsys.readouterr().out
+
+
+class TestUnhandledHttpErrorIsNotATraceback:
+    """変換されずに来た HTTP エラーもトレースバックにしない
+
+    api 層で個別に変換していく (github#441) だけでは未知の経路が残るため、
+    エントリポイントに保険を置いている。
+    """
+
+    def _failing_run(self, monkeypatch, response):
+        def _raise():
+            raise requests.exceptions.HTTPError("boom", response=response)
+
+        monkeypatch.setattr(main_module, "_run", _raise)
+
+    def test_prints_status_without_url(self, monkeypatch, capsys):
+        """リクエスト URL や requests の例外文字列は内部の事情なので出さない"""
+        response = requests.Response()
+        response.status_code = 500
+        response.reason = "Internal Server Error"
+        response.url = "http://localhost:3001/secret.json"
+        self._failing_run(monkeypatch, response)
+
+        with pytest.raises(SystemExit) as e:
+            main_module.main()
+
+        out = capsys.readouterr().out
+        assert e.value.code == 1
+        assert out.splitlines() == [
+            messages.http_error_unhandled.format(
+                status=500, reason="Internal Server Error"
+            )
+        ]
+        assert "secret.json" not in out
+
+    def test_handles_missing_response(self, monkeypatch, capsys):
+        """response を持たない HTTPError でも落ちない"""
+        self._failing_run(monkeypatch, None)
+
+        with pytest.raises(SystemExit):
+            main_module.main()
+
+        assert capsys.readouterr().out.splitlines() == [
+            messages.http_error_unhandled_unknown
+        ]

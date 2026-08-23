@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import NotRequired, TypedDict, cast
 
-from redi.api.exceptions import RedmineValidationException
+from redi.api.exceptions import (
+    ProjectNotFoundException,
+    RedmineValidationException,
+)
 from redi.api.types import IdName
 from redi.client import client
 
@@ -55,8 +58,15 @@ class MembershipNotFoundException(Exception):
 
 
 def fetch_memberships(project_id: str) -> list[Membership]:
-    """プロジェクトのメンバーシップ一覧を取得する。"""
+    """プロジェクトのメンバーシップ一覧を取得する。
+
+    Raises:
+        ProjectNotFoundException: 対象プロジェクトが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     response = client.get(f"/projects/{project_id}/memberships.json")
+    if response.status_code == 404:
+        raise ProjectNotFoundException(project_id)
     response.raise_for_status()
     data = cast("MembershipsResponse", response.json())
     return data["memberships"]

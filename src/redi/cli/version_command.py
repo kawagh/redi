@@ -11,7 +11,7 @@ from prompt_toolkit.shortcuts import choice
 from prompt_toolkit.validation import Validator
 
 from redi import config
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.version import Version, VersionNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
@@ -39,9 +39,18 @@ def _read_version_or_exit(version_id: str) -> Version:
         sys.exit(1)
 
 
+def _read_versions(project_id: str) -> list[Version]:
+    """バージョン一覧を取得する。プロジェクトが存在しなければ exit 1。"""
+    try:
+        return version_service.list_versions(project_id)
+    except ProjectNotFoundException:
+        print(messages.project_not_found.format(id=project_id))
+        sys.exit(1)
+
+
 def _list_versions(project_id: str, full: bool = False) -> None:
     """バージョン一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
-    versions = version_service.list_versions(project_id)
+    versions = _read_versions(project_id)
     if full:
         print(json.dumps(versions, ensure_ascii=False))
         return
