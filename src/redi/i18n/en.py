@@ -1,3 +1,5 @@
+from types import MappingProxyType
+
 from ._protocol import MessagesProto
 
 
@@ -417,6 +419,100 @@ class En(MessagesProto):
     permission_category_calendar = "Calendar"
     permission_category_gantt = "Gantt"
     permission_category_other = "Other"
+    permission_labels = MappingProxyType(
+        {
+            # project
+            "view_project": "View projects",
+            "search_project": "Search projects",
+            "add_project": "Create project",
+            "edit_project": "Edit project",
+            "close_project": "Close / reopen the project",
+            "delete_project": "Delete the project",
+            "select_project_publicity": "Set project public or private",
+            "select_project_modules": "Select project modules",
+            "manage_members": "Manage members",
+            "manage_versions": "Manage versions",
+            "add_subprojects": "Create subprojects",
+            "manage_public_queries": "Manage public queries",
+            "save_queries": "Save queries",
+            "use_webhooks": "Use webhooks",
+            # issue_tracking
+            "view_issues": "View Issues",
+            "add_issues": "Add issues",
+            "edit_issues": "Edit issues",
+            "edit_own_issues": "Edit own issues",
+            "copy_issues": "Copy issues",
+            "manage_issue_relations": "Manage issue relations",
+            "manage_subtasks": "Manage subtasks",
+            "set_issues_private": "Set issues public or private",
+            "set_own_issues_private": "Set own issues public or private",
+            "add_issue_notes": "Add notes",
+            "edit_issue_notes": "Edit notes",
+            "edit_own_issue_notes": "Edit own notes",
+            "view_private_notes": "View private notes",
+            "set_notes_private": "Set notes as private",
+            "delete_issues": "Delete issues",
+            "view_issue_watchers": "View watchers list",
+            "add_issue_watchers": "Add watchers",
+            "delete_issue_watchers": "Delete watchers",
+            "import_issues": "Import issues",
+            "manage_categories": "Manage issue categories",
+            # time_tracking
+            "view_time_entries": "View spent time",
+            "log_time": "Log spent time",
+            "edit_time_entries": "Edit time logs",
+            "edit_own_time_entries": "Edit own time logs",
+            "manage_project_activities": "Manage project activities",
+            "log_time_for_other_users": "Log spent time for other users",
+            "import_time_entries": "Import time entries",
+            # news
+            "view_news": "View news",
+            "manage_news": "Manage news",
+            "comment_news": "Comment news",
+            # documents
+            "view_documents": "View documents",
+            "add_documents": "Add documents",
+            "edit_documents": "Edit documents",
+            "delete_documents": "Delete documents",
+            # files
+            "view_files": "View files",
+            "manage_files": "Manage files",
+            # wiki
+            "view_wiki_pages": "View wiki",
+            "view_wiki_edits": "View wiki history",
+            "export_wiki_pages": "Export wiki pages",
+            "edit_wiki_pages": "Edit wiki pages",
+            "rename_wiki_pages": "Rename wiki pages",
+            "delete_wiki_pages": "Delete wiki pages",
+            "delete_wiki_pages_attachments": "Delete attachments",
+            "view_wiki_page_watchers": "View wiki page watchers list",
+            "add_wiki_page_watchers": "Add wiki page watchers",
+            "delete_wiki_page_watchers": "Delete wiki page watchers",
+            "protect_wiki_pages": "Protect wiki pages",
+            "manage_wiki": "Manage wiki",
+            # repository
+            "view_changesets": "View changesets",
+            "browse_repository": "Browse repository",
+            "commit_access": "Commit access",
+            "manage_related_issues": "Manage related issues",
+            "manage_repository": "Manage repository",
+            # boards
+            "view_messages": "View messages",
+            "add_messages": "Post messages",
+            "edit_messages": "Edit messages",
+            "edit_own_messages": "Edit own messages",
+            "delete_messages": "Delete messages",
+            "delete_own_messages": "Delete own messages",
+            "view_message_watchers": "View message watchers list",
+            "add_message_watchers": "Add message watchers",
+            "delete_message_watchers": "Delete message watchers",
+            "manage_boards": "Manage forums",
+            # calendar
+            "view_calendar": "View calendar",
+            # gantt
+            "view_gantt": "View gantt chart",
+        }
+    )
     label_mail = "Mail: {value}"
     label_admin = "Admin: {value}"
     label_yes = "yes"
