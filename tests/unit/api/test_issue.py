@@ -2,7 +2,11 @@ import pytest
 import requests
 
 from redi.api import issue as issue_module
-from redi.api.exceptions import ProjectNotFoundException, QueryNotFoundException
+from redi.api.exceptions import (
+    IssueListNotFoundException,
+    ProjectNotFoundException,
+    QueryNotFoundException,
+)
 
 
 def _response(status_code: int) -> requests.Response:
@@ -37,14 +41,17 @@ class TestFetchIssuesPage:
 
         assert exc_info.value.query_id == "5"
 
-    def test_prefers_query_not_found_with_both_ids(self, monkeypatch):
-        """両方指定の 404 はレスポンスから切り分けられないのでクエリ側で送出する"""
+    def test_raises_issue_list_not_found_with_both_ids(self, monkeypatch):
+        """両方指定の 404 は原因を判別できないので断定しない例外にする"""
         monkeypatch.setattr(
             issue_module.client, "get", lambda *args, **kwargs: _response(404)
         )
 
-        with pytest.raises(QueryNotFoundException):
+        with pytest.raises(IssueListNotFoundException) as exc_info:
             issue_module.fetch_issues_page(project_id="2", query_id="5")
+
+        assert exc_info.value.project_id == "2"
+        assert exc_info.value.query_id == "5"
 
     def test_raises_http_error_without_project_id(self, monkeypatch):
         """project_id 未指定の 404 は従来どおり HTTPError にする"""

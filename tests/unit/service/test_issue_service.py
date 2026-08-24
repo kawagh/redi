@@ -4,7 +4,11 @@ import pytest
 import requests
 
 from redi import config
-from redi.api.exceptions import ProjectNotFoundException, QueryNotFoundException
+from redi.api.exceptions import (
+    IssueListNotFoundException,
+    ProjectNotFoundException,
+    QueryNotFoundException,
+)
 from redi.service import issue_service
 
 
@@ -93,16 +97,16 @@ class TestListIssuesNotFound:
     """
 
     @pytest.fixture
-    def stub_query_not_found(self, monkeypatch):
-        """イシュー取得を必ず QueryNotFoundException にする"""
+    def stub_not_found(self, monkeypatch):
+        """イシュー取得を必ず IssueListNotFoundException にする"""
 
         def fake_fetch_issues(**kwargs):
-            raise QueryNotFoundException("5")
+            raise IssueListNotFoundException("demo", "5")
 
         monkeypatch.setattr(issue_service.issue_api, "fetch_issues", fake_fetch_issues)
 
     def test_raises_query_not_found_when_query_is_missing(
-        self, stub_query_not_found, monkeypatch
+        self, stub_not_found, monkeypatch
     ):
         """クエリ一覧に無ければクエリ未検出のまま送出する"""
         monkeypatch.setattr(
@@ -115,7 +119,7 @@ class TestListIssuesNotFound:
         assert exc_info.value.query_id == "5"
 
     def test_raises_project_not_found_when_query_exists(
-        self, stub_query_not_found, monkeypatch
+        self, stub_not_found, monkeypatch
     ):
         """クエリが実在するならプロジェクト側が原因なので送出し直す"""
         monkeypatch.setattr(
@@ -128,7 +132,7 @@ class TestListIssuesNotFound:
         assert exc_info.value.project_id == "demo"
 
     def test_raises_query_not_found_when_queries_are_unavailable(
-        self, stub_query_not_found, monkeypatch
+        self, stub_not_found, monkeypatch
     ):
         """クエリ一覧を取得できない場合は指定した側 (クエリ) を指す"""
 

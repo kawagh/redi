@@ -8,7 +8,11 @@ import requests
 from redi import config
 from redi.api import issue as issue_api
 from redi.api import query as query_api
-from redi.api.exceptions import ProjectNotFoundException, QueryNotFoundException
+from redi.api.exceptions import (
+    IssueListNotFoundException,
+    ProjectNotFoundException,
+    QueryNotFoundException,
+)
 from redi.api.issue import Issue
 from redi.service.attachment_service import upload_file
 from redi.service.project_service import resolve_project_id
@@ -52,16 +56,20 @@ def list_issues(
             limit=limit,
             offset=offset,
         )
-    except QueryNotFoundException:
+    except IssueListNotFoundException as e:
         # project_id と query_id を同時に指定した 404 は api 層では切り分けられない。
-        # クエリが実在するならプロジェクト側が原因なので送出し直す
-        if project_id and query_id and _query_exists(query_id):
-            raise ProjectNotFoundException(project_id) from None
-        raise
+        # クエリが実在するならプロジェクト側、しないならクエリ側が原因と決める
+        if _query_exists(e.query_id):
+            raise ProjectNotFoundException(e.project_id) from None
+        raise QueryNotFoundException(e.query_id) from None
 
 
 def _query_exists(query_id: str) -> bool:
-    """カスタムクエリが存在する (かつ閲覧できる) かを返す。取得に失敗した場合は False。"""
+    """カスタムクエリが存在する (かつ閲覧できる) かを返す。取得に失敗した場合は False。
+
+    Redmine の REST API にクエリ単体の取得は無いため一覧を引く。1件確認できれば十分な
+    ところを全件取得することになるが、404 のエラー経路でしか通らないので許容している。
+    """
     try:
         queries = query_api.fetch_queries()
     except requests.exceptions.RequestException:
