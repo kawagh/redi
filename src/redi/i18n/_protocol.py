@@ -90,6 +90,10 @@ class MessagesProto(Protocol):
     """ユーザーが見つからない。{id}"""
     project_not_found: str
     """プロジェクトが見つからない。{id}"""
+    query_not_found: str
+    """カスタムクエリが見つからない。{id}"""
+    query_not_found_hint: str
+    """カスタムクエリ一覧の確認方法の案内"""
     wiki_page_not_found: str
     """Wikiページが見つからない。{title}"""
     wiki_page_with_version_not_found: str
@@ -114,6 +118,12 @@ class MessagesProto(Protocol):
     """グループまたはユーザーが見つからない。{group_id} / {user_id}"""
     category_not_found: str
     """カテゴリが見つからない。{id}"""
+    tracker_not_found: str
+    """トラッカーが見つからない。{id}"""
+    status_not_found: str
+    """ステータスが見つからない。{id}"""
+    available_ids: str
+    """指定できる id と名前の一覧。{items}"""
     news_not_found: str
     """ニュースが見つからない。{id}"""
     no_search_results: str
@@ -615,6 +625,7 @@ class MessagesProto(Protocol):
     tui_filter_status: str
     tui_filter_assignee: str
     tui_filter_tracker: str
+    tui_filter_query: str
     tui_filter_user: str
     tui_filter_hint: str
     tui_filter_hint_single: str
@@ -979,6 +990,8 @@ class MessagesProto(Protocol):
     arg_help_time_entry_user_id: str
     arg_help_time_entry_from: str
     arg_help_time_entry_to: str
+    error_invalid_date_arg: str
+    """{value}"""
     arg_help_time_entry_list: str
     arg_help_time_entry_create: str
     arg_help_time_entry_hours: str
@@ -1055,6 +1068,11 @@ class MessagesProto(Protocol):
     arg_help_document_category_list: str
     arg_help_query_command: str
     arg_help_query_list: str
+    query_list_private: str
+    query_list_all_projects: str
+    query_list_project: str
+    query_list_unknown_project: str
+    """{id}"""
     arg_help_custom_field_command: str
     arg_help_custom_field_list: str
 

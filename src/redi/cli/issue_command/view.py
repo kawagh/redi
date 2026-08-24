@@ -7,7 +7,7 @@ import json
 import sys
 import webbrowser
 
-from redi.api.exceptions import ProjectNotFoundException
+from redi.api.exceptions import ProjectNotFoundException, QueryNotFoundException
 from redi.api.issue import Issue, IssueNotFoundException
 from redi.i18n import messages
 from redi.service import issue_service
@@ -44,7 +44,7 @@ def list_issues(
     Redmine が既定 25 件で打ち切るため、全件出せなかったときは表示範囲と総件数を
     標準エラーに出す。パイプで受け取る側の行を汚さないよう標準出力には混ぜない。
 
-    存在しないプロジェクトを指定した場合は案内を出して exit 1。
+    存在しないプロジェクト・カスタムクエリを指定した場合は案内を出して exit 1。
     """
     try:
         page = issue_service.list_issues_page(
@@ -58,6 +58,10 @@ def list_issues(
             limit=limit,
             offset=offset,
         )
+    except QueryNotFoundException:
+        print(messages.query_not_found.format(id=query_id))
+        print(messages.query_not_found_hint)
+        sys.exit(1)
     except ProjectNotFoundException:
         print(messages.project_not_found.format(id=project_id))
         sys.exit(1)
