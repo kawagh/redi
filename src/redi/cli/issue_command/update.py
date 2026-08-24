@@ -606,7 +606,9 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
         _validate_tracker_and_status(args)
         try:
             _update_issue(args, description)
-        except Exception:
+        except BaseException:
+            # HTTP エラーは _update_issue が sys.exit するので SystemExit も拾う。
+            # 422 でも Ctrl+C でも、エディタで書いた本文は残す。
             save_body_on_failure(description)
             raise
     if args.delete_relation:

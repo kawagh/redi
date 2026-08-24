@@ -380,7 +380,9 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
             break
     try:
         created = _create_issue(args)
-    except Exception:
+    except BaseException:
+        # HTTP エラーは _create_issue が sys.exit するので SystemExit も拾う。
+        # 422 でも Ctrl+C でも、エディタで書いた本文は残す。
         save_body_on_failure(args.description)
         raise
     if args.full:
