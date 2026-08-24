@@ -7,7 +7,7 @@ import requests
 from prompt_toolkit.validation import ValidationError, Validator
 
 from redi import config
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.wiki import (
     WikiPage,
     WikiPageNotFoundException,
@@ -47,9 +47,18 @@ def _delete_page(project_id: str, page_title: str) -> None:
     print(messages.wiki_page_deleted.format(title=page_title))
 
 
+def _read_pages(project_id: str) -> list[WikiPage]:
+    """Wiki ページ一覧を取得する。プロジェクトが存在しなければ exit 1。"""
+    try:
+        return wiki_service.list_pages(project_id)
+    except ProjectNotFoundException:
+        print(messages.project_not_found.format(id=project_id))
+        sys.exit(1)
+
+
 def _list_pages(project_id: str, full: bool = False) -> None:
     """Wiki ページ一覧をツリー表示する。full=True では取得した JSON をそのまま出す。"""
-    pages = wiki_service.list_pages(project_id)
+    pages = _read_pages(project_id)
     if full:
         print(json.dumps(pages, ensure_ascii=False))
         return
@@ -242,7 +251,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
         page_title = args.page_title
         parent_title = args.parent_title
         if page_title is None:
-            pages = wiki_service.list_pages(project_id)
+            pages = _read_pages(project_id)
             existing_titles = {normalize_title(p["title"]) for p in pages}
 
             class _PageTitleValidator(Validator):
@@ -316,7 +325,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
     elif cmd == "update":
         page_title = args.page_title
         if page_title is None:
-            pages = wiki_service.list_pages(project_id)
+            pages = _read_pages(project_id)
             if not pages:
                 print(messages.wiki_page_does_not_exist)
                 sys.exit(1)

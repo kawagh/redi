@@ -11,7 +11,7 @@ import sys
 import requests
 
 from redi import config
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.issue_category import IssueCategory, IssueCategoryNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
@@ -105,7 +105,11 @@ def add_issue_category_parser(
 
 def _list_issue_categories(project_id: str, full: bool = False) -> None:
     """イシューカテゴリ一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
-    categories = issue_category_service.list_issue_categories(project_id)
+    try:
+        categories = issue_category_service.list_issue_categories(project_id)
+    except ProjectNotFoundException:
+        print(messages.project_not_found.format(id=project_id))
+        sys.exit(1)
     if full:
         print(json.dumps(categories, ensure_ascii=False))
         return

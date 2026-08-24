@@ -963,6 +963,13 @@ class Ja(MessagesProto):
         "(redmine_issue_templates プラグインが必要です)"
     )
 
+    # ---- project files ----
+    project_files_permission_denied = "ファイルを参照できません: {id} (ファイルモジュールが無効か閲覧権限がありません)"
+
+    # ---- unhandled http error ----
+    http_error_unhandled = "Redmine がエラーを返しました: {status} {reason}"
+    http_error_unhandled_unknown = "Redmine がエラーを返しました"
+
     # ---- connection error ----
     connection_unreachable = "接続できません: {url}"
 
