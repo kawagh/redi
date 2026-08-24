@@ -35,15 +35,17 @@ class TestPrintRole:
         role_command._print_role("3", full=False)
 
         out = capsys.readouterr().out
-        labels = role_command._category_labels()
         permissions = messages.permission_labels
         assert out.startswith("3 Manager\n")
         assert (
-            f"  [{labels['issue_tracking']}]\n"
+            f"  [{role_command.CATEGORY_LABELS['issue_tracking']}]\n"
             f"    {permissions['add_issues']}\n"
             f"    {permissions['edit_issues']}"
         ) in out
-        assert f"  [{labels['wiki']}]\n    {permissions['manage_wiki']}" in out
+        assert (
+            f"  [{role_command.CATEGORY_LABELS['wiki']}]\n    {permissions['manage_wiki']}"
+            in out
+        )
 
     def test_prints_permission_count(self, monkeypatch, capsys):
         """権限の見出しには件数を出す(カテゴリ分けで落ちていないことを数で確かめられる)"""
@@ -81,12 +83,14 @@ class TestPrintRole:
         role_command._print_role("3", full=False)
 
         out = capsys.readouterr().out
-        labels = role_command._category_labels()
-        assert f"  [{labels[CATEGORY_OTHER]}]\n    plugin_permission" in out
+        assert (
+            f"  [{role_command.CATEGORY_LABELS[CATEGORY_OTHER]}]\n    plugin_permission"
+            in out
+        )
 
     def test_has_label_for_every_category(self):
         """カテゴリ表の全カテゴリと other に表示ラベルがある"""
-        labels = role_command._category_labels()
+        labels = role_command.CATEGORY_LABELS
 
         missing = [c for c, _ in PERMISSION_CATEGORIES if c not in labels]
         assert not missing, missing
