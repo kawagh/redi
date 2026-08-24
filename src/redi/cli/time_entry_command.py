@@ -170,6 +170,9 @@ def _update_time_entry(
             spent_on=spent_on,
             comments=comments,
         )
+    except TimeEntryNotFoundException:
+        print(messages.time_entry_not_found.format(id=time_entry_id))
+        sys.exit(1)
     except ProjectNotFoundException as e:
         print(messages.project_not_found.format(id=e.project_id))
         sys.exit(1)
