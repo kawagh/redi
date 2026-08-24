@@ -1,3 +1,4 @@
+# carry_over() が自分自身の型 TuiState を返すため、注釈の評価を遅らせる
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -19,7 +20,7 @@ TuiAction = Literal[
     "switch_profile",
 ]
 TuiTab = Literal["issues", "wiki", "time_entries"]
-FilterField = Literal["status", "assignee", "tracker"]
+FilterField = Literal["status", "assignee", "tracker", "query"]
 
 # prompt_toolkit の FormattedTextControl に渡す `(style, text)` 断片のリスト。
 Renderable = list[tuple[str, str]]
@@ -54,8 +55,13 @@ class TuiResult:
 class IssueFilter:
     """Issue 一覧のサーバーサイドフィルタ条件。
 
-    Redmine API の `status_id` / `assigned_to_id` / `tracker_id` パラメータに渡す値を
-    保持する。`status_id is None` のときは Redmine デフォルト挙動 (open のみ) になる。
+    Redmine API の `status_id` / `assigned_to_id` / `tracker_id` / `query_id`
+    パラメータに渡す値を保持する。`status_id is None` のときは Redmine デフォルト
+    挙動 (open のみ) になる。
+
+    Redmine は `query_id` を渡すとカスタムクエリ側の条件を優先し、同時に渡した
+    status / assignee / tracker を捨てる。捨てられた条件がステータスラインに
+    残ると嘘になるので、`apply` で排他にして片方だけが立つようにする。
     """
 
     status_id: str | None = None
@@ -64,15 +70,57 @@ class IssueFilter:
     assigned_to_label: str = messages.tui_filter_assignee_none
     tracker_id: str | None = None
     tracker_label: str = messages.tui_filter_unspecified
+    query_id: str | None = None
+    query_label: str = messages.tui_filter_unspecified
+
+    def apply(self, field: FilterField, value: str | None, label: str) -> None:
+        """フィルタ modal で選ばれた 1 項目を反映する。
+
+        クエリと status / assignee / tracker は Redmine 側で両立しないため、
+        有効な値 (None でない) を選んだら反対側をクリアする。「(指定なし)」の
+        選択は絞り込みを外す操作なので、反対側には触らない。
+        """
+        match field:
+            case "status":
+                self.status_id, self.status_label = value, label
+            case "assignee":
+                self.assigned_to_id, self.assigned_to_label = value, label
+            case "tracker":
+                self.tracker_id, self.tracker_label = value, label
+            case "query":
+                self.query_id, self.query_label = value, label
+        if value is None:
+            return
+        if field == "query":
+            self.clear_conditions()
+        else:
+            self.clear_query()
+
+    def clear_conditions(self) -> None:
+        """status / assignee / tracker の絞り込みを既定に戻す。"""
+        self.status_id = None
+        self.status_label = messages.tui_filter_status_open_default
+        self.assigned_to_id = None
+        self.assigned_to_label = messages.tui_filter_assignee_none
+        self.tracker_id = None
+        self.tracker_label = messages.tui_filter_unspecified
+
+    def clear_query(self) -> None:
+        """クエリの絞り込みを外す。"""
+        self.query_id = None
+        self.query_label = messages.tui_filter_unspecified
 
     def is_active(self) -> bool:
         return (
             self.status_id is not None
             or self.assigned_to_id is not None
             or self.tracker_id is not None
+            or self.query_id is not None
         )
 
     def short_label(self) -> str:
+        if self.query_id is not None:
+            return f"query={self.query_label}"
         parts = []
         if self.status_id is not None:
             parts.append(f"status={self.status_label}")
@@ -92,16 +140,18 @@ class FilterModalState:
     """
 
     show: bool = False
-    # 現在カーソルがあるセクション (status / assignee / tracker)
+    # 現在カーソルがあるセクション (status / assignee / tracker / query)
     focus: FilterField = "status"
     # 各セクションの選択肢: (Redmine API に渡す値, 表示ラベル) の組
     status_choices: list[tuple[str | None, str]] = field(default_factory=list)
     assignee_choices: list[tuple[str | None, str]] = field(default_factory=list)
     tracker_choices: list[tuple[str | None, str]] = field(default_factory=list)
+    query_choices: list[tuple[str | None, str]] = field(default_factory=list)
     # 各セクション内のカーソル位置
     status_cursor: int = 0
     assignee_cursor: int = 0
     tracker_cursor: int = 0
+    query_cursor: int = 0
 
 
 @dataclass

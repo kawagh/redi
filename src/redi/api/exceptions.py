@@ -24,6 +24,34 @@ class ProjectNotFoundException(Exception):
         self.project_id = project_id
 
 
+class QueryNotFoundException(Exception):
+    """指定したカスタムクエリが存在しない (または閲覧できない) ときに送出する例外。
+
+    `query_id` は呼び出し時に指定された値。
+    """
+
+    def __init__(self, query_id: str) -> None:
+        super().__init__(str(query_id))
+        self.query_id = query_id
+
+
+class IssueListNotFoundException(Exception):
+    """イシュー一覧が 404 になったが、原因を特定できないときに送出する例外。
+
+    Redmine は存在しない (または閲覧できない) プロジェクト・カスタムクエリの
+    どちらでも 404 を返し、レスポンス本文にも区別が無い。両方を指定している場合は
+    どちらが原因か判別できないため、api 層では断定せずにこの例外を送出し、
+    切り分けは service 層に任せる。
+
+    `project_id` / `query_id` は呼び出し時に指定された値。
+    """
+
+    def __init__(self, project_id: str, query_id: str) -> None:
+        super().__init__(f"project_id={project_id} query_id={query_id}")
+        self.project_id = project_id
+        self.query_id = query_id
+
+
 class ProjectPermissionDeniedException(Exception):
     """対象のプロジェクトを参照する権限が無いときに送出する例外 (HTTP 403)。
 
