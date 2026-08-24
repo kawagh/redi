@@ -261,10 +261,14 @@ class TestIssueUpdateUnknownIdRejected:
     def choices(self, monkeypatch):
         """トラッカー/ステータスの一覧と、呼ばれたら記録する更新をスタブする"""
         monkeypatch.setattr(
-            update_module, "fetch_trackers", lambda: [{"id": 1, "name": "バグ"}]
+            update_module,
+            "fetch_trackers",
+            lambda refresh=False: [{"id": 1, "name": "バグ"}],
         )
         monkeypatch.setattr(
-            update_module, "fetch_issue_statuses", lambda: [{"id": 2, "name": "新規"}]
+            update_module,
+            "fetch_issue_statuses",
+            lambda refresh=False: [{"id": 2, "name": "新規"}],
         )
         called = {}
         monkeypatch.setattr(
@@ -304,6 +308,50 @@ class TestIssueUpdateUnknownIdRejected:
             )
 
         assert "1:バグ" in capsys.readouterr().out
+
+    def test_id_missing_from_cache_is_rechecked_after_refresh(
+        self, choices, monkeypatch
+    ):
+        """キャッシュに無い id は一覧を取り直して再判定する
+
+        トラッカー/ステータスの一覧はほぼ無期限にキャッシュされるので、
+        Redmine 側で追加された直後の正しい id を弾いてしまわないようにする。
+        """
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+        refresh_args = []
+
+        def fetch_trackers(refresh=False):
+            refresh_args.append(refresh)
+            trackers = [{"id": 1, "name": "バグ"}]
+            if refresh:
+                trackers.append({"id": 9, "name": "追加されたトラッカー"})
+            return trackers
+
+        monkeypatch.setattr(update_module, "fetch_trackers", fetch_trackers)
+
+        handle_issue_update(
+            parse_issue_args(["issue", "update", "42", "--tracker_id", "9"])
+        )
+
+        assert refresh_args == [False, True]
+        assert choices["tracker_id"] == "9"
+
+    def test_known_id_does_not_refresh(self, choices, monkeypatch):
+        """キャッシュにある id では取り直さない(正常系のリクエストを増やさない)"""
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+        refresh_args = []
+
+        def fetch_trackers(refresh=False):
+            refresh_args.append(refresh)
+            return [{"id": 1, "name": "バグ"}]
+
+        monkeypatch.setattr(update_module, "fetch_trackers", fetch_trackers)
+
+        handle_issue_update(
+            parse_issue_args(["issue", "update", "42", "--tracker_id", "1"])
+        )
+
+        assert refresh_args == [False]
 
     def test_known_ids_are_sent(self, choices, monkeypatch):
         """一覧にある id はそのまま更新に渡す"""
