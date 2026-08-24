@@ -418,6 +418,7 @@ class Ja(MessagesProto):
     permission_category_calendar = "カレンダー"
     permission_category_gantt = "ガントチャート"
     permission_category_other = "その他"
+    # Redmineの画面の表示名と合わせる
     permission_labels = MappingProxyType(
         {
             # project

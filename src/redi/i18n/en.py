@@ -419,6 +419,7 @@ class En(MessagesProto):
     permission_category_calendar = "Calendar"
     permission_category_gantt = "Gantt"
     permission_category_other = "Other"
+    # Redmineの画面の表示名と合わせる
     permission_labels = MappingProxyType(
         {
             # project
