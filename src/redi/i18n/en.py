@@ -53,6 +53,8 @@ class En(MessagesProto):
     issue_or_user_not_found = "Issue or user not found: #{issue_id} / #{user_id}"
     user_not_found = "User not found: {id}"
     project_not_found = "Project not found: {id}"
+    query_not_found = "Custom query not found: {id}"
+    query_not_found_hint = "Run `redi query list` to see available custom queries"
     wiki_page_not_found = "Wiki page not found: {title}"
     wiki_page_with_version_not_found = (
         "Wiki page not found: {title} (version={version})"
@@ -67,6 +69,9 @@ class En(MessagesProto):
     group_not_found = "Group not found: #{id}"
     group_or_user_not_found = "Group or user not found: #{group_id} / #{user_id}"
     category_not_found = "Category not found: {id}"
+    tracker_not_found = "Tracker not found: {id}"
+    status_not_found = "Status not found: {id}"
+    available_ids = "Valid values: {items}"
     news_not_found = "News not found: {id}"
     no_search_results = "No search results found"
     issue_not_found_simple = "Issue not found"
@@ -844,6 +849,7 @@ class En(MessagesProto):
     arg_help_time_entry_user_id = "Filter by user ID ('me' allowed)"
     arg_help_time_entry_from = "Filter by start date (YYYY-MM-DD, inclusive)"
     arg_help_time_entry_to = "Filter by end date (YYYY-MM-DD, inclusive)"
+    error_invalid_date_arg = "Not a YYYY-MM-DD date: {value}"
     arg_help_time_entry_list = "List time entries"
     arg_help_time_entry_create = "Log time entry"
     arg_help_time_entry_hours = "Hours (e.g. 1.5; omit to enter interactively)"
@@ -926,6 +932,10 @@ class En(MessagesProto):
     arg_help_document_category_list = "List document categories"
     arg_help_query_command = arg_help_list_only_subcommands
     arg_help_query_list = "List custom queries"
+    query_list_private = "[private]"
+    query_list_all_projects = "(all projects)"
+    query_list_project = "({name})"
+    query_list_unknown_project = "(project {id})"
     arg_help_custom_field_command = arg_help_list_only_subcommands
     arg_help_custom_field_list = "List custom fields"
 
