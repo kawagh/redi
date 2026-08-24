@@ -21,11 +21,15 @@ def with_fetch(name: str, fetch) -> EnumerationResource:
 
 
 def recording_fetch(received: list[bool]):
-    """呼ばれたときの refresh を received に積む fetch を返す"""
+    """呼ばれたときの refresh を received に積む fetch を返す
+
+    query の整形が is_public / project_id を参照するので、実レスポンスに揃えて
+    どのリソースに差し替えても表示まで通るようにする。
+    """
 
     def _fetch(refresh: bool):
         received.append(refresh)
-        return [{"id": 1, "name": "バグ"}]
+        return [{"id": 1, "name": "バグ", "is_public": True, "project_id": None}]
 
     return _fetch
 

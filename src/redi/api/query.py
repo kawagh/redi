@@ -9,7 +9,8 @@ QUERIES_PAGE_LIMIT = 100
 class Query(TypedDict):
     """`queries[]` の要素。
 
-    `project_id` はプロジェクト固有クエリのみ持ち、グローバルクエリでは欠ける。
+    4 つとも常に返る (Redmine 6.1 / 7.0 で実測)。グローバルクエリは
+    `project_id` のキーが欠けるのではなく `null` が入る。
     """
 
     id: int

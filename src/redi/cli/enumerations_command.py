@@ -46,6 +46,9 @@ def _format_query_lines(queries: Sequence[Mapping[str, Any]]) -> list[str]:
     名前と `is_public` / `project_id` しかない。共通整形はこのうち 2 つを
     捨ててしまうので、query だけ整形を差し替える。
 
+    どちらも常に返るフィールドなので既定値は置かない (欠けたときに
+    「公開」「全プロジェクト」と偽って表示するより落ちた方がよい)。
+
     クエリ名には空白が入り得るので、後ろに続く情報は括弧で括って name との
     境界が読めるようにする。
     """
@@ -53,9 +56,9 @@ def _format_query_lines(queries: Sequence[Mapping[str, Any]]) -> list[str]:
     lines = []
     for query in queries:
         parts = [f"{query['id']} {query['name']}"]
-        if not query.get("is_public", True):
+        if not query["is_public"]:
             parts.append(messages.query_list_private)
-        project_id = query.get("project_id")
+        project_id = query["project_id"]
         if project_id is None:
             parts.append(messages.query_list_all_projects)
         else:

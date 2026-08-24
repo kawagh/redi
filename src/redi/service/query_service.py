@@ -22,9 +22,9 @@ def list_queries() -> list[Query]:
 def list_queries_for_project(project_id: str | None) -> list[Query]:
     """指定プロジェクトで使えるクエリ (プロジェクト固有 + グローバル) を返す。
 
-    Redmine のクエリは `project_id` を持つプロジェクト固有のものと、持たない
-    グローバルなものが混ざる。他プロジェクトのクエリを渡しても絞り込めないので
-    選択肢から外す。`project_id` が None ならグローバルのみを返す。
+    Redmine のクエリは `project_id` を持つプロジェクト固有のものと、それが
+    `null` のグローバルなものが混ざる。他プロジェクトのクエリを渡しても
+    絞り込めないので選択肢から外す。`project_id` が None ならグローバルのみを返す。
 
     クエリが持つ `project_id` は数値なので、identifier で指定されている場合は
     数値 id へ解決してから突き合わせる (config の `default_project_id` には
@@ -33,7 +33,7 @@ def list_queries_for_project(project_id: str | None) -> list[Query]:
     owner_id = _resolve_owner_id(project_id)
     queries = []
     for query in list_queries():
-        owner = query.get("project_id")
+        owner = query["project_id"]
         if owner is None or (owner_id is not None and str(owner) == owner_id):
             queries.append(query)
     return queries
@@ -67,7 +67,7 @@ def resolve_query_project_names(
     例外にはせず空の対応表を返す (呼び出し元が id のまま表示できる)。
     """
     wanted = {
-        query["project_id"] for query in queries if query.get("project_id") is not None
+        query["project_id"] for query in queries if query["project_id"] is not None
     }
     if not wanted:
         return {}
