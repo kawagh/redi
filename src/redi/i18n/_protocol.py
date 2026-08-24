@@ -1058,6 +1058,7 @@ class MessagesProto(Protocol):
     arg_help_query_list: str
     query_list_private: str
     query_list_all_projects: str
+    query_list_project: str
     query_list_unknown_project: str
     """{id}"""
     arg_help_custom_field_command: str

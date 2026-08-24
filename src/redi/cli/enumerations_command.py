@@ -40,11 +40,14 @@ class EnumerationResource:
 
 
 def _format_query_lines(queries: Sequence[Mapping[str, Any]]) -> list[str]:
-    """カスタムクエリを `{id} {name} [非公開] {プロジェクト}` の 1 行で表示する。
+    """カスタムクエリを `{id} {name} [非公開] ({プロジェクト})` の 1 行で表示する。
 
     `/queries.json` はクエリのフィルタ内容を返さないため、素性の手がかりは
     名前と `is_public` / `project_id` しかない。共通整形はこのうち 2 つを
     捨ててしまうので、query だけ整形を差し替える。
+
+    クエリ名には空白が入り得るので、後ろに続く情報は括弧で括って name との
+    境界が読めるようにする。
     """
     project_names = query_service.resolve_query_project_names(queries)
     lines = []
@@ -56,12 +59,11 @@ def _format_query_lines(queries: Sequence[Mapping[str, Any]]) -> list[str]:
         if project_id is None:
             parts.append(messages.query_list_all_projects)
         else:
-            parts.append(
-                project_names.get(
-                    project_id,
-                    messages.query_list_unknown_project.format(id=project_id),
-                )
-            )
+            project_name = project_names.get(project_id)
+            if project_name is None:
+                parts.append(messages.query_list_unknown_project.format(id=project_id))
+            else:
+                parts.append(messages.query_list_project.format(name=project_name))
         lines.append(" ".join(parts))
     return lines
 

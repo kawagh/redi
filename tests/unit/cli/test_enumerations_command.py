@@ -63,9 +63,7 @@ class TestQueryListOutput:
     def stub_projects(self, monkeypatch):
         """project_id を名前に解決するためのプロジェクト一覧を差し替える"""
         monkeypatch.setattr(
-            query_service.project_api,
-            "fetch_projects",
-            lambda: [{"id": 3, "name": "redi_df"}],
+            query_service, "list_projects", lambda: [{"id": 3, "name": "redi_df"}]
         )
 
     def query_with(self, *queries) -> EnumerationResource:
@@ -80,8 +78,10 @@ class TestQueryListOutput:
 
         handle_enumeration(resource, argparse.Namespace(full=False))
 
+        project = messages.query_list_project.format(name="redi_df")
         assert capsys.readouterr().out == (
-            f"8 バグOR機能 {messages.query_list_private} redi_df\n4 ウォッチ redi_df\n"
+            f"8 バグOR機能 {messages.query_list_private} {project}\n"
+            f"4 ウォッチ {project}\n"
         )
 
     def test_shows_all_projects_for_null_project_id(self, capsys):
@@ -106,6 +106,20 @@ class TestQueryListOutput:
 
         assert capsys.readouterr().out == (
             f"8 バグOR機能 {messages.query_list_unknown_project.format(id=99)}\n"
+        )
+
+    def test_wraps_project_name_so_query_name_boundary_is_readable(
+        self, stub_projects, capsys
+    ):
+        """クエリ名に空白が入っても境界が読めるようプロジェクト名を括弧で括る"""
+        resource = self.query_with(
+            {"id": 8, "name": "バグ OR 機能", "is_public": True, "project_id": 3}
+        )
+
+        handle_enumeration(resource, argparse.Namespace(full=False))
+
+        assert capsys.readouterr().out == (
+            f"8 バグ OR 機能 {messages.query_list_project.format(name='redi_df')}\n"
         )
 
     def test_full_prints_json(self, capsys):
