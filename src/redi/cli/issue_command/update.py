@@ -411,52 +411,31 @@ def _validate_tracker_and_status(args: IssueUpdateArgs) -> None:
 
 
 def _update_issue(args: IssueUpdateArgs, description: str | None) -> None:
-    """イシューを更新し、結果を標準出力に出す。
-
-    失敗は例外のまま投げる。本文を退避してから終了させたいので、
-    print / sys.exit は `_update_issue_or_exit` に任せる。
-    """
+    """イシューを更新し、結果を標準出力に出す。HTTP エラーは exit 1。"""
     # 呼び出し側で issue_id は解決済み
     assert args.issue_id is not None
-    issue_service.update_issue(
-        issue_id=args.issue_id,
-        project_id=args.project_id,
-        subject=args.subject,
-        description=description or None,
-        tracker_id=args.tracker_id,
-        status_id=args.status_id,
-        priority_id=args.priority_id,
-        assigned_to_id=args.assigned_to_id,
-        fixed_version_id=args.fixed_version_id,
-        parent_issue_id=args.parent_issue_id,
-        start_date=args.start_date,
-        due_date=args.due_date,
-        done_ratio=args.done_ratio,
-        estimated_hours=args.estimated_hours,
-        notes=args.notes or "",
-        custom_fields=parse_custom_fields(args.custom_fields)
-        if args.custom_fields
-        else None,
-        attachments=args.attach,
-    )
-    print(
-        messages.issue_updated.format(url=issue_service.issue_url(args.issue_id)),
-    )
-
-
-def _update_issue_or_exit(args: IssueUpdateArgs, description: str | None) -> None:
-    """イシューを更新する。失敗時はどの経路でも本文を退避してから exit 1。
-
-    退避を内側の except に置くのは、更新の失敗をメッセージに変換する過程で
-    sys.exit すると SystemExit が `except Exception` をすり抜けるため。
-    """
     try:
-        try:
-            _update_issue(args, description)
-        except Exception:
-            # HTTP エラーでもバリデーションエラー (422) でも書いた本文は残す
-            save_body_on_failure(description)
-            raise
+        issue_service.update_issue(
+            issue_id=args.issue_id,
+            project_id=args.project_id,
+            subject=args.subject,
+            description=description or None,
+            tracker_id=args.tracker_id,
+            status_id=args.status_id,
+            priority_id=args.priority_id,
+            assigned_to_id=args.assigned_to_id,
+            fixed_version_id=args.fixed_version_id,
+            parent_issue_id=args.parent_issue_id,
+            start_date=args.start_date,
+            due_date=args.due_date,
+            done_ratio=args.done_ratio,
+            estimated_hours=args.estimated_hours,
+            notes=args.notes or "",
+            custom_fields=parse_custom_fields(args.custom_fields)
+            if args.custom_fields
+            else None,
+            attachments=args.attach,
+        )
     except ProjectNotFoundException:
         print(messages.project_not_found.format(id=args.project_id))
         sys.exit(1)
@@ -468,6 +447,9 @@ def _update_issue_or_exit(args: IssueUpdateArgs, description: str | None) -> Non
         print_http_error_body(e)
         print(messages.issue_update_failed)
         sys.exit(1)
+    print(
+        messages.issue_updated.format(url=issue_service.issue_url(args.issue_id)),
+    )
 
 
 def _add_watcher(issue_id: str, user_id: int) -> None:
@@ -622,7 +604,13 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
     should_create_time_entry = args.hours is not None
     if should_update_issue:
         _validate_tracker_and_status(args)
-        _update_issue_or_exit(args, description)
+        try:
+            _update_issue(args, description)
+        except BaseException:
+            # HTTP エラーは _update_issue が sys.exit するので SystemExit も拾う。
+            # 422 でも Ctrl+C でも、エディタで書いた本文は残す。
+            save_body_on_failure(description)
+            raise
     if args.delete_relation:
         if not args.relate_to:
             print(messages.delete_relation_requires_to)

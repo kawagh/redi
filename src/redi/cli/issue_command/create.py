@@ -378,7 +378,13 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
                 webbrowser.open(_build_create_issue_url(args))
                 return
             break
-    created = _create_issue_or_exit(args)
+    try:
+        created = _create_issue(args)
+    except BaseException:
+        # HTTP エラーは _create_issue が sys.exit するので SystemExit も拾う。
+        # 422 でも Ctrl+C でも、エディタで書いた本文は残す。
+        save_body_on_failure(args.description)
+        raise
     if args.full:
         print(json.dumps(created, ensure_ascii=False))
         return
@@ -390,45 +396,27 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
 
 
 def _create_issue(args: IssueCreateArgs) -> Issue:
-    """イシューを作成する。
-
-    失敗は例外のまま投げる。本文を退避してから終了させたいので、
-    print / sys.exit は `_create_issue_or_exit` に任せる。
-    """
+    """イシューを作成する。HTTP エラーはメッセージを出して exit 1。"""
     # 呼び出し側で project_id と subject は解決済み
     assert args.project_id is not None
     assert args.subject is not None
-    return issue_service.create_issue(
-        project_id=args.project_id,
-        subject=args.subject,
-        description=args.description or "",
-        tracker_id=args.tracker_id,
-        priority_id=args.priority_id,
-        assigned_to_id=args.assigned_to_id,
-        fixed_version_id=args.fixed_version_id,
-        parent_issue_id=args.parent_issue_id,
-        start_date=args.start_date,
-        due_date=args.due_date,
-        estimated_hours=args.estimated_hours,
-        custom_fields=parse_custom_fields(args.custom_fields)
-        if args.custom_fields
-        else None,
-    )
-
-
-def _create_issue_or_exit(args: IssueCreateArgs) -> Issue:
-    """イシューを作成する。失敗時はどの経路でも本文を退避してから exit 1。
-
-    退避を内側の except に置くのは、作成の失敗をメッセージに変換する過程で
-    sys.exit すると SystemExit が `except Exception` をすり抜けるため。
-    """
     try:
-        try:
-            return _create_issue(args)
-        except Exception:
-            # HTTP エラーでもバリデーションエラー (422) でも書いた本文は残す
-            save_body_on_failure(args.description)
-            raise
+        return issue_service.create_issue(
+            project_id=args.project_id,
+            subject=args.subject,
+            description=args.description or "",
+            tracker_id=args.tracker_id,
+            priority_id=args.priority_id,
+            assigned_to_id=args.assigned_to_id,
+            fixed_version_id=args.fixed_version_id,
+            parent_issue_id=args.parent_issue_id,
+            start_date=args.start_date,
+            due_date=args.due_date,
+            estimated_hours=args.estimated_hours,
+            custom_fields=parse_custom_fields(args.custom_fields)
+            if args.custom_fields
+            else None,
+        )
     except requests.exceptions.HTTPError as e:
         print(e)
         print_http_error_body(e)
