@@ -436,6 +436,29 @@ class En(MessagesProto):
             "manage_public_queries": "Manage public queries",
             "save_queries": "Save queries",
             "use_webhooks": "Use webhooks",
+            # boards
+            "view_messages": "View messages",
+            "add_messages": "Post messages",
+            "edit_messages": "Edit messages",
+            "edit_own_messages": "Edit own messages",
+            "delete_messages": "Delete messages",
+            "delete_own_messages": "Delete own messages",
+            "view_message_watchers": "View message watchers list",
+            "add_message_watchers": "Add message watchers",
+            "delete_message_watchers": "Delete message watchers",
+            "manage_boards": "Manage forums",
+            # calendar
+            "view_calendar": "View calendar",
+            # documents
+            "view_documents": "View documents",
+            "add_documents": "Add documents",
+            "edit_documents": "Edit documents",
+            "delete_documents": "Delete documents",
+            # files
+            "view_files": "View files",
+            "manage_files": "Manage files",
+            # gantt
+            "view_gantt": "View gantt chart",
             # issue_tracking
             "view_issues": "View Issues",
             "add_issues": "Add issues",
@@ -457,6 +480,16 @@ class En(MessagesProto):
             "delete_issue_watchers": "Delete watchers",
             "import_issues": "Import issues",
             "manage_categories": "Manage issue categories",
+            # news
+            "view_news": "View news",
+            "manage_news": "Manage news",
+            "comment_news": "Comment news",
+            # repository
+            "view_changesets": "View changesets",
+            "browse_repository": "Browse repository",
+            "commit_access": "Commit access",
+            "manage_related_issues": "Manage related issues",
+            "manage_repository": "Manage repository",
             # time_tracking
             "view_time_entries": "View spent time",
             "log_time": "Log spent time",
@@ -465,18 +498,6 @@ class En(MessagesProto):
             "manage_project_activities": "Manage project activities",
             "log_time_for_other_users": "Log spent time for other users",
             "import_time_entries": "Import time entries",
-            # news
-            "view_news": "View news",
-            "manage_news": "Manage news",
-            "comment_news": "Comment news",
-            # documents
-            "view_documents": "View documents",
-            "add_documents": "Add documents",
-            "edit_documents": "Edit documents",
-            "delete_documents": "Delete documents",
-            # files
-            "view_files": "View files",
-            "manage_files": "Manage files",
             # wiki
             "view_wiki_pages": "View wiki",
             "view_wiki_edits": "View wiki history",
@@ -490,27 +511,6 @@ class En(MessagesProto):
             "delete_wiki_page_watchers": "Delete wiki page watchers",
             "protect_wiki_pages": "Protect wiki pages",
             "manage_wiki": "Manage wiki",
-            # repository
-            "view_changesets": "View changesets",
-            "browse_repository": "Browse repository",
-            "commit_access": "Commit access",
-            "manage_related_issues": "Manage related issues",
-            "manage_repository": "Manage repository",
-            # boards
-            "view_messages": "View messages",
-            "add_messages": "Post messages",
-            "edit_messages": "Edit messages",
-            "edit_own_messages": "Edit own messages",
-            "delete_messages": "Delete messages",
-            "delete_own_messages": "Delete own messages",
-            "view_message_watchers": "View message watchers list",
-            "add_message_watchers": "Add message watchers",
-            "delete_message_watchers": "Delete message watchers",
-            "manage_boards": "Manage forums",
-            # calendar
-            "view_calendar": "View calendar",
-            # gantt
-            "view_gantt": "View gantt chart",
         }
     )
     label_mail = "Mail: {value}"

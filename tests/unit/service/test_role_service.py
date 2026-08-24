@@ -118,9 +118,9 @@ class TestGroupPermissions:
 
     def test_orders_by_category_table(self):
         """API が返す順序によらずカテゴリ表の順に並べる"""
-        grouped = group_permissions(["view_gantt", "view_issues", "add_project"])
+        grouped = group_permissions(["view_issues", "add_project", "view_gantt"])
 
-        assert [c for c, _ in grouped] == ["project", "issue_tracking", "gantt"]
+        assert [c for c, _ in grouped] == ["project", "gantt", "issue_tracking"]
 
     def test_orders_members_by_category_table(self):
         """カテゴリ内の権限もカテゴリ表の順に並べる"""
@@ -170,6 +170,17 @@ class TestPermissionCategories:
         names = [p for _, ps in PERMISSION_CATEGORIES for p in ps]
 
         assert len(names) == len(set(names))
+
+    def test_orders_categories_like_admin_roles_screen(self):
+        """カテゴリの並びが admin/roles 画面と同じ
+
+        画面は module を持たない権限のまとまり (project) を先頭に、以降を
+        module の内部名の昇順で並べる (`perms_by_module.keys.sort`)。
+        ロールを画面と突き合わせるための出力なので並びを合わせる。
+        """
+        categories = [c for c, _ in PERMISSION_CATEGORIES]
+
+        assert categories == ["project", *sorted(categories[1:])]
 
     def test_has_no_other_category(self):
         """other は表には持たず、表から漏れた権限の受け皿としてのみ使う"""

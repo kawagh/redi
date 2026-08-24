@@ -408,7 +408,7 @@ class Ja(MessagesProto):
     label_permissions_header = "権限: ({count})"
     permission_category_project = "プロジェクト"
     permission_category_issue_tracking = "チケットトラッキング"
-    permission_category_time_tracking = "作業時間管理"
+    permission_category_time_tracking = "時間管理"
     permission_category_news = "ニュース"
     permission_category_documents = "文書"
     permission_category_files = "ファイル"
@@ -435,6 +435,29 @@ class Ja(MessagesProto):
             "manage_public_queries": "公開クエリの管理",
             "save_queries": "クエリの保存",
             "use_webhooks": "Webhookの使用",
+            # boards
+            "view_messages": "メッセージの閲覧",
+            "add_messages": "メッセージの追加",
+            "edit_messages": "メッセージの編集",
+            "edit_own_messages": "自分が追加したメッセージの編集",
+            "delete_messages": "メッセージの削除",
+            "delete_own_messages": "自分が追加したメッセージの削除",
+            "view_message_watchers": "メッセージのウォッチャー一覧の閲覧",
+            "add_message_watchers": "メッセージのウォッチャーの追加",
+            "delete_message_watchers": "メッセージのウォッチャーの削除",
+            "manage_boards": "フォーラムの管理",
+            # calendar
+            "view_calendar": "カレンダーの閲覧",
+            # documents
+            "view_documents": "文書の閲覧",
+            "add_documents": "文書の追加",
+            "edit_documents": "文書の編集",
+            "delete_documents": "文書の削除",
+            # files
+            "view_files": "ファイルの閲覧",
+            "manage_files": "ファイルの管理",
+            # gantt
+            "view_gantt": "ガントチャートの閲覧",
             # issue_tracking
             "view_issues": "チケットの閲覧",
             "add_issues": "チケットの追加",
@@ -456,6 +479,16 @@ class Ja(MessagesProto):
             "delete_issue_watchers": "ウォッチャーの削除",
             "import_issues": "チケットのインポート",
             "manage_categories": "チケットのカテゴリの管理",
+            # news
+            "view_news": "ニュースの閲覧",
+            "manage_news": "ニュースの管理",
+            "comment_news": "ニュースへのコメント",
+            # repository
+            "view_changesets": "更新履歴の閲覧",
+            "browse_repository": "リポジトリの閲覧",
+            "commit_access": "コミット権限",
+            "manage_related_issues": "リビジョンとチケットの関連の管理",
+            "manage_repository": "リポジトリの管理",
             # time_tracking
             "view_time_entries": "作業時間の閲覧",
             "log_time": "作業時間の記録",
@@ -464,18 +497,6 @@ class Ja(MessagesProto):
             "manage_project_activities": "作業分類 (時間管理) の管理",
             "log_time_for_other_users": "他のユーザーの作業時間の入力",
             "import_time_entries": "作業時間のインポート",
-            # news
-            "view_news": "ニュースの閲覧",
-            "manage_news": "ニュースの管理",
-            "comment_news": "ニュースへのコメント",
-            # documents
-            "view_documents": "文書の閲覧",
-            "add_documents": "文書の追加",
-            "edit_documents": "文書の編集",
-            "delete_documents": "文書の削除",
-            # files
-            "view_files": "ファイルの閲覧",
-            "manage_files": "ファイルの管理",
             # wiki
             "view_wiki_pages": "Wikiの閲覧",
             "view_wiki_edits": "Wiki履歴の閲覧",
@@ -489,27 +510,6 @@ class Ja(MessagesProto):
             "delete_wiki_page_watchers": "Wikiページのウォッチャーの削除",
             "protect_wiki_pages": "Wikiページの保護",
             "manage_wiki": "Wikiの管理",
-            # repository
-            "view_changesets": "更新履歴の閲覧",
-            "browse_repository": "リポジトリの閲覧",
-            "commit_access": "コミット権限",
-            "manage_related_issues": "リビジョンとチケットの関連の管理",
-            "manage_repository": "リポジトリの管理",
-            # boards
-            "view_messages": "メッセージの閲覧",
-            "add_messages": "メッセージの追加",
-            "edit_messages": "メッセージの編集",
-            "edit_own_messages": "自分が追加したメッセージの編集",
-            "delete_messages": "メッセージの削除",
-            "delete_own_messages": "自分が追加したメッセージの削除",
-            "view_message_watchers": "メッセージのウォッチャー一覧の閲覧",
-            "add_message_watchers": "メッセージのウォッチャーの追加",
-            "delete_message_watchers": "メッセージのウォッチャーの削除",
-            "manage_boards": "フォーラムの管理",
-            # calendar
-            "view_calendar": "カレンダーの閲覧",
-            # gantt
-            "view_gantt": "ガントチャートの閲覧",
         }
     )
     label_mail = "メール: {value}"

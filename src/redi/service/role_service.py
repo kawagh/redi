@@ -32,6 +32,45 @@ PERMISSION_CATEGORIES: tuple[tuple[str, tuple[str, ...]], ...] = (
         ),
     ),
     (
+        "boards",
+        (
+            "view_messages",
+            "add_messages",
+            "edit_messages",
+            "edit_own_messages",
+            "delete_messages",
+            "delete_own_messages",
+            "view_message_watchers",
+            "add_message_watchers",
+            "delete_message_watchers",
+            "manage_boards",
+        ),
+    ),
+    (
+        "calendar",
+        ("view_calendar",),
+    ),
+    (
+        "documents",
+        (
+            "view_documents",
+            "add_documents",
+            "edit_documents",
+            "delete_documents",
+        ),
+    ),
+    (
+        "files",
+        (
+            "view_files",
+            "manage_files",
+        ),
+    ),
+    (
+        "gantt",
+        ("view_gantt",),
+    ),
+    (
         "issue_tracking",
         (
             "view_issues",
@@ -57,6 +96,24 @@ PERMISSION_CATEGORIES: tuple[tuple[str, tuple[str, ...]], ...] = (
         ),
     ),
     (
+        "news",
+        (
+            "view_news",
+            "manage_news",
+            "comment_news",
+        ),
+    ),
+    (
+        "repository",
+        (
+            "view_changesets",
+            "browse_repository",
+            "commit_access",
+            "manage_related_issues",
+            "manage_repository",
+        ),
+    ),
+    (
         "time_tracking",
         (
             "view_time_entries",
@@ -66,30 +123,6 @@ PERMISSION_CATEGORIES: tuple[tuple[str, tuple[str, ...]], ...] = (
             "manage_project_activities",
             "log_time_for_other_users",
             "import_time_entries",
-        ),
-    ),
-    (
-        "news",
-        (
-            "view_news",
-            "manage_news",
-            "comment_news",
-        ),
-    ),
-    (
-        "documents",
-        (
-            "view_documents",
-            "add_documents",
-            "edit_documents",
-            "delete_documents",
-        ),
-    ),
-    (
-        "files",
-        (
-            "view_files",
-            "manage_files",
         ),
     ),
     (
@@ -109,41 +142,13 @@ PERMISSION_CATEGORIES: tuple[tuple[str, tuple[str, ...]], ...] = (
             "manage_wiki",
         ),
     ),
-    (
-        "repository",
-        (
-            "view_changesets",
-            "browse_repository",
-            "commit_access",
-            "manage_related_issues",
-            "manage_repository",
-        ),
-    ),
-    (
-        "boards",
-        (
-            "view_messages",
-            "add_messages",
-            "edit_messages",
-            "edit_own_messages",
-            "delete_messages",
-            "delete_own_messages",
-            "view_message_watchers",
-            "add_message_watchers",
-            "delete_message_watchers",
-            "manage_boards",
-        ),
-    ),
-    (
-        "calendar",
-        ("view_calendar",),
-    ),
-    (
-        "gantt",
-        ("view_gantt",),
-    ),
 )
-"""権限のカテゴリ表。並びは Redmine の admin/roles 画面に合わせる。"""
+"""権限のカテゴリ表。並びは Redmine の admin/roles 画面に合わせる。
+
+カテゴリの並びは画面と同じく、モジュールに属さない project を先頭に、
+以降はモジュールの内部名の昇順 (画面側は `perms_by_module.keys.sort`)。
+カテゴリ内の権限の並びは `Redmine::AccessControl` への登録順。
+"""
 
 
 def group_permissions(permissions: Iterable[str]) -> list[tuple[str, list[str]]]:

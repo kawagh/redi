@@ -12,16 +12,16 @@ from redi.service.role_service import CATEGORY_OTHER, group_permissions
 CATEGORY_LABELS = MappingProxyType(
     {
         "project": messages.permission_category_project,
-        "issue_tracking": messages.permission_category_issue_tracking,
-        "time_tracking": messages.permission_category_time_tracking,
-        "news": messages.permission_category_news,
-        "documents": messages.permission_category_documents,
-        "files": messages.permission_category_files,
-        "wiki": messages.permission_category_wiki,
-        "repository": messages.permission_category_repository,
         "boards": messages.permission_category_boards,
         "calendar": messages.permission_category_calendar,
+        "documents": messages.permission_category_documents,
+        "files": messages.permission_category_files,
         "gantt": messages.permission_category_gantt,
+        "issue_tracking": messages.permission_category_issue_tracking,
+        "news": messages.permission_category_news,
+        "repository": messages.permission_category_repository,
+        "time_tracking": messages.permission_category_time_tracking,
+        "wiki": messages.permission_category_wiki,
         CATEGORY_OTHER: messages.permission_category_other,
     }
 )
