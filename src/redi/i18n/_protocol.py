@@ -1,4 +1,3 @@
-from collections.abc import Mapping
 from typing import Protocol
 
 
@@ -560,8 +559,6 @@ class MessagesProto(Protocol):
     permission_category_calendar: str
     permission_category_gantt: str
     permission_category_other: str
-    permission_labels: Mapping[str, str]
-    """権限の内部名 -> 表示名。表に無い権限は内部名のまま出す"""
     label_mail: str
     """{value}"""
     label_admin: str
