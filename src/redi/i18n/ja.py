@@ -55,6 +55,8 @@ class Ja(MessagesProto):
     )
     user_not_found = "ユーザーが見つかりません: {id}"
     project_not_found = "プロジェクトが見つかりません: {id}"
+    query_not_found = "カスタムクエリが見つかりません: {id}"
+    query_not_found_hint = "カスタムクエリの一覧は `redi query list` で確認できます"
     wiki_page_not_found = "Wikiページが見つかりません: {title}"
     wiki_page_with_version_not_found = (
         "Wikiページが見つかりません: {title} (version={version})"
@@ -71,6 +73,9 @@ class Ja(MessagesProto):
         "グループまたはユーザーが見つかりません: #{group_id} / #{user_id}"
     )
     category_not_found = "カテゴリが見つかりません: {id}"
+    tracker_not_found = "トラッカーが見つかりません: {id}"
+    status_not_found = "ステータスが見つかりません: {id}"
+    available_ids = "指定できる値: {items}"
     news_not_found = "ニュースが見つかりません: {id}"
     no_search_results = "検索結果が見つかりませんでした"
     issue_not_found_simple = "イシューが見つかりません"
@@ -859,6 +864,7 @@ class Ja(MessagesProto):
     arg_help_time_entry_user_id = "ユーザーIDでフィルタリング（'me'も可）"
     arg_help_time_entry_from = "開始日でフィルタリング（YYYY-MM-DD、以降）"
     arg_help_time_entry_to = "終了日でフィルタリング（YYYY-MM-DD、以前）"
+    error_invalid_date_arg = "YYYY-MM-DD 形式の日付ではありません: {value}"
     arg_help_time_entry_list = "作業時間一覧"
     arg_help_time_entry_create = "作業時間登録"
     arg_help_time_entry_hours = "時間（例: 1.5、省略で対話的に入力）"
@@ -937,6 +943,10 @@ class Ja(MessagesProto):
     arg_help_document_category_list = "文書カテゴリ一覧"
     arg_help_query_command = arg_help_list_only_subcommands
     arg_help_query_list = "カスタムクエリ一覧"
+    query_list_private = "[非公開]"
+    query_list_all_projects = "(全プロジェクト)"
+    query_list_project = "({name})"
+    query_list_unknown_project = "(プロジェクト{id})"
     arg_help_custom_field_command = arg_help_list_view_subcommands
     arg_help_custom_field_list = "カスタムフィールド一覧"
     arg_help_custom_field_view = "カスタムフィールド詳細"

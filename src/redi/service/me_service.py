@@ -3,8 +3,6 @@
 CLI と TUI で共通の手順をここに置く。HTTP とステータスコードの解釈は `api.me` が持つ。
 """
 
-from __future__ import annotations
-
 import requests
 
 from redi.api import me as me_api
