@@ -6,8 +6,6 @@ Redmine 側では `Redmine::AccessControl` の `project_module` ブロックで
 決まっていて REST API には出てこないため、対応表をここに持つ。
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterable
 
 CATEGORY_OTHER = "other"
