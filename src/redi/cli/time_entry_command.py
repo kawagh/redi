@@ -265,7 +265,7 @@ def add_time_entry_parser(
         "--project_id", "-p", help=messages.arg_help_project_id
     )
     te_create_parser.add_argument(
-        "--activity_id", "-a", help=messages.arg_help_time_entry_activity_id
+        "--activity_id", "-a", help=messages.arg_help_time_entry_create_activity_id
     )
     te_create_parser.add_argument(
         "--spent_on", help=messages.arg_help_time_entry_spent_on
@@ -323,6 +323,16 @@ def add_time_entry_parser(
     )
 
 
+def _lacks_required_time_entry_create_args(args: argparse.Namespace) -> bool:
+    """`time_entry create` に Redmine が必須とする値が揃っていないか。
+
+    対象(イシュー/プロジェクト)・時間・作業分類のどれかが欠けていれば対話で補う。
+    プロジェクトは未指定でも設定の既定値にフォールバックするため、対象は揃っているとみなす。
+    """
+    has_target = bool(args.issue_id or args.project_id or config.default_project_id)
+    return not has_target or args.hours is None or not args.activity_id
+
+
 def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
     try:
         if not args.issue_id and not args.project_id:
@@ -363,12 +373,13 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
                     completer=completer,
                 ).strip()
                 args.project_id = project_id
-        hours_str = prompt(
-            messages.prompt_hours,
-            validator=HourValidator(),
-            key_bindings=digit_and_period_key_bindings(),
-        ).strip()
-        args.hours = float(hours_str)
+        if args.hours is None:
+            hours_str = prompt(
+                messages.prompt_hours,
+                validator=HourValidator(),
+                key_bindings=digit_and_period_key_bindings(),
+            ).strip()
+            args.hours = float(hours_str)
         if not args.activity_id:
             activities = fetch_time_entry_activities()
             activity_options: list[tuple[str, str]] = [
@@ -477,7 +488,7 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
 def handle_time_entry(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.time_entry_command)
     if cmd == "create":
-        if args.hours is None:
+        if _lacks_required_time_entry_create_args(args):
             _interactive_fill_time_entry_create_args(args)
         project_id = args.project_id or config.default_project_id
         create_time_entry(

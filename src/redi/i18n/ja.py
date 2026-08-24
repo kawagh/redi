@@ -970,6 +970,7 @@ class Ja(MessagesProto):
     arg_help_time_entry_hours = "時間（例: 1.5、省略で対話的に入力）"
     arg_help_time_entry_issue_id = "イシューID"
     arg_help_time_entry_activity_id = "作業分類ID"
+    arg_help_time_entry_create_activity_id = "作業分類ID(必須。省略時は対話で選択)"
     arg_help_time_entry_spent_on = "日付（YYYY-MM-DD、省略で今日）"
     arg_help_time_entry_comments = "コメント"
     arg_help_time_entry_view = "作業時間詳細"
