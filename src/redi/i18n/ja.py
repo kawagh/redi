@@ -1,5 +1,3 @@
-from types import MappingProxyType
-
 from ._protocol import MessagesProto
 
 
@@ -423,101 +421,6 @@ class Ja(MessagesProto):
     permission_category_calendar = "カレンダー"
     permission_category_gantt = "ガントチャート"
     permission_category_other = "その他"
-    # Redmineの画面の表示名と合わせる
-    permission_labels = MappingProxyType(
-        {
-            # project
-            "view_project": "プロジェクトの閲覧",
-            "search_project": "プロジェクトの検索",
-            "add_project": "プロジェクトの追加",
-            "edit_project": "プロジェクトの編集",
-            "close_project": "プロジェクトの終了/再開",
-            "delete_project": "プロジェクトの削除",
-            "select_project_publicity": "プロジェクトの公開/非公開",
-            "select_project_modules": "モジュールの選択",
-            "manage_members": "メンバーの管理",
-            "manage_versions": "バージョンの管理",
-            "add_subprojects": "サブプロジェクトの追加",
-            "manage_public_queries": "公開クエリの管理",
-            "save_queries": "クエリの保存",
-            "use_webhooks": "Webhookの使用",
-            # boards
-            "view_messages": "メッセージの閲覧",
-            "add_messages": "メッセージの追加",
-            "edit_messages": "メッセージの編集",
-            "edit_own_messages": "自分が追加したメッセージの編集",
-            "delete_messages": "メッセージの削除",
-            "delete_own_messages": "自分が追加したメッセージの削除",
-            "view_message_watchers": "メッセージのウォッチャー一覧の閲覧",
-            "add_message_watchers": "メッセージのウォッチャーの追加",
-            "delete_message_watchers": "メッセージのウォッチャーの削除",
-            "manage_boards": "フォーラムの管理",
-            # calendar
-            "view_calendar": "カレンダーの閲覧",
-            # documents
-            "view_documents": "文書の閲覧",
-            "add_documents": "文書の追加",
-            "edit_documents": "文書の編集",
-            "delete_documents": "文書の削除",
-            # files
-            "view_files": "ファイルの閲覧",
-            "manage_files": "ファイルの管理",
-            # gantt
-            "view_gantt": "ガントチャートの閲覧",
-            # issue_tracking
-            "view_issues": "チケットの閲覧",
-            "add_issues": "チケットの追加",
-            "edit_issues": "チケットの編集",
-            "edit_own_issues": "自分が追加したチケットの編集",
-            "copy_issues": "チケットのコピー",
-            "manage_issue_relations": "関連するチケットの管理",
-            "manage_subtasks": "子チケットの管理",
-            "set_issues_private": "チケットのプライベート設定",
-            "set_own_issues_private": "自分が追加したチケットのプライベート設定",
-            "add_issue_notes": "コメントの追加",
-            "edit_issue_notes": "コメントの編集",
-            "edit_own_issue_notes": "自分が追加したコメントの編集",
-            "view_private_notes": "プライベートコメントの閲覧",
-            "set_notes_private": "コメントのプライベート設定",
-            "delete_issues": "チケットの削除",
-            "view_issue_watchers": "ウォッチャー一覧の閲覧",
-            "add_issue_watchers": "ウォッチャーの追加",
-            "delete_issue_watchers": "ウォッチャーの削除",
-            "import_issues": "チケットのインポート",
-            "manage_categories": "チケットのカテゴリの管理",
-            # news
-            "view_news": "ニュースの閲覧",
-            "manage_news": "ニュースの管理",
-            "comment_news": "ニュースへのコメント",
-            # repository
-            "view_changesets": "更新履歴の閲覧",
-            "browse_repository": "リポジトリの閲覧",
-            "commit_access": "コミット権限",
-            "manage_related_issues": "リビジョンとチケットの関連の管理",
-            "manage_repository": "リポジトリの管理",
-            # time_tracking
-            "view_time_entries": "作業時間の閲覧",
-            "log_time": "作業時間の記録",
-            "edit_time_entries": "作業時間の編集",
-            "edit_own_time_entries": "自分の作業時間の編集",
-            "manage_project_activities": "作業分類 (時間管理) の管理",
-            "log_time_for_other_users": "他のユーザーの作業時間の入力",
-            "import_time_entries": "作業時間のインポート",
-            # wiki
-            "view_wiki_pages": "Wikiの閲覧",
-            "view_wiki_edits": "Wiki履歴の閲覧",
-            "export_wiki_pages": "Wikiページのエクスポート",
-            "edit_wiki_pages": "Wikiページの編集",
-            "rename_wiki_pages": "Wikiページ名の変更",
-            "delete_wiki_pages": "Wikiページの削除",
-            "delete_wiki_pages_attachments": "添付ファイルの削除",
-            "view_wiki_page_watchers": "Wikiページのウォッチャー一覧の閲覧",
-            "add_wiki_page_watchers": "Wikiページのウォッチャーの追加",
-            "delete_wiki_page_watchers": "Wikiページのウォッチャーの削除",
-            "protect_wiki_pages": "Wikiページの保護",
-            "manage_wiki": "Wikiの管理",
-        }
-    )
     label_mail = "メール: {value}"
     label_admin = "管理者: {value}"
     label_yes = "yes"

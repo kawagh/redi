@@ -21,7 +21,7 @@ class TestPrintRole:
         assert messages.role_not_found.format(id="999") in capsys.readouterr().out
 
     def test_prints_permissions_grouped_by_category(self, monkeypatch, capsys):
-        """permissions はカテゴリ見出しの下に表示名でインデントして並べる"""
+        """permissions はカテゴリ見出しの下にインデントして並べる"""
         monkeypatch.setattr(
             role_command,
             "fetch_role",
@@ -35,17 +35,13 @@ class TestPrintRole:
         role_command._print_role("3", full=False)
 
         out = capsys.readouterr().out
-        permissions = messages.permission_labels
         assert out.startswith("3 Manager\n")
         assert (
             f"  [{role_command.CATEGORY_LABELS['issue_tracking']}]\n"
-            f"    {permissions['add_issues']}\n"
-            f"    {permissions['edit_issues']}"
+            "    add_issues\n"
+            "    edit_issues"
         ) in out
-        assert (
-            f"  [{role_command.CATEGORY_LABELS['wiki']}]\n    {permissions['manage_wiki']}"
-            in out
-        )
+        assert f"  [{role_command.CATEGORY_LABELS['wiki']}]\n    manage_wiki" in out
 
     def test_prints_permission_count(self, monkeypatch, capsys):
         """権限の見出しには件数を出す(カテゴリ分けで落ちていないことを数で確かめられる)"""
@@ -65,11 +61,7 @@ class TestPrintRole:
         assert messages.label_permissions_header.format(count=3) in out
 
     def test_prints_unknown_permission_in_other_category(self, monkeypatch, capsys):
-        """カテゴリ表に無い権限も「その他」に内部名のまま必ず出す
-
-        プラグイン由来の権限には表示名を持てないが、権限漏れの確認に使う
-        出力なので落とさず内部名で出す。
-        """
+        """カテゴリ表に無い権限も「その他」として必ず出す"""
         monkeypatch.setattr(
             role_command,
             "fetch_role",

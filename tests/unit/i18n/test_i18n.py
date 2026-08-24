@@ -5,7 +5,6 @@ from redi import i18n
 from redi.i18n._protocol import MessagesProto
 from redi.i18n.en import En
 from redi.i18n.ja import Ja
-from redi.service.role_service import PERMISSION_CATEGORIES
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -45,22 +44,6 @@ class TestPlaceholdersParity:
             if ja_holders != en_holders:
                 mismatched.append((k, ja_holders, en_holders))
         assert not mismatched, mismatched
-
-
-class TestPermissionLabels:
-    """権限の表示名は ja / en で同じ権限を網羅する"""
-
-    def test_covers_every_permission_in_category_table(self):
-        """カテゴリ表にある権限すべてに表示名がある"""
-        names = [p for _, ps in PERMISSION_CATEGORIES for p in ps]
-
-        for lang in (Ja, En):
-            missing = [n for n in names if n not in lang.permission_labels]
-            assert not missing, (lang.__name__, missing)
-
-    def test_key_sets_match(self):
-        """ja と en は同じ権限に表示名を持つ"""
-        assert set(Ja.permission_labels) == set(En.permission_labels)
 
 
 class TestSelectMessages:

@@ -68,9 +68,7 @@ def _print_role(role_id: str, full: bool) -> None:
         for category, members in group_permissions(permissions):
             lines.append(f"  [{CATEGORY_LABELS[category]}]")
             for p in members:
-                # 公式画面と突き合わせられるよう、権限も内部名ではなく表示名で出す。
-                # 表に無い権限 (プラグイン由来など) は内部名のまま出す
-                lines.append(f"    {messages.permission_labels.get(p, p)}")
+                lines.append(f"    {p}")
     print("\n".join(lines))
 
 
