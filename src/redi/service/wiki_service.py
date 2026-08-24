@@ -3,8 +3,6 @@
 CLI と TUI で共通の手順をここに置く。HTTP とステータスコードの解釈は `api.wiki` が持つ。
 """
 
-from __future__ import annotations
-
 from collections import defaultdict
 from dataclasses import dataclass
 
