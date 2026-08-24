@@ -1,8 +1,105 @@
+import pytest
+
 from redi.service.role_service import (
     CATEGORY_OTHER,
     PERMISSION_CATEGORIES,
     group_permissions,
 )
+
+REDMINE_7_0_ADMIN_PERMISSIONS = [
+    "add_project",
+    "edit_project",
+    "close_project",
+    "delete_project",
+    "select_project_publicity",
+    "select_project_modules",
+    "manage_members",
+    "manage_versions",
+    "add_subprojects",
+    "manage_public_queries",
+    "save_queries",
+    "use_webhooks",
+    "view_issues",
+    "add_issues",
+    "edit_issues",
+    "edit_own_issues",
+    "copy_issues",
+    "manage_issue_relations",
+    "manage_subtasks",
+    "set_issues_private",
+    "set_own_issues_private",
+    "add_issue_notes",
+    "edit_issue_notes",
+    "edit_own_issue_notes",
+    "view_private_notes",
+    "set_notes_private",
+    "delete_issues",
+    "view_issue_watchers",
+    "add_issue_watchers",
+    "delete_issue_watchers",
+    "import_issues",
+    "manage_categories",
+    "view_time_entries",
+    "log_time",
+    "edit_time_entries",
+    "edit_own_time_entries",
+    "manage_project_activities",
+    "log_time_for_other_users",
+    "import_time_entries",
+    "view_news",
+    "manage_news",
+    "comment_news",
+    "view_documents",
+    "add_documents",
+    "edit_documents",
+    "delete_documents",
+    "view_files",
+    "manage_files",
+    "view_wiki_pages",
+    "view_wiki_edits",
+    "export_wiki_pages",
+    "edit_wiki_pages",
+    "rename_wiki_pages",
+    "delete_wiki_pages",
+    "delete_wiki_pages_attachments",
+    "view_wiki_page_watchers",
+    "add_wiki_page_watchers",
+    "delete_wiki_page_watchers",
+    "protect_wiki_pages",
+    "manage_wiki",
+    "view_changesets",
+    "browse_repository",
+    "commit_access",
+    "manage_related_issues",
+    "manage_repository",
+    "view_messages",
+    "add_messages",
+    "edit_messages",
+    "edit_own_messages",
+    "delete_messages",
+    "delete_own_messages",
+    "view_message_watchers",
+    "add_message_watchers",
+    "delete_message_watchers",
+    "manage_boards",
+    "view_calendar",
+    "view_gantt",
+]
+"""Redmine 7.0 の管理者ロール (id=3, 既定データ ja) が持つ権限。
+
+docker image `redmine:7.0` で実測した (`GET /roles/3.json` と同じ 77 件)。
+"""
+
+REDMINE_6_1_ADMIN_PERMISSIONS = [
+    p for p in REDMINE_7_0_ADMIN_PERMISSIONS if p != "use_webhooks"
+]
+"""Redmine 6.1 の管理者ロールが持つ権限。
+
+docker image `redmine:6.1` で実測したところ、7.0 との差は 7.0 で追加された
+`use_webhooks` の 1 件だけで、他の権限名もカテゴリ
+(`Redmine::AccessControl` の `project_module`) も一致していたため、7.0 の
+リストから引いて表している。
+"""
 
 
 class TestGroupPermissions:
@@ -78,92 +175,19 @@ class TestPermissionCategories:
         """other は表には持たず、表から漏れた権限の受け皿としてのみ使う"""
         assert CATEGORY_OTHER not in [c for c, _ in PERMISSION_CATEGORIES]
 
-    def test_covers_permissions_of_redmine_admin_role(self):
+    @pytest.mark.parametrize(
+        ("version", "permissions"),
+        [
+            ("6.1", REDMINE_6_1_ADMIN_PERMISSIONS),
+            ("7.0", REDMINE_7_0_ADMIN_PERMISSIONS),
+        ],
+    )
+    def test_covers_permissions_of_redmine_admin_role(self, version, permissions):
         """対応 Redmine の管理者ロールが持つ権限を表が網羅している
 
-        取得元は Redmine 7.0 の `GET /roles/3.json` の permissions。
-        表に漏れがあると other に落ちて、公式画面と並びが揃わなくなる。
+        対応バージョン (6.1 / 7.0) すべてで確かめる。表に漏れがあると other に
+        落ちて、公式画面と並びが揃わなくなる。
         """
-        admin_permissions = [
-            "add_project",
-            "edit_project",
-            "close_project",
-            "delete_project",
-            "select_project_publicity",
-            "select_project_modules",
-            "manage_members",
-            "manage_versions",
-            "add_subprojects",
-            "manage_public_queries",
-            "save_queries",
-            "use_webhooks",
-            "view_issues",
-            "add_issues",
-            "edit_issues",
-            "edit_own_issues",
-            "copy_issues",
-            "manage_issue_relations",
-            "manage_subtasks",
-            "set_issues_private",
-            "set_own_issues_private",
-            "add_issue_notes",
-            "edit_issue_notes",
-            "edit_own_issue_notes",
-            "view_private_notes",
-            "set_notes_private",
-            "delete_issues",
-            "view_issue_watchers",
-            "add_issue_watchers",
-            "delete_issue_watchers",
-            "import_issues",
-            "manage_categories",
-            "view_time_entries",
-            "log_time",
-            "edit_time_entries",
-            "edit_own_time_entries",
-            "manage_project_activities",
-            "log_time_for_other_users",
-            "import_time_entries",
-            "view_news",
-            "manage_news",
-            "comment_news",
-            "view_documents",
-            "add_documents",
-            "edit_documents",
-            "delete_documents",
-            "view_files",
-            "manage_files",
-            "view_wiki_pages",
-            "view_wiki_edits",
-            "export_wiki_pages",
-            "edit_wiki_pages",
-            "rename_wiki_pages",
-            "delete_wiki_pages",
-            "delete_wiki_pages_attachments",
-            "view_wiki_page_watchers",
-            "add_wiki_page_watchers",
-            "delete_wiki_page_watchers",
-            "protect_wiki_pages",
-            "manage_wiki",
-            "view_changesets",
-            "browse_repository",
-            "commit_access",
-            "manage_related_issues",
-            "manage_repository",
-            "view_messages",
-            "add_messages",
-            "edit_messages",
-            "edit_own_messages",
-            "delete_messages",
-            "delete_own_messages",
-            "view_message_watchers",
-            "add_message_watchers",
-            "delete_message_watchers",
-            "manage_boards",
-            "view_calendar",
-            "view_gantt",
-        ]
-
-        grouped = group_permissions(admin_permissions)
+        grouped = group_permissions(permissions)
 
         assert CATEGORY_OTHER not in [c for c, _ in grouped]
