@@ -3,8 +3,10 @@ import copy
 
 import pytest
 
+from redi.api.exceptions import RedmineConnectionException
 from redi.cli import main as main_module
 from redi.cli.main import build_redi_parser
+from redi.i18n import messages
 
 
 class TestProfileFlagPlacement:
@@ -310,3 +312,43 @@ class TestTuiProfileSwitchLoop:
         assert run_tui_calls[1].flash_message == (
             messages.tui_flash_profile_switched.format(name="sub")
         )
+
+
+class TestConnectionErrorIsNotATraceback:
+    """接続できないときは 1 行のメッセージと exit 1 で終える
+
+    起票時 (github#440) は通信する全コマンドで 100 行前後の生トレースバックが出ており、
+    内部のファイルパスまで露出していた。個々のコマンドで捕まえ損ねても
+    トレースバックにならないよう、エントリポイントに受け皿を置いている。
+    """
+
+    @pytest.fixture
+    def failing_run(self, monkeypatch):
+        """_run が接続エラーで落ちる状況を作る"""
+
+        def _raise():
+            raise RedmineConnectionException("http://localhost:3000")
+
+        monkeypatch.setattr(main_module, "_run", _raise)
+
+    def test_prints_one_line_and_exits(self, failing_run, monkeypatch, capsys):
+        """接続先が分かる 1 行だけを出して exit 1 する"""
+        monkeypatch.setattr(main_module.config, "current_profile", None)
+
+        with pytest.raises(SystemExit) as e:
+            main_module.main()
+
+        out = capsys.readouterr().out
+        assert e.value.code == 1
+        assert out.splitlines() == [
+            messages.connection_unreachable.format(url="http://localhost:3000")
+        ]
+
+    def test_shows_profile_name(self, failing_run, monkeypatch, capsys):
+        """プロファイルの指定間違いに気付けるよう、分かるならプロファイル名も添える"""
+        monkeypatch.setattr(main_module.config, "current_profile", "sandbox_admin")
+
+        with pytest.raises(SystemExit):
+            main_module.main()
+
+        assert "sandbox_admin" in capsys.readouterr().out

@@ -10,6 +10,28 @@ def print_http_error_body(e: requests.exceptions.HTTPError) -> None:
         print(e.response.text)
 
 
+class RedmineConnectionException(requests.exceptions.ConnectionError):
+    """Redmine へ接続できなかったときに送出する例外。
+
+    サーバ未起動やポート閉塞では TCP 接続自体が確立できず、requests が
+    `ConnectionError` / `Timeout` を送出する。そのまま伝播させると 100 行前後の
+    トレースバックになり、内部のファイルパスまで露出するため、接続先だけを
+    持たせて呼び出し元が 1 行のメッセージを出せるようにする。
+
+    `requests.exceptions.ConnectionError` を継承しているのは、通信失敗を
+    画面内のメッセージに変えている TUI の `except requests.exceptions.RequestException`
+    をそのまま活かすため。TUI は接続できなくてもアプリごと落ちずにエラー表示に
+    留めたいので、CLI のトップレベルまで投げ上げたくない。
+    `str(e)` が URL だけになるぶん、その表示も短くなる。
+
+    `base_url` は接続を試みた Redmine の URL。
+    """
+
+    def __init__(self, base_url: str) -> None:
+        super().__init__(base_url)
+        self.base_url = base_url
+
+
 class ProjectNotFoundException(Exception):
     """対象のプロジェクトが存在しないときに送出する例外。
 
