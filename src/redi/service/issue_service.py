@@ -3,8 +3,16 @@
 CLI と TUI で共通の手順をここに置く。HTTP とステータスコードの解釈は `api.issue` が持つ。
 """
 
+import requests
+
 from redi import config
 from redi.api import issue as issue_api
+from redi.api import query as query_api
+from redi.api.exceptions import (
+    IssueListNotFoundException,
+    ProjectNotFoundException,
+    QueryNotFoundException,
+)
 from redi.api.issue import Issue
 from redi.service.attachment_service import upload_file
 from redi.service.project_service import resolve_project_id
@@ -32,20 +40,41 @@ def list_issues(
     """イシュー一覧を取得する。
 
     Raises:
+        QueryNotFoundException: 指定したカスタムクエリが存在しない (HTTP 404)
         ProjectNotFoundException: 指定したプロジェクトが存在しない (HTTP 404)
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
-    return issue_api.fetch_issues(
-        project_id=project_id,
-        fixed_version_id=fixed_version_id,
-        assigned_to=assigned_to,
-        status_id=status_id,
-        tracker_id=tracker_id,
-        priority_id=priority_id,
-        query_id=query_id,
-        limit=limit,
-        offset=offset,
-    )
+    try:
+        return issue_api.fetch_issues(
+            project_id=project_id,
+            fixed_version_id=fixed_version_id,
+            assigned_to=assigned_to,
+            status_id=status_id,
+            tracker_id=tracker_id,
+            priority_id=priority_id,
+            query_id=query_id,
+            limit=limit,
+            offset=offset,
+        )
+    except IssueListNotFoundException as e:
+        # project_id と query_id を同時に指定した 404 は api 層では切り分けられない。
+        # クエリが実在するならプロジェクト側、しないならクエリ側が原因と決める
+        if _query_exists(e.query_id):
+            raise ProjectNotFoundException(e.project_id) from None
+        raise QueryNotFoundException(e.query_id) from None
+
+
+def _query_exists(query_id: str) -> bool:
+    """カスタムクエリが存在する (かつ閲覧できる) かを返す。取得に失敗した場合は False。
+
+    Redmine の REST API にクエリ単体の取得は無いため一覧を引く。1件確認できれば十分な
+    ところを全件取得することになるが、404 のエラー経路でしか通らないので許容している。
+    """
+    try:
+        queries = query_api.fetch_queries()
+    except requests.exceptions.RequestException:
+        return False
+    return any(str(query.get("id")) == str(query_id) for query in queries)
 
 
 def read_issue(issue_id: str, include: str = "") -> Issue:

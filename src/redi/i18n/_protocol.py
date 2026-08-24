@@ -90,6 +90,10 @@ class MessagesProto(Protocol):
     """ユーザーが見つからない。{id}"""
     project_not_found: str
     """プロジェクトが見つからない。{id}"""
+    query_not_found: str
+    """カスタムクエリが見つからない。{id}"""
+    query_not_found_hint: str
+    """カスタムクエリ一覧の確認方法の案内"""
     wiki_page_not_found: str
     """Wikiページが見つからない。{title}"""
     wiki_page_with_version_not_found: str

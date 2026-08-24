@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import NotRequired, TypedDict, cast
 
-from redi.api.exceptions import ProjectNotFoundException, RedmineValidationException
+from redi.api.exceptions import (
+    IssueListNotFoundException,
+    ProjectNotFoundException,
+    QueryNotFoundException,
+    RedmineValidationException,
+)
 from redi.api.types import IdName
 from redi.client import client
 
@@ -107,6 +112,15 @@ def fetch_issues_page(
     limit: int | None = None,
     offset: int | None = None,
 ) -> IssuesPageResponse:
+    """イシュー一覧を1ページ分取得する
+
+    Raises:
+        IssueListNotFoundException: project_id と query_id の両方を指定して 404 が返った場合
+            (どちらが原因かはレスポンスから判別できない)
+        QueryNotFoundException: query_id だけを指定して 404 が返った場合
+        ProjectNotFoundException: project_id だけを指定して 404 が返った場合
+        requests.exceptions.HTTPError: それ以外の HTTP エラーが返った場合
+    """
     params: dict = {}
     if project_id:
         params["project_id"] = project_id
@@ -127,9 +141,16 @@ def fetch_issues_page(
     if offset is not None:
         params["offset"] = offset
     response = client.get("/issues.json", params=params)
-    # 存在しない (または閲覧できない) プロジェクトを指定すると Redmine は 404 を返す
-    if response.status_code == 404 and project_id:
-        raise ProjectNotFoundException(project_id)
+    # 存在しない (または閲覧できない) プロジェクト・カスタムクエリのどちらでも
+    # Redmine は 404 を返す。指定が片方だけなら原因は一意に決まるが、両方指定されている
+    # 場合はレスポンスから判別できないので、原因を断定せず切り分けを service 層に任せる
+    if response.status_code == 404:
+        if project_id and query_id:
+            raise IssueListNotFoundException(project_id, query_id)
+        if query_id:
+            raise QueryNotFoundException(query_id)
+        if project_id:
+            raise ProjectNotFoundException(project_id)
     response.raise_for_status()
     return cast(IssuesPageResponse, response.json())
 

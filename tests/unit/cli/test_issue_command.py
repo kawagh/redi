@@ -5,7 +5,7 @@ from typing import cast
 import pytest
 
 from redi import config
-from redi.api.exceptions import ProjectNotFoundException
+from redi.api.exceptions import ProjectNotFoundException, QueryNotFoundException
 from redi.api.issue import Issue
 from redi.cli.issue_command import add_issue_parser
 from redi.cli.issue_command import create as create_module
@@ -128,6 +128,27 @@ class TestIssueListNotFound:
         assert (
             messages.project_not_found.format(id="missing") in capsys.readouterr().out
         )
+
+
+class TestIssueListQueryNotFound:
+    """`issue list` で存在しないカスタムクエリを指定したとき"""
+
+    def test_prints_query_guidance_and_exits(self, monkeypatch, capsys):
+        """プロジェクトではなくクエリを原因として案内し exit 1 する"""
+
+        def _raise(**kwargs):
+            raise QueryNotFoundException("5")
+
+        monkeypatch.setattr(view_module.issue_service, "list_issues", _raise)
+
+        with pytest.raises(SystemExit) as exc_info:
+            view_module.list_issues(project_id="demo", query_id="5")
+
+        assert exc_info.value.code == 1
+        out = capsys.readouterr().out
+        assert messages.query_not_found.format(id="5") in out
+        assert messages.query_not_found_hint in out
+        assert messages.project_not_found.format(id="demo") not in out
 
 
 class TestIssueListQueryIdFilters:
