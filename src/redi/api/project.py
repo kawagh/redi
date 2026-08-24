@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import NotRequired, TypedDict, cast
 
 from redi.api.exceptions import (

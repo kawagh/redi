@@ -1,8 +1,9 @@
 import argparse
 import sys
+from collections.abc import Sequence
 from dataclasses import dataclass, fields
 from datetime import date
-from typing import Self, cast
+from typing import Protocol, Self, cast
 
 import requests
 
@@ -27,6 +28,8 @@ from redi.api.issue import (
 )
 from redi.api.issue_relation import RelationNotFoundException
 from redi.api.issue_status import fetch_issue_statuses
+from redi.api.tracker import fetch_trackers
+from redi.api.types import IdName
 from redi.cli.custom_field_prompt import (
     SKIP_UNSUPPORTED_FIELD,
     prompt_custom_field_value,
@@ -355,6 +358,58 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         sys.exit(1)
 
 
+class _IdNameFetcher(Protocol):
+    """id と name を持つ一覧を返す fetch 関数。キャッシュ有無を refresh で切り替える。"""
+
+    def __call__(self, refresh: bool = False) -> Sequence[IdName]: ...
+
+
+def _ensure_known_id(
+    value: str,
+    fetch: _IdNameFetcher,
+    not_found_message: str,
+) -> None:
+    """候補に無い id なら、指定できる値を示して exit 1 する。
+
+    一覧はキャッシュ済みのものを使うが、Redmine 側で追加された直後は
+    キャッシュに無く正しい id を誤って弾いてしまうため、
+    一致しなかったときだけ取り直して再判定する。
+    """
+    candidates = fetch()
+    if _contains_id(candidates, value):
+        return
+    candidates = fetch(refresh=True)
+    if _contains_id(candidates, value):
+        return
+    print(not_found_message.format(id=value))
+    print(
+        messages.available_ids.format(
+            items=", ".join(
+                f"{candidate['id']}:{candidate['name']}" for candidate in candidates
+            )
+        )
+    )
+    sys.exit(1)
+
+
+def _contains_id(candidates: Sequence[IdName], value: str) -> bool:
+    return any(str(candidate["id"]) == value for candidate in candidates)
+
+
+def _validate_tracker_and_status(args: IssueUpdateArgs) -> None:
+    """存在しない tracker_id / status_id を送る前に弾く。
+
+    Redmine は不正な tracker_id / status_id を 200 で黙って無視するため、
+    そのまま送ると「更新しました」と出たまま値が変わらない。
+    """
+    if args.tracker_id:
+        _ensure_known_id(args.tracker_id, fetch_trackers, messages.tracker_not_found)
+    if args.status_id:
+        _ensure_known_id(
+            args.status_id, fetch_issue_statuses, messages.status_not_found
+        )
+
+
 def _update_issue(args: IssueUpdateArgs, description: str | None) -> None:
     """イシューを更新し、結果を標準出力に出す。
 
@@ -566,6 +621,7 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
     )
     should_create_time_entry = args.hours is not None
     if should_update_issue:
+        _validate_tracker_and_status(args)
         _update_issue_or_exit(args, description)
     if args.delete_relation:
         if not args.relate_to:
