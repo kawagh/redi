@@ -92,6 +92,34 @@ class TestIssueUpdate:
             f"stdout:\n{update_error.stdout}\nstderr:\n{update_error.stderr}"
         )
 
+    def test_exits_with_error_for_unknown_tracker_id(self):
+        """Redmine は存在しない tracker_id を黙って無視するので、redi 側で弾いて exit 1 にする"""
+        issue_id = _create_issue(unique_identifier("e2e-issue-unknown-tracker"))
+
+        with pytest.raises(subprocess.CalledProcessError) as update_error_info:
+            run_redi("issue", "update", issue_id, "--tracker_id", "99999")
+
+        update_error = update_error_info.value
+        assert update_error.returncode == 1
+        assert "Tracker not found: 99999" in update_error.stdout, (
+            f"想定外のエラーで update が失敗\n"
+            f"stdout:\n{update_error.stdout}\nstderr:\n{update_error.stderr}"
+        )
+
+    def test_exits_with_error_for_unknown_status_id(self):
+        """Redmine は存在しない status_id を黙って無視するので、redi 側で弾いて exit 1 にする"""
+        issue_id = _create_issue(unique_identifier("e2e-issue-unknown-status"))
+
+        with pytest.raises(subprocess.CalledProcessError) as update_error_info:
+            run_redi("issue", "update", issue_id, "--status_id", "99999")
+
+        update_error = update_error_info.value
+        assert update_error.returncode == 1
+        assert "Status not found: 99999" in update_error.stdout, (
+            f"想定外のエラーで update が失敗\n"
+            f"stdout:\n{update_error.stdout}\nstderr:\n{update_error.stderr}"
+        )
+
 
 @pytest.mark.e2e
 class TestIssueComment:

@@ -21,7 +21,7 @@ from redi.cli.keybinding import (
 )
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import SharedOptionParser, add_full_argument
-from redi.cli.validator import DateValidator, HourValidator
+from redi.cli.validator import DateValidator, HourValidator, is_yyyy_mm_dd
 from redi.i18n import messages
 from redi.service import issue_service, project_service, time_entry_service
 
@@ -196,6 +196,20 @@ def _delete_time_entry(time_entry_id: str) -> None:
     print(messages.time_entry_deleted.format(id=time_entry_id))
 
 
+def _date_filter(value: str) -> str:
+    """`--from` / `--to` を実在する YYYY-MM-DD として検証する。
+
+    不正な値を黙って無視すると、絞り込んだつもりで全件が返り工数集計を誤るため、
+    argparse の段階で使用方法を示して終了する。
+    """
+    text = value.strip()
+    if not is_yyyy_mm_dd(text):
+        raise argparse.ArgumentTypeError(
+            messages.error_invalid_date_arg.format(value=value)
+        )
+    return text
+
+
 def _time_entry_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
     """time_entry の一覧フィルタと出力形式のオプション"""
     parser = SharedOptionParser(postfix=postfix)
@@ -204,11 +218,13 @@ def _time_entry_list_option_parser(*, postfix: bool = False) -> argparse.Argumen
     parser.add_argument(
         "--from",
         dest="from_date",
+        type=_date_filter,
         help=messages.arg_help_time_entry_from,
     )
     parser.add_argument(
         "--to",
         dest="to_date",
+        type=_date_filter,
         help=messages.arg_help_time_entry_to,
     )
     parser.add_argument("--limit", "-l", type=int, help=messages.arg_help_limit)
