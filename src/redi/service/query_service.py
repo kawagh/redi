@@ -8,11 +8,10 @@ from typing import Any
 
 import requests
 
-from redi.api import project as project_api
 from redi.api import query as query_api
 from redi.api.exceptions import ProjectNotFoundException
 from redi.api.query import Query
-from redi.service.project_service import resolve_project_id
+from redi.service.project_service import list_projects, resolve_project_id
 
 
 def list_queries() -> list[Query]:
@@ -61,6 +60,9 @@ def resolve_query_project_names(
     `/queries.json` は数値 id しか返さないため `/projects.json` を別に引く。
     プロジェクト指定のクエリが 1 件も無ければ API は呼ばない。
 
+    参照している id を 1 件ずつ引けば転送量は減るが、リクエスト数がクエリの
+    参照先の数だけ増える。1 リクエストで済む全件取得を選んでいる。
+
     一覧表示のための補足情報でしかないので、プロジェクト取得が失敗しても
     例外にはせず空の対応表を返す (呼び出し元が id のまま表示できる)。
     """
@@ -70,7 +72,7 @@ def resolve_query_project_names(
     if not wanted:
         return {}
     try:
-        projects = project_api.fetch_projects()
+        projects = list_projects()
     except requests.exceptions.RequestException:
         return {}
     return {

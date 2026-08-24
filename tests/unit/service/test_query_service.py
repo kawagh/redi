@@ -89,9 +89,7 @@ def stub_project_api(monkeypatch):
         state.fetch_count += 1
         return PROJECTS
 
-    monkeypatch.setattr(
-        query_service.project_api, "fetch_projects", fake_fetch_projects
-    )
+    monkeypatch.setattr(query_service, "list_projects", fake_fetch_projects)
     return state
 
 
@@ -134,8 +132,6 @@ class TestResolveQueryProjectNames:
         def failing_fetch_projects():
             raise requests.exceptions.HTTPError("403")
 
-        monkeypatch.setattr(
-            query_service.project_api, "fetch_projects", failing_fetch_projects
-        )
+        monkeypatch.setattr(query_service, "list_projects", failing_fetch_projects)
 
         assert query_service.resolve_query_project_names([{"project_id": 1}]) == {}
