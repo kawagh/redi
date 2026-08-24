@@ -73,6 +73,9 @@ class Ja(MessagesProto):
         "グループまたはユーザーが見つかりません: #{group_id} / #{user_id}"
     )
     category_not_found = "カテゴリが見つかりません: {id}"
+    tracker_not_found = "トラッカーが見つかりません: {id}"
+    status_not_found = "ステータスが見つかりません: {id}"
+    available_ids = "指定できる値: {items}"
     news_not_found = "ニュースが見つかりません: {id}"
     no_search_results = "検索結果が見つかりませんでした"
     issue_not_found_simple = "イシューが見つかりません"
