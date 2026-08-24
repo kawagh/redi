@@ -925,6 +925,10 @@ class En(MessagesProto):
     arg_help_document_category_list = "List document categories"
     arg_help_query_command = arg_help_list_only_subcommands
     arg_help_query_list = "List custom queries"
+    query_list_private = "[private]"
+    query_list_all_projects = "(all projects)"
+    query_list_project = "({name})"
+    query_list_unknown_project = "(project {id})"
     arg_help_custom_field_command = arg_help_list_only_subcommands
     arg_help_custom_field_list = "List custom fields"
 
