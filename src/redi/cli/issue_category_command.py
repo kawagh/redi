@@ -17,6 +17,7 @@ from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import issue_category_service
 
 
@@ -108,7 +109,7 @@ def _list_issue_categories(project_id: str, full: bool = False) -> None:
     try:
         categories = issue_category_service.list_issue_categories(project_id)
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=project_id))
+        eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
     if full:
         print(json.dumps(categories, ensure_ascii=False))
@@ -150,7 +151,7 @@ def _read_issue_category(category_id: str) -> IssueCategory:
     try:
         return issue_category_service.read_issue_category(category_id)
     except IssueCategoryNotFoundException:
-        print(messages.category_not_found.format(id=category_id))
+        eprint(messages.category_not_found.format(id=category_id))
         sys.exit(1)
 
 
@@ -165,9 +166,9 @@ def _create_issue_category(
             assigned_to_id=assigned_to_id,
         )
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.category_create_failed)
+        eprint(messages.category_create_failed)
         sys.exit(1)
     print(messages.category_created.format(id=created["id"], name=created["name"]))
 
@@ -186,12 +187,12 @@ def _update_issue_category(
             assigned_to_id=assigned_to_id,
         )
     except IssueCategoryNotFoundException:
-        print(messages.category_not_found.format(id=category_id))
+        eprint(messages.category_not_found.format(id=category_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.category_update_failed)
+        eprint(messages.category_update_failed)
         sys.exit(1)
     print(messages.category_updated.format(id=category_id))
 
@@ -204,12 +205,12 @@ def _delete_issue_category(category_id: str, reassign_to_id: int | None) -> None
             reassign_to_id=reassign_to_id,
         )
     except IssueCategoryNotFoundException:
-        print(messages.category_not_found.format(id=category_id))
+        eprint(messages.category_not_found.format(id=category_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.category_delete_failed)
+        eprint(messages.category_delete_failed)
         sys.exit(1)
     print(messages.category_deleted.format(id=category_id))
 
@@ -218,7 +219,7 @@ def _resolve_project_id(args: argparse.Namespace) -> str:
     """--project_id か default_project_id を解決する。どちらも無ければ exit 1。"""
     project_id = args.project_id or config.default_project_id
     if not project_id:
-        print(messages.project_id_required)
+        eprint(messages.project_id_required)
         sys.exit(1)
     return project_id
 

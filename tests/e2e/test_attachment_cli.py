@@ -53,7 +53,7 @@ class TestAttachmentView:
 
         error = error_info.value
         assert error.returncode == 1
-        assert "Attachment not found: #99999999" in error.stdout, (
+        assert "Attachment not found: #99999999" in error.stderr, (
             f"想定外のエラーで view が失敗\n"
             f"stdout:\n{error.stdout}\nstderr:\n{error.stderr}"
         )
@@ -112,7 +112,7 @@ class TestAttachmentDelete:
 
         error = error_info.value
         assert error.returncode == 1
-        assert f"Attachment not found: #{attachment_id}" in error.stdout, (
+        assert f"Attachment not found: #{attachment_id}" in error.stderr, (
             f"想定外のエラーで view が失敗\n"
             f"stdout:\n{error.stdout}\nstderr:\n{error.stderr}"
         )

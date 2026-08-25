@@ -51,6 +51,7 @@ from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.time_entry_command import create_time_entry
 from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import issue_relation_service, issue_service, project_service
 from redi.service.attachment_service import LocalFileNotFoundException
 from redi.service.issue_relation_service import RelationBetweenNotFoundException
@@ -102,14 +103,14 @@ def _read_issue(issue_id: str) -> Issue:
     try:
         return issue_service.read_issue(issue_id)
     except IssueNotFoundException:
-        print(messages.issue_not_found.format(id=issue_id))
+        eprint(messages.issue_not_found.format(id=issue_id))
         sys.exit(1)
 
 
 def _interactive_select_issue_id() -> str:
     issues = issue_service.list_issues(project_id=config.default_project_id)
     if not issues:
-        print(messages.no_issues_available)
+        eprint(messages.no_issues_available)
         sys.exit(1)
     options: list[tuple[str, str]] = [
         (str(i["id"]), f"#{i['id']} {i['subject']}") for i in issues
@@ -118,7 +119,7 @@ def _interactive_select_issue_id() -> str:
     try:
         issue_id = inline_choice(messages.prompt_select_issue_to_update, options)
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     print(messages.update_target_issue.format(label=labels[issue_id]))
     return issue_id
@@ -172,10 +173,10 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
             initial_value="description",
         )
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     if not selected:
-        print(messages.canceled_no_items_selected)
+        eprint(messages.canceled_no_items_selected)
         sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
@@ -186,17 +187,17 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         project_id = args.project_id or (current.get("project") or {}).get("id")
         if "tracker" in selected:
             if not project_id:
-                print(messages.canceled_no_project)
+                eprint(messages.canceled_no_project)
                 sys.exit(1)
             try:
                 project = project_service.read_project(
                     str(project_id), include="trackers"
                 )
             except ProjectNotFoundException:
-                print(messages.project_not_found.format(id=project_id))
+                eprint(messages.project_not_found.format(id=project_id))
                 sys.exit(1)
             except ProjectPermissionDeniedException:
-                print(messages.project_permission_denied.format(id=project_id))
+                eprint(messages.project_permission_denied.format(id=project_id))
                 sys.exit(1)
             trackers = project.get("trackers") or []
             tracker_options: list[tuple[str, str]] = [
@@ -237,7 +238,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
             )
         if "assigned_to" in selected:
             if not project_id:
-                print(messages.canceled_no_project)
+                eprint(messages.canceled_no_project)
                 sys.exit(1)
             current_assignee_id = (current.get("assigned_to") or {}).get("id")
             default_assignee = (
@@ -248,7 +249,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
             )
         if "fixed_version" in selected:
             if not project_id:
-                print(messages.canceled_no_project)
+                eprint(messages.canceled_no_project)
                 sys.exit(1)
             current_version_id = (current.get("fixed_version") or {}).get("id")
             default_version = (
@@ -354,7 +355,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
             else:
                 args.custom_fields = ",".join(added_custom_fields)
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
 
 
@@ -381,8 +382,8 @@ def _ensure_known_id(
     candidates = fetch(refresh=True)
     if _contains_id(candidates, value):
         return
-    print(not_found_message.format(id=value))
-    print(
+    eprint(not_found_message.format(id=value))
+    eprint(
         messages.available_ids.format(
             items=", ".join(
                 f"{candidate['id']}:{candidate['name']}" for candidate in candidates
@@ -437,15 +438,15 @@ def _update_issue(args: IssueUpdateArgs, description: str | None) -> None:
             attachments=args.attach,
         )
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=args.project_id))
+        eprint(messages.project_not_found.format(id=args.project_id))
         sys.exit(1)
     except LocalFileNotFoundException as e:
-        print(messages.file_not_found.format(path=e.path))
+        eprint(messages.file_not_found.format(path=e.path))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.issue_update_failed)
+        eprint(messages.issue_update_failed)
         sys.exit(1)
     print(
         messages.issue_updated.format(url=issue_service.issue_url(args.issue_id)),
@@ -457,12 +458,12 @@ def _add_watcher(issue_id: str, user_id: int) -> None:
     try:
         issue_service.add_watcher(issue_id, user_id)
     except IssueNotFoundException:
-        print(messages.issue_not_found.format(id=issue_id))
+        eprint(messages.issue_not_found.format(id=issue_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.watcher_add_failed)
+        eprint(messages.watcher_add_failed)
         sys.exit(1)
     print(messages.watcher_added.format(issue_id=issue_id, user_id=user_id))
 
@@ -472,14 +473,14 @@ def _remove_watcher(issue_id: str, user_id: int) -> None:
     try:
         issue_service.remove_watcher(issue_id, user_id)
     except WatcherNotFoundException:
-        print(
+        eprint(
             messages.issue_or_user_not_found.format(issue_id=issue_id, user_id=user_id)
         )
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.watcher_remove_failed)
+        eprint(messages.watcher_remove_failed)
         sys.exit(1)
     print(messages.watcher_removed.format(issue_id=issue_id, user_id=user_id))
 
@@ -493,9 +494,9 @@ def _create_relation(issue_id: str, issue_to_id: str, relation_type: str) -> Non
             relation_type=relation_type,
         )
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.relation_create_failed)
+        eprint(messages.relation_create_failed)
         sys.exit(1)
     print(
         messages.relation_created.format(
@@ -512,7 +513,7 @@ def _delete_relation(issue_id: str, issue_to_id: str) -> None:
             issue_to_id=issue_to_id,
         )
     except RelationBetweenNotFoundException:
-        print(
+        eprint(
             messages.relation_between_not_found.format(
                 from_id=issue_id, to_id=issue_to_id
             )
@@ -520,12 +521,12 @@ def _delete_relation(issue_id: str, issue_to_id: str) -> None:
         sys.exit(1)
     except RelationNotFoundException as e:
         # 一覧を引いてから DELETE するまでの間に消えていた場合
-        print(messages.relation_not_found.format(id=e.relation_id))
+        eprint(messages.relation_not_found.format(id=e.relation_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.relation_delete_failed)
+        eprint(messages.relation_delete_failed)
         return
     print(
         messages.relation_deleted.format(
@@ -613,7 +614,7 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
             raise
     if args.delete_relation:
         if not args.relate_to:
-            print(messages.delete_relation_requires_to)
+            eprint(messages.delete_relation_requires_to)
             sys.exit(1)
         _delete_relation(
             issue_id=args.issue_id,
@@ -626,7 +627,7 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
             relation_type=args.relate,
         )
     elif args.relate or args.relate_to:
-        print(messages.relate_and_to_required)
+        eprint(messages.relate_and_to_required)
         sys.exit(1)
     if should_create_time_entry:
         create_time_entry(
@@ -647,5 +648,5 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
         and not should_create_time_entry
         and not should_update_watchers
     ):
-        print(messages.update_canceled_no_changes)
+        eprint(messages.update_canceled_no_changes)
         sys.exit(1)

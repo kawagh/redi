@@ -82,4 +82,4 @@ class TestViewMissingMembership:
             )
 
         assert e.value.code == 1
-        assert "404" in capsys.readouterr().out
+        assert "404" in capsys.readouterr().err

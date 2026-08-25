@@ -149,7 +149,7 @@ class TestCustomFieldPermission:
             )
 
         assert e.value.code == 1
-        assert messages.custom_field_admin_required in capsys.readouterr().out
+        assert messages.custom_field_admin_required in capsys.readouterr().err
 
 
 class TestRefreshIsPassedToFetch:

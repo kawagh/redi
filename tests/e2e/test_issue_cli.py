@@ -87,7 +87,7 @@ class TestIssueUpdate:
 
         update_error = update_error_info.value
         assert update_error.returncode == 1
-        assert "Project not found: e2e-no-such-project" in update_error.stdout, (
+        assert "Project not found: e2e-no-such-project" in update_error.stderr, (
             f"想定外のエラーで update が失敗\n"
             f"stdout:\n{update_error.stdout}\nstderr:\n{update_error.stderr}"
         )
@@ -101,7 +101,7 @@ class TestIssueUpdate:
 
         update_error = update_error_info.value
         assert update_error.returncode == 1
-        assert "Tracker not found: 99999" in update_error.stdout, (
+        assert "Tracker not found: 99999" in update_error.stderr, (
             f"想定外のエラーで update が失敗\n"
             f"stdout:\n{update_error.stdout}\nstderr:\n{update_error.stderr}"
         )
@@ -115,7 +115,7 @@ class TestIssueUpdate:
 
         update_error = update_error_info.value
         assert update_error.returncode == 1
-        assert "Status not found: 99999" in update_error.stdout, (
+        assert "Status not found: 99999" in update_error.stderr, (
             f"想定外のエラーで update が失敗\n"
             f"stdout:\n{update_error.stdout}\nstderr:\n{update_error.stderr}"
         )
@@ -162,7 +162,7 @@ class TestIssueDelete:
 
         delete_error = delete_error_info.value
         assert delete_error.returncode == 1
-        assert f"Issue not found: #{issue_id}" in delete_error.stdout, (
+        assert f"Issue not found: #{issue_id}" in delete_error.stderr, (
             f"想定外のエラーで delete が失敗\n"
             f"stdout:\n{delete_error.stdout}\nstderr:\n{delete_error.stderr}"
         )

@@ -238,7 +238,7 @@ class TestProjectDelete:
         with pytest.raises(subprocess.CalledProcessError) as view_error_info:
             run_redi("project", "view", identifier)
         view_error = view_error_info.value
-        assert "Project not found" in view_error.stdout, (
+        assert "Project not found" in view_error.stderr, (
             f"想定外のエラーで view が失敗\nstdout:\n{view_error.stdout}\nstderr:\n{view_error.stderr}"
         )
 
@@ -270,7 +270,7 @@ class TestProjectArchive:
         with pytest.raises(subprocess.CalledProcessError) as view_error_info:
             run_redi("project", "view", identifier)
         view_error = view_error_info.value
-        assert "Cannot access project" in view_error.stdout, (
+        assert "Cannot access project" in view_error.stderr, (
             f"想定外のエラーで view が失敗\nstdout:\n{view_error.stdout}\nstderr:\n{view_error.stderr}"
         )
         assert "Traceback" not in view_error.stderr
@@ -280,4 +280,4 @@ class TestProjectArchive:
         with pytest.raises(subprocess.CalledProcessError) as error_info:
             run_redi("project", "update", "999999", "--archive")
 
-        assert "Project not found" in error_info.value.stdout
+        assert "Project not found" in error_info.value.stderr

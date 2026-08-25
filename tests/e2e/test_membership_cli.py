@@ -109,7 +109,7 @@ class TestMembershipCreateValidationError:
             )
 
         assert e.value.returncode == 1
-        assert e.value.stdout.strip() != ""
+        assert e.value.stderr.strip() != ""
 
 
 @pytest.mark.e2e
@@ -121,11 +121,11 @@ class TestMembershipNotFound:
         with pytest.raises(subprocess.CalledProcessError) as e:
             run_redi("membership", "view", "9999999")
 
-        assert "9999999" in e.value.stdout
+        assert "9999999" in e.value.stderr
 
     def test_delete_exits_with_error(self):
         """delete は見つからないと伝えて exit 1 で終わる"""
         with pytest.raises(subprocess.CalledProcessError) as e:
             run_redi("membership", "delete", "9999999", "--yes")
 
-        assert "9999999" in e.value.stdout
+        assert "9999999" in e.value.stderr

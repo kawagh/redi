@@ -2,12 +2,14 @@ from typing import Literal, Self
 
 import requests
 
+from redi.output import eprint
+
 ValidationAction = Literal["create", "update"]
 
 
 def print_http_error_body(e: requests.exceptions.HTTPError) -> None:
     if e.response is not None:
-        print(e.response.text)
+        eprint(e.response.text)
 
 
 class RedmineConnectionException(requests.exceptions.ConnectionError):

@@ -21,8 +21,8 @@ class TestEnsureInteractive:
         """求めていた入力を末尾のコロンを落として表示する"""
         with pytest.raises(SystemExit):
             interactive.ensure_interactive("タイトル: ")
-        out = capsys.readouterr().out
-        assert messages.non_interactive_input_required.format(message="タイトル") in out
+        err = capsys.readouterr().err
+        assert messages.non_interactive_input_required.format(message="タイトル") in err
 
 
 class TestPrompt:
@@ -43,11 +43,11 @@ class TestPickerGuard:
         with pytest.raises(SystemExit) as exc:
             picker.inline_choice("更新するニュースを選択", [("1", "1 news")])
         assert exc.value.code == 1
-        assert "更新するニュースを選択" in capsys.readouterr().out
+        assert "更新するニュースを選択" in capsys.readouterr().err
 
     def test_inline_checkbox_exits_on_non_tty(self, capsys):
         """inline_checkbox()は非TTYでexit(1)する"""
         with pytest.raises(SystemExit) as exc:
             picker.inline_checkbox("更新する項目を選択", [("title", "タイトル")])
         assert exc.value.code == 1
-        assert "更新する項目を選択" in capsys.readouterr().out
+        assert "更新する項目を選択" in capsys.readouterr().err

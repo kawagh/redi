@@ -87,7 +87,7 @@ class TestView:
             project_command._view_project("152")
 
         assert e.value.code == 1
-        assert expected in capsys.readouterr().out
+        assert expected in capsys.readouterr().err
 
 
 class TestCreate:
@@ -366,7 +366,7 @@ class TestCreate:
             messages.non_interactive_input_required.format(
                 message=messages.prompt_project_name.strip().rstrip(":").strip()
             )
-            in capsys.readouterr().out
+            in capsys.readouterr().err
         )
 
 

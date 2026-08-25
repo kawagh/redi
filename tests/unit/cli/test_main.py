@@ -342,11 +342,20 @@ class TestConnectionErrorIsNotATraceback:
         with pytest.raises(SystemExit) as e:
             main_module.main()
 
-        out = capsys.readouterr().out
+        err = capsys.readouterr().err
         assert e.value.code == 1
-        assert out.splitlines() == [
+        assert err.splitlines() == [
             messages.connection_unreachable.format(url="http://localhost:3000")
         ]
+
+    def test_does_not_mix_into_stdout(self, failing_run, monkeypatch, capsys):
+        """パイプやリダイレクトで結果と混ざらないよう、標準出力には出さない"""
+        monkeypatch.setattr(main_module.config, "current_profile", None)
+
+        with pytest.raises(SystemExit):
+            main_module.main()
+
+        assert capsys.readouterr().out == ""
 
     def test_shows_profile_name(self, failing_run, monkeypatch, capsys):
         """プロファイルの指定間違いに気付けるよう、分かるならプロファイル名も添える"""
@@ -355,7 +364,7 @@ class TestConnectionErrorIsNotATraceback:
         with pytest.raises(SystemExit):
             main_module.main()
 
-        assert "sandbox_admin" in capsys.readouterr().out
+        assert "sandbox_admin" in capsys.readouterr().err
 
 
 class TestUnhandledHttpErrorIsNotATraceback:
@@ -382,14 +391,14 @@ class TestUnhandledHttpErrorIsNotATraceback:
         with pytest.raises(SystemExit) as e:
             main_module.main()
 
-        out = capsys.readouterr().out
+        err = capsys.readouterr().err
         assert e.value.code == 1
-        assert out.splitlines() == [
+        assert err.splitlines() == [
             messages.http_error_unhandled.format(
                 status=500, reason="Internal Server Error"
             )
         ]
-        assert "secret.json" not in out
+        assert "secret.json" not in err
 
     def test_handles_missing_response(self, monkeypatch, capsys):
         """response を持たない HTTPError でも落ちない"""
@@ -398,7 +407,7 @@ class TestUnhandledHttpErrorIsNotATraceback:
         with pytest.raises(SystemExit):
             main_module.main()
 
-        assert capsys.readouterr().out.splitlines() == [
+        assert capsys.readouterr().err.splitlines() == [
             messages.http_error_unhandled_unknown
         ]
 
@@ -423,7 +432,7 @@ class TestValidationErrorIsHandledOnce:
         with pytest.raises(SystemExit) as e:
             main_module.main()
 
-        out = capsys.readouterr().out
+        err = capsys.readouterr().err
         assert e.value.code == 1
-        assert "group" in out
-        assert "- Name cannot be blank" in out
+        assert "group" in err
+        assert "- Name cannot be blank" in err

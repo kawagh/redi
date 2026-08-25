@@ -87,7 +87,7 @@ class TestVersionView:
             handle_version(parse_version_args(["version", "view", "404"]))
 
         assert e.value.code == 1
-        assert "404" in capsys.readouterr().out
+        assert "404" in capsys.readouterr().err
 
 
 class TestVersionUpdate:
@@ -141,7 +141,7 @@ class TestVersionUpdate:
             handle_version(parse_version_args(["version", "update", "404", "-n", "v2"]))
 
         assert e.value.code == 1
-        assert "404" in capsys.readouterr().out
+        assert "404" in capsys.readouterr().err
 
 
 class TestVersionDelete:
@@ -161,4 +161,4 @@ class TestVersionDelete:
 
         assert e.value.code == 1
         assert stub_version_service == []
-        assert "404" in capsys.readouterr().out
+        assert "404" in capsys.readouterr().err
