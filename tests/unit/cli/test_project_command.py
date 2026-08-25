@@ -11,6 +11,20 @@ from redi.cli.project_command import add_project_parser, handle_project
 from redi.i18n import messages
 
 CREATED_PROJECT = {"id": 7, "name": "新プロジェクト", "identifier": "new-project"}
+CURRENT_PROJECT = {
+    "id": 7,
+    "name": "現プロジェクト",
+    "identifier": "current-project",
+    "description": "現在の説明",
+    "homepage": "https://old.example.com",
+    "is_public": True,
+    "inherit_members": False,
+    "trackers": [{"id": 1, "name": "バグ"}, {"id": 2, "name": "機能"}],
+    "enabled_modules": [{"id": 1, "name": "issue_tracking"}],
+    "issue_custom_fields": [{"id": 1, "name": "限定メモ"}],
+    "default_assignee": {"id": 3, "name": "担当 太郎"},
+    "default_version": {"id": 5, "name": "v1.0"},
+}
 
 
 def parse_project_args(argv: list[str]) -> argparse.Namespace:
@@ -465,10 +479,165 @@ class TestUpdate:
         assert updated_project[0]["default_assigned_to_id"] == ""
         assert updated_project[0]["default_version_id"] == ""
 
-    def test_no_option_cancels(self, updated_project, capsys):
-        """更新するフィールドが1つも無ければ何も送らずに終わる"""
+
+class TestInteractiveUpdate:
+    """`project update` は更新項目が1つも無ければ対話で補う"""
+
+    @pytest.fixture(autouse=True)
+    def custom_fields_unavailable(self, monkeypatch):
+        """更新項目のメニューは組み立てる時点でカスタムフィールド一覧を引く。
+
+        既定では取得できない扱いにして、カスタムフィールドと関係の無いテストが
+        Redmine を呼ばないようにする。
+        """
+        monkeypatch.setattr(
+            project_command, "fetch_custom_fields", lambda *_, **__: None
+        )
+
+    @pytest.fixture
+    def current_project(self, monkeypatch):
+        """対話の初期値に使う現在値の取得をスタブする。"""
+        monkeypatch.setattr(
+            project_command.project_service,
+            "read_project",
+            lambda project_id, include="": dict(CURRENT_PROJECT),
+        )
+
+    def test_selected_item_is_asked_and_sent(
+        self, updated_project, current_project, tty_stdin, monkeypatch
+    ):
+        """更新項目を選ばせ、選んだ分だけ聞いて更新する"""
+        monkeypatch.setattr(
+            project_command, "inline_checkbox", lambda *_, **__: ["homepage"]
+        )
+        monkeypatch.setattr(
+            project_command, "prompt", lambda *_, **__: "https://new.example.com"
+        )
+
+        handle_project(parse_project_args(["project", "update", "7"]))
+
+        assert updated_project[0]["homepage"] == "https://new.example.com"
+
+    def test_current_value_is_the_initial_value(
+        self, updated_project, current_project, tty_stdin, monkeypatch
+    ):
+        """一行入力の項目は現在値を初期値にして聞く"""
+        defaults: list[str] = []
+
+        def fake_prompt(_message, **kwargs):
+            defaults.append(kwargs.get("default", ""))
+            return "https://new.example.com"
+
+        monkeypatch.setattr(project_command, "prompt", fake_prompt)
+        monkeypatch.setattr(
+            project_command, "inline_checkbox", lambda *_, **__: ["homepage"]
+        )
+
+        handle_project(parse_project_args(["project", "update", "7"]))
+
+        assert defaults == ["https://old.example.com"]
+
+    def test_current_trackers_are_checked(
+        self, updated_project, current_project, tty_stdin, monkeypatch
+    ):
+        """複数選択の項目は現在値をチェック済みにして出す"""
+        checked: list[list[str] | None] = []
+        results = iter([["tracker_ids"], ["1"]])
+
+        def fake_checkbox(_message, _values, initial_checked=None, **__):
+            checked.append(initial_checked)
+            return next(results)
+
+        monkeypatch.setattr(project_command, "inline_checkbox", fake_checkbox)
+        monkeypatch.setattr(
+            project_command,
+            "fetch_trackers",
+            lambda *_, **__: [{"id": 1, "name": "バグ"}, {"id": 2, "name": "機能"}],
+        )
+
+        handle_project(parse_project_args(["project", "update", "7"]))
+
+        assert checked[1] == ["1", "2"]
+        assert updated_project[0]["tracker_ids"] == [1]
+
+    def test_default_assignee_can_be_unset(
+        self, updated_project, current_project, tty_stdin, monkeypatch
+    ):
+        """デフォルト担当者は「なし」を選ぶと空文字を送って解除する"""
+        monkeypatch.setattr(
+            project_command,
+            "inline_checkbox",
+            lambda *_, **__: ["default_assigned_to_id"],
+        )
+        monkeypatch.setattr(
+            project_command,
+            "fetch_project_users",
+            lambda _project_id: [{"id": 3, "name": "担当 太郎"}],
+        )
+        monkeypatch.setattr(project_command, "inline_choice", lambda *_, **__: "")
+
+        handle_project(parse_project_args(["project", "update", "7"]))
+
+        assert updated_project[0]["default_assigned_to_id"] == ""
+
+    def test_archive_is_not_an_update_item(
+        self, updated_project, current_project, tty_stdin, monkeypatch
+    ):
+        """アーカイブは値を送るフィールドではなく操作なので更新項目に出さない"""
+        offered: list[list[tuple[str, str]]] = []
+
+        def fake_checkbox(_message, values, **__):
+            offered.append(values)
+            return []
+
+        monkeypatch.setattr(project_command, "inline_checkbox", fake_checkbox)
+
         with pytest.raises(SystemExit):
             handle_project(parse_project_args(["project", "update", "7"]))
 
+        assert "archive" not in [value for value, _ in offered[0]]
+
+    def test_no_item_selected_cancels(
+        self, updated_project, current_project, tty_stdin, monkeypatch, capsys
+    ):
+        """更新項目を1つも選ばなければ何も送らずに終わる"""
+        monkeypatch.setattr(project_command, "inline_checkbox", lambda *_, **__: [])
+
+        with pytest.raises(SystemExit) as e:
+            handle_project(parse_project_args(["project", "update", "7"]))
+
+        assert e.value.code == 1
         assert updated_project == []
-        assert messages.update_canceled in capsys.readouterr().out
+        assert messages.canceled_no_items_selected in capsys.readouterr().err
+
+    def test_archive_only_skips_interaction(self, updated_project, monkeypatch):
+        """--archive だけの指定は更新項目を聞かずにアーカイブする"""
+        archived: list[str] = []
+        monkeypatch.setattr(
+            project_command.project_service,
+            "archive_project",
+            lambda project_id: archived.append(project_id),
+        )
+
+        handle_project(parse_project_args(["project", "update", "7", "--archive"]))
+
+        assert archived == ["7"]
+        assert updated_project == []
+
+    def test_non_interactive_names_missing_input(self, updated_project, capsys):
+        """非TTY環境では対話に入らず、求めた入力を示して exit 1 する
+
+        選択肢の組み立てにも現在値の取得にも Redmine を引くため、
+        `current_project` を差さずに Redmine を呼ばないことも合わせて見る。
+        """
+        with pytest.raises(SystemExit) as e:
+            handle_project(parse_project_args(["project", "update", "7"]))
+
+        assert e.value.code == 1
+        assert updated_project == []
+        assert (
+            messages.non_interactive_input_required.format(
+                message=messages.prompt_select_update_items.strip().rstrip(":").strip()
+            )
+            in capsys.readouterr().err
+        )

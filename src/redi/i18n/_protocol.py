@@ -413,6 +413,10 @@ class MessagesProto(Protocol):
     prompt_select_inherit_members: str
     prompt_select_parent_project: str
     prompt_select_parent_project_none: str
+    prompt_select_default_assignee: str
+    prompt_select_default_assignee_none: str
+    prompt_select_default_version: str
+    prompt_select_default_version_none: str
     prompt_select_trackers: str
     prompt_select_enabled_modules: str
     prompt_select_issue_custom_fields: str
@@ -487,6 +491,9 @@ class MessagesProto(Protocol):
     field_notes: str
     field_time_entry: str
     field_version_name: str
+    field_project_name: str
+    field_default_assignee: str
+    field_default_version: str
     field_homepage: str
     field_is_public: str
     field_parent_project: str

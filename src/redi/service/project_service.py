@@ -119,6 +119,42 @@ def create_project(
     )
 
 
+def has_update_fields(
+    name: str | None = None,
+    description: str | None = None,
+    homepage: str | None = None,
+    is_public: bool | None = None,
+    parent_id: str | None = None,
+    inherit_members: bool | None = None,
+    tracker_ids: list[int] | None = None,
+    enabled_module_names: list[str] | None = None,
+    issue_custom_field_ids: list[int] | None = None,
+    default_assigned_to_id: str | None = None,
+    default_version_id: str | None = None,
+) -> bool:
+    """更新する項目が指定されているかを返す。
+
+    description / homepage / default_* は空文字が値を消す指定なので、
+    値の真偽ではなく None かどうかで判定する。
+    """
+    return any(
+        value is not None
+        for value in (
+            name,
+            description,
+            homepage,
+            is_public,
+            parent_id,
+            inherit_members,
+            tracker_ids,
+            enabled_module_names,
+            issue_custom_field_ids,
+            default_assigned_to_id,
+            default_version_id,
+        )
+    )
+
+
 def update_project(
     project_id: str,
     name: str | None = None,
