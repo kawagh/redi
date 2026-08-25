@@ -15,6 +15,22 @@ from redi.api.project import Project
 # Redmine のプロジェクト識別子の最大長
 IDENTIFIER_MAX_LENGTH = 100
 
+# Redmine 標準のモジュール名。
+# 有効化できるモジュールを返す REST API が無いため対話の選択肢としてこれを出す。
+# プラグインが追加するモジュール名は含まないので、引数で渡された値の検証には使わない。
+MODULE_NAME_CHOICES = [
+    "boards",
+    "calendar",
+    "documents",
+    "files",
+    "gantt",
+    "issue_tracking",
+    "news",
+    "repository",
+    "time_tracking",
+    "wiki",
+]
+
 
 def suggest_identifier(name: str) -> str:
     """プロジェクト名から識別子の候補を作る。候補を作れない場合は空文字を返す。

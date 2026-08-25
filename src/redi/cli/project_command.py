@@ -296,6 +296,31 @@ def _interactive_select_tracker_ids(current: str | None) -> str | None:
     return ",".join(selected)
 
 
+def _interactive_select_enabled_module_names(current: str | None) -> str | None:
+    """有効化するモジュールを複数選ばせ、カンマ区切りの名前を返す。
+
+    有効化できるモジュールを返す REST API が無いため、選択肢は Redmine 標準の
+    モジュール名を並べた `MODULE_NAME_CHOICES` から出す。プラグインが追加した
+    モジュール名はここに出ないので、その場合は引数で直接渡す。
+    """
+    options: list[tuple[str, str]] = [
+        (name, name) for name in project_service.MODULE_NAME_CHOICES
+    ]
+    selected = inline_checkbox(
+        messages.prompt_select_enabled_modules,
+        options,
+        initial_checked=current.split(",") if current else None,
+    )
+    if not selected:
+        return None
+    print(
+        messages.prompt_field_value.format(
+            name=messages.field_enabled_modules, value=", ".join(selected)
+        )
+    )
+    return ",".join(selected)
+
+
 def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
     """アクションメニューで「任意項目を入力する」を選んだときの入力フロー。
 
@@ -309,6 +334,7 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
         ("parent_id", messages.field_parent_project),
         ("inherit_members", messages.field_inherit_members),
         ("tracker_ids", messages.field_trackers),
+        ("enabled_module_names", messages.field_enabled_modules),
     ]
     try:
         selected = inline_checkbox(
@@ -366,6 +392,10 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
             )
         if "tracker_ids" in selected:
             args.tracker_ids = _interactive_select_tracker_ids(args.tracker_ids)
+        if "enabled_module_names" in selected:
+            args.enabled_module_names = _interactive_select_enabled_module_names(
+                args.enabled_module_names
+            )
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)
         sys.exit(1)

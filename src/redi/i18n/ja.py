@@ -296,6 +296,9 @@ class Ja(MessagesProto):
     prompt_select_parent_project = "親プロジェクト"
     prompt_select_parent_project_none = "（親プロジェクトなし）"
     prompt_select_trackers = "トラッカーを選択 (Spaceで選択、Enterで確定)"
+    prompt_select_enabled_modules = (
+        "有効化するモジュールを選択 (Spaceで選択、Enterで確定)"
+    )
     prompt_description_optional = "説明（省略可）: "
     prompt_wiki_comments = "コメント（省略可）: "
     prompt_due_date_optional = "期日（YYYY-MM-DD、省略可）: "
@@ -362,6 +365,7 @@ class Ja(MessagesProto):
     field_parent_project = "親プロジェクト (parent)"
     field_inherit_members = "メンバーの継承 (inherit_members)"
     field_trackers = "トラッカー (trackers)"
+    field_enabled_modules = "有効モジュール (enabled_module_names)"
     field_version_name = "バージョン名 (name)"
     field_sharing = "共有設定 (sharing)"
     field_hours = "作業時間 (hours)"

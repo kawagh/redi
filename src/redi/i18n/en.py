@@ -295,6 +295,9 @@ class En(MessagesProto):
     prompt_select_parent_project = "Parent project"
     prompt_select_parent_project_none = "(No parent project)"
     prompt_select_trackers = "Select trackers (Space to toggle, Enter to confirm)"
+    prompt_select_enabled_modules = (
+        "Select modules to enable (Space to toggle, Enter to confirm)"
+    )
     prompt_description_optional = "Description (optional): "
     prompt_wiki_comments = "Comment (optional): "
     prompt_due_date_optional = "Due date (YYYY-MM-DD, optional): "
@@ -359,6 +362,7 @@ class En(MessagesProto):
     field_parent_project = "parent project"
     field_inherit_members = "inherit_members"
     field_trackers = "trackers"
+    field_enabled_modules = "enabled_module_names"
     field_version_name = "name"
     field_sharing = "sharing"
     field_hours = "hours"

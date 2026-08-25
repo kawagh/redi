@@ -246,6 +246,39 @@ class TestCreate:
 
         assert created_project[0]["inherit_members"] is True
 
+    def test_optional_enabled_module_names_is_filled(
+        self, created_project, tty_stdin, monkeypatch
+    ):
+        """任意項目でモジュールを選ぶとカンマ区切りをリストに変換して作成する"""
+        choices = iter(["optional", "submit"])
+        monkeypatch.setattr(project_command, "prompt", lambda *_, **__: "new-project")
+        monkeypatch.setattr(
+            project_command, "inline_choice", lambda *_, **__: next(choices)
+        )
+        checkbox_results = iter([["enabled_module_names"], ["issue_tracking", "wiki"]])
+        monkeypatch.setattr(
+            project_command, "inline_checkbox", lambda *_, **__: next(checkbox_results)
+        )
+
+        handle_project(parse_project_args(["project", "create", "新プロジェクト"]))
+
+        assert created_project[0]["enabled_module_names"] == ["issue_tracking", "wiki"]
+
+    def test_module_choices_are_redmine_standard_modules(self):
+        """対話の選択肢は Redmine 標準のモジュール名を出す"""
+        assert project_command.project_service.MODULE_NAME_CHOICES == [
+            "boards",
+            "calendar",
+            "documents",
+            "files",
+            "gantt",
+            "issue_tracking",
+            "news",
+            "repository",
+            "time_tracking",
+            "wiki",
+        ]
+
     def test_non_interactive_names_missing_input(self, capsys):
         """非TTY環境では対話に入らず、求めた入力を示して exit 1 する"""
         with pytest.raises(SystemExit) as e:
