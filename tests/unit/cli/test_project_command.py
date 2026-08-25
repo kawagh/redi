@@ -93,6 +93,17 @@ class TestView:
 class TestCreate:
     """`project create` は引数が足りなければ対話で補う"""
 
+    @pytest.fixture(autouse=True)
+    def custom_fields_unavailable(self, monkeypatch):
+        """任意項目のメニューは組み立てる時点でカスタムフィールド一覧を引く。
+
+        既定では取得できない扱いにして、カスタムフィールドと関係の無いテストが
+        Redmine を呼ばないようにする。
+        """
+        monkeypatch.setattr(
+            project_command, "fetch_custom_fields", lambda *_, **__: None
+        )
+
     def test_arguments_only_skips_interaction(self, created_project, capsys):
         """name と identifier が揃っていれば対話に入らず作成する"""
         handle_project(
