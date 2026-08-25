@@ -63,7 +63,7 @@ class TestGroupErrorMessages:
             group_command._view_group("7")
 
         assert e.value.code == 1
-        assert messages.group_not_found.format(id="7") in capsys.readouterr().out
+        assert messages.group_not_found.format(id="7") in capsys.readouterr().err
 
     def test_delete_without_admin(self, monkeypatch, capsys):
         """管理者権限が無い削除は操作に対応した案内を出して exit 1"""
@@ -77,7 +77,7 @@ class TestGroupErrorMessages:
             group_command._delete_group("7")
 
         assert e.value.code == 1
-        assert messages.group_delete_admin_required in capsys.readouterr().out
+        assert messages.group_delete_admin_required in capsys.readouterr().err
 
     def test_remove_user_missing_group_or_user(self, monkeypatch, capsys):
         """ユーザー削除の 404 はグループとユーザーのどちらが無いか分からない旨を出して exit 1"""
@@ -93,5 +93,5 @@ class TestGroupErrorMessages:
         assert e.value.code == 1
         assert (
             messages.group_or_user_not_found.format(group_id="7", user_id=3)
-            in capsys.readouterr().out
+            in capsys.readouterr().err
         )

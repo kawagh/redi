@@ -26,6 +26,7 @@ from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import full_option_parser
 from redi.cli.validator import ProjectIdentifierValidator, RequiredValidator
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import project_service
 
 
@@ -60,10 +61,10 @@ def _read_project_or_exit(project_id: str, include: str = "") -> Project:
     try:
         return project_service.read_project(project_id, include=include)
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=project_id))
+        eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
     except ProjectPermissionDeniedException:
-        print(messages.project_permission_denied.format(id=project_id))
+        eprint(messages.project_permission_denied.format(id=project_id))
         sys.exit(1)
 
 
@@ -147,7 +148,7 @@ def _create_project(
             issue_custom_field_ids=issue_custom_field_ids,
         )
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
         sys.exit(1)
     print(f"{created['id']} {created['name']} ({created['identifier']})")
@@ -184,12 +185,12 @@ def _update_project(
             default_version_id=default_version_id,
         )
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=project_id))
+        eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.project_update_failed)
+        eprint(messages.project_update_failed)
         sys.exit(1)
     print(messages.project_updated.format(id=project_id))
 
@@ -199,12 +200,12 @@ def _archive_project(project_id: str) -> None:
     try:
         project_service.archive_project(project_id)
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=project_id))
+        eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.project_archive_failed)
+        eprint(messages.project_archive_failed)
         sys.exit(1)
     print(messages.project_archived.format(id=project_id))
 
@@ -214,12 +215,12 @@ def _unarchive_project(project_id: str) -> None:
     try:
         project_service.unarchive_project(project_id)
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=project_id))
+        eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.project_unarchive_failed)
+        eprint(messages.project_unarchive_failed)
         sys.exit(1)
     print(messages.project_unarchived.format(id=project_id))
 
@@ -229,12 +230,12 @@ def _delete_project(project_id: str) -> None:
     try:
         project_service.delete_project(project_id)
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=project_id))
+        eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.project_delete_failed)
+        eprint(messages.project_delete_failed)
         sys.exit(1)
     print(messages.project_deleted.format(id=project_id))
 
@@ -447,7 +448,7 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
                 custom_field_options, args.issue_custom_field_ids
             )
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
 
 
@@ -465,7 +466,7 @@ def _interactive_fill_create_args(args: argparse.Namespace) -> None:
                 validator=ProjectIdentifierValidator(),
             ).strip()
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     action_options: list[tuple[str, str]] = [
         ("submit", messages.action_submit),
@@ -475,7 +476,7 @@ def _interactive_fill_create_args(args: argparse.Namespace) -> None:
         try:
             action = inline_choice(messages.prompt_what_next, action_options)
         except (KeyboardInterrupt, EOFError):
-            print(messages.canceled)
+            eprint(messages.canceled)
             sys.exit(1)
         if action != "optional":
             return

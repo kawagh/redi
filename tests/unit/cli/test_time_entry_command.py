@@ -137,7 +137,7 @@ class TestTimeEntryCreateNonInteractive:
             )
 
         assert exc.value.code == 1
-        assert messages.prompt_select_activity in capsys.readouterr().out
+        assert messages.prompt_select_activity in capsys.readouterr().err
         assert created == {}
 
 

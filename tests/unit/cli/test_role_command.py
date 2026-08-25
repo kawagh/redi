@@ -18,7 +18,7 @@ class TestPrintRole:
             role_command._print_role("999", full=False)
 
         assert e.value.code == 1
-        assert messages.role_not_found.format(id="999") in capsys.readouterr().out
+        assert messages.role_not_found.format(id="999") in capsys.readouterr().err
 
     def test_prints_permissions_grouped_by_category(self, monkeypatch, capsys):
         """permissions はカテゴリ見出しの下にインデントして並べる"""

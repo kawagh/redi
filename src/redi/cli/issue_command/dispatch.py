@@ -13,6 +13,7 @@ from redi.cli.issue_command.create import handle_issue_create
 from redi.cli.issue_command.update import handle_issue_update
 from redi.cli.issue_command.view import list_issues, view_issue
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import issue_service
 
 
@@ -21,7 +22,7 @@ def add_issue_note(issue_id: str, notes: str) -> None:
     try:
         url = issue_service.add_note(issue_id, notes)
     except IssueNotFoundException:
-        print(messages.issue_not_found.format(id=issue_id))
+        eprint(messages.issue_not_found.format(id=issue_id))
         sys.exit(1)
     print(messages.comment_added.format(url=url))
 
@@ -31,12 +32,12 @@ def _delete_issue(issue_id: str) -> None:
     try:
         issue_service.delete_issue(issue_id)
     except IssueNotFoundException:
-        print(messages.issue_not_found.format(id=issue_id))
+        eprint(messages.issue_not_found.format(id=issue_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.issue_delete_failed)
+        eprint(messages.issue_delete_failed)
         sys.exit(1)
     print(messages.issue_deleted.format(id=issue_id))
 
@@ -63,7 +64,7 @@ def _validate_query_id_filters(args: argparse.Namespace) -> None:
     ]
     if not ignored:
         return
-    print(messages.error_query_id_conflicts_filters.format(options=", ".join(ignored)))
+    eprint(messages.error_query_id_conflicts_filters.format(options=", ".join(ignored)))
     sys.exit(1)
 
 
@@ -94,7 +95,7 @@ def handle_issue(args: argparse.Namespace) -> None:
             try:
                 issue = issue_service.read_issue(args.issue_id)
             except IssueNotFoundException:
-                print(messages.issue_not_found.format(id=args.issue_id))
+                eprint(messages.issue_not_found.format(id=args.issue_id))
                 sys.exit(1)
             confirm_delete(
                 messages.delete_target_issue.format(

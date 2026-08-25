@@ -47,6 +47,7 @@ from redi.cli.validator import (
     IntValidator,
 )
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import issue_service, project_service
 
 
@@ -146,7 +147,7 @@ def _interactive_fill_required_custom_fields(
         try:
             value = prompt_custom_field_value(cf, project_id)
         except (KeyboardInterrupt, EOFError):
-            print(messages.canceled)
+            eprint(messages.canceled)
             sys.exit(1)
         if value is SKIP_UNSUPPORTED_FIELD:
             browser_only = True
@@ -203,7 +204,7 @@ def _interactive_fill_optional_create_fields(args: IssueCreateArgs) -> None:
             field_options,
         )
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     if not selected:
         return
@@ -240,7 +241,7 @@ def _interactive_fill_optional_create_fields(args: IssueCreateArgs) -> None:
             else:
                 added_cfs.append(f"{cf['id']}={cf_value}")
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     if not added_cfs:
         return
@@ -268,7 +269,7 @@ def _interactive_select_issue_template(
     try:
         selected = inline_choice(messages.prompt_select_template, options)
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     if not selected:
         return None
@@ -290,7 +291,7 @@ def create_issue_interactively(project_id: str | None = None) -> None:
 def _run_issue_create(args: IssueCreateArgs) -> None:
     project_id = args.project_id or config.default_project_id
     if not project_id:
-        print(messages.project_id_required)
+        eprint(messages.project_id_required)
         sys.exit(1)
     args.project_id = project_id
     # 対話フローに入るかは args を書き換える前に決める
@@ -302,10 +303,10 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
             try:
                 project = project_service.read_project(project_id, include="trackers")
             except ProjectNotFoundException:
-                print(messages.project_not_found.format(id=project_id))
+                eprint(messages.project_not_found.format(id=project_id))
                 sys.exit(1)
             except ProjectPermissionDeniedException:
-                print(messages.project_permission_denied.format(id=project_id))
+                eprint(messages.project_permission_denied.format(id=project_id))
                 sys.exit(1)
             trackers = project.get("trackers") or []
             tracker_options: list[tuple[str, str]] = [
@@ -317,7 +318,7 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
                     messages.prompt_select_tracker, tracker_options
                 )
             except (KeyboardInterrupt, EOFError):
-                print(messages.canceled)
+                eprint(messages.canceled)
                 sys.exit(1)
             print(messages.tracker_label.format(value=labels[args.tracker_id]))
         # テンプレートを選択し、題名・説明の初期値として反映させる
@@ -331,10 +332,10 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
                 messages.prompt_subject, default=subject_default
             ).strip()
         except (KeyboardInterrupt, EOFError):
-            print(messages.canceled)
+            eprint(messages.canceled)
             sys.exit(1)
         if not args.subject:
-            print(messages.canceled_empty_subject)
+            eprint(messages.canceled_empty_subject)
             sys.exit(1)
         # 必要なカスタムフィールドを対話的に入力
         args.custom_fields, browser_only = _interactive_fill_required_custom_fields(
@@ -369,7 +370,7 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
             try:
                 action = inline_choice(messages.prompt_what_next, action_options)
             except (KeyboardInterrupt, EOFError):
-                print(messages.canceled)
+                eprint(messages.canceled)
                 sys.exit(1)
             if action == "optional":
                 _interactive_fill_optional_create_fields(args)
@@ -418,7 +419,7 @@ def _create_issue(args: IssueCreateArgs) -> Issue:
             else None,
         )
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.issue_create_failed)
+        eprint(messages.issue_create_failed)
         sys.exit(1)

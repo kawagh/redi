@@ -12,6 +12,7 @@ from redi.api.search import (
     search,
 )
 from redi.i18n import messages
+from redi.output import eprint
 
 
 def _validate_scope(scope: SearchScope | None, project_id: str | None) -> None:
@@ -24,11 +25,11 @@ def _validate_scope(scope: SearchScope | None, project_id: str | None) -> None:
         return
     if scope == "subprojects":
         if project_id is None:
-            print(messages.error_search_scope_requires_project.format(scope=scope))
+            eprint(messages.error_search_scope_requires_project.format(scope=scope))
             sys.exit(1)
         return
     if project_id is not None:
-        print(messages.error_search_scope_conflicts_project.format(scope=scope))
+        eprint(messages.error_search_scope_conflicts_project.format(scope=scope))
         sys.exit(1)
 
 

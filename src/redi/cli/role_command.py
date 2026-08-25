@@ -7,6 +7,7 @@ from redi.api.role import fetch_role, fetch_roles
 from redi.cli.alias import resolve_alias
 from redi.cli.shared_options import full_option_parser
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service.role_service import CATEGORY_OTHER, group_permissions
 
 CATEGORY_LABELS = MappingProxyType(
@@ -40,7 +41,7 @@ def _print_roles(full: bool) -> None:
 def _print_role(role_id: str, full: bool) -> None:
     role = fetch_role(role_id)
     if role is None:
-        print(messages.role_not_found.format(id=role_id))
+        eprint(messages.role_not_found.format(id=role_id))
         sys.exit(1)
     if full:
         print(json.dumps(role, ensure_ascii=False))

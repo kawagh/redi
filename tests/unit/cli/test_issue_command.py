@@ -240,7 +240,7 @@ class TestIssueListNotFound:
 
         assert exc_info.value.code == 1
         assert (
-            messages.project_not_found.format(id="missing") in capsys.readouterr().out
+            messages.project_not_found.format(id="missing") in capsys.readouterr().err
         )
 
 
@@ -259,10 +259,10 @@ class TestIssueListQueryNotFound:
             view_module.list_issues(project_id="demo", query_id="5")
 
         assert exc_info.value.code == 1
-        out = capsys.readouterr().out
-        assert messages.query_not_found.format(id="5") in out
-        assert messages.query_not_found_hint in out
-        assert messages.project_not_found.format(id="demo") not in out
+        err = capsys.readouterr().err
+        assert messages.query_not_found.format(id="5") in err
+        assert messages.query_not_found_hint in err
+        assert messages.project_not_found.format(id="demo") not in err
 
 
 class TestIssueListQueryIdFilters:
@@ -290,7 +290,7 @@ class TestIssueListQueryIdFilters:
             dispatch_module.handle_issue(args)
 
         assert exc_info.value.code == 1
-        assert shown in capsys.readouterr().out
+        assert shown in capsys.readouterr().err
 
     def test_lists_all_ignored_filters(self, capsys):
         """複数指定した場合はすべての名前を示す"""
@@ -299,9 +299,9 @@ class TestIssueListQueryIdFilters:
         with pytest.raises(SystemExit):
             dispatch_module.handle_issue(args)
 
-        out = capsys.readouterr().out
-        assert "--status_id" in out
-        assert "--tracker_id" in out
+        err = capsys.readouterr().err
+        assert "--status_id" in err
+        assert "--tracker_id" in err
 
     def test_project_id_is_allowed(self, monkeypatch):
         """`--project_id` は Redmine 側でも併用が効くので通す"""
@@ -420,7 +420,7 @@ class TestIssueUpdateUnknownIdRejected:
             )
 
         assert exc_info.value.code == 1
-        assert messages.tracker_not_found.format(id="99999") in capsys.readouterr().out
+        assert messages.tracker_not_found.format(id="99999") in capsys.readouterr().err
         assert choices == {}
 
     def test_unknown_status_id_exits(self, choices, capsys):
@@ -431,7 +431,7 @@ class TestIssueUpdateUnknownIdRejected:
             )
 
         assert exc_info.value.code == 1
-        assert messages.status_not_found.format(id="99999") in capsys.readouterr().out
+        assert messages.status_not_found.format(id="99999") in capsys.readouterr().err
         assert choices == {}
 
     def test_shows_available_ids(self, choices, capsys):
@@ -441,7 +441,7 @@ class TestIssueUpdateUnknownIdRejected:
                 parse_issue_args(["issue", "update", "42", "--tracker_id", "99999"])
             )
 
-        assert "1:バグ" in capsys.readouterr().out
+        assert "1:バグ" in capsys.readouterr().err
 
     def test_id_missing_from_cache_is_rechecked_after_refresh(
         self, choices, monkeypatch

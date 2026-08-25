@@ -18,6 +18,7 @@ from redi.config import (
     create_profile,
 )
 from redi.i18n import MessagesProto, messages, select_messages
+from redi.output import eprint
 
 PROFILE_NAME = "default"
 
@@ -41,15 +42,15 @@ def _verify_connection(url: str, api_key: str, messages: MessagesProto) -> dict 
         return response.json().get("user")
     except requests.exceptions.HTTPError as e:
         if e.response is not None:
-            print(
+            eprint(
                 messages.connection_failed_http.format(
                     status=e.response.status_code, reason=e.response.reason
                 )
             )
         else:
-            print(messages.connection_failed_other.format(error=e))
+            eprint(messages.connection_failed_other.format(error=e))
     except requests.exceptions.RequestException as e:
-        print(messages.connection_failed_other.format(error=e))
+        eprint(messages.connection_failed_other.format(error=e))
     return None
 
 
@@ -57,7 +58,7 @@ def _fetch_projects(url: str, api_key: str, messages: MessagesProto) -> list[Pro
     try:
         return fetch_projects(RedmineClient(url.rstrip("/"), api_key))
     except requests.exceptions.RequestException as e:
-        print(messages.project_list_fetch_failed.format(error=e))
+        eprint(messages.project_list_fetch_failed.format(error=e))
         return []
 
 
@@ -71,7 +72,7 @@ def _select_project_id(
     try:
         return inline_choice(prompt_message, options)
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
 
 
@@ -89,13 +90,13 @@ def _select_language() -> str:
     try:
         return inline_choice(messages.prompt_select_language, options)
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
 
 
 def handle_init(_args: argparse.Namespace) -> None:
     if _has_existing_profile():
-        print(messages.init_profile_already_exists.format(path=CONFIG_PATH))
+        eprint(messages.init_profile_already_exists.format(path=CONFIG_PATH))
         sys.exit(1)
 
     _init_profile(_select_language())
@@ -119,7 +120,7 @@ def _init_profile(language: str) -> None:
             is_password=True,
         ).strip()
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
 
     print(messages.checking_connection)

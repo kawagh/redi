@@ -68,7 +68,7 @@ class TestValidateScope:
             search_command._validate_scope(scope, "reditest")
 
         assert e.value.code == 1
-        assert scope in capsys.readouterr().out
+        assert scope in capsys.readouterr().err
 
     def test_subprojects_requires_project_id(self, capsys):
         """subprojects に --project_id がないとエラーになる"""
@@ -76,7 +76,7 @@ class TestValidateScope:
             search_command._validate_scope("subprojects", None)
 
         assert e.value.code == 1
-        assert "subprojects" in capsys.readouterr().out
+        assert "subprojects" in capsys.readouterr().err
 
     @pytest.mark.parametrize(
         ("scope", "project_id"),
