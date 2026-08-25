@@ -408,10 +408,14 @@ class MessagesProto(Protocol):
     prompt_version_name: str
     prompt_project_name: str
     prompt_project_identifier: str
+    prompt_project_homepage: str
     prompt_select_is_public: str
+    prompt_select_inherit_members: str
     prompt_select_parent_project: str
     prompt_select_parent_project_none: str
     prompt_select_trackers: str
+    prompt_select_enabled_modules: str
+    prompt_select_issue_custom_fields: str
     prompt_description_optional: str
     prompt_wiki_comments: str
     prompt_due_date_optional: str
@@ -483,9 +487,13 @@ class MessagesProto(Protocol):
     field_notes: str
     field_time_entry: str
     field_version_name: str
+    field_homepage: str
     field_is_public: str
     field_parent_project: str
+    field_inherit_members: str
     field_trackers: str
+    field_enabled_modules: str
+    field_issue_custom_fields: str
     field_sharing: str
     field_hours: str
     field_activity: str
@@ -604,6 +612,8 @@ class MessagesProto(Protocol):
     label_sharing_field: str
     """{value}"""
     label_parent_project: str
+    """{id}, {name}"""
+    label_default_version: str
     """{id}, {name}"""
     label_trackers_header: str
     label_issue_categories_header: str
@@ -776,9 +786,15 @@ class MessagesProto(Protocol):
     arg_help_project_identifier: str
     label_project_identifier: str
     arg_help_description: str
+    arg_help_project_homepage: str
     arg_help_project_is_public: str
     arg_help_parent_id: str
+    arg_help_project_inherit_members: str
     arg_help_tracker_ids: str
+    arg_help_enabled_module_names: str
+    arg_help_issue_custom_field_ids: str
+    arg_help_project_default_assigned_to_id: str
+    arg_help_project_default_version_id: str
     arg_help_project_delete: str
     arg_help_project_delete_id: str
     arg_help_project_update: str

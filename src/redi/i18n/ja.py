@@ -295,10 +295,18 @@ class Ja(MessagesProto):
     prompt_version_name = "バージョン名: "
     prompt_project_name = "プロジェクト名: "
     prompt_project_identifier = "プロジェクト識別子: "
+    prompt_project_homepage = "ホームページURL: "
     prompt_select_is_public = "公開設定"
+    prompt_select_inherit_members = "メンバーの継承"
     prompt_select_parent_project = "親プロジェクト"
     prompt_select_parent_project_none = "（親プロジェクトなし）"
     prompt_select_trackers = "トラッカーを選択 (Spaceで選択、Enterで確定)"
+    prompt_select_enabled_modules = (
+        "有効化するモジュールを選択 (Spaceで選択、Enterで確定)"
+    )
+    prompt_select_issue_custom_fields = (
+        "有効化するカスタムフィールドを選択 (Spaceで選択、Enterで確定)"
+    )
     prompt_description_optional = "説明（省略可）: "
     prompt_wiki_comments = "コメント（省略可）: "
     prompt_due_date_optional = "期日（YYYY-MM-DD、省略可）: "
@@ -360,9 +368,13 @@ class Ja(MessagesProto):
     field_estimated_hours = "予定工数 (estimated_hours)"
     field_notes = "コメント (notes)"
     field_time_entry = "作業時間 (time_entry)"
+    field_homepage = "ホームページ (homepage)"
     field_is_public = "公開設定 (is_public)"
     field_parent_project = "親プロジェクト (parent)"
+    field_inherit_members = "メンバーの継承 (inherit_members)"
     field_trackers = "トラッカー (trackers)"
+    field_enabled_modules = "有効モジュール (enabled_module_names)"
+    field_issue_custom_fields = "カスタムフィールド (issue_custom_field_ids)"
     field_version_name = "バージョン名 (name)"
     field_sharing = "共有設定 (sharing)"
     field_hours = "作業時間 (hours)"
@@ -452,6 +464,7 @@ class Ja(MessagesProto):
     label_due_date_field = "期日: {value}"
     label_sharing_field = "共有: {value}"
     label_parent_project = "親プロジェクト: {id} {name}"
+    label_default_version = "デフォルトバージョン: {id} {name}"
     label_trackers_header = "トラッカー:"
     label_issue_categories_header = "イシューカテゴリ:"
     label_enabled_modules_header = "有効モジュール:"
@@ -619,9 +632,21 @@ class Ja(MessagesProto):
     )
     label_project_identifier = "プロジェクト識別子"
     arg_help_description = "説明"
+    arg_help_project_homepage = "ホームページURL"
     arg_help_project_is_public = "公開設定"
     arg_help_parent_id = "親プロジェクトID"
+    arg_help_project_inherit_members = "親プロジェクトのメンバーを継承する"
     arg_help_tracker_ids = "トラッカーID（カンマ区切り。例: 1,2,3）"
+    arg_help_enabled_module_names = (
+        "有効化するモジュール名（カンマ区切り。例: issue_tracking,wiki）"
+    )
+    arg_help_issue_custom_field_ids = (
+        "有効化するイシューのカスタムフィールドID（カンマ区切り。例: 1,2,3）"
+    )
+    arg_help_project_default_assigned_to_id = (
+        "デフォルト担当者のユーザーID（空文字で解除）"
+    )
+    arg_help_project_default_version_id = "デフォルトバージョンID（空文字で解除）"
     arg_help_project_delete = "プロジェクト削除"
     arg_help_project_delete_id = "プロジェクトID"
     arg_help_project_update = "プロジェクト更新"

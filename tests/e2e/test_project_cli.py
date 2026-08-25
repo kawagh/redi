@@ -1,3 +1,4 @@
+import json
 import subprocess
 
 import pytest
@@ -64,6 +65,35 @@ class TestProjectCreate:
         view_result = run_redi("project", "view", identifier)
         assert "e2e description" in view_result.stdout
 
+    def test_creates_with_additional_fields(self):
+        """--homepage / --inherit_members / --enabled_module_names を付けた作成が view に反映される"""
+        identifier = unique_identifier("e2e-create-more")
+        name = f"e2e create more {identifier}"
+
+        run_redi(
+            "project",
+            "create",
+            name,
+            identifier,
+            "--homepage",
+            "https://example.com/e2e",
+            "--inherit_members",
+            "true",
+            "--enabled_module_names",
+            "issue_tracking,wiki",
+        )
+
+        full_result = run_redi("project", "view", identifier, "--full")
+        assert "https://example.com/e2e" in full_result.stdout
+        assert '"inherit_members": true' in full_result.stdout
+
+        modules_result = run_redi(
+            "project", "view", identifier, "--include", "enabled_modules"
+        )
+        assert "issue_tracking" in modules_result.stdout
+        assert "wiki" in modules_result.stdout
+        assert "news" not in modules_result.stdout
+
     def test_exits_without_prompting_in_non_interactive(self):
         """引数が足りない場合、非TTYでは対話に入らず exit 1 で終わる"""
         with pytest.raises(subprocess.CalledProcessError) as e:
@@ -88,6 +118,109 @@ class TestProjectUpdate:
         view_result = run_redi("project", "view", identifier)
         assert updated_name in view_result.stdout
         assert original_name not in view_result.stdout
+
+    def test_updates_enabled_modules(self):
+        """--enabled_module_names での更新が view の有効モジュールに反映される"""
+        identifier = unique_identifier("e2e-update-modules")
+        name = f"e2e update modules {identifier}"
+
+        run_redi(
+            "project",
+            "create",
+            name,
+            identifier,
+            "--enabled_module_names",
+            "issue_tracking,wiki",
+        )
+        run_redi(
+            "project",
+            "update",
+            identifier,
+            "--enabled_module_names",
+            "issue_tracking",
+        )
+
+        view_result = run_redi(
+            "project", "view", identifier, "--include", "enabled_modules"
+        )
+        assert "issue_tracking" in view_result.stdout
+        assert "wiki" not in view_result.stdout
+
+    def test_updates_homepage(self):
+        """--homepage での更新が view --full に反映される"""
+        identifier = unique_identifier("e2e-update-homepage")
+        name = f"e2e update homepage {identifier}"
+
+        run_redi("project", "create", name, identifier)
+        run_redi(
+            "project", "update", identifier, "--homepage", "https://example.com/updated"
+        )
+
+        view_result = run_redi("project", "view", identifier, "--full")
+        assert "https://example.com/updated" in view_result.stdout
+
+    def test_updates_default_assignee_and_version(self):
+        """--default_assigned_to_id / --default_version_id での更新が view に反映される"""
+        identifier = unique_identifier("e2e-update-defaults")
+        name = f"e2e update defaults {identifier}"
+        run_redi("project", "create", name, identifier)
+        user_id = json.loads(run_redi("me", "--full").stdout)["id"]
+        version_name = unique_identifier("e2e-default-version")
+        # 作成の出力は "Created version: <id> <name> <url>" 形式
+        version_id = run_redi(
+            "version", "create", version_name, "--project_id", identifier
+        ).stdout.split()[2]
+
+        run_redi(
+            "project",
+            "update",
+            identifier,
+            "--default_assigned_to_id",
+            str(user_id),
+            "--default_version_id",
+            version_id,
+        )
+
+        project = json.loads(run_redi("project", "view", identifier, "--full").stdout)
+        assert project["default_assignee"]["id"] == user_id
+        assert project["default_version"]["id"] == int(version_id)
+
+    def test_empty_value_unsets_default_assignee_and_version(self):
+        """空文字の指定は既定の担当者・バージョンの解除になる"""
+        identifier = unique_identifier("e2e-unset-defaults")
+        name = f"e2e unset defaults {identifier}"
+        run_redi("project", "create", name, identifier)
+        user_id = json.loads(run_redi("me", "--full").stdout)["id"]
+        version_id = run_redi(
+            "version",
+            "create",
+            unique_identifier("e2e-unset-version"),
+            "--project_id",
+            identifier,
+        ).stdout.split()[2]
+        run_redi(
+            "project",
+            "update",
+            identifier,
+            "--default_assigned_to_id",
+            str(user_id),
+            "--default_version_id",
+            version_id,
+        )
+
+        run_redi(
+            "project",
+            "update",
+            identifier,
+            "--default_assigned_to_id",
+            "",
+            "--default_version_id",
+            "",
+        )
+
+        project = json.loads(run_redi("project", "view", identifier, "--full").stdout)
+        assert "default_assignee" not in project
+        assert "default_version" not in project
 
 
 @pytest.mark.e2e

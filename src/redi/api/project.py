@@ -30,6 +30,9 @@ class Project(TypedDict):
     inherit_members: bool
     created_on: str
     updated_on: str
+    # 設定されている場合のみ存在
+    default_assignee: NotRequired[IdName]
+    default_version: NotRequired[IdName]
     # 親プロジェクトを持つ場合のみ存在
     parent: NotRequired[IdName]
     # include 指定時のみ存在
@@ -91,9 +94,13 @@ def create_project(
     name: str,
     identifier: str,
     description: str | None = None,
+    homepage: str | None = None,
     is_public: bool | None = None,
     parent_id: str | None = None,
+    inherit_members: bool | None = None,
     tracker_ids: list[int] | None = None,
+    enabled_module_names: list[str] | None = None,
+    issue_custom_field_ids: list[int] | None = None,
 ) -> Project:
     """プロジェクトを作成し、作成されたプロジェクトを返す
 
@@ -107,12 +114,20 @@ def create_project(
     }
     if description is not None:
         data["description"] = description
+    if homepage is not None:
+        data["homepage"] = homepage
     if is_public is not None:
         data["is_public"] = is_public
     if parent_id is not None:
         data["parent_id"] = parent_id
+    if inherit_members is not None:
+        data["inherit_members"] = inherit_members
     if tracker_ids is not None:
         data["tracker_ids"] = tracker_ids
+    if enabled_module_names is not None:
+        data["enabled_module_names"] = enabled_module_names
+    if issue_custom_field_ids is not None:
+        data["issue_custom_field_ids"] = issue_custom_field_ids
     response = client.post("/projects.json", json={"project": data})
     if response.status_code == 422:
         raise RedmineValidationException.from_response("project", "create", response)
@@ -124,9 +139,15 @@ def update_project(
     project_id: str,
     name: str | None = None,
     description: str | None = None,
+    homepage: str | None = None,
     is_public: bool | None = None,
     parent_id: str | None = None,
+    inherit_members: bool | None = None,
     tracker_ids: list[int] | None = None,
+    enabled_module_names: list[str] | None = None,
+    issue_custom_field_ids: list[int] | None = None,
+    default_assigned_to_id: str | None = None,
+    default_version_id: str | None = None,
 ) -> None:
     """プロジェクトを更新する
 
@@ -140,12 +161,24 @@ def update_project(
         data["name"] = name
     if description is not None:
         data["description"] = description
+    if homepage is not None:
+        data["homepage"] = homepage
     if is_public is not None:
         data["is_public"] = is_public
     if parent_id is not None:
         data["parent_id"] = parent_id
+    if inherit_members is not None:
+        data["inherit_members"] = inherit_members
     if tracker_ids is not None:
         data["tracker_ids"] = tracker_ids
+    if enabled_module_names is not None:
+        data["enabled_module_names"] = enabled_module_names
+    if issue_custom_field_ids is not None:
+        data["issue_custom_field_ids"] = issue_custom_field_ids
+    if default_assigned_to_id is not None:
+        data["default_assigned_to_id"] = default_assigned_to_id
+    if default_version_id is not None:
+        data["default_version_id"] = default_version_id
     response = client.put(f"/projects/{project_id}.json", json={"project": data})
     if response.status_code == 404:
         raise ProjectNotFoundException(project_id)

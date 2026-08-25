@@ -294,10 +294,18 @@ class En(MessagesProto):
     prompt_version_name = "Version name: "
     prompt_project_name = "Project name: "
     prompt_project_identifier = "Project identifier: "
+    prompt_project_homepage = "Homepage URL: "
     prompt_select_is_public = "Visibility"
+    prompt_select_inherit_members = "Inherit members"
     prompt_select_parent_project = "Parent project"
     prompt_select_parent_project_none = "(No parent project)"
     prompt_select_trackers = "Select trackers (Space to toggle, Enter to confirm)"
+    prompt_select_enabled_modules = (
+        "Select modules to enable (Space to toggle, Enter to confirm)"
+    )
+    prompt_select_issue_custom_fields = (
+        "Select custom fields to enable (Space to toggle, Enter to confirm)"
+    )
     prompt_description_optional = "Description (optional): "
     prompt_wiki_comments = "Comment (optional): "
     prompt_due_date_optional = "Due date (YYYY-MM-DD, optional): "
@@ -357,9 +365,13 @@ class En(MessagesProto):
     field_estimated_hours = "estimated_hours"
     field_notes = "notes"
     field_time_entry = "time_entry"
+    field_homepage = "homepage"
     field_is_public = "is_public"
     field_parent_project = "parent project"
+    field_inherit_members = "inherit_members"
     field_trackers = "trackers"
+    field_enabled_modules = "enabled_module_names"
+    field_issue_custom_fields = "issue_custom_field_ids"
     field_version_name = "name"
     field_sharing = "sharing"
     field_hours = "hours"
@@ -453,6 +465,7 @@ class En(MessagesProto):
     label_due_date_field = "Due date: {value}"
     label_sharing_field = "Sharing: {value}"
     label_parent_project = "Parent project: {id} {name}"
+    label_default_version = "Default version: {id} {name}"
     label_trackers_header = "Trackers:"
     label_issue_categories_header = "Issue categories:"
     label_enabled_modules_header = "Enabled modules:"
@@ -613,9 +626,21 @@ class En(MessagesProto):
     )
     label_project_identifier = "Project identifier"
     arg_help_description = "Description"
+    arg_help_project_homepage = "Homepage URL"
     arg_help_project_is_public = "Public visibility"
     arg_help_parent_id = "Parent project ID"
+    arg_help_project_inherit_members = "Inherit members from the parent project"
     arg_help_tracker_ids = "Tracker IDs (comma separated, e.g. 1,2,3)"
+    arg_help_enabled_module_names = (
+        "Module names to enable (comma separated, e.g. issue_tracking,wiki)"
+    )
+    arg_help_issue_custom_field_ids = (
+        "Issue custom field IDs to enable (comma separated, e.g. 1,2,3)"
+    )
+    arg_help_project_default_assigned_to_id = (
+        "User ID of the default assignee (empty string to unset)"
+    )
+    arg_help_project_default_version_id = "Default version ID (empty string to unset)"
     arg_help_project_delete = "Delete project"
     arg_help_project_delete_id = "Project ID"
     arg_help_project_update = "Update project"

@@ -13,6 +13,22 @@ from redi.api.project import Project
 # Redmine のプロジェクト識別子の最大長
 IDENTIFIER_MAX_LENGTH = 100
 
+# Redmine 標準のモジュール名。
+# 有効化できるモジュールを返す REST API が無いため対話の選択肢としてこれを出す。
+# プラグインが追加するモジュール名は含まないので、引数で渡された値の検証には使わない。
+MODULE_NAME_CHOICES = [
+    "boards",
+    "calendar",
+    "documents",
+    "files",
+    "gantt",
+    "issue_tracking",
+    "news",
+    "repository",
+    "time_tracking",
+    "wiki",
+]
+
 
 def suggest_identifier(name: str) -> str:
     """プロジェクト名から識別子の候補を作る。候補を作れない場合は空文字を返す。
@@ -75,9 +91,13 @@ def create_project(
     name: str,
     identifier: str,
     description: str | None = None,
+    homepage: str | None = None,
     is_public: bool | None = None,
     parent_id: str | None = None,
+    inherit_members: bool | None = None,
     tracker_ids: list[int] | None = None,
+    enabled_module_names: list[str] | None = None,
+    issue_custom_field_ids: list[int] | None = None,
 ) -> Project:
     """プロジェクトを作成し、作成されたプロジェクトを返す。
 
@@ -89,9 +109,13 @@ def create_project(
         name=name,
         identifier=identifier,
         description=description,
+        homepage=homepage,
         is_public=is_public,
         parent_id=parent_id,
+        inherit_members=inherit_members,
         tracker_ids=tracker_ids,
+        enabled_module_names=enabled_module_names,
+        issue_custom_field_ids=issue_custom_field_ids,
     )
 
 
@@ -99,9 +123,15 @@ def update_project(
     project_id: str,
     name: str | None = None,
     description: str | None = None,
+    homepage: str | None = None,
     is_public: bool | None = None,
     parent_id: str | None = None,
+    inherit_members: bool | None = None,
     tracker_ids: list[int] | None = None,
+    enabled_module_names: list[str] | None = None,
+    issue_custom_field_ids: list[int] | None = None,
+    default_assigned_to_id: str | None = None,
+    default_version_id: str | None = None,
 ) -> None:
     """プロジェクトを更新する。
 
@@ -114,9 +144,15 @@ def update_project(
         project_id,
         name=name,
         description=description,
+        homepage=homepage,
         is_public=is_public,
         parent_id=parent_id,
+        inherit_members=inherit_members,
         tracker_ids=tracker_ids,
+        enabled_module_names=enabled_module_names,
+        issue_custom_field_ids=issue_custom_field_ids,
+        default_assigned_to_id=default_assigned_to_id,
+        default_version_id=default_version_id,
     )
 
 
