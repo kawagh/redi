@@ -38,6 +38,7 @@ class Project(TypedDict):
     # include 指定時のみ存在
     trackers: NotRequired[list[IdName]]
     issue_categories: NotRequired[list[IdName]]
+    issue_custom_fields: NotRequired[list[IdName]]
     time_entry_activities: NotRequired[list[IdName]]
     enabled_modules: NotRequired[list[IdName]]
 
