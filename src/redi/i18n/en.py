@@ -440,6 +440,7 @@ class En(MessagesProto):
     label_due_date_field = "Due date: {value}"
     label_sharing_field = "Sharing: {value}"
     label_parent_project = "Parent project: {id} {name}"
+    label_default_version = "Default version: {id} {name}"
     label_trackers_header = "Trackers:"
     label_issue_categories_header = "Issue categories:"
     label_enabled_modules_header = "Enabled modules:"
@@ -610,6 +611,10 @@ class En(MessagesProto):
     arg_help_issue_custom_field_ids = (
         "Issue custom field IDs to enable (comma separated, e.g. 1,2,3)"
     )
+    arg_help_project_default_assigned_to_id = (
+        "User ID of the default assignee (empty string to unset)"
+    )
+    arg_help_project_default_version_id = "Default version ID (empty string to unset)"
     arg_help_project_delete = "Delete project"
     arg_help_project_delete_id = "Project ID"
     arg_help_project_update = "Update project"

@@ -147,6 +147,8 @@ redi project create <name> <identifier> --homepage https://example.com --inherit
 redi project create <name> <identifier> --enabled_module_names issue_tracking,wiki --issue_custom_field_ids 1,2
 redi project update <project_id> --name renamed_project
 redi project update <project_id> --enabled_module_names issue_tracking,time_tracking,wiki
+redi project update <project_id> --default_assigned_to_id 3 --default_version_id 5
+redi project update <project_id> --default_assigned_to_id "" # unset
 
 # issue (alias: i)
 redi issue # list issues

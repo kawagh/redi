@@ -82,6 +82,22 @@ def format_project_detail(project: Project) -> list[str]:
                 id=parent.get("id"), name=parent.get("name", "")
             )
         )
+    default_assignee = project.get("default_assignee")
+    if default_assignee:
+        lines.append("")
+        lines.append(
+            messages.label_default_assignee.format(
+                id=default_assignee.get("id"), name=default_assignee.get("name", "")
+            )
+        )
+    default_version = project.get("default_version")
+    if default_version:
+        lines.append("")
+        lines.append(
+            messages.label_default_version.format(
+                id=default_version.get("id"), name=default_version.get("name", "")
+            )
+        )
     trackers = project.get("trackers") or []
     if trackers:
         lines.append("")
@@ -147,6 +163,8 @@ def _update_project(
     tracker_ids: list[int] | None = None,
     enabled_module_names: list[str] | None = None,
     issue_custom_field_ids: list[int] | None = None,
+    default_assigned_to_id: str | None = None,
+    default_version_id: str | None = None,
 ) -> None:
     """プロジェクトを更新し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
@@ -161,6 +179,8 @@ def _update_project(
             tracker_ids=tracker_ids,
             enabled_module_names=enabled_module_names,
             issue_custom_field_ids=issue_custom_field_ids,
+            default_assigned_to_id=default_assigned_to_id,
+            default_version_id=default_version_id,
         )
     except ProjectNotFoundException:
         print(messages.project_not_found.format(id=project_id))
@@ -478,6 +498,13 @@ def add_project_parser(
         "--issue_custom_field_ids", help=messages.arg_help_issue_custom_field_ids
     )
     p_update_parser.add_argument(
+        "--default_assigned_to_id",
+        help=messages.arg_help_project_default_assigned_to_id,
+    )
+    p_update_parser.add_argument(
+        "--default_version_id", help=messages.arg_help_project_default_version_id
+    )
+    p_update_parser.add_argument(
         "--archive",
         action=argparse.BooleanOptionalAction,
         default=None,
@@ -551,6 +578,8 @@ def handle_project(args: argparse.Namespace) -> None:
             or tracker_ids is not None
             or enabled_module_names is not None
             or issue_custom_field_ids is not None
+            or args.default_assigned_to_id is not None
+            or args.default_version_id is not None
         )
         if should_update:
             _update_project(
@@ -564,6 +593,8 @@ def handle_project(args: argparse.Namespace) -> None:
                 tracker_ids=tracker_ids,
                 enabled_module_names=enabled_module_names,
                 issue_custom_field_ids=issue_custom_field_ids,
+                default_assigned_to_id=args.default_assigned_to_id,
+                default_version_id=args.default_version_id,
             )
         if args.archive is True:
             _archive_project(args.project_id)

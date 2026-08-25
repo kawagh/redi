@@ -116,6 +116,8 @@ def update_project(
     tracker_ids: list[int] | None = None,
     enabled_module_names: list[str] | None = None,
     issue_custom_field_ids: list[int] | None = None,
+    default_assigned_to_id: str | None = None,
+    default_version_id: str | None = None,
 ) -> None:
     """プロジェクトを更新する。
 
@@ -135,6 +137,8 @@ def update_project(
         tracker_ids=tracker_ids,
         enabled_module_names=enabled_module_names,
         issue_custom_field_ids=issue_custom_field_ids,
+        default_assigned_to_id=default_assigned_to_id,
+        default_version_id=default_version_id,
     )
 
 

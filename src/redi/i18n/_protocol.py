@@ -586,6 +586,8 @@ class MessagesProto(Protocol):
     """{value}"""
     label_parent_project: str
     """{id}, {name}"""
+    label_default_version: str
+    """{id}, {name}"""
     label_trackers_header: str
     label_issue_categories_header: str
     label_enabled_modules_header: str
@@ -763,6 +765,8 @@ class MessagesProto(Protocol):
     arg_help_tracker_ids: str
     arg_help_enabled_module_names: str
     arg_help_issue_custom_field_ids: str
+    arg_help_project_default_assigned_to_id: str
+    arg_help_project_default_version_id: str
     arg_help_project_delete: str
     arg_help_project_delete_id: str
     arg_help_project_update: str

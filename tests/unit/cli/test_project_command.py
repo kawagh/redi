@@ -161,6 +161,21 @@ class TestCreate:
         assert created_project[0]["enabled_module_names"] == ["issue_tracking", "wiki"]
         assert created_project[0]["issue_custom_field_ids"] == [1, 2]
 
+    @pytest.mark.parametrize(
+        "option", ["--default_assigned_to_id", "--default_version_id"]
+    )
+    def test_create_has_no_default_fields(self, option):
+        """create には既定の担当者・バージョンを用意しない
+
+        作成時点ではそのプロジェクトのメンバーもバージョンもまだ無い。
+        存在しないIDを渡しても Redmine は 201 を返してそのまま保存するため、
+        指定できるのは update だけにする。
+        """
+        with pytest.raises(SystemExit):
+            parse_project_args(
+                ["project", "create", "新プロジェクト", "new-project", option, "3"]
+            )
+
     def test_empty_enabled_module_names_disables_all(self, created_project):
         """--enabled_module_names "" は空リストとして渡し、全モジュールの無効化を表す"""
         handle_project(
@@ -280,6 +295,8 @@ class TestUpdate:
                 "tracker_ids": None,
                 "enabled_module_names": ["issue_tracking", "wiki"],
                 "issue_custom_field_ids": [1, 2],
+                "default_assigned_to_id": None,
+                "default_version_id": None,
             }
         ]
 
@@ -290,6 +307,8 @@ class TestUpdate:
             ("--inherit_members", "true"),
             ("--enabled_module_names", "wiki"),
             ("--issue_custom_field_ids", "1"),
+            ("--default_assigned_to_id", "3"),
+            ("--default_version_id", "5"),
         ],
     )
     def test_single_option_triggers_update(self, updated_project, option, value):
@@ -297,6 +316,44 @@ class TestUpdate:
         handle_project(parse_project_args(["project", "update", "7", option, value]))
 
         assert len(updated_project) == 1
+
+    def test_default_fields_are_passed(self, updated_project):
+        """--default_assigned_to_id / --default_version_id をそのまま渡す"""
+        handle_project(
+            parse_project_args(
+                [
+                    "project",
+                    "update",
+                    "7",
+                    "--default_assigned_to_id",
+                    "3",
+                    "--default_version_id",
+                    "5",
+                ]
+            )
+        )
+
+        assert updated_project[0]["default_assigned_to_id"] == "3"
+        assert updated_project[0]["default_version_id"] == "5"
+
+    def test_empty_default_fields_unset_them(self, updated_project):
+        """空文字の指定は解除として送る (Redmine は空文字を受けて null にする)"""
+        handle_project(
+            parse_project_args(
+                [
+                    "project",
+                    "update",
+                    "7",
+                    "--default_assigned_to_id",
+                    "",
+                    "--default_version_id",
+                    "",
+                ]
+            )
+        )
+
+        assert updated_project[0]["default_assigned_to_id"] == ""
+        assert updated_project[0]["default_version_id"] == ""
 
     def test_no_option_cancels(self, updated_project, capsys):
         """更新するフィールドが1つも無ければ何も送らずに終わる"""

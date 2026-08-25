@@ -439,6 +439,7 @@ class Ja(MessagesProto):
     label_due_date_field = "期日: {value}"
     label_sharing_field = "共有: {value}"
     label_parent_project = "親プロジェクト: {id} {name}"
+    label_default_version = "デフォルトバージョン: {id} {name}"
     label_trackers_header = "トラッカー:"
     label_issue_categories_header = "イシューカテゴリ:"
     label_enabled_modules_header = "有効モジュール:"
@@ -616,6 +617,10 @@ class Ja(MessagesProto):
     arg_help_issue_custom_field_ids = (
         "有効化するイシューのカスタムフィールドID（カンマ区切り。例: 1,2,3）"
     )
+    arg_help_project_default_assigned_to_id = (
+        "デフォルト担当者のユーザーID（空文字で解除）"
+    )
+    arg_help_project_default_version_id = "デフォルトバージョンID（空文字で解除）"
     arg_help_project_delete = "プロジェクト削除"
     arg_help_project_delete_id = "プロジェクトID"
     arg_help_project_update = "プロジェクト更新"

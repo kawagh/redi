@@ -32,6 +32,9 @@ class Project(TypedDict):
     inherit_members: bool
     created_on: str
     updated_on: str
+    # 設定されている場合のみ存在
+    default_assignee: NotRequired[IdName]
+    default_version: NotRequired[IdName]
     # 親プロジェクトを持つ場合のみ存在
     parent: NotRequired[IdName]
     # include 指定時のみ存在
@@ -145,6 +148,8 @@ def update_project(
     tracker_ids: list[int] | None = None,
     enabled_module_names: list[str] | None = None,
     issue_custom_field_ids: list[int] | None = None,
+    default_assigned_to_id: str | None = None,
+    default_version_id: str | None = None,
 ) -> None:
     """プロジェクトを更新する
 
@@ -172,6 +177,10 @@ def update_project(
         data["enabled_module_names"] = enabled_module_names
     if issue_custom_field_ids is not None:
         data["issue_custom_field_ids"] = issue_custom_field_ids
+    if default_assigned_to_id is not None:
+        data["default_assigned_to_id"] = default_assigned_to_id
+    if default_version_id is not None:
+        data["default_version_id"] = default_version_id
     response = client.put(f"/projects/{project_id}.json", json={"project": data})
     if response.status_code == 404:
         raise ProjectNotFoundException(project_id)
