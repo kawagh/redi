@@ -298,6 +298,9 @@ class En(MessagesProto):
     prompt_select_enabled_modules = (
         "Select modules to enable (Space to toggle, Enter to confirm)"
     )
+    prompt_select_issue_custom_fields = (
+        "Select custom fields to enable (Space to toggle, Enter to confirm)"
+    )
     prompt_description_optional = "Description (optional): "
     prompt_wiki_comments = "Comment (optional): "
     prompt_due_date_optional = "Due date (YYYY-MM-DD, optional): "
@@ -363,6 +366,7 @@ class En(MessagesProto):
     field_inherit_members = "inherit_members"
     field_trackers = "trackers"
     field_enabled_modules = "enabled_module_names"
+    field_issue_custom_fields = "issue_custom_field_ids"
     field_version_name = "name"
     field_sharing = "sharing"
     field_hours = "hours"

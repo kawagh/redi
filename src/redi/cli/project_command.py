@@ -10,6 +10,7 @@ import webbrowser
 
 import requests
 
+from redi.api.custom_field import fetch_custom_fields
 from redi.api.exceptions import (
     ProjectNotFoundException,
     ProjectPermissionDeniedException,
@@ -321,6 +322,45 @@ def _interactive_select_enabled_module_names(current: str | None) -> str | None:
     return ",".join(selected)
 
 
+def _issue_custom_field_options() -> list[tuple[str, str]]:
+    """イシューのカスタムフィールドの選択肢を返す。
+
+    一覧の取得には管理者権限が要る。キャッシュも無く取得できない場合は空リストを
+    返し、呼び出し側で任意項目そのものから外す。
+    """
+    custom_fields = fetch_custom_fields()
+    if custom_fields is None:
+        return []
+    return [
+        (str(cf["id"]), f"{cf['id']} {cf['name']}")
+        for cf in custom_fields
+        # 全プロジェクトに適用されるものはプロジェクト側で選ぶ意味がない。
+        # is_for_all は Redmine 7.0 以降でのみ返るため、無い場合は候補に残す
+        if cf.get("customized_type") == "issue" and not cf.get("is_for_all")
+    ]
+
+
+def _interactive_select_issue_custom_field_ids(
+    options: list[tuple[str, str]], current: str | None
+) -> str | None:
+    """イシューのカスタムフィールドを複数選ばせ、カンマ区切りの id 文字列を返す。"""
+    labels = dict(options)
+    selected = inline_checkbox(
+        messages.prompt_select_issue_custom_fields,
+        options,
+        initial_checked=current.split(",") if current else None,
+    )
+    if not selected:
+        return None
+    print(
+        messages.prompt_field_value.format(
+            name=messages.field_issue_custom_fields,
+            value=", ".join(labels[v] for v in selected),
+        )
+    )
+    return ",".join(selected)
+
+
 def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
     """アクションメニューで「任意項目を入力する」を選んだときの入力フロー。
 
@@ -336,6 +376,12 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
         ("tracker_ids", messages.field_trackers),
         ("enabled_module_names", messages.field_enabled_modules),
     ]
+    # 選べない (管理者権限もキャッシュも無い) 場合は任意項目にも出さない
+    custom_field_options = _issue_custom_field_options()
+    if custom_field_options:
+        field_options.append(
+            ("issue_custom_field_ids", messages.field_issue_custom_fields)
+        )
     try:
         selected = inline_checkbox(
             messages.prompt_select_create_optional_items, field_options
@@ -395,6 +441,10 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
         if "enabled_module_names" in selected:
             args.enabled_module_names = _interactive_select_enabled_module_names(
                 args.enabled_module_names
+            )
+        if "issue_custom_field_ids" in selected:
+            args.issue_custom_field_ids = _interactive_select_issue_custom_field_ids(
+                custom_field_options, args.issue_custom_field_ids
             )
     except (KeyboardInterrupt, EOFError):
         print(messages.canceled)

@@ -405,6 +405,7 @@ class MessagesProto(Protocol):
     prompt_select_parent_project_none: str
     prompt_select_trackers: str
     prompt_select_enabled_modules: str
+    prompt_select_issue_custom_fields: str
     prompt_description_optional: str
     prompt_wiki_comments: str
     prompt_due_date_optional: str
@@ -482,6 +483,7 @@ class MessagesProto(Protocol):
     field_inherit_members: str
     field_trackers: str
     field_enabled_modules: str
+    field_issue_custom_fields: str
     field_sharing: str
     field_hours: str
     field_activity: str

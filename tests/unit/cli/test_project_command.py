@@ -264,6 +264,72 @@ class TestCreate:
 
         assert created_project[0]["enabled_module_names"] == ["issue_tracking", "wiki"]
 
+    def test_optional_issue_custom_field_ids_is_filled(
+        self, created_project, tty_stdin, monkeypatch
+    ):
+        """任意項目でカスタムフィールドを選ぶと id のリストに変換して作成する"""
+        monkeypatch.setattr(
+            project_command,
+            "fetch_custom_fields",
+            lambda *_, **__: [
+                {"id": 1, "name": "限定メモ", "customized_type": "issue"},
+                {
+                    "id": 2,
+                    "name": "全体メモ",
+                    "customized_type": "issue",
+                    "is_for_all": True,
+                },
+                {"id": 3, "name": "工数メモ", "customized_type": "time_entry"},
+            ],
+        )
+        choices = iter(["optional", "submit"])
+        monkeypatch.setattr(project_command, "prompt", lambda *_, **__: "new-project")
+        monkeypatch.setattr(
+            project_command, "inline_choice", lambda *_, **__: next(choices)
+        )
+        offered: list[list[tuple[str, str]]] = []
+
+        def fake_checkbox(_message, options, **__):
+            offered.append(options)
+            return ["issue_custom_field_ids"] if len(offered) == 1 else ["1"]
+
+        monkeypatch.setattr(project_command, "inline_checkbox", fake_checkbox)
+
+        handle_project(parse_project_args(["project", "create", "新プロジェクト"]))
+
+        # 全プロジェクト適用 (is_for_all) とイシュー以外は選択肢に出さない
+        assert offered[1] == [("1", "1 限定メモ")]
+        assert created_project[0]["issue_custom_field_ids"] == [1]
+
+    def test_optional_issue_custom_field_ids_is_hidden_without_admin(
+        self, created_project, tty_stdin, monkeypatch
+    ):
+        """一覧を取得できなければ、任意項目の選択肢にカスタムフィールドを出さない
+
+        取得には管理者権限が要る。キャッシュも無い場合は選ばせようがないため、
+        選んでから失敗させるのではなく最初から出さない。
+        """
+        monkeypatch.setattr(
+            project_command, "fetch_custom_fields", lambda *_, **__: None
+        )
+        choices = iter(["optional", "submit"])
+        monkeypatch.setattr(project_command, "prompt", lambda *_, **__: "new-project")
+        monkeypatch.setattr(
+            project_command, "inline_choice", lambda *_, **__: next(choices)
+        )
+        offered: list[list[tuple[str, str]]] = []
+
+        def fake_checkbox(_message, options, **__):
+            offered.append(options)
+            return []
+
+        monkeypatch.setattr(project_command, "inline_checkbox", fake_checkbox)
+
+        handle_project(parse_project_args(["project", "create", "新プロジェクト"]))
+
+        assert "issue_custom_field_ids" not in [value for value, _ in offered[0]]
+        assert created_project[0]["issue_custom_field_ids"] is None
+
     def test_module_choices_are_redmine_standard_modules(self):
         """対話の選択肢は Redmine 標準のモジュール名を出す"""
         assert project_command.project_service.MODULE_NAME_CHOICES == [
