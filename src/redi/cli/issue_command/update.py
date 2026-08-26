@@ -24,7 +24,6 @@ from redi.api.exceptions import (
 from redi.api.issue import (
     Issue,
     IssueNotFoundException,
-    IssueStatus,
     WatcherNotFoundException,
 )
 from redi.api.issue_relation import RelationNotFoundException
@@ -126,19 +125,9 @@ def _interactive_select_issue_id() -> str:
     return issue_id
 
 
-def _selectable_statuses(current: Issue) -> list[IssueStatus]:
-    """更新で選べるステータスを返す。
-
-    ワークフロー上そのイシューから遷移できるステータス (`allowed_statuses`) に絞る。
-    プロジェクトで使っていないステータスを選択肢から外すのが目的。
-    """
-    return current["allowed_statuses"]
-
-
 def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
     # 呼び出し側で issue_id は解決済み
     assert args.issue_id is not None
-    # ステータスの選択肢を、現在のステータスから遷移できるものだけに絞るために引く
     current = _read_issue(args.issue_id, include="allowed_statuses")
     field_values: list[tuple[str, str]] = [
         ("project", messages.field_project),
@@ -226,7 +215,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         if "description" in selected:
             args.description = ""
         if "status" in selected:
-            statuses = _selectable_statuses(current)
+            statuses = current["allowed_statuses"]
             status_options: list[tuple[str, str]] = [
                 (str(s["id"]), s["name"]) for s in statuses
             ]

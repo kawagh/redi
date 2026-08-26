@@ -46,8 +46,7 @@ class Issue(TypedDict):
     total_spent_hours: float
     # GET /issues/{id}では含まれる
     custom_fields: NotRequired[list[IssueCustomField]]
-    # include=allowed_statuses を指定したときだけ含まれる。
-    # 現在のステータスと、ワークフロー上そこから遷移できるステータスが並ぶ
+    # include=allowed_statuses を指定したときだけ含まれる
     allowed_statuses: NotRequired[list[IssueStatus]]
     created_on: str
     updated_on: str
