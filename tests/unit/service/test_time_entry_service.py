@@ -1,8 +1,10 @@
 from types import SimpleNamespace
+from typing import cast
 
 import pytest
 
 from redi.api import time_entry as time_entry_api
+from redi.api.time_entry import TimeEntry
 from redi.service import time_entry_service
 
 
@@ -57,3 +59,44 @@ class TestUpdateTimeEntry:
         time_entry_service.update_time_entry("1", project_id="reditest")
 
         assert stub_time_entry_api.calls[0]["project_id"] == "5"
+
+
+class TestFormatTimeEntryLine:
+    """format_time_entry_line が組み立てる一覧の行"""
+
+    def _raw_entry(self) -> dict:
+        return {
+            "id": 72,
+            "spent_on": "2026-08-16",
+            "user": {"id": 1, "name": "Redmine Admin"},
+            "activity": {"id": 9, "name": "開発作業"},
+            "hours": 2.0,
+            "issue": {"id": 152},
+            "comments": "sagyou",
+        }
+
+    def _entry(self) -> TimeEntry:
+        return cast(TimeEntry, self._raw_entry())
+
+    def test_activity_name_follows_hours(self):
+        """活動名を時間の直後に出す(`view` と同じ並びにする)"""
+        line = time_entry_service.format_time_entry_line(self._entry())
+
+        assert line == "72  (2026-08-16)  Redmine Admin  2.0h  開発作業  #152  sagyou"
+
+    def test_activity_name_is_shown_without_user(self):
+        """ユーザ列を出さない場合も活動名は出す"""
+        line = time_entry_service.format_time_entry_line(
+            self._entry(), include_user=False
+        )
+
+        assert line == "72  (2026-08-16)  2.0h  開発作業  #152  sagyou"
+
+    def test_missing_activity_is_skipped(self):
+        """activity が欠けていても落ちず、その列だけを省く"""
+        raw = self._raw_entry()
+        del raw["activity"]
+
+        line = time_entry_service.format_time_entry_line(cast(TimeEntry, raw))
+
+        assert line == "72  (2026-08-16)  Redmine Admin  2.0h  #152  sagyou"

@@ -2,6 +2,7 @@ import sys
 
 from redi.cli.interactive import prompt
 from redi.i18n import messages
+from redi.output import eprint
 
 
 def confirm_delete(summary: str) -> None:
@@ -9,10 +10,10 @@ def confirm_delete(summary: str) -> None:
     try:
         confirm = prompt(messages.prompt_confirm_delete).strip().lower()
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     if confirm != "yes":
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
 
 
@@ -21,10 +22,10 @@ def confirm_overwrite(summary: str) -> None:
     try:
         confirm = prompt(messages.prompt_confirm_overwrite).strip().lower()
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     if confirm != "yes":
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
 
 
@@ -39,8 +40,8 @@ def confirm_delete_with_identifier(
             )
         ).strip()
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     if entered != expected:
-        print(messages.canceled_field_mismatch.format(field=field_label))
+        eprint(messages.canceled_field_mismatch.format(field=field_label))
         sys.exit(1)

@@ -1,4 +1,5 @@
 import argparse
+import json
 import sys
 from typing import cast
 
@@ -11,6 +12,7 @@ from redi.api.search import (
     search,
 )
 from redi.i18n import messages
+from redi.output import eprint
 
 
 def _validate_scope(scope: SearchScope | None, project_id: str | None) -> None:
@@ -23,11 +25,11 @@ def _validate_scope(scope: SearchScope | None, project_id: str | None) -> None:
         return
     if scope == "subprojects":
         if project_id is None:
-            print(messages.error_search_scope_requires_project.format(scope=scope))
+            eprint(messages.error_search_scope_requires_project.format(scope=scope))
             sys.exit(1)
         return
     if project_id is not None:
-        print(messages.error_search_scope_conflicts_project.format(scope=scope))
+        eprint(messages.error_search_scope_conflicts_project.format(scope=scope))
         sys.exit(1)
 
 
@@ -90,7 +92,7 @@ def add_search_parser(
 
 def handle_search(args: argparse.Namespace) -> None:
     _validate_scope(args.scope, args.project_id)
-    search(
+    data = search(
         query=args.query,
         limit=args.limit,
         offset=args.offset,
@@ -101,5 +103,13 @@ def handle_search(args: argparse.Namespace) -> None:
         open_issues=args.open_issues,
         attachments=args.attachments,
         types=args.type,
-        full=args.full,
     )
+    if args.full:
+        print(json.dumps(data, ensure_ascii=False))
+        return
+    results = data.get("results", [])
+    if not results:
+        print(messages.no_search_results)
+        return
+    for r in results:
+        print(f"[{r.get('type', '')}] {r.get('title', '')} {r.get('url', '')}")

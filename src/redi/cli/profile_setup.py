@@ -16,6 +16,7 @@ from redi.cli.validator import UrlValidator
 from redi.client import RedmineClient
 from redi.config import Profile
 from redi.i18n import MessagesProto
+from redi.output import eprint
 
 
 def _verify_connection(url: str, api_key: str, messages: MessagesProto) -> dict | None:
@@ -29,15 +30,15 @@ def _verify_connection(url: str, api_key: str, messages: MessagesProto) -> dict 
         return response.json().get("user")
     except requests.exceptions.HTTPError as e:
         if e.response is not None:
-            print(
+            eprint(
                 messages.connection_failed_http.format(
                     status=e.response.status_code, reason=e.response.reason
                 )
             )
         else:
-            print(messages.connection_failed_other.format(error=e))
+            eprint(messages.connection_failed_other.format(error=e))
     except requests.exceptions.RequestException as e:
-        print(messages.connection_failed_other.format(error=e))
+        eprint(messages.connection_failed_other.format(error=e))
     return None
 
 
@@ -45,7 +46,7 @@ def _fetch_projects(url: str, api_key: str, messages: MessagesProto) -> list[Pro
     try:
         return fetch_projects(RedmineClient(url.rstrip("/"), api_key))
     except requests.exceptions.RequestException as e:
-        print(messages.project_list_fetch_failed.format(error=e))
+        eprint(messages.project_list_fetch_failed.format(error=e))
         return []
 
 
@@ -59,7 +60,7 @@ def _select_project_id(
     try:
         return inline_choice(prompt_message, options)
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
 
 
@@ -82,7 +83,7 @@ def _prompt_credentials(current: Profile, messages: MessagesProto) -> tuple[str,
                 is_password=True,
             ).strip()
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     return url, api_key
 

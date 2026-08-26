@@ -9,6 +9,8 @@ from typing import Any, NamedTuple, Self
 import tomlkit
 from tomlkit.items import Table
 
+from redi.output import eprint
+
 CONFIG_PATH = Path.home() / ".config" / "redi" / "config.toml"
 
 SUPPORTED_LANGUAGES = ("en", "ja")
@@ -88,16 +90,24 @@ def load_env_config() -> Profile:
     )
 
 
+def profile_from_option(argv: list[str]) -> str | None:
+    """argvの--profileに与えられた値を返す。指定が無ければNone。"""
+    for i, arg in enumerate(argv):
+        if arg == "--profile" and i + 1 < len(argv):
+            return argv[i + 1]
+        if arg.startswith("--profile="):
+            return arg.split("=", 1)[1]
+    return None
+
+
 def resolve_profile_name(toml: dict, argv: list[str]) -> tuple[str | None, bool]:
     """argvに--profileがあればそれを、なければdefault_profileを返す。
 
     第二要素はCLI(--profile)で明示指定されたかどうかを示す。
     """
-    for i, arg in enumerate(argv):
-        if arg == "--profile" and i + 1 < len(argv):
-            return argv[i + 1], True
-        if arg.startswith("--profile="):
-            return arg.split("=", 1)[1], True
+    name = profile_from_option(argv)
+    if name is not None:
+        return name, True
     return toml.get("default_profile"), False
 
 
@@ -164,17 +174,17 @@ if (
     and _profile_explicit
     and not isinstance(_toml.get(_profile_name), dict)
 ):
-    print(f"profile '{_profile_name}' not found in {CONFIG_PATH}", file=sys.stderr)
+    eprint(f"profile '{_profile_name}' not found in {CONFIG_PATH}")
     sys.exit(1)
 apply_profile(_profile_name)
 
 
 def check_config() -> None:
     if not redmine_url:
-        print(f"set REDMINE_URL or add redmine_url to {CONFIG_PATH}")
+        eprint(f"set REDMINE_URL or add redmine_url to {CONFIG_PATH}")
         sys.exit(1)
     if not redmine_api_key:
-        print(f"set REDMINE_API_KEY or add redmine_api_key to {CONFIG_PATH}")
+        eprint(f"set REDMINE_API_KEY or add redmine_api_key to {CONFIG_PATH}")
         sys.exit(1)
 
 
@@ -194,11 +204,11 @@ def update_profile(
 
     target_profile = profile or doc.get("default_profile")
     if not target_profile:
-        print("default_profile not found")
+        eprint("default_profile not found")
         sys.exit(1)
     profile_table = doc.get(target_profile) if target_profile in doc else None
     if not isinstance(profile_table, Table):
-        print(f"profile '{target_profile}' not found in {path}")
+        eprint(f"profile '{target_profile}' not found in {path}")
         sys.exit(1)
 
     for key, value in values.to_dict().items():
@@ -228,7 +238,7 @@ def create_profile(
     if profile_name in doc:
         from redi.i18n import messages
 
-        print(messages.profile_already_exists.format(name=profile_name))
+        eprint(messages.profile_already_exists.format(name=profile_name))
         return CreateProfileResult(created=False, set_as_default=False)
 
     table = tomlkit.table()
@@ -256,7 +266,7 @@ def set_default_profile(profile_name: str, config_path: Path | None = None) -> b
         doc = tomlkit.document()
 
     if profile_name not in doc or not isinstance(doc.get(profile_name), dict):
-        print(f"profile '{profile_name}' not found in {path}")
+        eprint(f"profile '{profile_name}' not found in {path}")
         return False
 
     doc["default_profile"] = profile_name
@@ -299,23 +309,49 @@ def read_profile(profile_name: str, config_path: Path | None = None) -> Profile:
     return Profile.from_dict(value) if isinstance(value, dict) else Profile()
 
 
+def profile_source_label() -> str:
+    """今のプロファイルが既定か `--profile` 上書きかを表す表示用ラベルを返す。
+
+    由来は起動時の argv で決まりきっているので、状態として抱えず都度引き直す。
+    """
+    from redi.i18n import messages
+
+    return (
+        messages.config_profile_source_option
+        if profile_from_option(sys.argv) is not None
+        else messages.config_profile_source_default
+    )
+
+
 def show_config(full: bool = False, config_path: Path | None = None) -> None:
     if full:
         show_all_profiles(config_path=config_path)
         return
+    values = {
+        "redmine_url": redmine_url,
+        "default_project_id": default_project_id or "",
+        "wiki_project_id": wiki_project_id or "",
+        "editor": editor,
+        "language": language,
+    }
     doc = tomlkit.document()
-    doc["redmine_url"] = redmine_url
-    doc["default_project_id"] = default_project_id or ""
-    doc["wiki_project_id"] = wiki_project_id or ""
-    doc["editor"] = editor
-    doc["language"] = language
+    # config.toml と同じく `[profile_name]` の見出しで示し、由来はコメントで添える。
+    # 出力は TOML として読めるまま保つ。
+    if current_profile:
+        table = tomlkit.table()
+        for key, value in values.items():
+            table[key] = value
+        doc[current_profile] = table.comment(profile_source_label())
+    else:
+        for key, value in values.items():
+            doc[key] = value
     print(tomlkit.dumps(doc).rstrip())
 
 
 def show_all_profiles(config_path: Path | None = None) -> None:
     path = config_path or CONFIG_PATH
     if not path.exists():
-        print(f"config file not found: {path}")
+        eprint(f"config file not found: {path}")
         return
     with open(path) as f:
         doc = tomlkit.load(f)
@@ -323,4 +359,14 @@ def show_all_profiles(config_path: Path | None = None) -> None:
         value = doc[key]
         if isinstance(value, Table) and "redmine_api_key" in value:
             del value["redmine_api_key"]
+    # default_profile は既定値でしかないので、今回使われたプロファイルの見出しに印を付ける
+    current_table = doc.get(current_profile) if current_profile else None
+    if isinstance(current_table, Table):
+        from redi.i18n import messages
+
+        current_table.comment(
+            messages.config_current_profile_comment.format(
+                source=profile_source_label()
+            )
+        )
     print(tomlkit.dumps(doc).rstrip())

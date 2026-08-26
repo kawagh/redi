@@ -3,12 +3,19 @@
 CLI と TUI で共通の手順をここに置く。HTTP とステータスコードの解釈は `api.issue` が持つ。
 """
 
-from __future__ import annotations
+import requests
 
 from redi import config
 from redi.api import issue as issue_api
-from redi.api.attachment import upload_file
+from redi.api import query as query_api
+from redi.api.exceptions import (
+    IssueListNotFoundException,
+    ProjectNotFoundException,
+    QueryNotFoundException,
+)
 from redi.api.issue import Issue
+from redi.service.attachment_service import upload_file
+from redi.service.project_service import resolve_project_id
 
 
 def issue_url(issue_id: str, note_number: int | None = None) -> str:
@@ -30,18 +37,44 @@ def list_issues(
     limit: int | None = None,
     offset: int | None = None,
 ) -> list[Issue]:
-    """イシュー一覧を取得する。"""
-    return issue_api.fetch_issues(
-        project_id=project_id,
-        fixed_version_id=fixed_version_id,
-        assigned_to=assigned_to,
-        status_id=status_id,
-        tracker_id=tracker_id,
-        priority_id=priority_id,
-        query_id=query_id,
-        limit=limit,
-        offset=offset,
-    )
+    """イシュー一覧を取得する。
+
+    Raises:
+        QueryNotFoundException: 指定したカスタムクエリが存在しない (HTTP 404)
+        ProjectNotFoundException: 指定したプロジェクトが存在しない (HTTP 404)
+        requests.exceptions.HTTPError: それ以外の HTTP エラー
+    """
+    try:
+        return issue_api.fetch_issues(
+            project_id=project_id,
+            fixed_version_id=fixed_version_id,
+            assigned_to=assigned_to,
+            status_id=status_id,
+            tracker_id=tracker_id,
+            priority_id=priority_id,
+            query_id=query_id,
+            limit=limit,
+            offset=offset,
+        )
+    except IssueListNotFoundException as e:
+        # project_id と query_id を同時に指定した 404 は api 層では切り分けられない。
+        # クエリが実在するならプロジェクト側、しないならクエリ側が原因と決める
+        if _query_exists(e.query_id):
+            raise ProjectNotFoundException(e.project_id) from None
+        raise QueryNotFoundException(e.query_id) from None
+
+
+def _query_exists(query_id: str) -> bool:
+    """カスタムクエリが存在する (かつ閲覧できる) かを返す。取得に失敗した場合は False。
+
+    Redmine の REST API にクエリ単体の取得は無いため一覧を引く。1件確認できれば十分な
+    ところを全件取得することになるが、404 のエラー経路でしか通らないので許容している。
+    """
+    try:
+        queries = query_api.fetch_queries()
+    except requests.exceptions.RequestException:
+        return False
+    return any(str(query.get("id")) == str(query_id) for query in queries)
 
 
 def read_issue(issue_id: str, include: str = "") -> Issue:
@@ -92,6 +125,7 @@ def create_issue(
 
 def update_issue(
     issue_id: str,
+    project_id: str | None = None,
     subject: str | None = None,
     description: str | None = None,
     tracker_id: str | None = None,
@@ -110,13 +144,22 @@ def update_issue(
 ) -> None:
     """イシューを更新する。添付ファイルが指定されていれば先にアップロードする。
 
+    project_id を渡すとイシューを別プロジェクトへ移動する。
+    Redmine は移動先が見つからなくても 204 を返して黙って移動しないため、
+    先に数値の id へ解決して見つからない指定をここで弾く。
+
     Raises:
+        ProjectNotFoundException: 移動先プロジェクトが見つからない
+        LocalFileNotFoundException: `attachments` に存在しないパスが含まれる
         RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
+    if project_id is not None:
+        project_id = resolve_project_id(project_id)
     uploads = [upload_file(file_path) for file_path in attachments or []]
     issue_api.update_issue(
         issue_id=issue_id,
+        project_id=project_id,
         subject=subject,
         description=description,
         tracker_id=tracker_id,

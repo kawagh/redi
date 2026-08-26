@@ -57,6 +57,69 @@ class TestIssueUpdate:
 
         assert updated_subject in run_redi("issue", "view", issue_id).stdout
 
+    def test_moved_issue_appears_in_destination_project(self):
+        """--project_id に identifier を渡すとイシューが移動先プロジェクトの一覧に出る"""
+        subject = unique_identifier("e2e-issue-move")
+        issue_id = _create_issue(subject)
+        destination = unique_identifier("e2e-move-dest")
+        run_redi(
+            "project",
+            "create",
+            f"e2e move {destination}",
+            destination,
+            "--tracker_ids",
+            FEATURE_TRACKER_ID,
+        )
+
+        run_redi("issue", "update", issue_id, "--project_id", destination)
+
+        assert subject in run_redi("issue", "list", "--project_id", destination).stdout
+        assert (
+            subject not in run_redi("issue", "list", "--project_id", "reditest").stdout
+        )
+
+    def test_exits_with_error_for_missing_destination_project(self):
+        """Redmine は存在しない移動先を黙って無視するので、redi 側で弾いて exit 1 にする"""
+        issue_id = _create_issue(unique_identifier("e2e-issue-move-missing"))
+
+        with pytest.raises(subprocess.CalledProcessError) as update_error_info:
+            run_redi("issue", "update", issue_id, "--project_id", "e2e-no-such-project")
+
+        update_error = update_error_info.value
+        assert update_error.returncode == 1
+        assert "Project not found: e2e-no-such-project" in update_error.stderr, (
+            f"想定外のエラーで update が失敗\n"
+            f"stdout:\n{update_error.stdout}\nstderr:\n{update_error.stderr}"
+        )
+
+    def test_exits_with_error_for_unknown_tracker_id(self):
+        """Redmine は存在しない tracker_id を黙って無視するので、redi 側で弾いて exit 1 にする"""
+        issue_id = _create_issue(unique_identifier("e2e-issue-unknown-tracker"))
+
+        with pytest.raises(subprocess.CalledProcessError) as update_error_info:
+            run_redi("issue", "update", issue_id, "--tracker_id", "99999")
+
+        update_error = update_error_info.value
+        assert update_error.returncode == 1
+        assert "Tracker not found: 99999" in update_error.stderr, (
+            f"想定外のエラーで update が失敗\n"
+            f"stdout:\n{update_error.stdout}\nstderr:\n{update_error.stderr}"
+        )
+
+    def test_exits_with_error_for_unknown_status_id(self):
+        """Redmine は存在しない status_id を黙って無視するので、redi 側で弾いて exit 1 にする"""
+        issue_id = _create_issue(unique_identifier("e2e-issue-unknown-status"))
+
+        with pytest.raises(subprocess.CalledProcessError) as update_error_info:
+            run_redi("issue", "update", issue_id, "--status_id", "99999")
+
+        update_error = update_error_info.value
+        assert update_error.returncode == 1
+        assert "Status not found: 99999" in update_error.stderr, (
+            f"想定外のエラーで update が失敗\n"
+            f"stdout:\n{update_error.stdout}\nstderr:\n{update_error.stderr}"
+        )
+
 
 @pytest.mark.e2e
 class TestIssueComment:
@@ -70,7 +133,7 @@ class TestIssueComment:
         added = run_redi("issue", "comment", issue_id, notes).stdout
 
         assert f"/issues/{issue_id}#note-1" in added
-        assert notes in run_redi("issue", "view", issue_id, "--full").stdout
+        assert notes in run_redi("issue", "view", issue_id).stdout
 
 
 @pytest.mark.e2e
@@ -99,7 +162,7 @@ class TestIssueDelete:
 
         delete_error = delete_error_info.value
         assert delete_error.returncode == 1
-        assert f"Issue not found: #{issue_id}" in delete_error.stdout, (
+        assert f"Issue not found: #{issue_id}" in delete_error.stderr, (
             f"想定外のエラーで delete が失敗\n"
             f"stdout:\n{delete_error.stdout}\nstderr:\n{delete_error.stderr}"
         )

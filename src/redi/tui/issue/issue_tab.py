@@ -9,6 +9,7 @@ from redi.api.issue import (
 )
 from redi.i18n import messages
 from redi.service import issue_service
+from redi.text_format import highlight_segments, issue_meta_rows, render_meta_table
 from redi.tui.state import (
     CommentSelectState,
     Renderable,
@@ -18,7 +19,6 @@ from redi.tui.state import (
     TuiState,
 )
 from redi.tui.tab import TabView, noop
-from redi.tui.text_format import highlight_segments, render_meta_table
 
 
 def load_journals(issue: Issue) -> None:
@@ -69,39 +69,7 @@ def _render_preview(state: TuiState) -> Renderable:
     issue = state.issue_tab.issues[state.issue_tab.cursor]
     parts: Renderable = []
     head_lines = [f"#{issue.get('id', '')} {issue.get('subject', '')}", ""]
-
-    def named(field: str) -> str:
-        value = issue.get(field)
-        if isinstance(value, dict):
-            return value.get("name", "")
-        return ""
-
-    meta = [
-        (messages.tui_meta_status, named("status")),
-        (messages.tui_meta_priority, named("priority")),
-        (messages.tui_meta_tracker, named("tracker")),
-        (messages.tui_meta_assignee, named("assigned_to")),
-        (messages.tui_meta_author, named("author")),
-        (messages.tui_meta_start_date, issue.get("start_date") or ""),
-        (messages.tui_meta_due_date, issue.get("due_date") or ""),
-        (
-            messages.tui_meta_progress,
-            f"{issue['done_ratio']}%" if issue.get("done_ratio") is not None else "",
-        ),
-        (
-            messages.tui_meta_estimated_hours,
-            f"{issue['estimated_hours']} h"
-            if issue.get("estimated_hours") is not None
-            else "",
-        ),
-        (
-            messages.tui_meta_spent_hours,
-            f"{issue['spent_hours']} h" if issue.get("spent_hours") is not None else "",
-        ),
-        (messages.tui_meta_created, issue.get("created_on") or ""),
-        (messages.tui_meta_updated, issue.get("updated_on") or ""),
-    ]
-    head_lines.extend(render_meta_table(meta))
+    head_lines.extend(render_meta_table(issue_meta_rows(issue)))
 
     description = issue.get("description") or ""
     if description:
@@ -315,6 +283,8 @@ def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse
         project_id=state.effective_project_id(),
         status_id=f.status_id,
         assigned_to=f.assigned_to_id,
+        tracker_id=f.tracker_id,
+        query_id=f.query_id,
         limit=state.page_size,
         offset=offset,
     )
@@ -423,7 +393,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  /", messages.tui_help_start_search),
     ("  n / N", messages.tui_help_next_prev_match),
     (messages.tui_help_section_filter, ""),
-    ("  f", messages.tui_help_filter_status_assignee),
+    ("  f", messages.tui_help_filter_issues),
     ("  p", messages.tui_help_switch_project),
     ("  P", messages.tui_help_switch_profile),
     (messages.tui_help_section_actions, ""),

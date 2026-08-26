@@ -7,7 +7,7 @@ import requests
 from prompt_toolkit.validation import ValidationError, Validator
 
 from redi import config
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.wiki import (
     WikiPage,
     WikiPageNotFoundException,
@@ -20,6 +20,7 @@ from redi.cli.interactive import prompt
 from redi.cli.picker import inline_choice
 from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import wiki_service
 
 
@@ -28,7 +29,7 @@ def _prompt_wiki_comments() -> str:
     try:
         return prompt(messages.prompt_wiki_comments).strip()
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
 
 
@@ -37,19 +38,28 @@ def _delete_page(project_id: str, page_title: str) -> None:
     try:
         wiki_service.delete_page(project_id, page_title)
     except WikiPageNotFoundException:
-        print(messages.wiki_page_not_found.format(title=page_title))
+        eprint(messages.wiki_page_not_found.format(title=page_title))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.wiki_page_delete_failed)
+        eprint(messages.wiki_page_delete_failed)
         sys.exit(1)
     print(messages.wiki_page_deleted.format(title=page_title))
 
 
+def _read_pages(project_id: str) -> list[WikiPage]:
+    """Wiki ページ一覧を取得する。プロジェクトが存在しなければ exit 1。"""
+    try:
+        return wiki_service.list_pages(project_id)
+    except ProjectNotFoundException:
+        eprint(messages.project_not_found.format(id=project_id))
+        sys.exit(1)
+
+
 def _list_pages(project_id: str, full: bool = False) -> None:
     """Wiki ページ一覧をツリー表示する。full=True では取得した JSON をそのまま出す。"""
-    pages = wiki_service.list_pages(project_id)
+    pages = _read_pages(project_id)
     if full:
         print(json.dumps(pages, ensure_ascii=False))
         return
@@ -74,13 +84,13 @@ def _view_page(
     page = wiki_service.read_page(project_id, page_title, version=version, full=full)
     if page is None:
         if version is not None:
-            print(
+            eprint(
                 messages.wiki_page_with_version_not_found.format(
                     title=page_title, version=version
                 )
             )
         else:
-            print(messages.wiki_page_not_found.format(title=page_title))
+            eprint(messages.wiki_page_not_found.format(title=page_title))
         sys.exit(1)
     if full:
         print(json.dumps(page, ensure_ascii=False, indent=2))
@@ -105,7 +115,7 @@ def _create_page(
             comments=comments,
         )
     except wiki_service.ParentPageNotFoundException as e:
-        print(messages.parent_page_not_found.format(title=e.title))
+        eprint(messages.parent_page_not_found.format(title=e.title))
         sys.exit(1)
     url = wiki_service.page_url(project_id, result.title)
     if result.created:
@@ -227,7 +237,7 @@ def add_wiki_parser(
 def handle_wiki(args: argparse.Namespace) -> None:
     project_id = args.project_id or config.wiki_project_id or config.default_project_id
     if not project_id:
-        print(messages.wiki_project_id_required)
+        eprint(messages.wiki_project_id_required)
         sys.exit(1)
     cmd = resolve_alias(args.wiki_command)
     if cmd == "view":
@@ -242,7 +252,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
         page_title = args.page_title
         parent_title = args.parent_title
         if page_title is None:
-            pages = wiki_service.list_pages(project_id)
+            pages = _read_pages(project_id)
             existing_titles = {normalize_title(p["title"]) for p in pages}
 
             class _PageTitleValidator(Validator):
@@ -262,10 +272,10 @@ def handle_wiki(args: argparse.Namespace) -> None:
                     messages.prompt_page_title, validator=_PageTitleValidator()
                 ).strip()
             except (KeyboardInterrupt, EOFError):
-                print(messages.canceled)
+                eprint(messages.canceled)
                 sys.exit(1)
             if not page_title:
-                print(messages.canceled_empty_title)
+                eprint(messages.canceled_empty_title)
                 sys.exit(1)
             if parent_title is None:
                 parent_options = build_wiki_tree_choices(pages)
@@ -276,7 +286,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
                             messages.prompt_parent_page, parent_options
                         )
                     except (KeyboardInterrupt, EOFError):
-                        print(messages.canceled)
+                        eprint(messages.canceled)
                         sys.exit(1)
                     print(
                         messages.parent_page_label.format(
@@ -307,7 +317,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
         if not args.yes:
             page = wiki_service.read_page(project_id, title)
             if page is None:
-                print(messages.wiki_page_not_found.format(title=title))
+                eprint(messages.wiki_page_not_found.format(title=title))
                 sys.exit(1)
             confirm_delete(
                 messages.delete_target_wiki_page.format(title=page.get("title", title))
@@ -316,16 +326,16 @@ def handle_wiki(args: argparse.Namespace) -> None:
     elif cmd == "update":
         page_title = args.page_title
         if page_title is None:
-            pages = wiki_service.list_pages(project_id)
+            pages = _read_pages(project_id)
             if not pages:
-                print(messages.wiki_page_does_not_exist)
+                eprint(messages.wiki_page_does_not_exist)
                 sys.exit(1)
             page_options = build_wiki_tree_choices(pages)
             page_labels = dict(page_options)
             try:
                 page_title = inline_choice(messages.prompt_edit_page, page_options)
             except (KeyboardInterrupt, EOFError):
-                print(messages.canceled)
+                eprint(messages.canceled)
                 sys.exit(1)
             print(
                 messages.edit_target_page.format(label=page_labels[page_title].strip())
@@ -337,7 +347,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
         else:
             current = wiki_service.read_page(project_id, page_title)
             if current is None:
-                print(messages.wiki_page_not_found.format(title=page_title))
+                eprint(messages.wiki_page_not_found.format(title=page_title))
                 sys.exit(1)
             version = current.get("version")
             text = open_editor(current.get("text") or "")

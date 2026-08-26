@@ -2,9 +2,15 @@ import argparse
 import copy
 
 import pytest
+import requests
 
+from redi.api.exceptions import (
+    RedmineConnectionException,
+    RedmineValidationException,
+)
 from redi.cli import main as main_module
 from redi.cli.main import build_redi_parser
+from redi.i18n import messages
 
 
 class TestProfileFlagPlacement:
@@ -72,6 +78,46 @@ LIST_ONLY_RESOURCES = [
     ("query", "q"),
     ("custom_field", "cf"),
 ]
+
+
+# 応答をキャッシュするリソース。--refresh はこれらにだけ付く
+CACHED_RESOURCES = [
+    (resource, alias) for resource, alias in LIST_ONLY_RESOURCES if resource != "query"
+]
+
+
+class TestRefreshFlagPlacement:
+    """--refresh はキャッシュを持つリソースで前後どちらに置いても受け付けられる"""
+
+    @pytest.fixture
+    def parser(self, monkeypatch) -> argparse.ArgumentParser:
+        monkeypatch.setattr(main_module, "list_profile_names", list)
+        return build_redi_parser()
+
+    @pytest.mark.parametrize("resource,alias", CACHED_RESOURCES)
+    def test_defaults_to_false(self, parser, resource, alias):
+        """指定が無ければ False (キャッシュを読む)"""
+        args = parser.parse_args([resource, "list"])
+
+        assert args.refresh is False
+
+    @pytest.mark.parametrize("resource,alias", CACHED_RESOURCES)
+    def test_refresh_flag_on_either_side(self, parser, resource, alias):
+        """--refresh は list の前後どちらに置いても、list を省いても有効になる"""
+        for argv in (
+            [resource, "list", "--refresh"],
+            # 前置した値が、後置の未指定によって False に戻されないことも兼ねる
+            [resource, "--refresh", "list"],
+            [alias, "--refresh"],
+        ):
+            args = parser.parse_args(argv)
+
+            assert args.refresh is True, argv
+
+    def test_not_added_to_uncached_resource(self, parser):
+        """キャッシュしない query には --refresh を生やさない"""
+        with pytest.raises(SystemExit):
+            parser.parse_args(["query", "list", "--refresh"])
 
 
 class TestListOnlyResourceListSubcommand:
@@ -270,3 +316,123 @@ class TestTuiProfileSwitchLoop:
         assert run_tui_calls[1].flash_message == (
             messages.tui_flash_profile_switched.format(name="sub")
         )
+
+
+class TestConnectionErrorIsNotATraceback:
+    """接続できないときは 1 行のメッセージと exit 1 で終える
+
+    起票時 (github#440) は通信する全コマンドで 100 行前後の生トレースバックが出ており、
+    内部のファイルパスまで露出していた。個々のコマンドで捕まえ損ねても
+    トレースバックにならないよう、エントリポイントに受け皿を置いている。
+    """
+
+    @pytest.fixture
+    def failing_run(self, monkeypatch):
+        """_run が接続エラーで落ちる状況を作る"""
+
+        def _raise():
+            raise RedmineConnectionException("http://localhost:3000")
+
+        monkeypatch.setattr(main_module, "_run", _raise)
+
+    def test_prints_one_line_and_exits(self, failing_run, monkeypatch, capsys):
+        """接続先が分かる 1 行だけを出して exit 1 する"""
+        monkeypatch.setattr(main_module.config, "current_profile", None)
+
+        with pytest.raises(SystemExit) as e:
+            main_module.main()
+
+        err = capsys.readouterr().err
+        assert e.value.code == 1
+        assert err.splitlines() == [
+            messages.connection_unreachable.format(url="http://localhost:3000")
+        ]
+
+    def test_does_not_mix_into_stdout(self, failing_run, monkeypatch, capsys):
+        """パイプやリダイレクトで結果と混ざらないよう、標準出力には出さない"""
+        monkeypatch.setattr(main_module.config, "current_profile", None)
+
+        with pytest.raises(SystemExit):
+            main_module.main()
+
+        assert capsys.readouterr().out == ""
+
+    def test_shows_profile_name(self, failing_run, monkeypatch, capsys):
+        """プロファイルの指定間違いに気付けるよう、分かるならプロファイル名も添える"""
+        monkeypatch.setattr(main_module.config, "current_profile", "sandbox_admin")
+
+        with pytest.raises(SystemExit):
+            main_module.main()
+
+        assert "sandbox_admin" in capsys.readouterr().err
+
+
+class TestUnhandledHttpErrorIsNotATraceback:
+    """変換されずに来た HTTP エラーもトレースバックにしない
+
+    api 層で個別に変換していく (github#441) だけでは未知の経路が残るため、
+    エントリポイントに保険を置いている。
+    """
+
+    def _failing_run(self, monkeypatch, response):
+        def _raise():
+            raise requests.exceptions.HTTPError("boom", response=response)
+
+        monkeypatch.setattr(main_module, "_run", _raise)
+
+    def test_prints_status_without_url(self, monkeypatch, capsys):
+        """リクエスト URL や requests の例外文字列は内部の事情なので出さない"""
+        response = requests.Response()
+        response.status_code = 500
+        response.reason = "Internal Server Error"
+        response.url = "http://localhost:3001/secret.json"
+        self._failing_run(monkeypatch, response)
+
+        with pytest.raises(SystemExit) as e:
+            main_module.main()
+
+        err = capsys.readouterr().err
+        assert e.value.code == 1
+        assert err.splitlines() == [
+            messages.http_error_unhandled.format(
+                status=500, reason="Internal Server Error"
+            )
+        ]
+        assert "secret.json" not in err
+
+    def test_handles_missing_response(self, monkeypatch, capsys):
+        """response を持たない HTTPError でも落ちない"""
+        self._failing_run(monkeypatch, None)
+
+        with pytest.raises(SystemExit):
+            main_module.main()
+
+        assert capsys.readouterr().err.splitlines() == [
+            messages.http_error_unhandled_unknown
+        ]
+
+
+class TestValidationErrorIsHandledOnce:
+    """入力エラー (422) はエントリポイントでまとめて整形する
+
+    以前は 9 つの分岐が同じ try/except を書いており、書き忘れたリソース
+    (group / news / relation) だけ生の JSON が露出していた (github#442)。
+    """
+
+    def test_prints_formatted_message_and_exits(self, monkeypatch, capsys):
+        """どのリソースでも `〜の作成に失敗しました(入力エラー)` に揃う"""
+
+        def _raise():
+            raise RedmineValidationException(
+                "group", "create", ["Name cannot be blank"]
+            )
+
+        monkeypatch.setattr(main_module, "_run", _raise)
+
+        with pytest.raises(SystemExit) as e:
+            main_module.main()
+
+        err = capsys.readouterr().err
+        assert e.value.code == 1
+        assert "group" in err
+        assert "- Name cannot be blank" in err

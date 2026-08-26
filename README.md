@@ -142,9 +142,16 @@ redi project # list projects
 redi project list # same as above (`redi project l` / `redi p list` / `redi p l` / `redi p` also work)
 redi project view <project_id> # view project
 redi project view <project_id> --include trackers,issue_categories
+redi project create # (interactive)
 redi project create <name> <identifier>
 redi project create <name> <identifier> -d "description" --is_public true
+redi project create <name> <identifier> --homepage https://example.com --inherit_members true
+redi project create <name> <identifier> --enabled_module_names issue_tracking,wiki --issue_custom_field_ids 1,2
+redi project update <project_id> # (interactive)
 redi project update <project_id> --name renamed_project
+redi project update <project_id> --enabled_module_names issue_tracking,time_tracking,wiki
+redi project update <project_id> --default_assigned_to_id 3 --default_version_id 5
+redi project update <project_id> --default_assigned_to_id "" # unset
 
 # issue (alias: i)
 redi issue # list issues
@@ -152,7 +159,7 @@ redi issue -p <project_id> -a me -s open
 redi issue -q <query_id>
 redi issue view <issue_id>
 redi issue view <issue_id> --web # view issue with web browser
-redi issue view <issue_id> --include journals,attachments,relations
+redi issue view <issue_id> --include children,watchers # relations, attachments and journals are shown by default
 redi issue create # (interactive)
 redi issue create "subject" -p <project_id> -t <tracker_id> -a <user_id> -d "description"
 redi issue create "subject" -p <project_id> --full # output created issue as full JSON
@@ -162,6 +169,7 @@ redi issue update <issue_id> --start_date 2026-04-26 --due_date 2026-05-31 --est
 redi issue update <issue_id> --done_ratio 70
 redi issue update <issue_id> --assigned_to_id <user_id>
 redi issue update <issue_id> --assigned_to_id "" # unset assignee
+redi issue update <issue_id> --project_id <project_id> # move issue to another project
 redi issue update <issue_id> --relate relates --to <other_issue_id>
 redi issue update <issue_id> --attach ./foo.png --attach ./bar.log
 redi issue comment <issue_id> "hello~"
@@ -253,8 +261,16 @@ redi search "keyword" --attachments only # 0: description only, 1: description a
 redi search "keyword" --limit 10 --offset 10
 redi search "keyword" --full # output full JSON
 
+# user (alias: u, admin required)
+redi user # list users
+redi user list --status locked # active / registered / locked (default: active only)
+redi user list --name kawagh # partial match on login / firstname / lastname / mail
+redi user list --group_id <group_id> # members of the group
+redi user --status locked list # filters can be placed before the subcommand too
+redi user list --limit 10 --offset 10 # `list` returns all users unless limited
+redi user list --full # output full JSON
+
 # others
-redi user # list users (alias: u)
 redi tracker # list trackers (alias: t)
 redi tracker list # 同上 (以下の一覧専用リソースも `list` / `l` を受け付ける)
 redi issue_status # list issue statuses (alias: is)

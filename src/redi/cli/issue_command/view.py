@@ -7,9 +7,12 @@ import json
 import sys
 import webbrowser
 
+from redi.api.exceptions import ProjectNotFoundException, QueryNotFoundException
 from redi.api.issue import Issue, IssueNotFoundException
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import issue_service
+from redi.text_format import issue_meta_rows, render_meta_table
 
 # Redmine の関連は片側にだけ記録されるため、相手側から見た関連名に読み替える
 INVERSE_RELATION = {
@@ -37,18 +40,29 @@ def list_issues(
     offset: int | None = None,
     full: bool = False,
 ) -> None:
-    """イシュー一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
-    issues = issue_service.list_issues(
-        project_id=project_id,
-        fixed_version_id=fixed_version_id,
-        assigned_to=assigned_to,
-        status_id=status_id,
-        tracker_id=tracker_id,
-        priority_id=priority_id,
-        query_id=query_id,
-        limit=limit,
-        offset=offset,
-    )
+    """イシュー一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。
+
+    存在しないプロジェクト・カスタムクエリを指定した場合は案内を出して exit 1。
+    """
+    try:
+        issues = issue_service.list_issues(
+            project_id=project_id,
+            fixed_version_id=fixed_version_id,
+            assigned_to=assigned_to,
+            status_id=status_id,
+            tracker_id=tracker_id,
+            priority_id=priority_id,
+            query_id=query_id,
+            limit=limit,
+            offset=offset,
+        )
+    except QueryNotFoundException:
+        eprint(messages.query_not_found.format(id=query_id))
+        eprint(messages.query_not_found_hint)
+        sys.exit(1)
+    except ProjectNotFoundException:
+        eprint(messages.project_not_found.format(id=project_id))
+        sys.exit(1)
     if full:
         print(json.dumps(issues, ensure_ascii=False))
         return
@@ -68,9 +82,8 @@ def view_issue(
         print(url)
         webbrowser.open(url)
         return
-    includes = ["relations", "attachments"]
-    if full:
-        includes.append("journals")
+    # コメントは既定で表示するため journals も常に取得する
+    includes = ["relations", "attachments", "journals"]
     if include:
         for name in include.split(","):
             name = name.strip()
@@ -79,7 +92,7 @@ def view_issue(
     try:
         issue = issue_service.read_issue(issue_id, include=",".join(includes))
     except IssueNotFoundException:
-        print(messages.issue_not_found.format(id=issue_id))
+        eprint(messages.issue_not_found.format(id=issue_id))
         sys.exit(1)
     if full:
         print(json.dumps(issue, ensure_ascii=False))
@@ -88,11 +101,18 @@ def view_issue(
 
 
 def format_issue_detail(issue: Issue) -> list[str]:
-    """イシューの詳細表示を行のリストに整形する。"""
+    """イシューの詳細表示を行のリストに整形する。
+
+    件名の下にメタ情報テーブルを出し、`----` で区切って説明・コメントを続ける。
+    TUI の右ペイン(プレビュー)と同じ見た目になるよう `text_format` を共有する。
+    """
     lines = []
-    lines.append(f"{issue['id']} {issue['subject']}")
+    lines.append(f"#{issue['id']} {issue['subject']}")
+    lines.append("")
+    lines.extend(render_meta_table(issue_meta_rows(issue)))
     if issue.get("description"):
         lines.append("")
+        lines.append("----")
         lines.append(issue["description"])
     relations = issue.get("relations") or []
     if relations:
@@ -156,6 +176,7 @@ def format_issue_detail(issue: Issue) -> list[str]:
     journals = issue.get("journals") or []
     if journals:
         lines.append("")
+        lines.append("----")
         lines.append(messages.label_journals_header)
         for j in journals:
             author = (j.get("user") or {}).get("name", "")

@@ -29,13 +29,13 @@ class En(MessagesProto):
         "Rerun with the required arguments or options"
     )
     prompt_editor_input = "input in the editor"
+    prompt_press_enter_to_reopen = "Press Enter to return to the editor"
 
     # ---- common indicators ----
     project_id_required = "Specify project_id or set default_project_id"
     wiki_project_id_required = (
         "Specify project_id or set wiki_project_id/default_project_id"
     )
-    user_or_group_id_required = "Specify user_id or group_id"
     user_or_group_flag_required = "Specify --user_id or --group_id"
     issue_or_project_id_required = "Specify issue_id or project_id"
     delete_relation_requires_to = "--delete-relation requires --to"
@@ -53,6 +53,8 @@ class En(MessagesProto):
     issue_or_user_not_found = "Issue or user not found: #{issue_id} / #{user_id}"
     user_not_found = "User not found: {id}"
     project_not_found = "Project not found: {id}"
+    query_not_found = "Custom query not found: {id}"
+    query_not_found_hint = "Run `redi query list` to see available custom queries"
     wiki_page_not_found = "Wiki page not found: {title}"
     wiki_page_with_version_not_found = (
         "Wiki page not found: {title} (version={version})"
@@ -67,6 +69,9 @@ class En(MessagesProto):
     group_not_found = "Group not found: #{id}"
     group_or_user_not_found = "Group or user not found: #{group_id} / #{user_id}"
     category_not_found = "Category not found: {id}"
+    tracker_not_found = "Tracker not found: {id}"
+    status_not_found = "Status not found: {id}"
+    available_ids = "Valid values: {items}"
     news_not_found = "News not found: {id}"
     no_search_results = "No search results found"
     issue_not_found_simple = "Issue not found"
@@ -85,6 +90,9 @@ class En(MessagesProto):
     user_update_admin_required = "Admin privilege required to update user"
     user_delete_admin_required = "Admin privilege required to delete user"
     custom_field_admin_required = "Admin privilege required to fetch custom fields"
+    project_permission_denied = (
+        "Cannot access project: {id} (archived or no permission to view)"
+    )
     group_get_admin_required = "Admin privilege required to fetch group"
     group_create_admin_required = "Admin privilege required to create group"
     group_update_admin_required = "Admin privilege required to update group"
@@ -170,7 +178,6 @@ class En(MessagesProto):
     relation_create_failed = "Failed to create relation"
     relation_delete_failed = "Failed to delete relation"
     file_upload_failed = "Failed to upload file"
-    file_upload_failed_with_path = "Failed to upload file: {path}"
     account_update_failed = "Failed to update account info"
     version_create_failed = "Failed to create version"
     version_update_failed = "Failed to update version"
@@ -212,6 +219,7 @@ class En(MessagesProto):
     sharing_label = "Sharing: {value}"
     issue_label = "Issue: #{id} {subject}"
     activity_label = "Activity: {value}"
+    project_label = "Project: {value}"
     tracker_label = "Tracker: {value}"
     priority_label = "Priority: {value}"
     assignee_label = "Assignee: {value}"
@@ -245,6 +253,7 @@ class En(MessagesProto):
     prompt_page_title = "Page title: "
     prompt_parent_page = "Parent page"
     prompt_edit_page = "Page to edit"
+    prompt_select_project = "Select project"
     prompt_select_tracker = "Select tracker"
     prompt_select_template = "Select template"
     prompt_select_template_none = "(Do not use a template)"
@@ -285,6 +294,24 @@ class En(MessagesProto):
         "Select items to update (Space to toggle, Enter to confirm)"
     )
     prompt_version_name = "Version name: "
+    prompt_project_name = "Project name: "
+    prompt_project_identifier = "Project identifier: "
+    prompt_project_homepage = "Homepage URL: "
+    prompt_select_is_public = "Visibility"
+    prompt_select_inherit_members = "Inherit members"
+    prompt_select_parent_project = "Parent project"
+    prompt_select_parent_project_none = "(No parent project)"
+    prompt_select_default_assignee = "Default assignee"
+    prompt_select_default_assignee_none = "(No default assignee)"
+    prompt_select_default_version = "Default version"
+    prompt_select_default_version_none = "(No default version)"
+    prompt_select_trackers = "Select trackers (Space to toggle, Enter to confirm)"
+    prompt_select_enabled_modules = (
+        "Select modules to enable (Space to toggle, Enter to confirm)"
+    )
+    prompt_select_issue_custom_fields = (
+        "Select custom fields to enable (Space to toggle, Enter to confirm)"
+    )
     prompt_description_optional = "Description (optional): "
     prompt_wiki_comments = "Comment (optional): "
     prompt_due_date_optional = "Due date (YYYY-MM-DD, optional): "
@@ -301,6 +328,8 @@ class En(MessagesProto):
     choice_no = "No"
     label_bool_true = "Yes"
     label_bool_false = "No"
+    label_project_public = "Public"
+    label_project_private = "Private"
     prompt_what_next = "What's next?"
     action_submit = "Submit"
     action_fill_optional = "Fill in optional items"
@@ -315,11 +344,19 @@ class En(MessagesProto):
     error_date_format = "Use YYYY-MM-DD"
     error_date_after_start = "Enter a date on or after start date {date}"
     error_numeric_required = "Enter a number"
+    error_min_length = "Enter at least {min} characters"
+    error_max_length = "Enter no more than {max} characters"
+    error_regexp_mismatch = "Invalid format (pattern: {regexp})"
     error_page_title_required = "Enter a page title"
     error_page_title_duplicate = "Duplicate page title"
     error_no_matching_project = "No matching project"
+    error_project_identifier_format = (
+        "Use up to 100 lowercase letters, digits, hyphens, and underscores "
+        "(digits only is not allowed)"
+    )
 
     # ---- field labels ----
+    field_project = "project"
     field_tracker = "tracker"
     field_subject = "subject"
     field_title = "title"
@@ -336,7 +373,17 @@ class En(MessagesProto):
     field_estimated_hours = "estimated_hours"
     field_notes = "notes"
     field_time_entry = "time_entry"
+    field_homepage = "homepage"
+    field_is_public = "is_public"
+    field_parent_project = "parent project"
+    field_inherit_members = "inherit_members"
+    field_trackers = "trackers"
+    field_enabled_modules = "enabled_module_names"
+    field_issue_custom_fields = "issue_custom_field_ids"
     field_version_name = "name"
+    field_project_name = "name"
+    field_default_assignee = "default_assigned_to_id"
+    field_default_version = "default_version_id"
     field_sharing = "sharing"
     field_hours = "hours"
     field_activity = "activity"
@@ -385,11 +432,23 @@ class En(MessagesProto):
     label_issues_visibility = "Issues visibility: {value}"
     label_time_entries_visibility = "Time entries visibility: {value}"
     label_users_visibility = "Users visibility: {value}"
-    label_permissions_header = "Permissions:"
-    label_name = "Name: {value}"
+    label_permissions_header = "Permissions: ({count})"
+    permission_category_project = "Project"
+    permission_category_issue_tracking = "Issue tracking"
+    permission_category_time_tracking = "Time tracking"
+    permission_category_news = "News"
+    permission_category_documents = "Documents"
+    permission_category_files = "Files"
+    permission_category_wiki = "Wiki"
+    permission_category_repository = "Repository"
+    permission_category_boards = "Forums"
+    permission_category_calendar = "Calendar"
+    permission_category_gantt = "Gantt"
+    permission_category_other = "Other"
     label_mail = "Mail: {value}"
     label_admin = "Admin: {value}"
-    label_admin_yes = "  Admin: yes"
+    label_yes = "yes"
+    label_no = "no"
     label_created_on = "Created on: {value}"
     label_last_login_on = "Last login: {value}"
     label_custom_fields_header = "Custom fields:"
@@ -417,6 +476,7 @@ class En(MessagesProto):
     label_due_date_field = "Due date: {value}"
     label_sharing_field = "Sharing: {value}"
     label_parent_project = "Parent project: {id} {name}"
+    label_default_version = "Default version: {id} {name}"
     label_trackers_header = "Trackers:"
     label_issue_categories_header = "Issue categories:"
     label_enabled_modules_header = "Enabled modules:"
@@ -443,18 +503,20 @@ class En(MessagesProto):
     tui_tab_switch_hint = "   (Tab:switch)"
     tui_filter_status = "Status"
     tui_filter_assignee = "Assignee"
+    tui_filter_tracker = "Tracker"
+    tui_filter_query = "Query"
     tui_filter_user = "User"
     tui_filter_hint = "Tab/h/l:column jk:move Enter:apply c:clear all Esc/f:close"
     tui_filter_hint_single = "jk:move Enter:apply c:clear Esc/f:close"
     tui_filter_title = "Filter (Esc/f to close)"
     tui_filter_title_time_entries = "Filter user (Esc/f to close)"
     tui_project_modal_title = "Switch project (Esc/p to close)"
-    tui_project_modal_hint = "jk:move Enter:switch Esc/p:close"
+    tui_project_modal_hint = "jk:move gg/G:top/bottom Enter:switch Esc/p:close"
     tui_current_project = "  [project: {name}]"
     tui_flash_project_switched = "Switched project to {name}"
     tui_project_load_failed = "Failed to load projects: {error}"
     tui_profile_modal_title = "Switch profile (Esc/P to close)"
-    tui_profile_modal_hint = "jk:move Enter:switch Esc/P:close"
+    tui_profile_modal_hint = "jk:move gg/G:top/bottom Enter:switch Esc/P:close"
     tui_current_profile = "  [profile: {name}]"
     tui_flash_profile_switched = "Switched profile to {name}"
     tui_profile_switch_invalid = (
@@ -469,30 +531,31 @@ class En(MessagesProto):
     )
     tui_status_hint_time_entries = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
     tui_flash_reloaded = "Reloaded"
+    tui_filter_unspecified = "(unspecified)"
     tui_filter_status_open_default = "open (default)"
     tui_filter_status_all = "all (open + closed)"
     tui_filter_status_closed_only = "closed only"
     tui_filter_assignee_none = "(unspecified)"
     tui_filter_assignee_me = "me"
     tui_filter_assignee_unassigned = "unassigned"
-    tui_meta_status = "Status"
-    tui_meta_priority = "Priority"
-    tui_meta_tracker = "Tracker"
-    tui_meta_assignee = "Assignee"
-    tui_meta_author = "Author"
-    tui_meta_start_date = "Start"
-    tui_meta_due_date = "Due"
-    tui_meta_progress = "Progress"
-    tui_meta_estimated_hours = "Est. hours"
-    tui_meta_spent_hours = "Spent hours"
-    tui_meta_created = "Created"
-    tui_meta_updated = "Updated"
-    tui_meta_parent = "Parent"
-    tui_meta_version = "Version"
-    tui_meta_project = "Project"
-    tui_meta_user = "User"
-    tui_meta_activity = "Activity"
-    tui_meta_issue = "Issue"
+    meta_status = "Status"
+    meta_priority = "Priority"
+    meta_tracker = "Tracker"
+    meta_assignee = "Assignee"
+    meta_author = "Author"
+    meta_start_date = "Start"
+    meta_due_date = "Due"
+    meta_progress = "Progress"
+    meta_estimated_hours = "Est. hours"
+    meta_spent_hours = "Spent hours"
+    meta_created = "Created"
+    meta_updated = "Updated"
+    meta_parent = "Parent"
+    meta_version = "Version"
+    meta_project = "Project"
+    meta_user = "User"
+    meta_activity = "Activity"
+    meta_issue = "Issue"
     tui_preview_comments_header = "Comments:"
     tui_comment_select_status_hint = (
         "Comment select: jk:move u:update D:delete Esc/q:cancel"
@@ -543,6 +606,9 @@ class En(MessagesProto):
     arg_help_profile = (
         "Profile name to use (overrides default_profile in config.toml temporarily)"
     )
+    arg_help_refresh = (
+        "Fetch without reading the cache (refreshes tracker / custom field choices)"
+    )
 
     # ---- argparse helps (common) ----
     arg_help_full_json = "Output full JSON"
@@ -564,13 +630,28 @@ class En(MessagesProto):
     arg_help_project_view_id = "Project ID"
     arg_help_project_include = "Additional info (trackers,issue_categories,enabled_modules,time_entry_activities,issue_custom_fields)"
     arg_help_project_create = "Create project"
+    arg_help_project_name_arg = "Project name (omit to enter interactively)"
     arg_help_project_name = "Project name"
-    arg_help_project_identifier = "Project identifier (alphanumeric and hyphens)"
+    arg_help_project_identifier = (
+        "Project identifier (alphanumeric and hyphens; omit to enter interactively)"
+    )
     label_project_identifier = "Project identifier"
     arg_help_description = "Description"
+    arg_help_project_homepage = "Homepage URL"
     arg_help_project_is_public = "Public visibility"
     arg_help_parent_id = "Parent project ID"
+    arg_help_project_inherit_members = "Inherit members from the parent project"
     arg_help_tracker_ids = "Tracker IDs (comma separated, e.g. 1,2,3)"
+    arg_help_enabled_module_names = (
+        "Module names to enable (comma separated, e.g. issue_tracking,wiki)"
+    )
+    arg_help_issue_custom_field_ids = (
+        "Issue custom field IDs to enable (comma separated, e.g. 1,2,3)"
+    )
+    arg_help_project_default_assigned_to_id = (
+        "User ID of the default assignee (empty string to unset)"
+    )
+    arg_help_project_default_version_id = "Default version ID (empty string to unset)"
     arg_help_project_delete = "Delete project"
     arg_help_project_delete_id = "Project ID"
     arg_help_project_update = "Update project"
@@ -585,7 +666,14 @@ class En(MessagesProto):
     arg_help_issue_filter_status = "Filter by status ID ('open'/'closed'/'*' allowed)"
     arg_help_issue_filter_tracker = "Filter by tracker ID"
     arg_help_issue_filter_priority = "Filter by priority ID"
-    arg_help_issue_filter_query = "Filter by custom query ID (see `redi query`)"
+    arg_help_issue_filter_query = (
+        "Filter by custom query ID (see `redi query`; "
+        "cannot be combined with filters other than --project_id)"
+    )
+    error_query_id_conflicts_filters = (
+        "--query_id cannot be used with {options} "
+        "(the custom query takes precedence and {options} is ignored)"
+    )
     arg_help_limit = "Limit"
     arg_help_offset = "Offset"
     arg_help_issue_list = "List issues"
@@ -605,6 +693,7 @@ class En(MessagesProto):
     arg_help_issue_update_id = "Issue ID (omit to select interactively)"
     arg_help_issue_subject_opt = "Subject"
     arg_help_issue_update_description = "Description (no value opens editor)"
+    arg_help_issue_update_project_id = "Project ID to move the issue to"
     arg_help_issue_update_tracker_id = "Tracker ID"
     arg_help_issue_status_id = "Status ID"
     arg_help_issue_fixed_version_id = "Fixed version ID"
@@ -691,6 +780,9 @@ class En(MessagesProto):
     # ---- argparse helps (user) ----
     arg_help_user_command = arg_help_crud_subcommands
     arg_help_user_list = "List users"
+    arg_help_user_status = "Filter by status (defaults to active only)"
+    arg_help_user_name_filter = "Filter by partial match on login / name / mail"
+    arg_help_user_group_id = "Filter by group ID"
     arg_help_user_create = "Create user (admin required)"
     arg_help_user_login = "Login name"
     arg_help_user_firstname = "First name"
@@ -803,11 +895,15 @@ class En(MessagesProto):
     arg_help_time_entry_user_id = "Filter by user ID ('me' allowed)"
     arg_help_time_entry_from = "Filter by start date (YYYY-MM-DD, inclusive)"
     arg_help_time_entry_to = "Filter by end date (YYYY-MM-DD, inclusive)"
+    error_invalid_date_arg = "Not a YYYY-MM-DD date: {value}"
     arg_help_time_entry_list = "List time entries"
     arg_help_time_entry_create = "Log time entry"
     arg_help_time_entry_hours = "Hours (e.g. 1.5; omit to enter interactively)"
     arg_help_time_entry_issue_id = "Issue ID"
     arg_help_time_entry_activity_id = "Activity ID"
+    arg_help_time_entry_create_activity_id = (
+        "Activity ID (required; selected interactively if omitted)"
+    )
     arg_help_time_entry_spent_on = "Date (YYYY-MM-DD, empty for today)"
     arg_help_time_entry_comments = "Comments"
     arg_help_time_entry_view = "Time entry details"
@@ -885,6 +981,10 @@ class En(MessagesProto):
     arg_help_document_category_list = "List document categories"
     arg_help_query_command = arg_help_list_only_subcommands
     arg_help_query_list = "List custom queries"
+    query_list_private = "[private]"
+    query_list_all_projects = "(all projects)"
+    query_list_project = "({name})"
+    query_list_unknown_project = "(project {id})"
     arg_help_custom_field_command = arg_help_list_only_subcommands
     arg_help_custom_field_list = "List custom fields"
 
@@ -896,8 +996,23 @@ class En(MessagesProto):
         "issue_templates endpoint not found (requires redmine_issue_templates plugin)"
     )
 
+    # ---- project files ----
+    project_files_permission_denied = (
+        "Cannot access project files: {id} (files module disabled or no permission)"
+    )
+
+    # ---- unhandled http error ----
+    http_error_unhandled = "Redmine returned an error: {status} {reason}"
+    http_error_unhandled_unknown = "Redmine returned an error"
+
+    # ---- connection error ----
+    connection_unreachable = "Cannot connect to Redmine: {url}"
+
     # ---- config_command suffix ----
     config_profile_suffix = " (profile: {name})"
+    config_profile_source_default = "default"
+    config_profile_source_option = "via --profile"
+    config_current_profile_comment = "current profile ({source})"
 
     # ---- TUI help labels (sections / common) ----
     tui_help_section_navigation = "Navigation"
@@ -915,10 +1030,10 @@ class En(MessagesProto):
     tui_help_preview_scroll_half_page = "Scroll preview up / down by half page"
     tui_help_start_search = "Start search"
     tui_help_next_prev_match = "Next / previous match"
-    tui_help_filter_status_assignee = "Filter by status/assignee (floating)"
-    tui_help_filter_user = "Filter by user (floating)"
-    tui_help_switch_project = "Switch project (floating)"
-    tui_help_switch_profile = "Switch profile (floating)"
+    tui_help_filter_issues = "Filter by status/assignee/tracker/query"
+    tui_help_filter_user = "Filter by user"
+    tui_help_switch_project = "Switch project"
+    tui_help_switch_profile = "Switch profile"
     tui_help_reload = "Reload the current tab"
     tui_help_show_or_close = "Show / close this help"
     tui_help_quit = "Quit"

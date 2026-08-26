@@ -13,6 +13,7 @@ from redi.config import (
     create_profile,
 )
 from redi.i18n import messages, select_messages
+from redi.output import eprint
 
 PROFILE_NAME = "default"
 
@@ -39,13 +40,13 @@ def _select_language() -> str:
     try:
         return inline_choice(messages.prompt_select_language, options)
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
 
 
 def handle_init(_args: argparse.Namespace) -> None:
     if _has_existing_profile():
-        print(messages.init_profile_already_exists.format(path=CONFIG_PATH))
+        eprint(messages.init_profile_already_exists.format(path=CONFIG_PATH))
         sys.exit(1)
 
     _init_profile(_select_language())
@@ -57,6 +58,7 @@ def _init_profile(language: str) -> None:
     print(messages.language_set.format(value=language, suffix=""))
 
     profile = prompt_connection_profile(Profile(), messages)
+
     result = create_profile(
         profile_name=PROFILE_NAME,
         profile=replace(profile, language=language),

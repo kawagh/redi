@@ -11,13 +11,14 @@ from typing import Any
 from prompt_toolkit import prompt as _prompt
 
 from redi.i18n import messages
+from redi.output import eprint
 
 
 def ensure_interactive(message: str) -> None:
     """標準入力がTTYでなければ、求めていた入力を示して exit 1 する。"""
     if sys.stdin.isatty():
         return
-    print(
+    eprint(
         messages.non_interactive_input_required.format(
             message=message.strip().rstrip(":").strip()
         )

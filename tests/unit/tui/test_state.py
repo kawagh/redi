@@ -24,6 +24,16 @@ class TestIssueFilter:
             f = IssueFilter(assigned_to_id="me", assigned_to_label="自分")
             assert f.is_active() is True
 
+        def test_tracker_set_is_active(self):
+            """tracker_id だけ設定でもアクティブ"""
+            f = IssueFilter(tracker_id="1", tracker_label="バグ")
+            assert f.is_active() is True
+
+        def test_query_set_is_active(self):
+            """query_id だけ設定でもアクティブ"""
+            f = IssueFilter(query_id="7", query_label="未完了")
+            assert f.is_active() is True
+
     class TestShortLabel:
         """short_label()はステータスバー表示用のラベルを返す"""
 
@@ -41,15 +51,73 @@ class TestIssueFilter:
             f = IssueFilter(assigned_to_id="me", assigned_to_label="自分")
             assert f.short_label() == "assignee=自分"
 
-        def test_both_fields(self):
-            """両方設定なら両方を空白区切りで返す"""
+        def test_tracker_only(self):
+            """tracker のみ設定なら tracker= だけ返す"""
+            f = IssueFilter(tracker_id="1", tracker_label="バグ")
+            assert f.short_label() == "tracker=バグ"
+
+        def test_all_fields(self):
+            """全て設定なら status/assignee/tracker の順に空白区切りで返す"""
             f = IssueFilter(
                 status_id="*",
                 status_label="全て (open + closed)",
                 assigned_to_id="me",
                 assigned_to_label="自分",
+                tracker_id="1",
+                tracker_label="バグ",
             )
-            assert f.short_label() == "status=全て (open + closed) assignee=自分"
+            assert (
+                f.short_label()
+                == "status=全て (open + closed) assignee=自分 tracker=バグ"
+            )
+
+        def test_query_only(self):
+            """query が有効なら query= だけ返す"""
+            f = IssueFilter(query_id="7", query_label="未完了")
+            assert f.short_label() == "query=未完了"
+
+    class TestApply:
+        """apply() は選ばれた1項目を反映し、クエリとの排他を保つ"""
+
+        def test_query_clears_other_conditions(self):
+            """クエリを選ぶと status/assignee/tracker はクリアされる
+
+            Redmine は query_id と同時に渡した条件を捨てるため、残すと
+            ステータスバーの表示が実際の絞り込みと食い違う。
+            """
+            f = IssueFilter(
+                status_id="*",
+                status_label="全て",
+                assigned_to_id="me",
+                assigned_to_label="自分",
+                tracker_id="1",
+                tracker_label="バグ",
+            )
+
+            f.apply("query", "7", "未完了")
+
+            assert f.query_id == "7"
+            assert f.status_id is None
+            assert f.assigned_to_id is None
+            assert f.tracker_id is None
+
+        def test_condition_clears_query(self):
+            """status/assignee/tracker を選ぶとクエリはクリアされる"""
+            f = IssueFilter(query_id="7", query_label="未完了")
+
+            f.apply("tracker", "1", "バグ")
+
+            assert f.tracker_id == "1"
+            assert f.query_id is None
+
+        def test_unspecified_does_not_clear_the_other_side(self):
+            """(指定なし) の選択は絞り込みを外す操作なので反対側に触らない"""
+            f = IssueFilter(query_id="7", query_label="未完了")
+
+            f.apply("tracker", None, "(指定なし)")
+
+            assert f.query_id == "7"
+            assert f.tracker_id is None
 
 
 class TestTimeEntryFilter:

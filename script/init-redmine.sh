@@ -42,7 +42,7 @@ API_KEYS_OUTPUT=$(docker compose exec -T "$SERVICE" rails runner - <<RUBY
     project.name = 'reditestプロジェクト'
     project.description = 'rediのtest用に作成されたプロジェクト'
     project.is_public = true
-    project.enabled_module_names = %w[issue_tracking time_tracking news wiki]
+    project.enabled_module_names = %w[issue_tracking time_tracking news wiki files]
     project.save!
 
     # カスタムフィールドを作成（全プロジェクト・バグトラッカーのみに適用）

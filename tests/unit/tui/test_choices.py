@@ -1,3 +1,4 @@
+from redi.i18n import messages
 from redi.tui import choices as choices_module
 
 
@@ -89,3 +90,41 @@ class TestBuildAssigneeChoices:
         )
         choices = choices_module.build_assignee_choices("1", me_id="999")
         assert [v for v, _ in choices] == [None, "me", "!*", "5"]
+
+
+class TestBuildTrackerChoices:
+    """build_tracker_choices() は issue フィルタモーダルのトラッカー選択肢を組み立てる"""
+
+    def test_first_choice_is_unspecified(self, monkeypatch):
+        """先頭は絞り込み無しを表す特殊指定 (None) で、以降に tracker が取得順に並ぶ"""
+        monkeypatch.setattr(
+            choices_module,
+            "fetch_trackers",
+            lambda: [{"id": 1, "name": "Bug"}, {"id": 2, "name": "Feature"}],
+        )
+        assert choices_module.build_tracker_choices() == [
+            (None, messages.tui_filter_unspecified),
+            ("1", "Bug"),
+            ("2", "Feature"),
+        ]
+
+
+class TestBuildQueryChoices:
+    """build_query_choices() はフィルタモーダルのクエリ選択肢を組み立てる"""
+
+    def test_lists_queries_after_unspecified(self, monkeypatch):
+        """先頭に (指定なし) を置き、クエリは API に渡せる文字列 id と名前で並ぶ"""
+        monkeypatch.setattr(
+            choices_module,
+            "list_queries_for_project",
+            lambda _project_id: [
+                {"id": 3, "name": "My open issues"},
+                {"id": 7, "name": "Updated this week"},
+            ],
+        )
+        choices = choices_module.build_query_choices("1")
+        assert choices == [
+            (None, messages.tui_filter_unspecified),
+            ("3", "My open issues"),
+            ("7", "Updated this week"),
+        ]

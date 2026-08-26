@@ -1,8 +1,15 @@
+# Issue / IssueStatus / IssueCustomField / Journal / JournalDetail が
+# 自分より下で定義される TypedDict を参照しているため、注釈の評価を遅らせる
 from __future__ import annotations
 
 from typing import NotRequired, TypedDict, cast
 
-from redi.api.exceptions import RedmineValidationException
+from redi.api.exceptions import (
+    IssueListNotFoundException,
+    ProjectNotFoundException,
+    QueryNotFoundException,
+    RedmineValidationException,
+)
 from redi.api.types import IdName
 from redi.client import client
 
@@ -105,6 +112,15 @@ def fetch_issues_page(
     limit: int | None = None,
     offset: int | None = None,
 ) -> IssuesPageResponse:
+    """イシュー一覧を1ページ分取得する
+
+    Raises:
+        IssueListNotFoundException: project_id と query_id の両方を指定して 404 が返った場合
+            (どちらが原因かはレスポンスから判別できない)
+        QueryNotFoundException: query_id だけを指定して 404 が返った場合
+        ProjectNotFoundException: project_id だけを指定して 404 が返った場合
+        requests.exceptions.HTTPError: それ以外の HTTP エラーが返った場合
+    """
     params: dict = {}
     if project_id:
         params["project_id"] = project_id
@@ -125,6 +141,16 @@ def fetch_issues_page(
     if offset is not None:
         params["offset"] = offset
     response = client.get("/issues.json", params=params)
+    # 存在しない (または閲覧できない) プロジェクト・カスタムクエリのどちらでも
+    # Redmine は 404 を返す。指定が片方だけなら原因は一意に決まるが、両方指定されている
+    # 場合はレスポンスから判別できないので、原因を断定せず切り分けを service 層に任せる
+    if response.status_code == 404:
+        if project_id and query_id:
+            raise IssueListNotFoundException(project_id, query_id)
+        if query_id:
+            raise QueryNotFoundException(query_id)
+        if project_id:
+            raise ProjectNotFoundException(project_id)
     response.raise_for_status()
     return cast(IssuesPageResponse, response.json())
 
@@ -223,6 +249,7 @@ def create_issue(
 
 def update_issue(
     issue_id: str,
+    project_id: str | None = None,
     subject: str | None = None,
     description: str | None = None,
     tracker_id: str | None = None,
@@ -242,6 +269,7 @@ def update_issue(
     """イシューを更新する
 
     Args:
+        project_id: 指定するとイシューを別プロジェクトへ移動する
         uploads: 添付ファイルのアップロード結果 (`api.attachment.upload_file` の戻り値)
 
     Raises:
@@ -249,6 +277,8 @@ def update_issue(
         requests.exceptions.HTTPError: 422 以外の HTTP エラーが返った場合
     """
     issue_data: dict = {}
+    if project_id:
+        issue_data["project_id"] = project_id
     if subject:
         issue_data["subject"] = subject
     if description is not None:

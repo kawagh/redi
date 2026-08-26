@@ -21,6 +21,7 @@ from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import project_option_parser
 from redi.cli.validator import RequiredValidator
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import news_service
 
 
@@ -29,7 +30,7 @@ def _fetch_news_list(project_id: str | None) -> list[News]:
     try:
         return news_service.list_news(project_id)
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=project_id))
+        eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
 
 
@@ -38,7 +39,7 @@ def _fetch_news(news_id: str) -> News:
     try:
         return news_service.read_news(news_id)
     except NewsNotFoundException:
-        print(messages.news_not_found.format(id=news_id))
+        eprint(messages.news_not_found.format(id=news_id))
         sys.exit(1)
 
 
@@ -117,12 +118,12 @@ def _create_news(
             summary=summary,
         )
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=project_id))
+        eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.news_create_failed)
+        eprint(messages.news_create_failed)
         sys.exit(1)
     print(messages.news_created.format(url=url))
 
@@ -145,12 +146,12 @@ def _update_news(
             summary=summary,
         )
     except NewsNotFoundException:
-        print(messages.news_not_found.format(id=news_id))
+        eprint(messages.news_not_found.format(id=news_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.news_update_failed)
+        eprint(messages.news_update_failed)
         sys.exit(1)
     print(messages.news_updated.format(url=url))
 
@@ -160,12 +161,12 @@ def _delete_news(news_id: str) -> None:
     try:
         news_service.delete_news(news_id)
     except NewsNotFoundException:
-        print(messages.news_not_found.format(id=news_id))
+        eprint(messages.news_not_found.format(id=news_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.news_delete_failed)
+        eprint(messages.news_delete_failed)
         sys.exit(1)
     print(messages.news_deleted.format(id=news_id))
 
@@ -178,7 +179,7 @@ def _edit_description(initial_text: str = "") -> str:
     """
     description = open_editor(initial_text)
     if not description:
-        print(messages.canceled_empty_text)
+        eprint(messages.canceled_empty_text)
         sys.exit(1)
     print(
         messages.prompt_field_value.format(
@@ -201,7 +202,7 @@ def _interactive_select_news_id(
     """
     news_list = _fetch_news_list(project_id)
     if not news_list:
-        print(messages.no_news_available)
+        eprint(messages.no_news_available)
         sys.exit(1)
     options: list[tuple[str, str]] = [
         (str(n["id"]), f"{n['id']} {n['title']}") for n in news_list
@@ -210,7 +211,7 @@ def _interactive_select_news_id(
     try:
         news_id = inline_choice(prompt_message, options)
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     if selected_message is not None:
         print(selected_message.format(label=labels[news_id]))
@@ -235,10 +236,10 @@ def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, s
             initial_value="description",
         )
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     if not selected:
-        print(messages.canceled_no_items_selected)
+        eprint(messages.canceled_no_items_selected)
         sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
@@ -253,7 +254,7 @@ def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, s
                 messages.prompt_summary, default=news.get("summary") or ""
             ).strip()
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     if "description" in selected:
         description = _edit_description(news["description"])
@@ -348,7 +349,7 @@ def handle_news(args: argparse.Namespace) -> None:
     if cmd == "create":
         project_id = args.project_id or config.default_project_id
         if not project_id:
-            print(messages.project_id_required)
+            eprint(messages.project_id_required)
             sys.exit(1)
         title = args.title
         summary = args.summary
@@ -361,7 +362,7 @@ def handle_news(args: argparse.Namespace) -> None:
                     # 任意項目なので空のまま確定したら設定しない
                     summary = prompt(messages.prompt_summary).strip() or None
             except (KeyboardInterrupt, EOFError):
-                print(messages.canceled)
+                eprint(messages.canceled)
                 sys.exit(1)
         description = args.description or _edit_description()
         _create_news(

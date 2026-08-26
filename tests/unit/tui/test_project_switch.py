@@ -56,7 +56,7 @@ class TestOpenProjectModal:
 
     def test_cursor_on_switched_project(self, monkeypatch):
         """切替済みならそのプロジェクトの位置にカーソルが乗り active_value が入る"""
-        monkeypatch.setattr(project_modal, "fetch_projects", lambda: PROJECTS)
+        monkeypatch.setattr(project_modal, "list_projects", lambda: PROJECTS)
         state = TuiState(project_id="2")
 
         project_modal.open_project_modal(state)
@@ -68,7 +68,7 @@ class TestOpenProjectModal:
 
     def test_unswitched_marks_config_default_project(self, monkeypatch):
         """未切替でも toml の default_project_id のプロジェクトが active になる"""
-        monkeypatch.setattr(project_modal, "fetch_projects", lambda: PROJECTS)
+        monkeypatch.setattr(project_modal, "list_projects", lambda: PROJECTS)
         monkeypatch.setattr(config, "default_project_id", "1")
         state = TuiState()
 
@@ -79,7 +79,7 @@ class TestOpenProjectModal:
 
     def test_config_identifier_is_resolved_to_id(self, monkeypatch):
         """config には identifier も設定できるので id に解決して保持する"""
-        monkeypatch.setattr(project_modal, "fetch_projects", lambda: PROJECTS)
+        monkeypatch.setattr(project_modal, "list_projects", lambda: PROJECTS)
         monkeypatch.setattr(config, "default_project_id", "beta")
         state = TuiState()
 
@@ -90,7 +90,7 @@ class TestOpenProjectModal:
 
     def test_cursor_top_when_no_current_project(self, monkeypatch):
         """未切替かつ config 未設定ならカーソルは先頭で active 無し"""
-        monkeypatch.setattr(project_modal, "fetch_projects", lambda: PROJECTS)
+        monkeypatch.setattr(project_modal, "list_projects", lambda: PROJECTS)
         monkeypatch.setattr(config, "default_project_id", None)
         state = TuiState()
 
@@ -105,7 +105,7 @@ class TestOpenProjectModal:
         def boom() -> list[Project]:
             raise requests.exceptions.RequestException("down")
 
-        monkeypatch.setattr(project_modal, "fetch_projects", boom)
+        monkeypatch.setattr(project_modal, "list_projects", boom)
         state = TuiState()
 
         project_modal.open_project_modal(state)
@@ -170,6 +170,17 @@ class TestApplyProjectSwitch:
         assert state.issue_tab.filter.status_id == "*"
         assert state.issue_tab.filter.assigned_to_id is None
         assert state.time_entry_tab.filter.user_id == TimeEntryFilter().user_id
+
+    def test_query_filter_is_cleared(self, monkeypatch):
+        """クエリはプロジェクト固有のものが混ざるので切替時にクリアされる"""
+        monkeypatch.setattr(project_modal, "reload_with_filter", lambda state: None)
+        state = TuiState()
+        state.issue_tab.filter = IssueFilter(query_id="7", query_label="My open issues")
+
+        project_modal.apply_project_switch(state, "2", "Beta")
+
+        assert state.issue_tab.filter.query_id is None
+        assert state.issue_tab.filter.is_active() is False
 
     def test_special_filters_are_preserved(self, monkeypatch):
         """me / 未割当などの特殊値はプロジェクト非依存なので保持される"""

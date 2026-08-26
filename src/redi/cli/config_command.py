@@ -18,6 +18,7 @@ from redi.config import (
     update_profile,
 )
 from redi.i18n import messages, select_messages
+from redi.output import eprint
 
 
 def add_config_parser(
@@ -91,7 +92,7 @@ def _interactive_select_profile(args: argparse.Namespace) -> bool:
     """
     profile_names = list_profile_names()
     if not profile_names:
-        print(messages.no_profiles_available)
+        eprint(messages.no_profiles_available)
         sys.exit(1)
     current_default = get_default_profile()
     options: list[tuple[str, str]] = [
@@ -106,7 +107,7 @@ def _interactive_select_profile(args: argparse.Namespace) -> bool:
             action_keys={"u": "update"},
         )
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     if action == "update":
         return _interactive_fill_config_update_args(args, selected)
