@@ -286,7 +286,7 @@ redi --version
 
 ## Redmine version
 
-`redi` is developed against Redmine 6.1.
+`redi` is developed against Redmine 6.1, 7.0.
 
 ## Development
 
