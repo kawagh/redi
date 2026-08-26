@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 from typing import NotRequired, TypedDict, cast
 
-from redi.api.exceptions import ProjectNotFoundException
+from redi.api.exceptions import ProjectNotFoundException, RedmineValidationException
 from redi.api.types import Attachment, IdName
 from redi.client import client
 
@@ -105,7 +103,8 @@ def create_news(
 
     Raises:
         ProjectNotFoundException: 対象プロジェクトが存在しない場合（HTTP 404）
-        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した
+        requests.exceptions.HTTPError: 404 / 422 以外の HTTP エラーが返った場合
     """
     body: NewsBody = {"title": title, "description": description}
     if summary is not None:
@@ -113,6 +112,8 @@ def create_news(
     response = client.post(f"/projects/{project_id}/news.json", json={"news": body})
     if response.status_code == 404:
         raise ProjectNotFoundException(project_id)
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("news", "create", response)
     response.raise_for_status()
 
 
@@ -126,7 +127,8 @@ def update_news(
 
     Raises:
         NewsNotFoundException: 対象ニュースが存在しない場合（HTTP 404）
-        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+        RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した
+        requests.exceptions.HTTPError: 404 / 422 以外の HTTP エラーが返った場合
     """
     body: NewsBody = {}
     if title is not None:
@@ -138,6 +140,8 @@ def update_news(
     response = client.put(f"/news/{news_id}.json", json={"news": body})
     if response.status_code == 404:
         raise NewsNotFoundException(news_id)
+    if response.status_code == 422:
+        raise RedmineValidationException.from_response("news", "update", response)
     response.raise_for_status()
 
 

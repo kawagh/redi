@@ -1,16 +1,10 @@
 import argparse
 import sys
 import tomllib
+from dataclasses import replace
 
-import requests
-from prompt_toolkit.validation import Validator
-
-from redi.api.account import verify_connection
-from redi.api.project import Project, fetch_projects
-from redi.cli.interactive import prompt
 from redi.cli.picker import inline_choice
-from redi.cli.validator import UrlValidator
-from redi.client import RedmineClient
+from redi.cli.profile_setup import prompt_connection_profile
 from redi.config import (
     CONFIG_PATH,
     LANGUAGE_LABELS,
@@ -18,7 +12,8 @@ from redi.config import (
     Profile,
     create_profile,
 )
-from redi.i18n import MessagesProto, messages, select_messages
+from redi.i18n import messages, select_messages
+from redi.output import eprint
 
 PROFILE_NAME = "default"
 
@@ -29,28 +24,6 @@ def add_init_parser(subparsers: argparse._SubParsersAction) -> None:
         "init",
         help=messages.arg_help_init_command,
     )
-
-
-def _fetch_projects(url: str, api_key: str, messages: MessagesProto) -> list[Project]:
-    try:
-        return fetch_projects(RedmineClient(url.rstrip("/"), api_key))
-    except requests.exceptions.RequestException as e:
-        print(messages.project_list_fetch_failed.format(error=e))
-        return []
-
-
-def _select_project_id(
-    prompt_message: str, projects: list[Project], messages: MessagesProto
-) -> str:
-    options: list[tuple[str, str]] = [
-        (str(p["id"]), f"{p['id']} {p['name']}")
-        for p in sorted(projects, key=lambda p: p["id"], reverse=True)
-    ]
-    try:
-        return inline_choice(prompt_message, options)
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        sys.exit(1)
 
 
 def _has_existing_profile() -> bool:
@@ -67,13 +40,13 @@ def _select_language() -> str:
     try:
         return inline_choice(messages.prompt_select_language, options)
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
 
 
 def handle_init(_args: argparse.Namespace) -> None:
     if _has_existing_profile():
-        print(messages.init_profile_already_exists.format(path=CONFIG_PATH))
+        eprint(messages.init_profile_already_exists.format(path=CONFIG_PATH))
         sys.exit(1)
 
     _init_profile(_select_language())
@@ -84,64 +57,11 @@ def _init_profile(language: str) -> None:
     messages = select_messages(language)
     print(messages.language_set.format(value=language, suffix=""))
 
-    non_empty_validator = Validator.from_callable(
-        lambda text: len(text.strip()) > 0,
-        error_message=messages.error_input_required,
-    )
-    try:
-        url = prompt(messages.prompt_redmine_url, validator=UrlValidator()).strip()
-        print(messages.api_key_url_hint.format(url=url.rstrip("/")))
-        api_key = prompt(
-            messages.prompt_redmine_api_key,
-            validator=non_empty_validator,
-            is_password=True,
-        ).strip()
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        sys.exit(1)
-
-    print(messages.checking_connection)
-    result = verify_connection(url, api_key, messages)
-    if not result.ok or result.user is None:
-        print(result.error)
-        sys.exit(1)
-    user = result.user
-    name = " ".join(filter(None, [user.get("firstname"), user.get("lastname")]))
-    print(messages.connection_success.format(login=user.get("login", ""), name=name))
-
-    projects = _fetch_projects(url, api_key, messages)
-    default_project_id: str | None = None
-    wiki_project_id: str | None = None
-    if projects:
-        projects_by_id = {str(p["id"]): p for p in projects}
-        default_project_id = _select_project_id(
-            messages.prompt_select_default_project, projects, messages
-        )
-        print(
-            messages.default_project_label.format(
-                name=projects_by_id[default_project_id]["name"]
-            )
-        )
-        wiki_project_id = _select_project_id(
-            messages.prompt_select_wiki_project, projects, messages
-        )
-        print(
-            messages.wiki_project_label.format(
-                name=projects_by_id[wiki_project_id]["name"]
-            )
-        )
-    else:
-        print(messages.no_project_skip_project_id)
+    profile = prompt_connection_profile(Profile(), messages)
 
     result = create_profile(
         profile_name=PROFILE_NAME,
-        profile=Profile(
-            redmine_url=url,
-            redmine_api_key=api_key,
-            default_project_id=default_project_id,
-            wiki_project_id=wiki_project_id,
-            language=language,
-        ),
+        profile=replace(profile, language=language),
     )
     if not result.created:
         sys.exit(1)

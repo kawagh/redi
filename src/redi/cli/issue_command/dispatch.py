@@ -13,6 +13,7 @@ from redi.cli.issue_command.create import handle_issue_create
 from redi.cli.issue_command.update import handle_issue_update
 from redi.cli.issue_command.view import list_issues, view_issue
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import issue_service
 
 
@@ -21,7 +22,7 @@ def add_issue_note(issue_id: str, notes: str) -> None:
     try:
         url = issue_service.add_note(issue_id, notes)
     except IssueNotFoundException:
-        print(messages.issue_not_found.format(id=issue_id))
+        eprint(messages.issue_not_found.format(id=issue_id))
         sys.exit(1)
     print(messages.comment_added.format(url=url))
 
@@ -31,14 +32,40 @@ def _delete_issue(issue_id: str) -> None:
     try:
         issue_service.delete_issue(issue_id)
     except IssueNotFoundException:
-        print(messages.issue_not_found.format(id=issue_id))
+        eprint(messages.issue_not_found.format(id=issue_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.issue_delete_failed)
+        eprint(messages.issue_delete_failed)
         sys.exit(1)
     print(messages.issue_deleted.format(id=issue_id))
+
+
+# `--query_id` を渡すと Redmine はカスタムクエリの条件を優先し、同時に渡した条件を
+# 黙って捨てる。併用が効く `--project_id` だけは対象にしない。
+_QUERY_ID_CONFLICTING_FILTERS = (
+    ("--version", "version"),
+    ("--assigned_to", "assigned_to"),
+    ("--status_id", "status_id"),
+    ("--tracker_id", "tracker_id"),
+    ("--priority_id", "priority_id"),
+)
+
+
+def _validate_query_id_filters(args: argparse.Namespace) -> None:
+    """`--query_id` と併用しても無視されるフィルタがあれば、名前を示して exit 1。"""
+    if not args.query_id:
+        return
+    ignored = [
+        option
+        for option, dest in _QUERY_ID_CONFLICTING_FILTERS
+        if getattr(args, dest, None)
+    ]
+    if not ignored:
+        return
+    eprint(messages.error_query_id_conflicts_filters.format(options=", ".join(ignored)))
+    sys.exit(1)
 
 
 def handle_issue(args: argparse.Namespace) -> None:
@@ -68,7 +95,7 @@ def handle_issue(args: argparse.Namespace) -> None:
             try:
                 issue = issue_service.read_issue(args.issue_id)
             except IssueNotFoundException:
-                print(messages.issue_not_found.format(id=args.issue_id))
+                eprint(messages.issue_not_found.format(id=args.issue_id))
                 sys.exit(1)
             confirm_delete(
                 messages.delete_target_issue.format(
@@ -77,6 +104,7 @@ def handle_issue(args: argparse.Namespace) -> None:
             )
         _delete_issue(args.issue_id)
     elif cmd == "list" or cmd is None:
+        _validate_query_id_filters(args)
         list_issues(
             project_id=args.project_id or config.default_project_id,
             fixed_version_id=args.version,

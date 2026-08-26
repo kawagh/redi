@@ -6,9 +6,9 @@ from redi import config
 from redi.api.time_entry import TimeEntryNotFoundException
 from redi.i18n import messages
 from redi.service import time_entry_service
+from redi.text_format import highlight_segments, render_meta_table
 from redi.tui.state import Renderable, TuiPosition, TuiResult, TuiState
 from redi.tui.tab import TabView, noop, noop_jump
-from redi.tui.text_format import highlight_segments, render_meta_table
 
 
 def _fetch_page_with_subjects(state: TuiState, offset: int) -> dict:
@@ -89,17 +89,17 @@ def _render_preview(state: TuiState) -> Renderable:
         ticket_cell = ""
     meta = [
         (
-            messages.tui_meta_project,
+            messages.meta_project,
             f"{project.get('name', '')} (id={project.get('id', '')})",
         ),
         (
-            messages.tui_meta_user,
+            messages.meta_user,
             f"{user.get('name', '')} (id={user.get('id', '')})",
         ),
-        (messages.tui_meta_activity, (te.get("activity") or {}).get("name", "")),
-        (messages.tui_meta_issue, ticket_cell),
-        (messages.tui_meta_created, te.get("created_on") or ""),
-        (messages.tui_meta_updated, te.get("updated_on") or ""),
+        (messages.meta_activity, (te.get("activity") or {}).get("name", "")),
+        (messages.meta_issue, ticket_cell),
+        (messages.meta_created, te.get("created_on") or ""),
+        (messages.meta_updated, te.get("updated_on") or ""),
     ]
     lines = [title, ""]
     lines.extend(render_meta_table(meta))
@@ -344,6 +344,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     (messages.tui_help_section_search, ""),
     ("  /", messages.tui_help_start_search),
     ("  n / N", messages.tui_help_next_prev_match),
+    ("  Esc", messages.tui_help_clear_search),
     (messages.tui_help_section_filter, ""),
     ("  f", messages.tui_help_filter_user),
     ("  p", messages.tui_help_switch_project),

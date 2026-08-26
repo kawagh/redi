@@ -5,6 +5,7 @@ import requests
 from redi.api.wiki import WikiPage
 from redi.i18n import messages
 from redi.service import wiki_service
+from redi.text_format import highlight_segments, render_meta_table
 from redi.tui.state import (
     Renderable,
     TuiAction,
@@ -13,7 +14,6 @@ from redi.tui.state import (
     TuiState,
 )
 from redi.tui.tab import TabView, noop, noop_jump
-from redi.tui.text_format import highlight_segments, render_meta_table
 
 
 def _wiki_project(state: TuiState) -> str | None:
@@ -92,13 +92,13 @@ def _render_preview(state: TuiState) -> Renderable:
     title = page.get("title", "")
     lines = [title, ""]
     meta = [
-        (messages.tui_meta_parent, (page.get("parent") or {}).get("title", "")),
+        (messages.meta_parent, (page.get("parent") or {}).get("title", "")),
         (
-            messages.tui_meta_version,
+            messages.meta_version,
             str(page.get("version", "")) if page.get("version") else "",
         ),
-        (messages.tui_meta_created, page.get("created_on") or ""),
-        (messages.tui_meta_updated, page.get("updated_on") or ""),
+        (messages.meta_created, page.get("created_on") or ""),
+        (messages.meta_updated, page.get("updated_on") or ""),
     ]
     lines.extend(render_meta_table(meta))
 
@@ -238,6 +238,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     (messages.tui_help_section_search, ""),
     ("  /", messages.tui_help_start_search),
     ("  n / N", messages.tui_help_next_prev_match),
+    ("  Esc", messages.tui_help_clear_search),
     (messages.tui_help_section_filter, ""),
     ("  p", messages.tui_help_switch_project),
     ("  P", messages.tui_help_switch_profile),

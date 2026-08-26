@@ -6,7 +6,8 @@ from redi.api.account import verify_connection
 from redi.cli.alias import resolve_alias
 from redi.cli.interactive import prompt
 from redi.cli.picker import inline_checkbox, inline_choice, inline_choice_with_action
-from redi.cli.validator import RequiredValidator, UrlValidator
+from redi.cli.profile_setup import prompt_connection_profile
+from redi.cli.validator import ProfileNameValidator, RequiredValidator, UrlValidator
 from redi.config import (
     CONFIG_PATH,
     SUPPORTED_LANGUAGES,
@@ -31,6 +32,7 @@ from redi.config_schema import (
     validate_top_level,
 )
 from redi.i18n import messages, select_messages
+from redi.output import eprint
 
 
 def add_config_parser(
@@ -72,7 +74,9 @@ def add_config_parser(
         "create", aliases=["c"], help=messages.arg_help_config_create, parents=parents
     )
     c_create_parser.add_argument(
-        "profile_name", help=messages.arg_help_config_create_profile_name
+        "profile_name",
+        nargs="?",
+        help=messages.arg_help_config_create_profile_name,
     )
     c_create_parser.add_argument("--url", help=messages.arg_help_config_url)
     c_create_parser.add_argument("--api_key", help=messages.arg_help_config_api_key)
@@ -119,7 +123,7 @@ def _interactive_select_profile(args: argparse.Namespace) -> bool:
     """
     profile_names = list_profile_names()
     if not profile_names:
-        print(messages.no_profiles_available)
+        eprint(messages.no_profiles_available)
         sys.exit(1)
     current_default = get_default_profile()
     options: list[tuple[str, str]] = [
@@ -134,7 +138,7 @@ def _interactive_select_profile(args: argparse.Namespace) -> bool:
             action_keys={"u": "update"},
         )
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     if action == "update":
         return _interactive_fill_config_update_args(args, selected)
@@ -271,7 +275,7 @@ def _handle_config_check(args: argparse.Namespace) -> None:
     doc = load_toml()
     profile_names = profile_names_of(doc)
     if not profile_names:
-        print(messages.no_profiles_available)
+        eprint(messages.no_profiles_available)
         sys.exit(1)
 
     if args.all:
@@ -279,10 +283,10 @@ def _handle_config_check(args: argparse.Namespace) -> None:
     else:
         name = args.profile_name or config.current_profile
         if not name:
-            print(messages.check_no_target_profile)
+            eprint(messages.check_no_target_profile)
             sys.exit(1)
         if name not in profile_names:
-            print(messages.check_profile_not_found.format(name=name, path=CONFIG_PATH))
+            eprint(messages.check_profile_not_found.format(name=name, path=CONFIG_PATH))
             sys.exit(1)
         targets = [name]
 
@@ -303,30 +307,64 @@ def _handle_config_check(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
+def _prompt_profile_name() -> str:
+    try:
+        return prompt(
+            messages.prompt_profile_name,
+            validator=ProfileNameValidator(list_profile_names()),
+        ).strip()
+    except (KeyboardInterrupt, EOFError):
+        eprint(messages.canceled)
+        sys.exit(1)
+
+
+def _confirm_set_default(profile_name: str) -> bool:
+    try:
+        selected = inline_choice(
+            messages.prompt_set_default_profile.format(name=profile_name),
+            [("yes", messages.choice_yes), ("no", messages.choice_no)],
+            default="no",
+        )
+    except (KeyboardInterrupt, EOFError):
+        eprint(messages.canceled)
+        sys.exit(1)
+    return selected == "yes"
+
+
+def _handle_config_create(args: argparse.Namespace) -> None:
+    profile = Profile(
+        redmine_url=args.url,
+        redmine_api_key=args.api_key,
+        default_project_id=args.project_id,
+        wiki_project_id=args.wiki_project_id,
+        editor=args.editor,
+        language=args.language,
+    )
+    profile_name = args.profile_name
+    set_default = args.set_default
+    # プロファイル名と接続情報が揃っていなければ init と同じ手順で対話的に補う
+    if not (profile_name and profile.redmine_url and profile.redmine_api_key):
+        profile_name = profile_name or _prompt_profile_name()
+        profile = profile.merge(prompt_connection_profile(profile, messages))
+        # 最初のプロファイルは create_profile が自動でデフォルトにするため聞かない
+        if not set_default and list_profile_names():
+            set_default = _confirm_set_default(profile_name)
+
+    result = create_profile(profile_name=profile_name, profile=profile)
+    if not result.created:
+        sys.exit(1)
+    print(messages.profile_created.format(name=profile_name))
+    if result.set_as_default or (set_default and set_default_profile(profile_name)):
+        print(messages.default_profile_set.format(name=profile_name))
+
+
 def handle_config(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.config_command)
     if cmd == "check":
         _handle_config_check(args)
         return
     if cmd == "create":
-        result = create_profile(
-            profile_name=args.profile_name,
-            profile=Profile(
-                redmine_url=args.url,
-                redmine_api_key=args.api_key,
-                default_project_id=args.project_id,
-                wiki_project_id=args.wiki_project_id,
-                editor=args.editor,
-                language=args.language,
-            ),
-        )
-        if not result.created:
-            sys.exit(1)
-        print(messages.profile_created.format(name=args.profile_name))
-        if result.set_as_default:
-            print(messages.default_profile_set.format(name=args.profile_name))
-        elif args.set_default and set_default_profile(args.profile_name):
-            print(messages.default_profile_set.format(name=args.profile_name))
+        _handle_config_create(args)
         return
     if cmd != "update":
         show_config(full=args.full)

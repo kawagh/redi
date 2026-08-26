@@ -10,12 +10,22 @@ issue 非依存のカスタムフィールド入力は cli/custom_field_prompt.p
 from datetime import date
 
 from redi.api.membership import fetch_project_users
-from redi.api.version import fetch_versions
 from redi.cli.interactive import prompt
 from redi.cli.keybinding import date_key_bindings, digit_and_period_key_bindings
 from redi.cli.picker import inline_choice
 from redi.cli.validator import DateValidator, DueDateValidator, HourValidator
 from redi.i18n import messages
+from redi.service import project_service, version_service
+
+
+def prompt_project(default: str = "") -> str:
+    """プロジェクトを選ばせて数値の id を返す。"""
+    projects = project_service.list_projects()
+    options: list[tuple[str, str]] = [(str(p["id"]), p["name"]) for p in projects]
+    labels = dict(options)
+    value = inline_choice(messages.prompt_select_project, options, default=default)
+    print(messages.project_label.format(value=labels[value]))
+    return value
 
 
 def prompt_assignee(project_id: str, default: str = "") -> str:
@@ -32,7 +42,7 @@ def prompt_assignee(project_id: str, default: str = "") -> str:
 
 def prompt_fixed_version(project_id: str, default: str = "") -> str:
     """対象バージョンを選ばせて id を返す。「なし」を選んだ場合は空文字。"""
-    versions = fetch_versions(project_id)
+    versions = version_service.list_versions(project_id)
     options: list[tuple[str, str]] = [
         ("", messages.prompt_select_fixed_version_none)
     ] + [(str(v["id"]), f"{v['name']} ({v['status']})") for v in versions]

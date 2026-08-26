@@ -12,7 +12,7 @@ services:
       - 3070:3000
 
   redmine-for-dogfooding:
-    image: redmine:6.1
+    image: redmine:7.0
     profiles:
       - dogfooding
     restart: always

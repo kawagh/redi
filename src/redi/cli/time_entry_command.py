@@ -8,9 +8,8 @@ from prompt_toolkit.validation import Validator
 
 from redi import config
 from redi.api.enumeration import fetch_time_entry_activities
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.issue import Issue, IssueNotFoundException
-from redi.api.project import fetch_projects
 from redi.api.time_entry import TimeEntry, TimeEntryNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
@@ -22,9 +21,10 @@ from redi.cli.keybinding import (
 )
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import SharedOptionParser
-from redi.cli.validator import DateValidator, HourValidator
+from redi.cli.validator import DateValidator, HourValidator, is_yyyy_mm_dd
 from redi.i18n import messages
-from redi.service import issue_service, time_entry_service
+from redi.output import eprint
+from redi.service import issue_service, project_service, time_entry_service
 
 
 def _read_issue(issue_id: str) -> Issue:
@@ -32,7 +32,7 @@ def _read_issue(issue_id: str) -> Issue:
     try:
         return issue_service.read_issue(issue_id)
     except IssueNotFoundException:
-        print(messages.issue_not_found.format(id=issue_id))
+        eprint(messages.issue_not_found.format(id=issue_id))
         sys.exit(1)
 
 
@@ -40,7 +40,7 @@ def _fetch_time_entry_or_exit(time_entry_id: str) -> TimeEntry:
     """作業時間を取得する。存在しなければ見つからないと伝えて exit 1。"""
     te = time_entry_service.read_time_entry(time_entry_id)
     if te is None:
-        print(messages.time_entry_not_found.format(id=time_entry_id))
+        eprint(messages.time_entry_not_found.format(id=time_entry_id))
         sys.exit(1)
     return te
 
@@ -113,7 +113,7 @@ def create_time_entry(
     `redi issue update --hours` からも使う。
     """
     if not issue_id and not project_id:
-        print(messages.issue_or_project_id_required)
+        eprint(messages.issue_or_project_id_required)
         sys.exit(1)
     try:
         created = time_entry_service.create_time_entry(
@@ -124,10 +124,13 @@ def create_time_entry(
             spent_on=spent_on,
             comments=comments,
         )
+    except ProjectNotFoundException as e:
+        eprint(messages.project_not_found.format(id=e.project_id))
+        sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.time_entry_create_failed)
+        eprint(messages.time_entry_create_failed)
         sys.exit(1)
     print(
         messages.time_entry_created.format(
@@ -156,7 +159,7 @@ def _update_time_entry(
         or comments is not None
     )
     if not has_changes:
-        print(messages.update_canceled_no_changes)
+        eprint(messages.update_canceled_no_changes)
         sys.exit(1)
     try:
         time_entry_service.update_time_entry(
@@ -168,10 +171,16 @@ def _update_time_entry(
             spent_on=spent_on,
             comments=comments,
         )
+    except TimeEntryNotFoundException:
+        eprint(messages.time_entry_not_found.format(id=time_entry_id))
+        sys.exit(1)
+    except ProjectNotFoundException as e:
+        eprint(messages.project_not_found.format(id=e.project_id))
+        sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.time_entry_update_failed)
+        eprint(messages.time_entry_update_failed)
         sys.exit(1)
     print(messages.time_entry_updated.format(id=time_entry_id))
 
@@ -181,14 +190,28 @@ def _delete_time_entry(time_entry_id: str) -> None:
     try:
         time_entry_service.delete_time_entry(time_entry_id)
     except TimeEntryNotFoundException:
-        print(messages.time_entry_not_found.format(id=time_entry_id))
+        eprint(messages.time_entry_not_found.format(id=time_entry_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.time_entry_delete_failed)
+        eprint(messages.time_entry_delete_failed)
         sys.exit(1)
     print(messages.time_entry_deleted.format(id=time_entry_id))
+
+
+def _date_filter(value: str) -> str:
+    """`--from` / `--to` を実在する YYYY-MM-DD として検証する。
+
+    不正な値を黙って無視すると、絞り込んだつもりで全件が返り工数集計を誤るため、
+    argparse の段階で使用方法を示して終了する。
+    """
+    text = value.strip()
+    if not is_yyyy_mm_dd(text):
+        raise argparse.ArgumentTypeError(
+            messages.error_invalid_date_arg.format(value=value)
+        )
+    return text
 
 
 def _time_entry_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
@@ -199,11 +222,13 @@ def _time_entry_list_option_parser(*, postfix: bool = False) -> argparse.Argumen
     parser.add_argument(
         "--from",
         dest="from_date",
+        type=_date_filter,
         help=messages.arg_help_time_entry_from,
     )
     parser.add_argument(
         "--to",
         dest="to_date",
+        type=_date_filter,
         help=messages.arg_help_time_entry_to,
     )
     parser.add_argument("--limit", "-l", type=int, help=messages.arg_help_limit)
@@ -244,7 +269,7 @@ def add_time_entry_parser(
         "--project_id", "-p", help=messages.arg_help_project_id
     )
     te_create_parser.add_argument(
-        "--activity_id", "-a", help=messages.arg_help_time_entry_activity_id
+        "--activity_id", "-a", help=messages.arg_help_time_entry_create_activity_id
     )
     te_create_parser.add_argument(
         "--spent_on", help=messages.arg_help_time_entry_spent_on
@@ -302,6 +327,16 @@ def add_time_entry_parser(
     )
 
 
+def _lacks_required_time_entry_create_args(args: argparse.Namespace) -> bool:
+    """`time_entry create` に Redmine が必須とする値が揃っていないか。
+
+    対象(イシュー/プロジェクト)・時間・作業分類のどれかが欠けていれば対話で補う。
+    プロジェクトは未指定でも設定の既定値にフォールバックするため、対象は揃っているとみなす。
+    """
+    has_target = bool(args.issue_id or args.project_id or config.default_project_id)
+    return not has_target or args.hours is None or not args.activity_id
+
+
 def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
     try:
         if not args.issue_id and not args.project_id:
@@ -320,7 +355,7 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
                     )
                 )
             else:
-                projects = fetch_projects()
+                projects = project_service.list_projects()
                 valid_values: set[str] = set()
                 for p in projects:
                     valid_values.add(str(p["id"]))
@@ -342,12 +377,13 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
                     completer=completer,
                 ).strip()
                 args.project_id = project_id
-        hours_str = prompt(
-            messages.prompt_hours,
-            validator=HourValidator(),
-            key_bindings=digit_and_period_key_bindings(),
-        ).strip()
-        args.hours = float(hours_str)
+        if args.hours is None:
+            hours_str = prompt(
+                messages.prompt_hours,
+                validator=HourValidator(),
+                key_bindings=digit_and_period_key_bindings(),
+            ).strip()
+            args.hours = float(hours_str)
         if not args.activity_id:
             activities = fetch_time_entry_activities()
             activity_options: list[tuple[str, str]] = [
@@ -372,7 +408,7 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
         if not args.comments:
             args.comments = prompt(messages.prompt_comment).strip() or None
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
 
 
@@ -388,10 +424,10 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
     try:
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     if not selected:
-        print(messages.canceled_no_items_selected)
+        eprint(messages.canceled_no_items_selected)
         sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
@@ -449,14 +485,14 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
                 )
                 args.issue_id = issue_id
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
 
 
 def handle_time_entry(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.time_entry_command)
     if cmd == "create":
-        if args.hours is None:
+        if _lacks_required_time_entry_create_args(args):
             _interactive_fill_time_entry_create_args(args)
         project_id = args.project_id or config.default_project_id
         create_time_entry(

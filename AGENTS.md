@@ -36,6 +36,8 @@ This file provides guidance to Agents when working with code in this repository.
 - 非TTY環境で引数が不足した場合は、対話に入らず何の入力を求めたかを示して exit 1 する
     - `redi.cli.interactive` の `prompt` / `ensure_interactive` を経由させる
     - `inline_choice` / `inline_checkbox` / `open_editor` は内部で `ensure_interactive` を呼んでいる
+- エラーや失敗の通知は `redi.output` の `eprint` で標準エラー出力に出す
+    - キャンセルによる正常終了と、正常な結果は標準出力のまま
 
 ## TUI 設計方針
 

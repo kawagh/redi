@@ -1,16 +1,114 @@
 import argparse
+import json
+import sys
+from pathlib import Path
 
-from redi.api.attachment import (
-    delete_attachment,
-    download_attachment,
-    fetch_attachment,
-    read_attachment,
-    resolve_download_path,
-    update_attachment,
-)
+import requests
+
+from redi.api.attachment import AttachmentNotFoundException
+from redi.api.exceptions import print_http_error_body
+from redi.api.types import Attachment
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete, confirm_overwrite
 from redi.i18n import messages
+from redi.output import eprint
+from redi.service import attachment_service
+
+
+def _fetch_attachment(attachment_id: str) -> Attachment:
+    """添付ファイルのメタ情報を取得する。存在しない場合は exit 1。"""
+    try:
+        return attachment_service.read_attachment(attachment_id)
+    except AttachmentNotFoundException:
+        eprint(messages.attachment_not_found.format(id=attachment_id))
+        sys.exit(1)
+
+
+def _view_attachment(attachment_id: str, full: bool = False) -> None:
+    """添付ファイルの詳細を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
+    attachment = _fetch_attachment(attachment_id)
+    if full:
+        print(json.dumps(attachment, ensure_ascii=False))
+        return
+    lines = [
+        f"{attachment['id']} {attachment['filename']}",
+        messages.label_size.format(value=attachment.get("filesize", "")),
+        messages.label_kind.format(value=attachment.get("content_type", "")),
+    ]
+    author = attachment.get("author") or {}
+    if author:
+        lines.append(messages.label_author.format(value=author.get("name", "")))
+    if attachment.get("created_on"):
+        lines.append(messages.label_created_on.format(value=attachment["created_on"]))
+    if attachment.get("description"):
+        lines.append(
+            messages.label_description_field.format(value=attachment["description"])
+        )
+    if attachment.get("content_url"):
+        lines.append(messages.label_url_field.format(value=attachment["content_url"]))
+    print("\n".join(lines))
+
+
+def _download_attachment(attachment: Attachment, path: Path) -> None:
+    """添付ファイルを保存し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        attachment_service.download_attachment(attachment, path)
+    except attachment_service.UnexpectedContentUrlException as e:
+        eprint(messages.attachment_content_url_unexpected.format(url=e.url))
+        sys.exit(1)
+    except AttachmentNotFoundException as e:
+        eprint(messages.attachment_not_found.format(id=e.attachment_id))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        eprint(e)
+        print_http_error_body(e)
+        eprint(messages.attachment_download_failed)
+        sys.exit(1)
+    except OSError as e:
+        eprint(e)
+        eprint(messages.attachment_download_failed)
+        sys.exit(1)
+    print(messages.attachment_downloaded.format(path=path))
+
+
+def _update_attachment(
+    attachment_id: str,
+    filename: str | None = None,
+    description: str | None = None,
+) -> None:
+    """添付ファイルを更新し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        attachment_service.update_attachment(
+            attachment_id, filename=filename, description=description
+        )
+    except AttachmentNotFoundException:
+        eprint(messages.attachment_not_found.format(id=attachment_id))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        eprint(e)
+        print_http_error_body(e)
+        eprint(messages.attachment_update_failed)
+        sys.exit(1)
+    print(
+        messages.attachment_updated.format(
+            url=attachment_service.attachment_url(attachment_id)
+        )
+    )
+
+
+def _delete_attachment(attachment_id: str) -> None:
+    """添付ファイルを削除し、結果を標準出力に出す。失敗時は exit 1。"""
+    try:
+        attachment_service.delete_attachment(attachment_id)
+    except AttachmentNotFoundException:
+        eprint(messages.attachment_not_found.format(id=attachment_id))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        eprint(e)
+        print_http_error_body(e)
+        eprint(messages.attachment_delete_failed)
+        sys.exit(1)
+    print(messages.attachment_deleted.format(id=attachment_id))
 
 
 def add_attachment_parser(
@@ -80,27 +178,30 @@ def add_attachment_parser(
 def handle_attachment(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.attachment_command)
     if cmd == "view":
-        read_attachment(args.attachment_id, full=args.full)
+        _view_attachment(args.attachment_id, full=args.full)
     elif cmd == "download":
-        attachment = fetch_attachment(args.attachment_id)
-        path = resolve_download_path(attachment, args.output)
+        attachment = _fetch_attachment(args.attachment_id)
+        path = attachment_service.resolve_download_path(attachment, args.output)
         if path.exists() and not args.yes:
             confirm_overwrite(messages.overwrite_target_file.format(path=path))
-        download_attachment(attachment, path)
+        _download_attachment(attachment, path)
     elif cmd == "update":
-        update_attachment(
+        if args.filename is None and args.description is None:
+            print(messages.update_canceled)
+            sys.exit()
+        _update_attachment(
             attachment_id=args.attachment_id,
             filename=args.filename,
             description=args.description,
         )
     elif cmd == "delete":
         if not args.yes:
-            attachment = fetch_attachment(args.attachment_id)
+            attachment = _fetch_attachment(args.attachment_id)
             confirm_delete(
                 messages.delete_target_attachment.format(
                     id=attachment["id"], filename=attachment["filename"]
                 )
             )
-        delete_attachment(args.attachment_id)
+        _delete_attachment(args.attachment_id)
     else:
         args._print_help()

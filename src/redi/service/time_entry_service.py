@@ -4,8 +4,8 @@ CLI と TUI で共通の手順をここに置く。HTTP とステータスコー
 """
 
 from redi.api import time_entry as time_entry_api
-from redi.api.project import resolve_project_id
 from redi.api.time_entry import TimeEntriesPageResponse, TimeEntry
+from redi.service.project_service import resolve_project_id
 
 COMMENT_PREVIEW_MAX_LEN = 30
 
@@ -16,7 +16,8 @@ def format_time_entry_line(
     issue_subjects: dict[int, str] | None = None,
 ) -> str:
     """作業時間 1 件を CLI の一覧 / TUI の行として表示する文字列に整える。"""
-    # 列順: id / 日付 / 人 / 時間 / チケット(またはプロジェクト名) / コメント
+    # 列順: id / 日付 / 人 / 時間 / 活動 / チケット(またはプロジェクト名) / コメント
+    # 活動は `view` に合わせて時間の直後に置く。
     parts = [str(te["id"]), f"({te['spent_on']})"]
     if include_user:
         user = te.get("user") or {}
@@ -24,6 +25,10 @@ def format_time_entry_line(
         if name:
             parts.append(name)
     parts.append(f"{te['hours']}h")
+    activity = te.get("activity") or {}
+    activity_name = activity.get("name")
+    if activity_name:
+        parts.append(activity_name)
     issue = te.get("issue") or {}
     issue_id = issue.get("id")
     if issue_id:
@@ -120,6 +125,7 @@ def update_time_entry(
     """作業時間を更新する。project_id は数値の id に解決してから渡す。
 
     Raises:
+        TimeEntryNotFoundException: 対象の作業時間が存在しない (HTTP 404)
         RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """

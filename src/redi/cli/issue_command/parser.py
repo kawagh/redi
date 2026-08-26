@@ -133,6 +133,10 @@ def add_issue_parser(
         default=None,
         help=messages.arg_help_issue_update_description,
     )
+    # `issue list` の `-p` はフィルタなので、誤ってイシューを移動させないよう短縮形は付けない
+    i_update_parser.add_argument(
+        "--project_id", help=messages.arg_help_issue_update_project_id
+    )
     i_update_parser.add_argument(
         "--tracker_id", "-t", help=messages.arg_help_issue_update_tracker_id
     )
