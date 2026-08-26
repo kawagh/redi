@@ -24,6 +24,7 @@ from redi.api.exceptions import (
 from redi.api.issue import (
     Issue,
     IssueNotFoundException,
+    IssueStatus,
     WatcherNotFoundException,
 )
 from redi.api.issue_relation import RelationNotFoundException
@@ -98,10 +99,10 @@ class IssueUpdateArgs:
         return cls(**{f.name: getattr(args, f.name) for f in fields(cls)})
 
 
-def _read_issue(issue_id: str) -> Issue:
+def _read_issue(issue_id: str, include: str = "") -> Issue:
     """更新対象のイシューを取得する。存在しない場合は exit 1。"""
     try:
-        return issue_service.read_issue(issue_id)
+        return issue_service.read_issue(issue_id, include=include)
     except IssueNotFoundException:
         eprint(messages.issue_not_found.format(id=issue_id))
         sys.exit(1)
@@ -125,10 +126,24 @@ def _interactive_select_issue_id() -> str:
     return issue_id
 
 
+def _selectable_statuses(current: Issue) -> list[IssueStatus]:
+    """更新で選べるステータスを返す。
+
+    ワークフロー上そのイシューから遷移できるステータス (`allowed_statuses`) に絞る。
+    プロジェクトで使っていないステータスを選択肢から外すのが目的。
+    `allowed_statuses` を返さない Redmine もあるため、無ければ全ステータスに戻す。
+    """
+    allowed = current.get("allowed_statuses")
+    if allowed:
+        return allowed
+    return fetch_issue_statuses()
+
+
 def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
     # 呼び出し側で issue_id は解決済み
     assert args.issue_id is not None
-    current = _read_issue(args.issue_id)
+    # ステータスの選択肢を、現在のステータスから遷移できるものだけに絞るために引く
+    current = _read_issue(args.issue_id, include="allowed_statuses")
     field_values: list[tuple[str, str]] = [
         ("project", messages.field_project),
         ("tracker", messages.field_tracker),
@@ -215,7 +230,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         if "description" in selected:
             args.description = ""
         if "status" in selected:
-            statuses = fetch_issue_statuses()
+            statuses = _selectable_statuses(current)
             status_options: list[tuple[str, str]] = [
                 (str(s["id"]), s["name"]) for s in statuses
             ]

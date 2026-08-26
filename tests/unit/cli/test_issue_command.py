@@ -499,3 +499,87 @@ class TestIssueUpdateUnknownIdRejected:
 
         assert choices["tracker_id"] == "1"
         assert choices["status_id"] == "2"
+
+
+class TestIssueUpdateStatusChoices:
+    """`issue update` の対話でステータスを選ぶとき
+
+    ステータス一覧には活動中のプロジェクトで使っていないものも並ぶため、
+    そのイシューから遷移できるステータスだけに絞る。
+    """
+
+    @pytest.fixture
+    def selected_options(self, monkeypatch):
+        """ステータスだけ選んだ対話にして、提示された選択肢を記録する"""
+        monkeypatch.setattr(
+            update_module, "fetch_custom_fields", lambda *args, **kwargs: None
+        )
+        monkeypatch.setattr(
+            update_module,
+            "inline_checkbox",
+            lambda *args, **kwargs: ["status"],
+        )
+        recorded: list[tuple[str, str]] = []
+
+        def inline_choice(message, options, default=None):
+            recorded.extend(options)
+            return options[0][0]
+
+        monkeypatch.setattr(update_module, "inline_choice", inline_choice)
+        return recorded
+
+    def _stub_read_issue(self, monkeypatch, issue):
+        """read_issue をスタブし、渡された include を記録して返す"""
+        called = {}
+
+        def read_issue(issue_id, include=""):
+            called["include"] = include
+            return issue
+
+        monkeypatch.setattr(update_module.issue_service, "read_issue", read_issue)
+        return called
+
+    def test_limits_to_allowed_statuses(self, selected_options, monkeypatch):
+        """遷移できるステータス (allowed_statuses) だけを選択肢に出す"""
+        called = self._stub_read_issue(
+            monkeypatch,
+            {
+                "project": {"id": 1},
+                "tracker": {"id": 1},
+                "status": {"id": 2, "name": "進行中"},
+                "allowed_statuses": [
+                    {"id": 2, "name": "進行中"},
+                    {"id": 10, "name": "レビュー"},
+                ],
+            },
+        )
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert "allowed_statuses" in called["include"].split(",")
+        assert selected_options == [("2", "進行中"), ("10", "レビュー")]
+
+    def test_falls_back_to_all_statuses(self, selected_options, monkeypatch):
+        """allowed_statuses を返さない Redmine では全ステータスを出す"""
+        self._stub_read_issue(
+            monkeypatch,
+            {
+                "project": {"id": 1},
+                "tracker": {"id": 1},
+                "status": {"id": 2, "name": "進行中"},
+            },
+        )
+        monkeypatch.setattr(
+            update_module,
+            "fetch_issue_statuses",
+            lambda refresh=False: [
+                {"id": 1, "name": "新規"},
+                {"id": 2, "name": "進行中"},
+            ],
+        )
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert selected_options == [("1", "新規"), ("2", "進行中")]
