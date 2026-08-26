@@ -131,12 +131,8 @@ def _selectable_statuses(current: Issue) -> list[IssueStatus]:
 
     ワークフロー上そのイシューから遷移できるステータス (`allowed_statuses`) に絞る。
     プロジェクトで使っていないステータスを選択肢から外すのが目的。
-    `allowed_statuses` を返さない Redmine もあるため、無ければ全ステータスに戻す。
     """
-    allowed = current.get("allowed_statuses")
-    if allowed:
-        return allowed
-    return fetch_issue_statuses()
+    return current["allowed_statuses"]
 
 
 def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:

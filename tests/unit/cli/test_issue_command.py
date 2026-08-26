@@ -559,27 +559,3 @@ class TestIssueUpdateStatusChoices:
 
         assert "allowed_statuses" in called["include"].split(",")
         assert selected_options == [("2", "進行中"), ("10", "レビュー")]
-
-    def test_falls_back_to_all_statuses(self, selected_options, monkeypatch):
-        """allowed_statuses を返さない Redmine では全ステータスを出す"""
-        self._stub_read_issue(
-            monkeypatch,
-            {
-                "project": {"id": 1},
-                "tracker": {"id": 1},
-                "status": {"id": 2, "name": "進行中"},
-            },
-        )
-        monkeypatch.setattr(
-            update_module,
-            "fetch_issue_statuses",
-            lambda refresh=False: [
-                {"id": 1, "name": "新規"},
-                {"id": 2, "name": "進行中"},
-            ],
-        )
-        args = IssueUpdateArgs(issue_id="42")
-
-        update_module._interactive_fill_issue_update_args(args)
-
-        assert selected_options == [("1", "新規"), ("2", "進行中")]
