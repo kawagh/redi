@@ -1,7 +1,7 @@
 from typing import NotRequired, TypedDict, cast
 
 from redi.api.exceptions import RedmineValidationException
-from redi.client import client
+from redi.client import RedmineClient, client
 
 
 class MyAccount(TypedDict):
@@ -22,13 +22,20 @@ class MyAccount(TypedDict):
     custom_fields: NotRequired[list[dict]]
 
 
-def fetch_my_account() -> MyAccount:
+def fetch_my_account(
+    api_client: RedmineClient | None = None, timeout: float | None = None
+) -> MyAccount:
     """自分のアカウントを取得する
+
+    `api_client` は config 未確定の `redi init` / `redi config create` から、
+    入力されたばかりの URL/API キーで呼ぶために受ける。省略時はグローバルの client を使う。
+    `timeout` は同じく接続確認から、応答が返らない URL に待たされないために受ける。
 
     Raises:
         requests.exceptions.HTTPError: HTTP エラーが返った場合
     """
-    response = client.get("/my/account.json")
+    target = api_client or client
+    response = target.get("/my/account.json", timeout=timeout)
     response.raise_for_status()
     return cast("MyAccount", response.json()["user"])
 

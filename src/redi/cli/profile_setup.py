@@ -9,6 +9,7 @@ import sys
 import requests
 from prompt_toolkit.validation import Validator
 
+from redi.api.me import MyAccount, fetch_my_account
 from redi.api.project import Project, fetch_projects
 from redi.cli.interactive import prompt
 from redi.cli.picker import inline_choice
@@ -18,16 +19,16 @@ from redi.config import Profile
 from redi.i18n import MessagesProto
 from redi.output import eprint
 
+# 接続確認は入力されたばかりの URL に対して行うため、応答が返らないときに
+# 待たされ続けないよう timeout を置く
+_VERIFY_TIMEOUT_SECONDS = 10
 
-def _verify_connection(url: str, api_key: str, messages: MessagesProto) -> dict | None:
+
+def _verify_connection(
+    api_client: RedmineClient, messages: MessagesProto
+) -> MyAccount | None:
     try:
-        response = requests.get(
-            f"{url}/my/account.json",
-            headers={"X-Redmine-API-Key": api_key},
-            timeout=10,
-        )
-        response.raise_for_status()
-        return response.json().get("user")
+        return fetch_my_account(api_client, timeout=_VERIFY_TIMEOUT_SECONDS)
     except requests.exceptions.HTTPError as e:
         if e.response is not None:
             eprint(
@@ -42,9 +43,11 @@ def _verify_connection(url: str, api_key: str, messages: MessagesProto) -> dict 
     return None
 
 
-def _fetch_projects(url: str, api_key: str, messages: MessagesProto) -> list[Project]:
+def _fetch_projects(
+    api_client: RedmineClient, messages: MessagesProto
+) -> list[Project]:
     try:
-        return fetch_projects(RedmineClient(url.rstrip("/"), api_key))
+        return fetch_projects(api_client)
     except requests.exceptions.RequestException as e:
         eprint(messages.project_list_fetch_failed.format(error=e))
         return []
@@ -89,14 +92,14 @@ def _prompt_credentials(current: Profile, messages: MessagesProto) -> tuple[str,
 
 
 def _select_project_ids(
-    url: str, api_key: str, current: Profile, messages: MessagesProto
+    api_client: RedmineClient, current: Profile, messages: MessagesProto
 ) -> tuple[str | None, str | None]:
     default_project_id = current.default_project_id
     wiki_project_id = current.wiki_project_id
     if default_project_id and wiki_project_id:
         return default_project_id, wiki_project_id
 
-    projects = _fetch_projects(url, api_key, messages)
+    projects = _fetch_projects(api_client, messages)
     if not projects:
         print(messages.no_project_skip_project_id)
         return default_project_id, wiki_project_id
@@ -130,16 +133,17 @@ def prompt_connection_profile(current: Profile, messages: MessagesProto) -> Prof
     入力が中断された場合は exit 1 する。
     """
     url, api_key = _prompt_credentials(current, messages)
+    api_client = RedmineClient(url.rstrip("/"), api_key)
 
     print(messages.checking_connection)
-    user = _verify_connection(url, api_key, messages)
+    user = _verify_connection(api_client, messages)
     if user is None:
         sys.exit(1)
     name = " ".join(filter(None, [user.get("firstname"), user.get("lastname")]))
     print(messages.connection_success.format(login=user.get("login", ""), name=name))
 
     default_project_id, wiki_project_id = _select_project_ids(
-        url, api_key, current, messages
+        api_client, current, messages
     )
     return Profile(
         redmine_url=url,
