@@ -2,7 +2,7 @@ import argparse
 import sys
 
 from redi.cli.alias import resolve_alias
-from redi.cli.interactive import canceled_as_exit, canceled_as_flag, prompt
+from redi.cli.interactive import canceled_as_exit, prompt
 from redi.cli.picker import inline_checkbox, inline_choice, inline_choice_with_action
 from redi.cli.profile_setup import prompt_connection_profile
 from redi.cli.validator import ProfileNameValidator, RequiredValidator, UrlValidator
@@ -133,11 +133,11 @@ def _interactive_fill_config_update_args(
 ) -> bool:
     """更新する項目を選ばせて値を入力し、args に反映する。
 
-    後続の更新フローへ流す場合 True を返す。キャンセル時は False。
+    後続の更新フローへ流す場合 True を返す。項目を選ばなかった場合は False。
     """
     current = read_profile(profile)
     field_values = _update_field_values(profile)
-    with canceled_as_flag() as canceled:
+    with canceled_as_exit():
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
         if not selected:
             print(messages.canceled_no_items_selected)
@@ -186,8 +186,6 @@ def _interactive_fill_config_update_args(
             )
         if "set_default" in selected:
             args.default_profile = profile
-    if canceled:
-        return False
     args.profile_name = profile
     return True
 

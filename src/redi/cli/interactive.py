@@ -6,11 +6,8 @@
     対話に入る前にTTYを確認し、求めていた入力を示して終了する。
 
 キャンセル (Ctrl-C / Ctrl-D) の扱い:
-    対話をキャンセルしたときの通知先と終了の仕方は次の2通りしかない。
-    どちらを選んだかが呼び出し側から読み取れるよう、コンテキストマネージャに畳んである。
-
-    - `canceled_as_exit`: 異常終了として標準エラーに通知して exit 1 する
-    - `canceled_as_flag`: 正常終了として標準出力に通知し、呼び出し元へ処理を戻す
+    対話をキャンセルしたら `canceled_as_exit` が異常終了として
+    標準エラーに通知して exit 1 する。
 """
 
 import sys
@@ -58,27 +55,3 @@ def canceled_as_exit(notice: str | None = None) -> Iterator[None]:
     except (KeyboardInterrupt, EOFError):
         eprint(notice or messages.canceled)
         sys.exit(1)
-
-
-class CanceledFlag:
-    """`canceled_as_flag` がキャンセルの有無を呼び出し元へ伝えるためのフラグ。"""
-
-    def __init__(self) -> None:
-        self.canceled = False
-
-    def __bool__(self) -> bool:
-        return self.canceled
-
-
-@contextmanager
-def canceled_as_flag() -> Iterator[CanceledFlag]:
-    """キャンセルを掴んで標準出力に通知し、フラグを立てて先へ進める。
-
-    キャンセルを正常終了として扱い、呼び出し元に後始末を任せたい箇所で使う。
-    """
-    flag = CanceledFlag()
-    try:
-        yield flag
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        flag.canceled = True

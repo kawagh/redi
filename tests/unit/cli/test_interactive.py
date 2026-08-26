@@ -74,22 +74,3 @@ class TestCanceledAsExit:
         with pytest.raises(SystemExit), interactive.canceled_as_exit("中止しました"):
             raise KeyboardInterrupt
         assert "中止しました" in capsys.readouterr().err
-
-
-class TestCanceledAsFlag:
-    """canceled_as_flag()はキャンセルを標準出力に通知して呼び出し元へ戻す"""
-
-    @pytest.mark.parametrize("error", [KeyboardInterrupt, EOFError])
-    def test_raises_flag_on_cancel(self, error, capsys):
-        """キャンセルを握りつぶしてフラグを立てる"""
-        with interactive.canceled_as_flag() as canceled:
-            raise error
-        assert canceled
-        assert messages.canceled in capsys.readouterr().out
-
-    def test_flag_is_falsy_without_cancel(self, capsys):
-        """キャンセルされなければフラグは立たず通知もしない"""
-        with interactive.canceled_as_flag() as canceled:
-            pass
-        assert not canceled
-        assert capsys.readouterr().out == ""
