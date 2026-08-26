@@ -12,6 +12,7 @@ from redi.api.exceptions import (
     RedmineValidationException,
 )
 from redi.api.issue import Issue
+from redi.api.issue_relation import RELATION_TYPES
 from redi.cli import editor as editor_module
 from redi.cli.issue_command import add_issue_parser
 from redi.cli.issue_command import create as create_module
@@ -559,3 +560,43 @@ class TestIssueUpdateStatusChoices:
 
         assert "allowed_statuses" in called["include"].split(",")
         assert selected_options == [("2", "進行中"), ("10", "レビュー")]
+
+
+class TestIssueUpdateRelateChoices:
+    """`issue update --relate` の関係性タイプ
+
+    値の集合は Redmine 側で固定なので、API を叩く前にクライアントで弾き、
+    有効な値を一覧で示す。
+    """
+
+    @pytest.mark.parametrize("relation_type", RELATION_TYPES)
+    def test_accepts_every_relation_type(self, relation_type):
+        """Redmine が受け付ける 9 種はすべて指定できる"""
+        args = parse_issue_args(
+            ["issue", "update", "42", "--relate", relation_type, "--to", "43"]
+        )
+
+        assert args.relate == relation_type
+
+    def test_rejects_unknown_relation_type(self, capsys):
+        """不正なタイプは API を叩かずに弾き、有効な値を示す
+
+        `relates` のつもりで `related` と打ちやすいので、Redmine の 422 を
+        待たずにその場で候補を出す。
+        """
+        with pytest.raises(SystemExit):
+            parse_issue_args(
+                ["issue", "update", "42", "--relate", "related", "--to", "43"]
+            )
+
+        err = capsys.readouterr().err
+        for relation_type in RELATION_TYPES:
+            assert relation_type in err
+
+    def test_covers_relation_types_shown_in_view(self):
+        """表示できる関係性はすべて指定できる
+
+        `issue view` の読み替え表と集合がずれると、見えているのに作れない
+        (あるいはその逆の) タイプが出る。
+        """
+        assert set(RELATION_TYPES) == set(view_module.INVERSE_RELATION)

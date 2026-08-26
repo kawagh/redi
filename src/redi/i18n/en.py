@@ -704,9 +704,7 @@ class En(MessagesProto):
     arg_help_issue_done_ratio = "Done ratio (0-100)"
     arg_help_issue_estimated_hours = "Estimated hours (e.g. 1.5)"
     arg_help_issue_notes = "Notes"
-    arg_help_issue_relate = (
-        "Relation type (relates, duplicates, blocks, precedes, follows, ...)"
-    )
+    arg_help_issue_relate = "Relation type (use with --to)"
     arg_help_issue_relate_to = "Related issue ID"
     arg_help_issue_delete_relation = "Delete relation (use with --to)"
     arg_help_issue_attach = "Attachment file path (repeatable)"
