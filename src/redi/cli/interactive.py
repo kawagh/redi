@@ -1,13 +1,8 @@
 """対話入力に入る前後の共通処理をまとめたヘルパー。
 
-非TTYガード:
-    エージェントやCIが引数不足のまま実行すると prompt_toolkit が EOFError を送出し、
-    スタックトレースだけが残って何の入力が足りないのか分からないため、
-    対話に入る前にTTYを確認し、求めていた入力を示して終了する。
-
-キャンセル (Ctrl-C / Ctrl-D) の扱い:
-    対話をキャンセルしたら `exit_on_cancel` が異常終了として
-    標準エラーに通知して exit 1 する。
+エージェントやCIが引数不足のまま実行すると prompt_toolkit が EOFError を送出し、
+スタックトレースだけが残って何の入力が足りないのか分からないため、
+対話に入る前にTTYを確認し、求めていた入力を示して終了する。
 """
 
 import sys
@@ -46,7 +41,6 @@ def prompt(message: str, **kwargs: Any) -> str:
 def exit_on_cancel(notice: str | None = None) -> Iterator[None]:
     """キャンセルを掴んで標準エラーに通知し、exit 1 する。
 
-    処理を続けようがない箇所で使う。
     notice は `redi init` のように設定とは別の言語で表示する箇所のためのもので、
     省略すると設定の言語で通知する。
     """
