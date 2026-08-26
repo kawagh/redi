@@ -205,7 +205,7 @@ def _prompt_profile_name() -> str:
             validator=ProfileNameValidator(list_profile_names()),
         ).strip()
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
 
 
@@ -217,7 +217,7 @@ def _confirm_set_default(profile_name: str) -> bool:
             default="no",
         )
     except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
+        eprint(messages.canceled)
         sys.exit(1)
     return selected == "yes"
 
