@@ -37,15 +37,27 @@ class TestConfigCreate:
 
         monkeypatch.setattr(config_command, "create_profile", fake_create_profile)
         monkeypatch.setattr(config_command, "list_profile_names", lambda: ["main"])
+        monkeypatch.setattr(config_command, "inline_choice", lambda *_, **__: "no")
+        return calls
+
+    @pytest.fixture(autouse=True)
+    def _prompted(self, monkeypatch):
+        """対話に入った場合は URL と APIキーが埋まって返る"""
+        monkeypatch.setattr(
+            config_command,
+            "prompt_connection_profile",
+            lambda *_: config.Profile(
+                redmine_url="http://example.com", redmine_api_key="k"
+            ),
+        )
+
+    def test_args_only(self, created, monkeypatch):
+        """プロファイル名/URL/APIキーが揃っていれば対話に入らない"""
         monkeypatch.setattr(
             config_command,
             "prompt_connection_profile",
             lambda *_: pytest.fail("対話に入らない想定"),
         )
-        return calls
-
-    def test_args_only(self, created):
-        """プロファイル名/URL/APIキーが揃っていれば対話に入らない"""
         args = _create_args(profile_name="sub", url="http://example.com", api_key="k")
 
         config_command.handle_config(args)
@@ -65,7 +77,6 @@ class TestConfigCreate:
                 default_project_id="1",
             ),
         )
-        monkeypatch.setattr(config_command, "inline_choice", lambda *_, **__: "no")
         args = _create_args(profile_name="sub", url="http://example.com", editor="vim")
 
         config_command.handle_config(args)
@@ -79,36 +90,23 @@ class TestConfigCreate:
 
     def test_prompts_profile_name(self, created, monkeypatch):
         """プロファイル名が無ければ対話で入力させる"""
-        monkeypatch.setattr(
-            config_command,
-            "prompt_connection_profile",
-            lambda *_: config.Profile(
-                redmine_url="http://example.com", redmine_api_key="k"
-            ),
-        )
         monkeypatch.setattr(config_command, "prompt", lambda *_, **__: " sub ")
-        monkeypatch.setattr(config_command, "inline_choice", lambda *_, **__: "no")
-        args = _create_args()
 
-        config_command.handle_config(args)
+        config_command.handle_config(_create_args())
 
         assert created["profile_name"] == "sub"
 
     def test_confirm_set_default(self, created, monkeypatch):
         """他のプロファイルがある場合はデフォルトにするか確認する"""
-        monkeypatch.setattr(
-            config_command,
-            "prompt_connection_profile",
-            lambda *_: config.Profile(
-                redmine_url="http://example.com", redmine_api_key="k"
-            ),
-        )
         monkeypatch.setattr(config_command, "inline_choice", lambda *_, **__: "yes")
         set_default_calls: list[str] = []
+
+        def fake_set_default_profile(name: str) -> bool:
+            set_default_calls.append(name)
+            return True
+
         monkeypatch.setattr(
-            config_command,
-            "set_default_profile",
-            lambda name: set_default_calls.append(name) or True,
+            config_command, "set_default_profile", fake_set_default_profile
         )
         args = _create_args(profile_name="sub", url="http://example.com")
 
@@ -119,13 +117,6 @@ class TestConfigCreate:
     def test_no_confirm_for_first_profile(self, created, monkeypatch):
         """最初のプロファイルは create_profile が自動でデフォルトにするため確認しない"""
         monkeypatch.setattr(config_command, "list_profile_names", list)
-        monkeypatch.setattr(
-            config_command,
-            "prompt_connection_profile",
-            lambda *_: config.Profile(
-                redmine_url="http://example.com", redmine_api_key="k"
-            ),
-        )
         monkeypatch.setattr(
             config_command,
             "inline_choice",
