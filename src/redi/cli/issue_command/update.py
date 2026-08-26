@@ -460,6 +460,9 @@ def _add_watcher(issue_id: str, user_id: int) -> None:
     except IssueNotFoundException:
         eprint(messages.issue_not_found.format(id=issue_id))
         sys.exit(1)
+    except WatcherNotFoundException:
+        eprint(messages.watcher_not_added.format(issue_id=issue_id, user_id=user_id))
+        sys.exit(1)
     except requests.exceptions.HTTPError as e:
         eprint(e)
         print_http_error_body(e)

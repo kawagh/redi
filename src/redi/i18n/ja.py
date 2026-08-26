@@ -168,6 +168,10 @@ class Ja(MessagesProto):
     issue_update_failed = "イシューの更新に失敗しました"
     issue_delete_failed = "イシューの削除に失敗しました"
     watcher_add_failed = "ウォッチャーの追加に失敗しました"
+    watcher_not_added = (
+        "#{issue_id} にウォッチャー {user_id} を追加できませんでした: "
+        "ユーザーが存在しないか、ウォッチャーにできません"
+    )
     watcher_remove_failed = "ウォッチャーの削除に失敗しました"
     wiki_page_delete_failed = "Wikiページの削除に失敗しました"
     wiki_page_update_conflict = "Wikiページが他のユーザーによって更新されているため更新できませんでした: {title}"

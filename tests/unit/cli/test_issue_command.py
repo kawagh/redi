@@ -11,7 +11,7 @@ from redi.api.exceptions import (
     QueryNotFoundException,
     RedmineValidationException,
 )
-from redi.api.issue import Issue
+from redi.api.issue import Issue, WatcherNotFoundException
 from redi.cli import editor as editor_module
 from redi.cli.issue_command import add_issue_parser
 from redi.cli.issue_command import create as create_module
@@ -499,6 +499,39 @@ class TestIssueUpdateUnknownIdRejected:
 
         assert choices["tracker_id"] == "1"
         assert choices["status_id"] == "2"
+
+
+class TestIssueUpdateAddWatcher:
+    """`--add-watcher` に追加できないユーザーIDを渡したとき
+
+    Redmine はウォッチャーにできないユーザーIDを 200 で黙って無視するため、
+    追加できたかを確かめないと「追加しました」と出たまま追加されない。
+    """
+
+    def test_not_added_watcher_exits(self, monkeypatch, capsys):
+        """追加が反映されていなければ exit 1 し、成功メッセージを出さない"""
+
+        def fake_add_watcher(issue_id, user_id):
+            raise WatcherNotFoundException(issue_id, user_id)
+
+        monkeypatch.setattr(
+            update_module.issue_service, "add_watcher", fake_add_watcher
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            handle_issue_update(
+                parse_issue_args(["issue", "update", "42", "--add-watcher", "999"])
+            )
+
+        captured = capsys.readouterr()
+        assert exc_info.value.code == 1
+        assert (
+            messages.watcher_not_added.format(issue_id="42", user_id=999)
+            in captured.err
+        )
+        assert messages.watcher_added.format(issue_id="42", user_id=999) not in (
+            captured.out
+        )
 
 
 class TestIssueUpdateStatusChoices:

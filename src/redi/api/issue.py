@@ -48,6 +48,8 @@ class Issue(TypedDict):
     custom_fields: NotRequired[list[IssueCustomField]]
     # include=allowed_statuses を指定したときだけ含まれる
     allowed_statuses: NotRequired[list[IssueStatus]]
+    # include=watchers を指定し、かつ view_issue_watchers 権限があるときだけ含まれる
+    watchers: NotRequired[list[IdName]]
     created_on: str
     updated_on: str
     closed_on: str | None
@@ -320,6 +322,10 @@ def update_issue(
 
 def add_watcher(issue_id: str, user_id: int) -> None:
     """イシューにウォッチャーを追加する
+
+    Redmine はウォッチャーにできないユーザーID（存在しない・ロック済みなど）を
+    渡しても追加せずに 200 を返すため、このレスポンスだけでは追加できたか判別できない。
+    追加できたかどうかは `issue_service.add_watcher` が確かめる。
 
     Raises:
         IssueNotFoundException: 対象イシューが存在しない場合（HTTP 404）

@@ -257,6 +257,8 @@ class MessagesProto(Protocol):
     issue_update_failed: str
     issue_delete_failed: str
     watcher_add_failed: str
+    watcher_not_added: str
+    """ウォッチャーに追加されなかった。{issue_id}, {user_id}"""
     watcher_remove_failed: str
     wiki_page_delete_failed: str
     wiki_page_update_conflict: str
