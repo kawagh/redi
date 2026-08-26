@@ -15,7 +15,7 @@ from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.version import Version, VersionNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.interactive import canceled_as_exit, ensure_interactive, prompt
+from redi.cli.interactive import ensure_interactive, exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
@@ -268,7 +268,7 @@ def _interactive_select_version_id(project_id: str) -> str:
         (str(v["id"]), f"{v['id']} {v['name']} ({v['status']})") for v in versions
     ]
     labels = dict(options)
-    with canceled_as_exit():
+    with exit_on_cancel():
         selected = inline_choice(messages.prompt_select_version_to_update, options)
     print(messages.update_target_version.format(label=labels[selected]))
     return selected
@@ -283,14 +283,14 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
         ("description", messages.field_description),
         ("sharing", messages.field_sharing),
     ]
-    with canceled_as_exit():
+    with exit_on_cancel():
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
     if not selected:
         eprint(messages.canceled_no_items_selected)
         sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
-    with canceled_as_exit():
+    with exit_on_cancel():
         if "name" in selected:
             args.name = prompt(
                 messages.prompt_version_name, default=current.get("name") or ""
@@ -343,7 +343,7 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
         lambda text: len(text.strip()) > 0,
         error_message=messages.error_input_required,
     )
-    with canceled_as_exit():
+    with exit_on_cancel():
         name = prompt(
             messages.prompt_version_name, validator=non_empty_validator
         ).strip()
@@ -368,7 +368,7 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
         event.app.key_processor.feed(KeyPress(Keys.Down))
 
     ensure_interactive(messages.prompt_select_sharing)
-    with canceled_as_exit():
+    with exit_on_cancel():
         sharing_input = choice(
             messages.prompt_select_sharing,
             options=sharing_options,

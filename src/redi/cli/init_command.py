@@ -3,7 +3,7 @@ import sys
 import tomllib
 from dataclasses import replace
 
-from redi.cli.interactive import canceled_as_exit
+from redi.cli.interactive import exit_on_cancel
 from redi.cli.picker import inline_choice
 from redi.cli.profile_setup import prompt_connection_profile
 from redi.config import (
@@ -38,7 +38,7 @@ def _has_existing_profile() -> bool:
 def _select_language() -> str:
     """言語設定の存在に気付けるよう、init の最初に言語を選ばせる。"""
     options = [(code, LANGUAGE_LABELS[code]) for code in SUPPORTED_LANGUAGES]
-    with canceled_as_exit():
+    with exit_on_cancel():
         return inline_choice(messages.prompt_select_language, options)
 
 

@@ -6,7 +6,7 @@
     対話に入る前にTTYを確認し、求めていた入力を示して終了する。
 
 キャンセル (Ctrl-C / Ctrl-D) の扱い:
-    対話をキャンセルしたら `canceled_as_exit` が異常終了として
+    対話をキャンセルしたら `exit_on_cancel` が異常終了として
     標準エラーに通知して exit 1 する。
 """
 
@@ -43,7 +43,7 @@ def prompt(message: str, **kwargs: Any) -> str:
 
 
 @contextmanager
-def canceled_as_exit(notice: str | None = None) -> Iterator[None]:
+def exit_on_cancel(notice: str | None = None) -> Iterator[None]:
     """キャンセルを掴んで標準エラーに通知し、exit 1 する。
 
     処理を続けようがない箇所で使う。

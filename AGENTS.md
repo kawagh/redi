@@ -38,7 +38,7 @@ This file provides guidance to Agents when working with code in this repository.
     - `inline_choice` / `inline_checkbox` / `open_editor` は内部で `ensure_interactive` を呼んでいる
 - エラーや失敗の通知は `redi.output` の `eprint` で標準エラー出力に出す
     - 正常な結果は標準出力のまま
-- 対話入力のキャンセル (Ctrl-C / Ctrl-D) は `redi.cli.interactive` の `canceled_as_exit` で受け、
+- 対話入力のキャンセル (Ctrl-C / Ctrl-D) は `redi.cli.interactive` の `exit_on_cancel` で受け、
   異常終了として `eprint` で通知して exit 1 する
 
 ## TUI 設計方針

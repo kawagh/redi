@@ -53,24 +53,24 @@ class TestPickerGuard:
         assert "更新する項目を選択" in capsys.readouterr().err
 
 
-class TestCanceledAsExit:
-    """canceled_as_exit()はキャンセルを標準エラーに通知してexit(1)する"""
+class TestExitOnCancel:
+    """exit_on_cancel()はキャンセルを標準エラーに通知してexit(1)する"""
 
     @pytest.mark.parametrize("error", [KeyboardInterrupt, EOFError])
     def test_exits_on_cancel(self, error, capsys):
         """Ctrl-C/Ctrl-Dのどちらもexit(1)する"""
-        with pytest.raises(SystemExit) as exc, interactive.canceled_as_exit():
+        with pytest.raises(SystemExit) as exc, interactive.exit_on_cancel():
             raise error
         assert exc.value.code == 1
         assert messages.canceled in capsys.readouterr().err
 
     def test_passes_through_without_cancel(self):
         """キャンセルされなければ何もしない"""
-        with interactive.canceled_as_exit():
+        with interactive.exit_on_cancel():
             pass
 
     def test_uses_given_notice(self, capsys):
         """notice を渡すと設定の言語ではなくそちらで通知する"""
-        with pytest.raises(SystemExit), interactive.canceled_as_exit("中止しました"):
+        with pytest.raises(SystemExit), interactive.exit_on_cancel("中止しました"):
             raise KeyboardInterrupt
         assert "中止しました" in capsys.readouterr().err

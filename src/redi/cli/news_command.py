@@ -16,7 +16,7 @@ from redi.api.news import News, NewsNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor, shorten_to_oneline
-from redi.cli.interactive import canceled_as_exit, prompt
+from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import project_option_parser
 from redi.cli.validator import RequiredValidator
@@ -208,7 +208,7 @@ def _interactive_select_news_id(
         (str(n["id"]), f"{n['id']} {n['title']}") for n in news_list
     ]
     labels = dict(options)
-    with canceled_as_exit():
+    with exit_on_cancel():
         news_id = inline_choice(prompt_message, options)
     if selected_message is not None:
         print(selected_message.format(label=labels[news_id]))
@@ -226,7 +226,7 @@ def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, s
         ("summary", messages.field_summary),
         ("description", messages.field_description),
     ]
-    with canceled_as_exit():
+    with exit_on_cancel():
         selected = inline_checkbox(
             messages.prompt_select_update_items,
             field_values,
@@ -240,7 +240,7 @@ def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, s
     title: str | None = None
     summary: str | None = None
     description = ""
-    with canceled_as_exit():
+    with exit_on_cancel():
         if "title" in selected:
             title = prompt(messages.prompt_title, default=news["title"]).strip()
         if "summary" in selected:
@@ -345,7 +345,7 @@ def handle_news(args: argparse.Namespace) -> None:
         title = args.title
         summary = args.summary
         if title is None:
-            with canceled_as_exit():
+            with exit_on_cancel():
                 title = prompt(
                     messages.prompt_title, validator=RequiredValidator()
                 ).strip()

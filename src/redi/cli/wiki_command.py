@@ -16,7 +16,7 @@ from redi.api.wiki import (
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor
-from redi.cli.interactive import canceled_as_exit, prompt
+from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.picker import inline_choice
 from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
@@ -26,7 +26,7 @@ from redi.service import wiki_service
 
 def _prompt_wiki_comments() -> str:
     """commentsを対話的に入力してもらう。空文字は省略扱い。"""
-    with canceled_as_exit():
+    with exit_on_cancel():
         return prompt(messages.prompt_wiki_comments).strip()
 
 
@@ -264,7 +264,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
                             message=messages.error_page_title_duplicate
                         )
 
-            with canceled_as_exit():
+            with exit_on_cancel():
                 page_title = prompt(
                     messages.prompt_page_title, validator=_PageTitleValidator()
                 ).strip()
@@ -275,7 +275,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
                 parent_options = build_wiki_tree_choices(pages)
                 if parent_options:
                     parent_labels = dict(parent_options)
-                    with canceled_as_exit():
+                    with exit_on_cancel():
                         parent_title = inline_choice(
                             messages.prompt_parent_page, parent_options
                         )
@@ -323,7 +323,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
                 sys.exit(1)
             page_options = build_wiki_tree_choices(pages)
             page_labels = dict(page_options)
-            with canceled_as_exit():
+            with exit_on_cancel():
                 page_title = inline_choice(messages.prompt_edit_page, page_options)
             print(
                 messages.edit_target_page.format(label=page_labels[page_title].strip())
