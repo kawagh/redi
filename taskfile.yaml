@@ -54,6 +54,10 @@ tasks:
 
   e2e:
     internal: true
+    # 設定とキャッシュを E2E 専用の場所に向け、ユーザーのグローバル設定を汚さない
+    env:
+      REDI_CONFIG_PATH: '{{.ROOT_DIR}}/.e2e/{{.REDMINE_VERSION}}/config.toml'
+      REDI_CACHE_DIR: '{{.ROOT_DIR}}/.e2e/{{.REDMINE_VERSION}}/cache'
     cmds:
       - ./script/init-redmine.sh {{.REDMINE_VERSION}}
       - REDI_E2E_REDMINE_VERSION={{.REDMINE_VERSION}} uv run pytest -m e2e
