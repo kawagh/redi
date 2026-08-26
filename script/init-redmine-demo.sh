@@ -31,7 +31,6 @@ RUBY
 ADMIN_API_KEY=$(echo "$API_KEYS_OUTPUT" | grep '^ADMIN_KEY=' | tail -1 | cut -d= -f2)
 
 # profile作成がべき等でないので失敗するのを当座で防ぐ。
-# 引数が足りないと対話に入るため、非TTYでも完結するようURLとAPIキーは渡す
 uv run redi config create demo_admin \
     --url "http://localhost:3002" --api_key "$ADMIN_API_KEY" || true
 uv run redi config update --default_profile demo_admin
