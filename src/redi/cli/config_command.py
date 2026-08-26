@@ -2,12 +2,13 @@ import argparse
 import sys
 
 from redi import config
-from redi.api.account import verify_connection
 from redi.cli.alias import resolve_alias
+from redi.cli.connection import verify_connection
 from redi.cli.interactive import prompt
 from redi.cli.picker import inline_checkbox, inline_choice, inline_choice_with_action
 from redi.cli.profile_setup import prompt_connection_profile
 from redi.cli.validator import ProfileNameValidator, RequiredValidator, UrlValidator
+from redi.client import RedmineClient
 from redi.config import (
     CONFIG_PATH,
     SUPPORTED_LANGUAGES,
@@ -254,7 +255,8 @@ def _check_profile(name: str, values: dict, check_connection: bool) -> bool:
         # 検証と接続先の解決が食い違ったときに黙って素通りさせないための保険。
         print(f"  {messages.check_connection_skipped}")
         return False
-    result = verify_connection(*credentials, messages)
+    url, api_key = credentials
+    result = verify_connection(RedmineClient(url.rstrip("/"), api_key), messages)
     if not result.ok:
         # verify_connection が返す文言が既に失敗の理由になっているのでそのまま出す
         _print_issues([Issue(Severity.ERROR, name, None, result.error or "")])

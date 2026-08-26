@@ -1,10 +1,12 @@
 import argparse
+from typing import cast
 
 import pytest
 
 from redi import config, config_schema
-from redi.api.account import ConnectionResult
+from redi.api.me import MyAccount
 from redi.cli import config_command
+from redi.cli.connection import ConnectionResult
 
 
 @pytest.fixture(autouse=True)
@@ -45,9 +47,12 @@ def connection_ok(monkeypatch) -> list[tuple[str, str]]:
     """疎通確認を成功させ、渡された接続先を捕捉する"""
     calls: list[tuple[str, str]] = []
 
-    def fake_verify(url: str, api_key: str, messages) -> ConnectionResult:
-        calls.append((url, api_key))
-        return ConnectionResult(ok=True, user={"login": "kawagh"}, error=None)
+    def fake_verify(api_client, messages) -> ConnectionResult:
+        calls.append(
+            (api_client.base_url, api_client.session.headers["X-Redmine-API-Key"])
+        )
+        user = cast("MyAccount", {"login": "kawagh"})
+        return ConnectionResult(ok=True, user=user, error=None)
 
     monkeypatch.setattr(config_command, "verify_connection", fake_verify)
     return calls
@@ -209,9 +214,7 @@ class TestConnection:
         monkeypatch.setattr(
             config_command,
             "verify_connection",
-            lambda url, key, messages: ConnectionResult(
-                ok=False, user=None, error="401 Unauthorized"
-            ),
+            lambda *_: ConnectionResult(ok=False, user=None, error="401 Unauthorized"),
         )
 
         with pytest.raises(SystemExit) as e:
