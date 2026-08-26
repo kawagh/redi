@@ -344,7 +344,9 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
             existing=args.custom_fields,
         )
     if args.description is None:
-        args.description = open_editor(initial_text=template_description)
+        args.description = open_editor(
+            initial_text=template_description, name="issue_description"
+        )
         if args.description:
             print(
                 messages.prompt_field_value.format(

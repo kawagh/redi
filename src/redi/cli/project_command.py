@@ -436,7 +436,9 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
         if not selected:
             return
         if "description" in selected:
-            args.description = open_editor(initial_text=args.description or "")
+            args.description = open_editor(
+                initial_text=args.description or "", name="project_description"
+            )
             if args.description:
                 print(
                     messages.prompt_field_value.format(
@@ -609,7 +611,9 @@ def _interactive_fill_project_update_args(args: argparse.Namespace) -> None:
                 validator=RequiredValidator(),
             ).strip()
         if "description" in selected:
-            args.description = open_editor(initial_text=current["description"])
+            args.description = open_editor(
+                initial_text=current["description"], name="project_description"
+            )
             print(
                 messages.prompt_field_value.format(
                     name=messages.field_description,

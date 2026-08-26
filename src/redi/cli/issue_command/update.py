@@ -579,7 +579,9 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
     description = args.description
     if description is not None and description == "":
         current = _read_issue(args.issue_id)
-        description = open_editor(current.get("description") or "")
+        description = open_editor(
+            current.get("description") or "", name="issue_description"
+        )
     # 空の説明は「変更しない」扱いなので更新対象から外す
     should_update_issue = (
         args.project_id
