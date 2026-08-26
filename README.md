@@ -43,6 +43,7 @@ You can change it later with `redi config update --language <en|ja>`.
 
 Then, profile will be created in `~/.config/redi/config.toml` like below format.
 You can also create profile by `redi config create`, and update profile by `redi config update` (and also by manual edit).
+`redi config create` walks you through the same steps as `redi init` when the profile name, URL or API key is missing, so it works even after profiles exist.
 
 ```toml
 default_profile = "default"
@@ -127,6 +128,7 @@ redi --tui
 
 # config (alias: c)
 redi config
+redi config create # interactive: profile name / Redmine URL / API key / projects
 redi config create <profile_name> --url <url> --api_key <key> # create new profile
 redi config create <profile_name> --url <url> --api_key <key> --set_default
 redi config update # interactive: Enter to switch profile, u to update fields of the profile

@@ -392,6 +392,10 @@ class MessagesProto(Protocol):
     prompt_select_news_to_delete: str
     prompt_select_profile: str
     """プロファイル一覧の見出し。Enter でデフォルト設定 / u で項目更新の案内を含む"""
+    prompt_profile_name: str
+    """作成するプロファイル名の入力"""
+    prompt_set_default_profile: str
+    """作成したプロファイルをデフォルトにするかの確認。{name}"""
     prompt_default_project_id: str
     prompt_wiki_project_id: str
     prompt_editor: str
@@ -435,6 +439,10 @@ class MessagesProto(Protocol):
     """{name}, {value}"""
     prompt_custom_field_label: str
     """{name}"""
+    choice_yes: str
+    """はい/いいえ の選択肢: はい"""
+    choice_no: str
+    """はい/いいえ の選択肢: いいえ"""
     label_bool_true: str
     """カスタムフィールド bool 形式の真の表示ラベル"""
     label_bool_false: str
