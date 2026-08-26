@@ -1,9 +1,37 @@
 import json
 import time
+from pathlib import Path
 
 import pytest
 
 from redi import cache, config
+
+
+class TestResolveCacheDir:
+    """キャッシュの置き場所は環境変数REDI_CACHE_DIRで差し替えられる"""
+
+    def test_defaults_to_user_cache(self):
+        """未設定なら~/.cache/rediを使う"""
+        assert cache.resolve_cache_dir({}) == cache.DEFAULT_CACHE_DIR
+
+    def test_empty_value_falls_back_to_default(self):
+        """空文字は未設定と同じ扱いにし、意図せず相対パスを掴まないようにする"""
+        assert (
+            cache.resolve_cache_dir({"REDI_CACHE_DIR": ""}) == cache.DEFAULT_CACHE_DIR
+        )
+
+    def test_uses_given_path(self):
+        """指定されたパスをそのまま使う"""
+        assert cache.resolve_cache_dir({"REDI_CACHE_DIR": "/tmp/redi-cache"}) == Path(
+            "/tmp/redi-cache"
+        )
+
+    def test_expands_home(self):
+        """シェルを介さず渡されても~を展開する"""
+        assert (
+            cache.resolve_cache_dir({"REDI_CACHE_DIR": "~/e2e/cache"})
+            == Path.home() / "e2e" / "cache"
+        )
 
 
 class TestSave:

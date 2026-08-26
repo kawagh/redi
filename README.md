@@ -71,6 +71,14 @@ export REDMINE_URL=https://redmine.example.com
 export REDMINE_API_KEY=<your_api_key>
 ```
 
+The locations `redi` reads and writes can also be overridden. This is useful for
+CI or tests that must not touch your own configuration.
+
+| variable | what it points to | default |
+| --- | --- | --- |
+| `REDI_CONFIG_PATH` | the `config.toml` file | `~/.config/redi/config.toml` |
+| `REDI_CACHE_DIR` | the cache directory | `~/.cache/redi` |
+
 
 ### Shell completion
 
