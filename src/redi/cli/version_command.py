@@ -15,7 +15,7 @@ from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.version import Version, VersionNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.interactive import ensure_interactive, prompt
+from redi.cli.interactive import canceled_as_exit, ensure_interactive, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
@@ -268,11 +268,8 @@ def _interactive_select_version_id(project_id: str) -> str:
         (str(v["id"]), f"{v['id']} {v['name']} ({v['status']})") for v in versions
     ]
     labels = dict(options)
-    try:
+    with canceled_as_exit():
         selected = inline_choice(messages.prompt_select_version_to_update, options)
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     print(messages.update_target_version.format(label=labels[selected]))
     return selected
 
@@ -286,17 +283,14 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
         ("description", messages.field_description),
         ("sharing", messages.field_sharing),
     ]
-    try:
+    with canceled_as_exit():
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if not selected:
         eprint(messages.canceled_no_items_selected)
         sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
-    try:
+    with canceled_as_exit():
         if "name" in selected:
             args.name = prompt(
                 messages.prompt_version_name, default=current.get("name") or ""
@@ -342,9 +336,6 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
                 default=current.get("sharing") or "none",
             )
             print(messages.sharing_label.format(value=args.sharing))
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
 
 
 def _interactive_create_version(project_id: str, args: argparse.Namespace) -> None:
@@ -352,25 +343,12 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
         lambda text: len(text.strip()) > 0,
         error_message=messages.error_input_required,
     )
-    try:
+    with canceled_as_exit():
         name = prompt(
             messages.prompt_version_name, validator=non_empty_validator
         ).strip()
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
-
-    try:
         due_date = prompt(messages.prompt_due_date_optional).strip() or None
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
-
-    try:
         description = prompt(messages.prompt_description_optional).strip() or None
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
 
     sharing_options: list[tuple[str, str]] = [
         ("none", messages.sharing_none),
@@ -390,16 +368,13 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
         event.app.key_processor.feed(KeyPress(Keys.Down))
 
     ensure_interactive(messages.prompt_select_sharing)
-    try:
+    with canceled_as_exit():
         sharing_input = choice(
             messages.prompt_select_sharing,
             options=sharing_options,
             default="none",
             key_bindings=choice_kb,
         )
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     sharing = sharing_input if sharing_input != "none" else None
 
     _create_version(

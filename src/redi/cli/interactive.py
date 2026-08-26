@@ -1,11 +1,21 @@
-"""対話入力に入る前に非TTY環境を弾くためのヘルパー。
+"""対話入力に入る前後の共通処理をまとめたヘルパー。
 
-エージェントやCIが引数不足のまま実行すると prompt_toolkit が EOFError を送出し、
-スタックトレースだけが残って何の入力が足りないのか分からないため、
-対話に入る前にTTYを確認し、求めていた入力を示して終了する。
+非TTYガード:
+    エージェントやCIが引数不足のまま実行すると prompt_toolkit が EOFError を送出し、
+    スタックトレースだけが残って何の入力が足りないのか分からないため、
+    対話に入る前にTTYを確認し、求めていた入力を示して終了する。
+
+キャンセル (Ctrl-C / Ctrl-D) の扱い:
+    対話をキャンセルしたときの通知先と終了の仕方は次の2通りしかない。
+    どちらを選んだかが呼び出し側から読み取れるよう、コンテキストマネージャに畳んである。
+
+    - `canceled_as_exit`: 異常終了として標準エラーに通知して exit 1 する
+    - `canceled_as_flag`: 正常終了として標準出力に通知し、呼び出し元へ処理を戻す
 """
 
 import sys
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from prompt_toolkit import prompt as _prompt
@@ -33,3 +43,42 @@ def prompt(message: str, **kwargs: Any) -> str:
     """
     ensure_interactive(message)
     return str(_prompt(message, **kwargs))
+
+
+@contextmanager
+def canceled_as_exit(notice: str | None = None) -> Iterator[None]:
+    """キャンセルを掴んで標準エラーに通知し、exit 1 する。
+
+    処理を続けようがない箇所で使う。
+    notice は `redi init` のように設定とは別の言語で表示する箇所のためのもので、
+    省略すると設定の言語で通知する。
+    """
+    try:
+        yield
+    except (KeyboardInterrupt, EOFError):
+        eprint(notice or messages.canceled)
+        sys.exit(1)
+
+
+class CanceledFlag:
+    """`canceled_as_flag` がキャンセルの有無を呼び出し元へ伝えるためのフラグ。"""
+
+    def __init__(self) -> None:
+        self.canceled = False
+
+    def __bool__(self) -> bool:
+        return self.canceled
+
+
+@contextmanager
+def canceled_as_flag() -> Iterator[CanceledFlag]:
+    """キャンセルを掴んで標準出力に通知し、フラグを立てて先へ進める。
+
+    キャンセルを正常終了として扱い、呼び出し元に後始末を任せたい箇所で使う。
+    """
+    flag = CanceledFlag()
+    try:
+        yield flag
+    except (KeyboardInterrupt, EOFError):
+        print(messages.canceled)
+        flag.canceled = True

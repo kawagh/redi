@@ -16,7 +16,7 @@ from redi.api.news import News, NewsNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor, shorten_to_oneline
-from redi.cli.interactive import prompt
+from redi.cli.interactive import canceled_as_exit, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import project_option_parser
 from redi.cli.validator import RequiredValidator
@@ -208,11 +208,8 @@ def _interactive_select_news_id(
         (str(n["id"]), f"{n['id']} {n['title']}") for n in news_list
     ]
     labels = dict(options)
-    try:
+    with canceled_as_exit():
         news_id = inline_choice(prompt_message, options)
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if selected_message is not None:
         print(selected_message.format(label=labels[news_id]))
     return news_id
@@ -229,15 +226,12 @@ def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, s
         ("summary", messages.field_summary),
         ("description", messages.field_description),
     ]
-    try:
+    with canceled_as_exit():
         selected = inline_checkbox(
             messages.prompt_select_update_items,
             field_values,
             initial_value="description",
         )
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if not selected:
         eprint(messages.canceled_no_items_selected)
         sys.exit(1)
@@ -246,16 +240,13 @@ def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, s
     title: str | None = None
     summary: str | None = None
     description = ""
-    try:
+    with canceled_as_exit():
         if "title" in selected:
             title = prompt(messages.prompt_title, default=news["title"]).strip()
         if "summary" in selected:
             summary = prompt(
                 messages.prompt_summary, default=news.get("summary") or ""
             ).strip()
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if "description" in selected:
         description = _edit_description(news["description"])
     return title, summary, description
@@ -354,16 +345,13 @@ def handle_news(args: argparse.Namespace) -> None:
         title = args.title
         summary = args.summary
         if title is None:
-            try:
+            with canceled_as_exit():
                 title = prompt(
                     messages.prompt_title, validator=RequiredValidator()
                 ).strip()
                 if summary is None:
                     # 任意項目なので空のまま確定したら設定しない
                     summary = prompt(messages.prompt_summary).strip() or None
-            except (KeyboardInterrupt, EOFError):
-                eprint(messages.canceled)
-                sys.exit(1)
         description = args.description or _edit_description()
         _create_news(
             project_id=project_id,
