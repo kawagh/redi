@@ -562,6 +562,78 @@ class TestIssueUpdateStatusChoices:
         assert selected_options == [("2", "進行中"), ("10", "レビュー")]
 
 
+class TestIssueUpdateParentIssue:
+    """`issue update` の対話で親チケットを変更する"""
+
+    @pytest.fixture
+    def interactive(self, monkeypatch):
+        """親チケットだけ選んだ対話にして、提示された項目と入力の既定値を記録する"""
+        monkeypatch.setattr(
+            update_module, "fetch_custom_fields", lambda *args, **kwargs: None
+        )
+        recorded: dict = {}
+
+        def inline_checkbox(message, options, initial_value=None):
+            recorded["options"] = options
+            return ["parent_issue"]
+
+        monkeypatch.setattr(update_module, "inline_checkbox", inline_checkbox)
+        return recorded
+
+    def _stub_prompt(self, monkeypatch, recorded, value):
+        def prompt_parent_issue_id(default=""):
+            recorded["default"] = default
+            return value
+
+        monkeypatch.setattr(
+            update_module, "prompt_parent_issue_id", prompt_parent_issue_id
+        )
+
+    def _stub_read_issue(self, monkeypatch, issue):
+        monkeypatch.setattr(
+            update_module.issue_service,
+            "read_issue",
+            lambda issue_id, include="": issue,
+        )
+
+    def test_parent_issue_is_selectable(self, interactive, monkeypatch):
+        """更新項目に親チケットが並ぶ"""
+        self._stub_read_issue(monkeypatch, {"project": {"id": 1}, "tracker": {"id": 1}})
+        self._stub_prompt(monkeypatch, interactive, "100")
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert ("parent_issue", messages.field_parent_issue) in interactive["options"]
+        assert args.parent_issue_id == "100"
+
+    def test_current_parent_is_default(self, interactive, monkeypatch):
+        """現在の親チケット id を入力の既定値として出す"""
+        self._stub_read_issue(
+            monkeypatch,
+            {"project": {"id": 1}, "tracker": {"id": 1}, "parent": {"id": 7}},
+        )
+        self._stub_prompt(monkeypatch, interactive, "7")
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert interactive["default"] == "7"
+
+    def test_empty_input_clears_parent(self, interactive, monkeypatch):
+        """空入力は「親チケットを外す」として空文字のまま渡す"""
+        self._stub_read_issue(
+            monkeypatch,
+            {"project": {"id": 1}, "tracker": {"id": 1}, "parent": {"id": 7}},
+        )
+        self._stub_prompt(monkeypatch, interactive, "")
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert args.parent_issue_id == ""
+
+
 class TestIssueUpdateRelateChoices:
     """`issue update --relate` の関係性タイプ
 
