@@ -177,7 +177,7 @@ def _edit_description(initial_text: str = "") -> str:
     エディタを閉じると入力内容が見えなくなるため表示する。
     空のまま閉じられた場合はキャンセルして終了する。
     """
-    description = open_editor(initial_text)
+    description = open_editor(initial_text, name="news_description")
     if not description:
         eprint(messages.canceled_empty_text)
         sys.exit(1)

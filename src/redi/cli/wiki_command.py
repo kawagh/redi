@@ -288,7 +288,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
             text = args.description
             comments = args.comments
         else:
-            text = open_editor()
+            text = open_editor(name="wiki_text")
             comments = args.comments or _prompt_wiki_comments()
         if text:
             page_title = normalize_title(page_title)
@@ -338,7 +338,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
                 eprint(messages.wiki_page_not_found.format(title=page_title))
                 sys.exit(1)
             version = current.get("version")
-            text = open_editor(current.get("text") or "")
+            text = open_editor(current.get("text") or "", name="wiki_text")
             comments = args.comments or _prompt_wiki_comments()
         if text:
             _update_page(
