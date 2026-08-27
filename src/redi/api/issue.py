@@ -36,6 +36,8 @@ class Issue(TypedDict):
     assigned_to: NotRequired[IdName]
     subject: str
     description: str
+    # 親チケットがある場合のみ含まれる
+    parent: NotRequired[IssueParent]
     start_date: str | None
     due_date: str | None
     done_ratio: int
@@ -52,6 +54,15 @@ class Issue(TypedDict):
     updated_on: str
     closed_on: str | None
     journals: NotRequired[list[Journal]]
+
+
+class IssueParent(TypedDict):
+    """親チケットの参照。
+
+    Redmine は親がある場合のみ `"parent": {"id": N}` を返し、subject は含まれない。
+    """
+
+    id: int
 
 
 class IssueCustomField(TypedDict):
