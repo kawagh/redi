@@ -80,3 +80,7 @@ This file provides guidance to Agents when working with code in this repository.
     - `_protocol.py`にキーを定義して`ja.py`と`en.py` で対応する値を実装する
     - `tests/unit/test_i18n.py`
 
+## Contributing
+
+- see [CONTRIBUTING.md](./CONTRIBUTING.md)
+
