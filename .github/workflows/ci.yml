@@ -3,8 +3,14 @@ name: CI
 on:
   push:
     branches: [main, develop]
+    # ドキュメントのみの変更では check / e2e を回さない
+    # (変更ファイルがすべて該当する場合のみスキップされる)
+    paths-ignore:
+      - "**.md"
   pull_request:
     branches: [main, develop]
+    paths-ignore:
+      - "**.md"
 
 jobs:
   check:
