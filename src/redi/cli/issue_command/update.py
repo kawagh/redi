@@ -43,6 +43,7 @@ from redi.cli.issue_command.field_prompt import (
     prompt_due_date,
     prompt_estimated_hours,
     prompt_fixed_version,
+    prompt_parent_issue_id,
     prompt_project,
     prompt_start_date,
 )
@@ -135,6 +136,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         ("priority", messages.field_priority),
         ("assigned_to", messages.field_assignee),
         ("fixed_version", messages.field_fixed_version),
+        ("parent_issue", messages.field_parent_issue),
         ("start_date", messages.field_start_date),
         ("due_date", messages.field_due_date),
         ("done_ratio", messages.field_done_ratio),
@@ -252,6 +254,13 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
             args.fixed_version_id = prompt_fixed_version(
                 str(project_id), default=default_version
             )
+        if "parent_issue" in selected:
+            current_parent_id = (current.get("parent") or {}).get("id")
+            default_parent = (
+                str(current_parent_id) if current_parent_id is not None else ""
+            )
+            # 空文字は「親チケットを外す」意味なので None に潰さずそのまま渡す
+            args.parent_issue_id = prompt_parent_issue_id(default=default_parent)
         if "start_date" in selected:
             args.start_date = prompt_start_date(
                 current.get("start_date") or date.today().isoformat()

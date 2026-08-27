@@ -37,15 +37,10 @@ from redi.cli.issue_command.field_prompt import (
     prompt_due_date,
     prompt_estimated_hours,
     prompt_fixed_version,
+    prompt_parent_issue_id,
     prompt_start_date,
 )
-from redi.cli.keybinding import (
-    digit_only_key_bindings,
-)
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.validator import (
-    IntValidator,
-)
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import issue_service, project_service
@@ -209,12 +204,7 @@ def _interactive_fill_optional_create_fields(args: IssueCreateArgs) -> None:
         if "fixed_version" in selected:
             args.fixed_version_id = prompt_fixed_version(project_id)
         if "parent_issue" in selected:
-            value = prompt(
-                messages.prompt_parent_issue_id,
-                validator=IntValidator(allow_empty=True),
-                key_bindings=digit_only_key_bindings(),
-            ).strip()
-            args.parent_issue_id = value or None
+            args.parent_issue_id = prompt_parent_issue_id() or None
         if "start_date" in selected:
             args.start_date = prompt_start_date(date.today().isoformat()) or None
         if "due_date" in selected:

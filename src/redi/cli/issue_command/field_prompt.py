@@ -11,9 +11,18 @@ from datetime import date
 
 from redi.api.membership import fetch_project_users
 from redi.cli.interactive import prompt
-from redi.cli.keybinding import date_key_bindings, digit_and_period_key_bindings
+from redi.cli.keybinding import (
+    date_key_bindings,
+    digit_and_period_key_bindings,
+    digit_only_key_bindings,
+)
 from redi.cli.picker import inline_choice
-from redi.cli.validator import DateValidator, DueDateValidator, HourValidator
+from redi.cli.validator import (
+    DateValidator,
+    DueDateValidator,
+    HourValidator,
+    IntValidator,
+)
 from redi.i18n import messages
 from redi.service import project_service, version_service
 
@@ -52,6 +61,16 @@ def prompt_fixed_version(project_id: str, default: str = "") -> str:
     )
     print(messages.fixed_version_label.format(value=labels[value]))
     return value
+
+
+def prompt_parent_issue_id(default: str = "") -> str:
+    """親チケットの id を入力させる。空のまま確定した場合は空文字。"""
+    return prompt(
+        messages.prompt_parent_issue_id,
+        default=default,
+        validator=IntValidator(allow_empty=True),
+        key_bindings=digit_only_key_bindings(),
+    ).strip()
 
 
 def prompt_start_date(default: str = "") -> str:
