@@ -2,7 +2,7 @@ import argparse
 import sys
 
 from redi.cli.alias import resolve_alias
-from redi.cli.interactive import prompt
+from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice, inline_choice_with_action
 from redi.cli.profile_setup import prompt_connection_profile
 from redi.cli.validator import ProfileNameValidator, RequiredValidator, UrlValidator
@@ -99,16 +99,13 @@ def _interactive_select_profile(args: argparse.Namespace) -> bool:
         (name, f"{name} (default)" if name == current_default else name)
         for name in profile_names
     ]
-    try:
+    with exit_on_cancel():
         action, selected = inline_choice_with_action(
             messages.prompt_select_profile,
             options,
             default=current_default,
             action_keys={"u": "update"},
         )
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if action == "update":
         return _interactive_fill_config_update_args(args, selected)
     if set_default_profile(selected):
@@ -136,22 +133,20 @@ def _interactive_fill_config_update_args(
 ) -> bool:
     """更新する項目を選ばせて値を入力し、args に反映する。
 
-    後続の更新フローへ流す場合 True を返す。キャンセル時は False。
+    後続の更新フローへ流す場合 True を返す。項目を選ばなかった場合は False。
     """
     current = read_profile(profile)
     field_values = _update_field_values(profile)
-    try:
+    with exit_on_cancel():
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        return False
-    if not selected:
-        print(messages.canceled_no_items_selected)
-        return False
-    labels = dict(field_values)
-    print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
-    # 後続の更新フローは falsy な値をスキップするため、選択した項目は必須入力とする
-    try:
+        if not selected:
+            print(messages.canceled_no_items_selected)
+            return False
+        labels = dict(field_values)
+        print(
+            messages.update_items.format(items=", ".join(labels[v] for v in selected))
+        )
+        # 後続の更新フローは falsy な値をスキップするため、選択した項目は必須入力とする
         if "url" in selected:
             args.url = prompt(
                 messages.prompt_redmine_url,
@@ -189,36 +184,27 @@ def _interactive_fill_config_update_args(
                 [(v, v) for v in SUPPORTED_LANGUAGES],
                 default=current.language,
             )
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        return False
-    if "set_default" in selected:
-        args.default_profile = profile
+        if "set_default" in selected:
+            args.default_profile = profile
     args.profile_name = profile
     return True
 
 
 def _prompt_profile_name() -> str:
-    try:
+    with exit_on_cancel():
         return prompt(
             messages.prompt_profile_name,
             validator=ProfileNameValidator(list_profile_names()),
         ).strip()
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
 
 
 def _confirm_set_default(profile_name: str) -> bool:
-    try:
+    with exit_on_cancel():
         selected = inline_choice(
             messages.prompt_set_default_profile.format(name=profile_name),
             [("yes", messages.choice_yes), ("no", messages.choice_no)],
             default="no",
         )
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     return selected == "yes"
 
 

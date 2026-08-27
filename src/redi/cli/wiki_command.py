@@ -16,7 +16,7 @@ from redi.api.wiki import (
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor
-from redi.cli.interactive import prompt
+from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.picker import inline_choice
 from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
@@ -26,11 +26,8 @@ from redi.service import wiki_service
 
 def _prompt_wiki_comments() -> str:
     """commentsを対話的に入力してもらう。空文字は省略扱い。"""
-    try:
+    with exit_on_cancel():
         return prompt(messages.prompt_wiki_comments).strip()
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
 
 
 def _delete_page(project_id: str, page_title: str) -> None:
@@ -267,13 +264,10 @@ def handle_wiki(args: argparse.Namespace) -> None:
                             message=messages.error_page_title_duplicate
                         )
 
-            try:
+            with exit_on_cancel():
                 page_title = prompt(
                     messages.prompt_page_title, validator=_PageTitleValidator()
                 ).strip()
-            except (KeyboardInterrupt, EOFError):
-                eprint(messages.canceled)
-                sys.exit(1)
             if not page_title:
                 eprint(messages.canceled_empty_title)
                 sys.exit(1)
@@ -281,13 +275,10 @@ def handle_wiki(args: argparse.Namespace) -> None:
                 parent_options = build_wiki_tree_choices(pages)
                 if parent_options:
                     parent_labels = dict(parent_options)
-                    try:
+                    with exit_on_cancel():
                         parent_title = inline_choice(
                             messages.prompt_parent_page, parent_options
                         )
-                    except (KeyboardInterrupt, EOFError):
-                        eprint(messages.canceled)
-                        sys.exit(1)
                     print(
                         messages.parent_page_label.format(
                             label=parent_labels[parent_title].strip()
@@ -332,11 +323,8 @@ def handle_wiki(args: argparse.Namespace) -> None:
                 sys.exit(1)
             page_options = build_wiki_tree_choices(pages)
             page_labels = dict(page_options)
-            try:
+            with exit_on_cancel():
                 page_title = inline_choice(messages.prompt_edit_page, page_options)
-            except (KeyboardInterrupt, EOFError):
-                eprint(messages.canceled)
-                sys.exit(1)
             print(
                 messages.edit_target_page.format(label=page_labels[page_title].strip())
             )

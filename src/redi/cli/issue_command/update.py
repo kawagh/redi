@@ -35,7 +35,7 @@ from redi.cli.custom_field_prompt import (
     prompt_custom_field_value,
 )
 from redi.cli.editor import open_editor, save_body_on_failure
-from redi.cli.interactive import prompt
+from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.issue_command.custom_fields import parse_custom_fields
 from redi.cli.issue_command.field_prompt import (
     parse_iso_date,
@@ -116,11 +116,8 @@ def _interactive_select_issue_id() -> str:
         (str(i["id"]), f"#{i['id']} {i['subject']}") for i in issues
     ]
     labels = dict(options)
-    try:
+    with exit_on_cancel():
         issue_id = inline_choice(messages.prompt_select_issue_to_update, options)
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     print(messages.update_target_issue.format(label=labels[issue_id]))
     return issue_id
 
@@ -166,21 +163,18 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         )
         for custom_field in applicable_custom_fields:
             field_values.append((f"cf_{custom_field['id']}", custom_field["name"]))
-    try:
+    with exit_on_cancel():
         selected = inline_checkbox(
             messages.prompt_select_update_items,
             field_values,
             initial_value="description",
         )
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if not selected:
         eprint(messages.canceled_no_items_selected)
         sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
-    try:
+    with exit_on_cancel():
         if "project" in selected:
             args.project_id = prompt_project(default=str(issue_project_id))
         # 移動する場合、トラッカーなどの選択肢は移動先プロジェクトのものを出す
@@ -354,9 +348,6 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
                 )
             else:
                 args.custom_fields = ",".join(added_custom_fields)
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
 
 
 class _IdNameFetcher(Protocol):

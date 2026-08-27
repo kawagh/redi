@@ -22,7 +22,7 @@ from redi.api.tracker import fetch_trackers
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
 from redi.cli.editor import open_editor, shorten_to_oneline
-from redi.cli.interactive import ensure_interactive, prompt
+from redi.cli.interactive import ensure_interactive, exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import full_option_parser
 from redi.cli.validator import ProjectIdentifierValidator, RequiredValidator
@@ -429,7 +429,7 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
         field_options.append(
             ("issue_custom_field_ids", messages.field_issue_custom_fields)
         )
-    try:
+    with exit_on_cancel():
         selected = inline_checkbox(
             messages.prompt_select_create_optional_items, field_options
         )
@@ -493,14 +493,11 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
             args.issue_custom_field_ids = _interactive_select_issue_custom_field_ids(
                 custom_field_options, args.issue_custom_field_ids
             )
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
 
 
 def _interactive_fill_create_args(args: argparse.Namespace) -> None:
     """`project create` の必須項目を対話で埋め、送信前に任意項目の入力機会を挟む。"""
-    try:
+    with exit_on_cancel():
         if args.name is None:
             args.name = prompt(
                 messages.prompt_project_name, validator=RequiredValidator()
@@ -511,19 +508,13 @@ def _interactive_fill_create_args(args: argparse.Namespace) -> None:
                 default=project_service.suggest_identifier(args.name),
                 validator=ProjectIdentifierValidator(),
             ).strip()
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     action_options: list[tuple[str, str]] = [
         ("submit", messages.action_submit),
         ("optional", messages.action_fill_optional),
     ]
     while True:
-        try:
+        with exit_on_cancel():
             action = inline_choice(messages.prompt_what_next, action_options)
-        except (KeyboardInterrupt, EOFError):
-            eprint(messages.canceled)
-            sys.exit(1)
         if action != "optional":
             return
         _interactive_fill_optional_create_fields(args)
@@ -585,11 +576,8 @@ def _interactive_fill_project_update_args(args: argparse.Namespace) -> None:
         field_options.append(
             ("issue_custom_field_ids", messages.field_issue_custom_fields)
         )
-    try:
+    with exit_on_cancel():
         selected = inline_checkbox(messages.prompt_select_update_items, field_options)
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if not selected:
         eprint(messages.canceled_no_items_selected)
         sys.exit(1)
@@ -601,7 +589,7 @@ def _interactive_fill_project_update_args(args: argparse.Namespace) -> None:
             args.project_id, include="trackers,enabled_modules,issue_custom_fields"
         )
     )
-    try:
+    with exit_on_cancel():
         if "name" in selected:
             args.name = prompt(
                 messages.prompt_project_name,
@@ -674,9 +662,6 @@ def _interactive_fill_project_update_args(args: argparse.Namespace) -> None:
             args.issue_custom_field_ids = _interactive_select_issue_custom_field_ids(
                 custom_field_options, current["issue_custom_field_ids"]
             )
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
 
 
 def _update_fields(args: argparse.Namespace) -> dict:

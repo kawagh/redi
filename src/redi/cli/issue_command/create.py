@@ -29,7 +29,7 @@ from redi.cli.custom_field_prompt import (
     prompt_custom_field_value,
 )
 from redi.cli.editor import open_editor, save_body_on_failure, shorten_to_oneline
-from redi.cli.interactive import prompt
+from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.issue_command.custom_fields import parse_custom_fields
 from redi.cli.issue_command.field_prompt import (
     parse_iso_date,
@@ -144,11 +144,8 @@ def _interactive_fill_required_custom_fields(
     for cf in required:
         if cf["id"] in existing_ids:
             continue
-        try:
+        with exit_on_cancel():
             value = prompt_custom_field_value(cf, project_id)
-        except (KeyboardInterrupt, EOFError):
-            eprint(messages.canceled)
-            sys.exit(1)
         if value is SKIP_UNSUPPORTED_FIELD:
             browser_only = True
             continue
@@ -198,18 +195,15 @@ def _interactive_fill_optional_create_fields(args: IssueCreateArgs) -> None:
         ]
         for cf in optional_cfs:
             field_options.append((f"cf_{cf['id']}", cf["name"]))
-    try:
+    with exit_on_cancel():
         selected = inline_checkbox(
             messages.prompt_select_create_optional_items,
             field_options,
         )
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if not selected:
         return
     added_cfs: list[str] = []
-    try:
+    with exit_on_cancel():
         if "assigned_to" in selected:
             args.assigned_to_id = prompt_assignee(project_id)
         if "fixed_version" in selected:
@@ -240,9 +234,6 @@ def _interactive_fill_optional_create_fields(args: IssueCreateArgs) -> None:
                     added_cfs.append(f"{cf['id']}={v}")
             else:
                 added_cfs.append(f"{cf['id']}={cf_value}")
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if not added_cfs:
         return
     if args.custom_fields:
@@ -266,11 +257,8 @@ def _interactive_select_issue_template(
         (str(t["id"]), t["title"]) for t in templates
     ]
     template_map = {str(t["id"]): t for t in templates}
-    try:
+    with exit_on_cancel():
         selected = inline_choice(messages.prompt_select_template, options)
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if not selected:
         return None
     template = template_map[selected]
@@ -313,13 +301,10 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
                 (str(t["id"]), t["name"]) for t in trackers
             ]
             labels = dict(tracker_options)
-            try:
+            with exit_on_cancel():
                 args.tracker_id = inline_choice(
                     messages.prompt_select_tracker, tracker_options
                 )
-            except (KeyboardInterrupt, EOFError):
-                eprint(messages.canceled)
-                sys.exit(1)
             print(messages.tracker_label.format(value=labels[args.tracker_id]))
         # テンプレートを選択し、題名・説明の初期値として反映させる
         template = _interactive_select_issue_template(project_id, args.tracker_id)
@@ -327,13 +312,10 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
         if template is not None:
             subject_default = template["issue_title"]
             template_description = template["description"]
-        try:
+        with exit_on_cancel():
             args.subject = prompt(
                 messages.prompt_subject, default=subject_default
             ).strip()
-        except (KeyboardInterrupt, EOFError):
-            eprint(messages.canceled)
-            sys.exit(1)
         if not args.subject:
             eprint(messages.canceled_empty_subject)
             sys.exit(1)
@@ -367,11 +349,8 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
                     ("optional", messages.action_fill_optional),
                 ]
             )
-            try:
+            with exit_on_cancel():
                 action = inline_choice(messages.prompt_what_next, action_options)
-            except (KeyboardInterrupt, EOFError):
-                eprint(messages.canceled)
-                sys.exit(1)
             if action == "optional":
                 _interactive_fill_optional_create_fields(args)
                 continue
