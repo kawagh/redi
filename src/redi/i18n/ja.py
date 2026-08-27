@@ -569,7 +569,11 @@ class Ja(MessagesProto):
     tui_comment_edit_canceled_empty = "コメントが空のためキャンセル"
     tui_comment_delete_prompt = "コメントを削除しますか? {summary} [y/N]"
     tui_wiki_no_pages = "Wikiページが見つかりません"
-    tui_wiki_loading = "(Wikiを読み込み中...)"
+    # 取得待ちの表示ラベル (スピナーの右に出す)
+    tui_loading_issues = "イシューを読み込み中..."
+    tui_loading_wiki = "Wikiを読み込み中..."
+    tui_loading_time_entries = "作業時間を読み込み中..."
+    tui_loading_comments = "コメントを読み込み中..."
     tui_wiki_load_failed = "Wikiの取得に失敗しました: {error}"
     tui_wiki_load_text_failed = "(読み込みに失敗しました: {error})"
     tui_wiki_page_missing = "(ページが見つかりません)"
@@ -578,7 +582,6 @@ class Ja(MessagesProto):
         "wiki_project_id か default_project_id を設定してください"
     )
     tui_time_entry_no_entries = "作業時間が見つかりません"
-    tui_time_entry_loading = "(作業時間を読み込み中...)"
     tui_time_entry_load_failed = "作業時間の取得に失敗しました: {error}"
     tui_time_entry_delete_failed = "作業時間の削除に失敗しました: {error}"
     tui_time_entry_delete_missing = "作業時間が見つかりません: {id}"

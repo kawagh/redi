@@ -414,6 +414,8 @@ _HELP_LINES: list[tuple[str, str]] = [
 
 ISSUE_TAB = TabView(
     label=messages.tui_tab_label_issues,
+    loading_label=messages.tui_loading_issues,
+    preview_loading_label=messages.tui_loading_comments,
     render_list=_render_list,
     render_preview=_render_preview,
     status_hint=_status_hint,

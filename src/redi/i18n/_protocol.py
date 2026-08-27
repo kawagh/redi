@@ -729,7 +729,11 @@ class MessagesProto(Protocol):
     tui_comment_delete_prompt: str
     """{summary}"""
     tui_wiki_no_pages: str
-    tui_wiki_loading: str
+    # 取得待ちの表示ラベル (スピナーの右に出す)
+    tui_loading_issues: str
+    tui_loading_wiki: str
+    tui_loading_time_entries: str
+    tui_loading_comments: str
     tui_wiki_load_failed: str
     """{error}"""
     tui_wiki_load_text_failed: str
@@ -738,7 +742,6 @@ class MessagesProto(Protocol):
     tui_wiki_press_enter_to_load: str
     tui_wiki_project_required: str
     tui_time_entry_no_entries: str
-    tui_time_entry_loading: str
     tui_time_entry_load_failed: str
     """{error}"""
     tui_time_entry_delete_failed: str

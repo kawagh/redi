@@ -29,6 +29,8 @@ PROJECTS = cast(
 def _fake_tab(on_activate: Callable[[TuiState], None]) -> TabView:
     return TabView(
         label="fake",
+        loading_label="loading",
+        preview_loading_label="loading",
         render_list=lambda s: [],
         render_preview=lambda s: [],
         status_hint=lambda s: "",

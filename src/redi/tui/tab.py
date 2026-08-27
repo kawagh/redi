@@ -7,6 +7,10 @@ from redi.tui.state import Renderable, TuiResult, TuiState
 @dataclass
 class TabView:
     label: str
+    # 一覧を取得している間、スピナーの右に出すラベル。
+    loading_label: str
+    # プレビューの中身 (コメント・本文) を取得している間のラベル。
+    preview_loading_label: str
     render_list: Callable[[TuiState], Renderable]
     render_preview: Callable[[TuiState], Renderable]
     status_hint: Callable[[TuiState], str]

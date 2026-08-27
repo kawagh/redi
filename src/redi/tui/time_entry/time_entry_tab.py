@@ -58,7 +58,7 @@ def _render_list(state: TuiState) -> Renderable:
     if not entries:
         if state.time_entry_tab.loaded:
             return [("", messages.tui_time_entry_no_entries)]
-        return [("", messages.tui_time_entry_loading)]
+        return [("", messages.tui_loading_time_entries)]
     result: Renderable = []
     query = state.search_query
     subjects = state.time_entry_tab.issue_subjects
@@ -363,6 +363,8 @@ _HELP_LINES: list[tuple[str, str]] = [
 
 TIME_ENTRY_TAB = TabView(
     label=messages.tui_tab_label_time_entries,
+    loading_label=messages.tui_loading_time_entries,
+    preview_loading_label=messages.tui_loading_time_entries,
     render_list=_render_list,
     render_preview=_render_preview,
     status_hint=_status_hint,

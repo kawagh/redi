@@ -21,6 +21,8 @@ TuiAction = Literal[
 ]
 TuiTab = Literal["issues", "wiki", "time_entries"]
 FilterField = Literal["status", "assignee", "tracker", "query"]
+# 取得待ちの間、スピナーに差し替える領域。
+LoadingTarget = Literal["list", "preview"]
 
 # prompt_toolkit の FormattedTextControl に渡す `(style, text)` 断片のリスト。
 Renderable = list[tuple[str, str]]
@@ -274,6 +276,26 @@ class TimeEntryTabState:
 
 
 @dataclass
+class LoadingState:
+    """API 取得を待っている間の表示状態。
+
+    取得はワーカースレッドで走り、その間も描画は続く。書き換え途中の
+    `issues` / `pages` を読んで壊れないよう、取得中は `target` の領域を
+    スピナーに差し替えて元のデータを読まないようにする。
+    """
+
+    # 取得中の領域。None なら取得していない。
+    target: LoadingTarget | None = None
+    # スピナーの右に出す「何を取っているか」のラベル。
+    label: str = ""
+    # スピナーの駒送りカウンタ。
+    frame: int = 0
+
+    def is_active(self) -> bool:
+        return self.target is not None
+
+
+@dataclass
 class TuiState:
     last_result: TuiResult | None = None
     page_size: int = 0
@@ -306,6 +328,7 @@ class TuiState:
     project_label: str = ""
     project_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
     profile_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
+    loading: LoadingState = field(default_factory=LoadingState)
 
     def effective_project_id(self) -> str | None:
         return self.project_id or config.default_project_id

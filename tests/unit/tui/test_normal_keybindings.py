@@ -41,3 +41,38 @@ class TestEscapeClearsSearch:
         _handler(_kb(state), (Keys.Escape,))(None)
 
         assert state.issue_tab.filter.tracker_id == "2"
+
+
+class TestKeysWhileLoading:
+    """API 取得中は一覧を動かすキーを受け付けない
+
+    取得はワーカースレッドで走り、その間 issues / pages は書き換えられている。
+    カーソルやページを動かすと壊れた組み合わせを描画しうるため一律で止める。
+    """
+
+    def _active(self, state: TuiState, keys: tuple) -> bool:
+        return any(b.filter() for b in _kb(state).get_bindings_for_keys(keys))
+
+    def test_movement_is_ignored(self):
+        """取得中は j (カーソル移動) が効かない"""
+        state = TuiState()
+        state.loading.target = "list"
+
+        assert self._active(state, ("j",)) is False
+
+    def test_reload_is_ignored(self):
+        """取得中は R が効かない (二重に取得を投げない)"""
+        state = TuiState()
+        state.loading.target = "list"
+
+        assert self._active(state, ("R",)) is False
+
+    def test_quit_still_works(self):
+        """取得中でも q は効く
+
+        サーバーが応答しないときに TUI から抜けられなくなるのを避ける。
+        """
+        state = TuiState()
+        state.loading.target = "list"
+
+        assert self._active(state, ("q",)) is True

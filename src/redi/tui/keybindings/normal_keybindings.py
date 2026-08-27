@@ -11,6 +11,7 @@ from redi.tui.keybindings.keybinding_actions import (
     reset_preview_scroll,
     scroll_preview,
 )
+from redi.tui.loading import run_with_spinner
 from redi.tui.profile_modal import open_profile_modal
 from redi.tui.project_modal import open_project_modal
 from redi.tui.state import TuiState
@@ -27,23 +28,24 @@ from redi.tui.wiki.delete_modal import open_delete_modal as open_wiki_delete_mod
 def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     normal_mode = conditions.normal
 
-    @kb.add("tab", filter=normal_mode)
-    def _(event):
+    async def _switch_tab(event, step: int) -> None:
         clear_temporary_state(state)
         reset_preview_scroll(state)
         tab_keys = list(TABS.keys())
         idx = tab_keys.index(state.tab)
-        state.tab = tab_keys[(idx + 1) % len(tab_keys)]
-        TABS[state.tab].on_activate(state)
+        state.tab = tab_keys[(idx + step) % len(tab_keys)]
+        tab = TABS[state.tab]
+        await run_with_spinner(
+            state, event.app, "list", tab.loading_label, lambda: tab.on_activate(state)
+        )
+
+    @kb.add("tab", filter=normal_mode)
+    async def _(event):
+        await _switch_tab(event, 1)
 
     @kb.add("s-tab", filter=normal_mode)
-    def _(event):
-        clear_temporary_state(state)
-        reset_preview_scroll(state)
-        tab_keys = list(TABS.keys())
-        idx = tab_keys.index(state.tab)
-        state.tab = tab_keys[(idx - 1) % len(tab_keys)]
-        TABS[state.tab].on_activate(state)
+    async def _(event):
+        await _switch_tab(event, -1)
 
     @kb.add("up", filter=normal_mode)
     @kb.add("k", filter=normal_mode)
@@ -93,17 +95,31 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
 
     @kb.add("right", filter=normal_mode)
     @kb.add("l", filter=normal_mode)
-    def _(event):
+    async def _(event):
         clear_temporary_state(state)
         reset_preview_scroll(state)
-        TABS[state.tab].on_page_forward(state)
+        tab = TABS[state.tab]
+        await run_with_spinner(
+            state,
+            event.app,
+            "list",
+            tab.loading_label,
+            lambda: tab.on_page_forward(state),
+        )
 
     @kb.add("left", filter=normal_mode)
     @kb.add("h", filter=normal_mode)
-    def _(event):
+    async def _(event):
         clear_temporary_state(state)
         reset_preview_scroll(state)
-        TABS[state.tab].on_page_backward(state)
+        tab = TABS[state.tab]
+        await run_with_spinner(
+            state,
+            event.app,
+            "list",
+            tab.loading_label,
+            lambda: tab.on_page_backward(state),
+        )
 
     @kb.add("c-e", filter=normal_mode)
     def _(event):
@@ -122,9 +138,16 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         scroll_preview(state, -max(1, state.page_size // 2))
 
     @kb.add("enter", filter=normal_mode)
-    def _(event):
+    async def _(event):
         clear_temporary_state(state)
-        TABS[state.tab].on_enter(state)
+        tab = TABS[state.tab]
+        await run_with_spinner(
+            state,
+            event.app,
+            "preview",
+            tab.preview_loading_label,
+            lambda: tab.on_enter(state),
+        )
 
     @kb.add("v", filter=normal_mode)
     def _(event):
@@ -195,14 +218,19 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
             open_wiki_delete_modal(state)
 
     @kb.add("R", filter=normal_mode)
-    def _(event):
+    async def _(event):
         clear_temporary_state(state)
         reset_preview_scroll(state)
-        TABS[state.tab].on_reload(state)
+        tab = TABS[state.tab]
+        await run_with_spinner(
+            state, event.app, "list", tab.loading_label, lambda: tab.on_reload(state)
+        )
         state.flash_message = messages.tui_flash_reloaded
 
-    @kb.add("q", filter=normal_mode)
-    @kb.add("c-c", filter=normal_mode)
+    # 取得中は他のキーを受けないが、サーバーが応答しないときに抜けられなく
+    # なるので、終了だけは loading でも効かせる。
+    @kb.add("q", filter=normal_mode | conditions.loading)
+    @kb.add("c-c", filter=normal_mode | conditions.loading)
     def _(event):
         event.app.exit(result=None)
 

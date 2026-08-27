@@ -27,9 +27,11 @@ from redi.tui.issue.filter_modal import (
 )
 from redi.tui.issue.issue_tab import reload_with_filter
 from redi.tui.keybindings.keybinding_actions import reset_preview_scroll
+from redi.tui.loading import run_with_spinner
 from redi.tui.profile_modal import request_profile_switch
 from redi.tui.project_modal import apply_project_switch
 from redi.tui.state import IssueFilter, TimeEntryFilter, TuiState
+from redi.tui.tabs import TABS
 from redi.tui.time_entry.time_entry_tab import (
     reload_with_filter as time_entry_reload_with_filter,
 )
@@ -118,8 +120,17 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
             modal, modal.focus, max(0, section_cursor(modal, modal.focus) - 1)
         )
 
-    @kb.add("enter", filter=show_filter_modal)
-    def _issue_filter_modal_apply(event):
+    async def _reload_issues_with_spinner(event) -> None:
+        await run_with_spinner(
+            state,
+            event.app,
+            "list",
+            TABS["issues"].loading_label,
+            lambda: reload_with_filter(state),
+        )
+
+    @kb.add("enter", filter=show_filter_modal & ~conditions.loading)
+    async def _issue_filter_modal_apply(event):
         modal = state.issue_tab.filter_modal
         choices = section_choices(modal, modal.focus)
         if not choices:
@@ -129,10 +140,10 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         state.issue_tab.filter.apply(modal.focus, api_val, label)
         sync_cursors_to_filter(state)
         reset_preview_scroll(state)
-        reload_with_filter(state)
+        await _reload_issues_with_spinner(event)
 
-    @kb.add("c", filter=show_filter_modal)
-    def _issue_filter_modal_clear(event):
+    @kb.add("c", filter=show_filter_modal & ~conditions.loading)
+    async def _issue_filter_modal_clear(event):
         state.issue_tab.filter = IssueFilter()
         modal = state.issue_tab.filter_modal
         modal.status_cursor = 0
@@ -140,7 +151,7 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         modal.tracker_cursor = 0
         modal.query_cursor = 0
         reset_preview_scroll(state)
-        reload_with_filter(state)
+        await _reload_issues_with_spinner(event)
 
     @kb.add("escape", filter=show_filter_modal)
     @kb.add("f", filter=show_filter_modal)
@@ -162,8 +173,17 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         modal = state.time_entry_tab.filter_modal
         modal.user_cursor = max(0, modal.user_cursor - 1)
 
-    @kb.add("enter", filter=show_time_entry_filter_modal)
-    def _(event):
+    async def _reload_time_entries_with_spinner(event) -> None:
+        await run_with_spinner(
+            state,
+            event.app,
+            "list",
+            TABS["time_entries"].loading_label,
+            lambda: time_entry_reload_with_filter(state),
+        )
+
+    @kb.add("enter", filter=show_time_entry_filter_modal & ~conditions.loading)
+    async def _(event):
         modal = state.time_entry_tab.filter_modal
         if not modal.user_choices:
             return
@@ -172,16 +192,16 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         if api_val is not None:
             state.time_entry_tab.filter.user_label = label
         reset_preview_scroll(state)
-        time_entry_reload_with_filter(state)
+        await _reload_time_entries_with_spinner(event)
         modal.show = False
 
-    @kb.add("c", filter=show_time_entry_filter_modal)
-    def _(event):
+    @kb.add("c", filter=show_time_entry_filter_modal & ~conditions.loading)
+    async def _(event):
         state.time_entry_tab.filter = TimeEntryFilter(user_id=None, user_label="")
         modal = state.time_entry_tab.filter_modal
         modal.user_cursor = 0
         reset_preview_scroll(state)
-        time_entry_reload_with_filter(state)
+        await _reload_time_entries_with_spinner(event)
 
     @kb.add("escape", filter=show_time_entry_filter_modal)
     @kb.add("f", filter=show_time_entry_filter_modal)

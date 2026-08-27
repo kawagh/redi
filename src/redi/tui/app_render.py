@@ -11,6 +11,7 @@ from prompt_toolkit.utils import get_cwidth
 from redi import config
 from redi.i18n import messages
 from redi.tui.conditions import Conditions
+from redi.tui.loading import spinner_frame
 from redi.tui.state import Renderable, TuiState
 from redi.tui.tabs import TABS
 
@@ -42,7 +43,16 @@ def render_tabs(state: TuiState) -> Renderable:
     return parts
 
 
+def render_spinner(state: TuiState) -> Renderable:
+    return [
+        ("bold fg:ansicyan", f" {spinner_frame(state)} "),
+        ("", state.loading.label),
+    ]
+
+
 def render_list_current(state: TuiState) -> Renderable:
+    if state.loading.target == "list":
+        return render_spinner(state)
     return TABS[state.tab].render_list(state)
 
 
@@ -78,6 +88,12 @@ def _skip_lines(parts: Renderable, n: int) -> Renderable:
 
 
 def render_preview_current(state: TuiState) -> Renderable:
+    if state.loading.target == "preview":
+        return render_spinner(state)
+    if state.loading.target == "list":
+        # プレビューは一覧のカーソル行を引くため、一覧を取り直している間は
+        # 引く先が消えている可能性がある。空にして触らない。
+        return []
     parts = TABS[state.tab].render_preview(state)
     if state.preview_scroll <= 0:
         return parts

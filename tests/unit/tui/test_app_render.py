@@ -2,6 +2,7 @@ from prompt_toolkit.utils import get_cwidth
 
 from redi.tui import app_render
 from redi.tui.conditions import build_conditions
+from redi.tui.loading import SPINNER_FRAMES
 from redi.tui.state import TuiState
 from redi.tui.tabs import TABS
 
@@ -66,3 +67,43 @@ class TestRenderStatusSearch:
         state.issue_tab.comment_select.active = True
 
         assert "/foo" not in self._status(state)
+
+
+class TestLoadingSpinner:
+    """API 取得中は、取得している側の領域をスピナーに差し替える"""
+
+    def test_list_shows_spinner_and_label(self):
+        """一覧の取得中は一覧側にスピナーとラベルを出す"""
+        state = TuiState()
+        state.loading.target = "list"
+        state.loading.label = "イシューを読み込み中..."
+
+        text = "".join(_rendered_lines(app_render.render_list_current(state)))
+
+        assert SPINNER_FRAMES[0] in text
+        assert "イシューを読み込み中..." in text
+
+    def test_preview_is_empty_while_list_is_loading(self):
+        """一覧の取得中はプレビューを出さない
+
+        プレビューは一覧のカーソル行を引くので、一覧が入れ替わっている最中に
+        引くと存在しない行を触りうる。
+        """
+        state = TuiState()
+        state.loading.target = "list"
+
+        assert app_render.render_preview_current(state) == []
+
+    def test_preview_shows_spinner_when_preview_is_loading(self):
+        """プレビューの取得中はプレビュー側にだけスピナーを出す"""
+        state = TuiState()
+        state.loading.target = "preview"
+        state.loading.label = "コメントを読み込み中..."
+
+        text = "".join(_rendered_lines(app_render.render_preview_current(state)))
+
+        assert "コメントを読み込み中..." in text
+        # 一覧はそのまま見えている
+        assert app_render.render_list_current(state) == TABS[state.tab].render_list(
+            state
+        )

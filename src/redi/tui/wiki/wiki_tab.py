@@ -72,7 +72,7 @@ def _render_list(state: TuiState) -> Renderable:
     if not state.wiki_tab.labels:
         if state.wiki_tab.loaded:
             return [("", messages.tui_wiki_no_pages)]
-        return [("", messages.tui_wiki_loading)]
+        return [("", messages.tui_loading_wiki)]
     result: Renderable = []
     query = state.search_query
     for i, label in enumerate(state.wiki_tab.labels):
@@ -257,6 +257,8 @@ _HELP_LINES: list[tuple[str, str]] = [
 
 WIKI_TAB = TabView(
     label=messages.tui_tab_label_wiki,
+    loading_label=messages.tui_loading_wiki,
+    preview_loading_label=messages.tui_loading_wiki,
     render_list=_render_list,
     render_preview=_render_preview,
     status_hint=_status_hint,

@@ -43,7 +43,13 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
         FormattedTextControl(
             lambda: render_list_current(state),
             show_cursor=False,
-            get_cursor_position=lambda: Point(0, TABS[state.tab].get_cursor_y(state)),
+            # 取得中の一覧はスピナー 1 行だけなので、カーソルは先頭に置く。
+            get_cursor_position=lambda: Point(
+                0,
+                0
+                if state.loading.target == "list"
+                else TABS[state.tab].get_cursor_y(state),
+            ),
         ),
         width=HALF,
     )

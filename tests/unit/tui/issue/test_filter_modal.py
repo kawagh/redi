@@ -1,5 +1,9 @@
 """issues タブの f で開くフィルタ modal の単体テスト。"""
 
+import asyncio
+import inspect
+from types import SimpleNamespace
+
 import pytest
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
@@ -84,6 +88,16 @@ def _handler(kb: KeyBindings, keys: tuple):
     raise AssertionError(f"no active binding for {keys}")
 
 
+def _press(kb: KeyBindings, keys: tuple) -> None:
+    """キーを 1 つ処理する。再取得を伴うハンドラは coroutine なので走らせる。"""
+    # 再取得のハンドラは event.app を再描画のために参照する。スピナー自体は
+    # _kb() で素通しにしているので、参照できる形だけあればよい。
+    event = SimpleNamespace(app=None)
+    result = _handler(kb, keys)(event)
+    if inspect.isawaitable(result):
+        asyncio.run(result)
+
+
 class TestFilterModalKeys:
     """フィルタ modal のキー操作で tracker を絞り込める"""
 
@@ -91,6 +105,12 @@ class TestFilterModalKeys:
         monkeypatch.setattr(
             modal_keybindings, "reload_with_filter", lambda _state: None
         )
+
+        # スピナーはスレッドと Application を要求するので、ここでは素通しにする。
+        async def run_directly(_state, _app, _target, _label, fn):
+            return fn()
+
+        monkeypatch.setattr(modal_keybindings, "run_with_spinner", run_directly)
         kb = KeyBindings()
         modal_keybindings.register(kb, state, build_conditions(state))
         return kb
@@ -103,13 +123,13 @@ class TestFilterModalKeys:
         kb = self._kb(state, monkeypatch)
 
         # tab を 2 回で status -> assignee -> tracker
-        _handler(kb, (Keys.ControlI,))(None)
-        _handler(kb, (Keys.ControlI,))(None)
+        _press(kb, (Keys.ControlI,))
+        _press(kb, (Keys.ControlI,))
         assert state.issue_tab.filter_modal.focus == "tracker"
 
         # j で「Bug」まで下げて Enter
-        _handler(kb, ("j",))(None)
-        _handler(kb, (Keys.ControlM,))(None)
+        _press(kb, ("j",))
+        _press(kb, (Keys.ControlM,))
 
         assert state.issue_tab.filter.tracker_id == "1"
         assert state.issue_tab.filter.tracker_label == "Bug"
@@ -124,7 +144,7 @@ class TestFilterModalKeys:
         modal.query_cursor = 1
         kb = self._kb(state, monkeypatch)
 
-        _handler(kb, ("c",))(None)
+        _press(kb, ("c",))
 
         assert state.issue_tab.filter.is_active() is False
         assert modal.tracker_cursor == 0
@@ -140,11 +160,11 @@ class TestFilterModalKeys:
 
         # tab を 3 回で status -> assignee -> tracker -> query
         for _ in range(3):
-            _handler(kb, (Keys.ControlI,))(None)
+            _press(kb, (Keys.ControlI,))
         assert state.issue_tab.filter_modal.focus == "query"
 
-        _handler(kb, ("j",))(None)
-        _handler(kb, (Keys.ControlM,))(None)
+        _press(kb, ("j",))
+        _press(kb, (Keys.ControlM,))
 
         assert state.issue_tab.filter.query_id == "7"
         assert state.issue_tab.filter.query_label == "My open issues"

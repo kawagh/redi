@@ -25,13 +25,18 @@ class Conditions:
     project_modal: Condition
     profile_modal: Condition
     comment_select: Condition
+    loading: Condition
 
 
 def build_conditions(state: TuiState) -> Conditions:
     return Conditions(
         normal=Condition(
             lambda: (
-                not state.search_mode
+                # 取得中は state が書き換わっている最中なので、一覧・カーソルを
+                # 動かすキーを一切受けない。抜け道として q / Ctrl-C だけは
+                # loading でも効くように別途登録する。
+                not state.loading.is_active()
+                and not state.search_mode
                 and state.confirm_delete_prompt is None
                 and not state.show_help
                 and not state.issue_tab.filter_modal.show
@@ -62,4 +67,5 @@ def build_conditions(state: TuiState) -> Conditions:
                 and state.confirm_delete_prompt is None
             )
         ),
+        loading=Condition(lambda: state.loading.is_active()),
     )
