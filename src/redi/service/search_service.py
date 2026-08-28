@@ -8,9 +8,13 @@
 from redi.api.issue import Issue, IssuesPageResponse, fetch_issues_page
 from redi.api.search import search
 
-# `/issues.json` は既定で未完了のイシューしか返すため、検索でヒットした終了済みが
+# `/issues.json` は既定で未完了のイシューしか返さないため、検索でヒットした終了済みが
 # 引き直しで消えてしまう。id を指定して引く以上、ステータスでの絞り込みは不要。
 _ALL_STATUSES = "*"
+
+# 検索結果の type は未完了なら `issue`、終了済みなら `issue-closed` になる。
+# どちらもイシューなので前方一致で拾う。
+_ISSUE_TYPE_PREFIX = "issue"
 
 
 def search_issues_page(
@@ -32,7 +36,11 @@ def search_issues_page(
         types=["issues"],
     )
     total_count = found.get("total_count", 0)
-    issue_ids = [r["id"] for r in found.get("results", []) if r.get("type") == "issue"]
+    issue_ids = [
+        r["id"]
+        for r in found.get("results", [])
+        if r.get("type", "").startswith(_ISSUE_TYPE_PREFIX)
+    ]
     if not issue_ids:
         return IssuesPageResponse(
             issues=[],

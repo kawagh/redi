@@ -3,7 +3,7 @@ from typing import cast
 from redi.api.issue import Issue
 from redi.tui.issue import issue_tab
 from redi.tui.issue.issue_tab import _page_label, fetch_issues_with_filter
-from redi.tui.state import IssueFilter, TuiState
+from redi.tui.state import IssueFilter, IssueFind, TuiState
 
 
 def _make_state(
@@ -98,3 +98,72 @@ class TestFetchIssuesWithFilter:
         fetch_issues_with_filter(state, 0)
 
         assert captured["query_id"] == "7"
+
+
+class TestFetchIssuesWhileSearching:
+    """検索中の fetch_issues_with_filter は検索結果を取りに行く"""
+
+    def test_uses_search_service(self, monkeypatch):
+        """検索クエリがあるときは検索 API 経由で取得し、フィルタ条件は渡さない"""
+        captured = {}
+
+        def fake_search_issues_page(**kwargs):
+            captured.update(kwargs)
+            return {"issues": [], "total_count": 0}
+
+        def unexpected_fetch(**kwargs):
+            raise AssertionError("検索中は通常のイシュー一覧を取りに行かない")
+
+        monkeypatch.setattr(
+            issue_tab.search_service, "search_issues_page", fake_search_issues_page
+        )
+        monkeypatch.setattr(issue_tab, "fetch_issues_page", unexpected_fetch)
+        state = TuiState()
+        state.page_size = 25
+        state.project_id = "redi"
+        state.issue_tab.filter = IssueFilter(status_id="closed", status_label="closed")
+        state.issue_tab.find = IssueFind(query="hooks")
+
+        fetch_issues_with_filter(state, 50)
+
+        assert captured["query"] == "hooks"
+        assert captured["project_id"] == "redi"
+        assert captured["limit"] == 25
+        assert captured["offset"] == 50
+
+    def test_falls_back_to_filter_when_not_searching(self, monkeypatch):
+        """検索を解除すると通常のイシュー一覧の取得に戻る"""
+        captured = {}
+
+        def fake_fetch_issues_page(**kwargs):
+            captured.update(kwargs)
+            return {"issues": [], "total_count": 0}
+
+        monkeypatch.setattr(issue_tab, "fetch_issues_page", fake_fetch_issues_page)
+        state = TuiState()
+        state.page_size = 25
+        state.issue_tab.find = IssueFind(query="")
+        state.issue_tab.filter = IssueFilter(status_id="closed", status_label="closed")
+
+        fetch_issues_with_filter(state, 0)
+
+        assert captured["status_id"] == "closed"
+
+
+class TestStatusHintWhileSearching:
+    """検索中のステータス行は検索していることを示す"""
+
+    def test_shows_find_label(self):
+        """検索クエリをラベルとして出す"""
+        state = _make_state(offset=0, page_size=25, total_count=3, issues_on_page=3)
+        state.issue_tab.find = IssueFind(query="hooks")
+
+        assert "[find=hooks]" in issue_tab._status_hint(state)
+
+    def test_hides_filter_label(self):
+        """検索がフィルタを置き換えるので、フィルタのラベルは出さない"""
+        state = _make_state(offset=0, page_size=25, total_count=3, issues_on_page=3)
+        state.issue_tab.find = IssueFind(query="hooks")
+        state.issue_tab.filter = IssueFilter(status_id="closed", status_label="closed")
+
+        assert "status=" not in issue_tab._status_hint(state)
