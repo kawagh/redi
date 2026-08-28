@@ -116,6 +116,7 @@ class WatcherNotFoundException(Exception):
 
 def fetch_issues_page(
     project_id: str | None = None,
+    issue_id: str | None = None,
     fixed_version_id: str | None = None,
     assigned_to: str | None = None,
     status_id: str | None = None,
@@ -137,6 +138,8 @@ def fetch_issues_page(
     params: dict = {}
     if project_id:
         params["project_id"] = project_id
+    if issue_id:
+        params["issue_id"] = issue_id
     if fixed_version_id:
         params["fixed_version_id"] = fixed_version_id
     if assigned_to:

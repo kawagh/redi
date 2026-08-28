@@ -760,6 +760,9 @@ class MessagesProto(Protocol):
     tui_issue_delete_modal_mismatch: str
     tui_issue_delete_modal_empty: str
     tui_issue_delete_modal_hint: str
+    tui_find_modal_title: str
+    tui_find_modal_input_label: str
+    tui_find_modal_hint: str
     tui_wiki_delete_failed: str
     """{error}"""
     tui_wiki_delete_page_missing: str
@@ -1169,6 +1172,7 @@ class MessagesProto(Protocol):
     tui_help_next_prev_match: str
     tui_help_clear_search: str
     tui_help_filter_issues: str
+    tui_help_find_issues: str
     tui_help_filter_user: str
     tui_help_switch_project: str
     tui_help_switch_profile: str
