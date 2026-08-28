@@ -35,7 +35,9 @@ def search_issues_page(
         project_id=project_id,
         types=["issues"],
     )
-    total_count = found.get("total_count", 0)
+    # 検索トークンが成立しないクエリ (1文字など) では total_count が null で返る。
+    # そのまま流すと一覧のページ表示が数値演算で落ちるので 0 に倒す。
+    total_count = found.get("total_count") or 0
     issue_ids = [
         r["id"]
         for r in found.get("results", [])

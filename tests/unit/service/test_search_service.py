@@ -140,6 +140,19 @@ class TestSearchIssuesPage:
         assert page["total_count"] == 0
         assert stub_search_api["fetch_called"] == 0
 
+    def test_null_total_count_becomes_zero(self, stub_search_api):
+        """トークンが成立しないクエリ (1文字など) は total_count が null で返る
+
+        そのまま流すとページ表示の数値演算で落ち、TUI が毎フレーム例外を出して
+        操作を受け付けなくなるため、0 に倒す。
+        """
+        stub_search_api["search_response"] = {"results": [], "total_count": None}
+
+        page = search_service.search_issues_page("a")
+
+        assert page["total_count"] == 0
+        assert page["issues"] == []
+
     def test_drops_ids_that_cannot_be_fetched(self, stub_search_api):
         """引き直しで得られなかった id は落とす (検索後に削除された場合など)"""
         stub_search_api["search_response"] = {
