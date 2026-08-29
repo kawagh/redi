@@ -113,8 +113,9 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
         "q",
         messages.arg_help_query_command,
         messages.arg_help_query_list,
-        # list_queries だけ refresh を取らないので合わせる
-        lambda refresh: query_service.list_queries(),
+        # list_queries だけ refresh を取らないので合わせる。
+        # --limit を持たないコマンドなので既定件数で打ち切らせない
+        lambda refresh: query_service.list_queries(all_pages=True),
         cached=False,
         format_lines=_format_query_lines,
     ),

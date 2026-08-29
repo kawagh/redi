@@ -58,7 +58,22 @@ class TestFetchProject:
 
 
 class TestFetchProjectsPaging:
-    """fetch_projects は limit / offset 未指定なら、既定の件数で打ち切らず全件返す"""
+    """fetch_projects は all_pages を指定したときだけ、既定の件数で打ち切らず全件返す"""
+
+    def test_default_sends_no_paging_params(self, monkeypatch):
+        """既定ではページングを足さず、Redmine の既定件数に任せて1回だけ呼ぶ"""
+        calls: list[dict] = []
+
+        def fake_get(path: str, **kwargs) -> FakeResponse:
+            calls.append(kwargs["params"])
+            return FakeResponse({"projects": _projects(1, 25), "total_count": 150})
+
+        monkeypatch.setattr(project_module.client, "get", fake_get)
+
+        projects = project_module.fetch_projects()
+
+        assert calls == [{}]
+        assert len(projects) == 25
 
     def test_follows_total_count(self, monkeypatch):
         """total_count に届くまで offset を進めて全件返す"""
@@ -76,14 +91,14 @@ class TestFetchProjectsPaging:
 
         monkeypatch.setattr(project_module.client, "get", fake_get)
 
-        projects = project_module.fetch_projects()
+        projects = project_module.fetch_projects(all_pages=True)
 
         assert offsets == [0, PROJECTS_PAGE_LIMIT]
         assert len(projects) == 150
 
 
 class TestFetchProjectsExplicitPaging:
-    """limit / offset を指定したときは、その1ページだけを返す"""
+    """limit / offset はそのまま Redmine に渡す"""
 
     @pytest.mark.parametrize(
         ("kwargs", "expected"),
@@ -95,7 +110,7 @@ class TestFetchProjectsExplicitPaging:
         ids=["limit", "offset", "both"],
     )
     def test_takes_one_page(self, monkeypatch, kwargs, expected):
-        """指定された分だけを送り、total_count が残っていても追わない"""
+        """指定された分だけを送る"""
         calls: list[dict] = []
 
         def fake_get(path: str, **get_kwargs) -> FakeResponse:

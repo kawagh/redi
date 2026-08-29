@@ -47,7 +47,7 @@ def _fetch_projects(
     api_client: RedmineClient, messages: MessagesProto
 ) -> list[Project]:
     try:
-        return fetch_projects(api_client)
+        return fetch_projects(api_client, all_pages=True)
     except requests.exceptions.RequestException as e:
         eprint(messages.project_list_fetch_failed.format(error=e))
         return []

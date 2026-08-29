@@ -110,7 +110,7 @@ class TestListIssuesNotFound:
     ):
         """クエリ一覧に無ければクエリ未検出のまま送出する"""
         monkeypatch.setattr(
-            issue_service.query_api, "fetch_queries", lambda: [{"id": 8}]
+            issue_service.query_api, "fetch_queries", lambda **kwargs: [{"id": 8}]
         )
 
         with pytest.raises(QueryNotFoundException) as exc_info:
@@ -123,7 +123,7 @@ class TestListIssuesNotFound:
     ):
         """クエリが実在するならプロジェクト側が原因なので送出し直す"""
         monkeypatch.setattr(
-            issue_service.query_api, "fetch_queries", lambda: [{"id": 5}]
+            issue_service.query_api, "fetch_queries", lambda **kwargs: [{"id": 5}]
         )
 
         with pytest.raises(ProjectNotFoundException) as exc_info:
@@ -136,7 +136,7 @@ class TestListIssuesNotFound:
     ):
         """クエリ一覧を取得できない場合は指定した側 (クエリ) を指す"""
 
-        def fake_fetch_queries():
+        def fake_fetch_queries(**kwargs):
             raise requests.exceptions.HTTPError()
 
         monkeypatch.setattr(

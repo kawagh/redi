@@ -47,18 +47,19 @@ def fetch_projects(
     api_client: RedmineClient | None = None,
     limit: int | None = None,
     offset: int | None = None,
+    all_pages: bool = False,
 ) -> list[Project]:
     """アクセスできるプロジェクトを取得する。
 
-    limit / offset のどちらかを指定するとその1ページだけを返す。
-    どちらも未指定なら、Redmine の一覧 API が limit 未指定だと既定件数しか
-    返さないため、`total_count` を見て全件揃うまで offset を進める。
+    既定では一覧 API を1回だけ呼ぶので、limit 未指定なら Redmine の
+    既定件数で打ち切られる。all_pages を指定したときだけ `total_count` を
+    見て全件揃うまで offset を進める (このとき limit / offset は見ない)。
 
     `api_client` は config 未確定の `redi init` から、入力されたばかりの
     URL/API キーで呼ぶために受ける。省略時はグローバルの client を使う。
     """
     target = api_client or client
-    if limit is not None or offset is not None:
+    if not all_pages:
         params: dict = {}
         if limit is not None:
             params["limit"] = limit

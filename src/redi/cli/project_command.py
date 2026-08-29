@@ -266,7 +266,7 @@ def _interactive_select_parent_id(current: str | None) -> str | None:
         ("", messages.prompt_select_parent_project_none)
     ] + [
         (str(project["id"]), f"{project['id']} {project['name']}")
-        for project in project_service.list_projects()
+        for project in project_service.list_projects(all_pages=True)
     ]
     labels = dict(options)
     selected = inline_choice(
