@@ -49,9 +49,9 @@ def project_url(project_id: str) -> str:
     return f"{config.redmine_url}/projects/{project_id}"
 
 
-def list_projects() -> list[Project]:
-    """アクセスできるプロジェクトを全件取得する。"""
-    return project_api.fetch_projects()
+def list_projects(limit: int | None = None, offset: int | None = None) -> list[Project]:
+    """アクセスできるプロジェクトを取得する。"""
+    return project_api.fetch_projects(limit=limit, offset=offset)
 
 
 def sort_projects_by_id_desc(projects: list[Project]) -> list[Project]:

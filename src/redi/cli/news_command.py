@@ -18,17 +18,19 @@ from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor, shorten_to_oneline
 from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.shared_options import project_option_parser
+from redi.cli.shared_options import pagination_option_parser, project_option_parser
 from redi.cli.validator import RequiredValidator
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import news_service
 
 
-def _fetch_news_list(project_id: str | None) -> list[News]:
+def _fetch_news_list(
+    project_id: str | None, limit: int | None = None, offset: int | None = None
+) -> list[News]:
     """ニュース一覧を取得する。プロジェクトが存在しなければ exit 1。"""
     try:
-        return news_service.list_news(project_id)
+        return news_service.list_news(project_id, limit=limit, offset=offset)
     except ProjectNotFoundException:
         eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
@@ -43,9 +45,14 @@ def _fetch_news(news_id: str) -> News:
         sys.exit(1)
 
 
-def _list_news(project_id: str | None = None, full: bool = False) -> None:
+def _list_news(
+    project_id: str | None = None,
+    full: bool = False,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> None:
     """ニュース一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
-    news_list = _fetch_news_list(project_id)
+    news_list = _fetch_news_list(project_id, limit=limit, offset=offset)
     if full:
         print(json.dumps(news_list, ensure_ascii=False))
         return
@@ -259,14 +266,18 @@ def add_news_parser(
         "news",
         aliases=["n"],
         help=messages.arg_help_news_command,
-        parents=[*parents, project_option_parser()],
+        parents=[*parents, project_option_parser(), pagination_option_parser()],
     )
     n_subparsers = n_parser.add_subparsers(dest="news_command")
     n_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_news_list,
-        parents=[*parents, project_option_parser(postfix=True)],
+        parents=[
+            *parents,
+            project_option_parser(postfix=True),
+            pagination_option_parser(postfix=True),
+        ],
     )
 
     n_view_parser = n_subparsers.add_parser(
@@ -397,4 +408,9 @@ def handle_news(args: argparse.Namespace) -> None:
         return
     if cmd == "list" or cmd is None:
         project_id = args.project_id or config.default_project_id
-        _list_news(project_id=project_id, full=args.full)
+        _list_news(
+            project_id=project_id,
+            full=args.full,
+            limit=args.limit,
+            offset=args.offset,
+        )

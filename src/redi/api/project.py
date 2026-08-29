@@ -43,21 +43,37 @@ class Project(TypedDict):
     enabled_modules: NotRequired[list[IdName]]
 
 
-def fetch_projects(api_client: RedmineClient | None = None) -> list[Project]:
-    """アクセスできるプロジェクトを全件返す。
+def fetch_projects(
+    api_client: RedmineClient | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> list[Project]:
+    """アクセスできるプロジェクトを取得する。
 
-    Redmine の一覧 API は limit 未指定だと既定件数しか返さないため、
-    `total_count` を見て全件揃うまで offset を進める。
+    limit / offset のどちらかを指定するとその1ページだけを返す。
+    どちらも未指定なら、Redmine の一覧 API が limit 未指定だと既定件数しか
+    返さないため、`total_count` を見て全件揃うまで offset を進める。
 
     `api_client` は config 未確定の `redi init` から、入力されたばかりの
     URL/API キーで呼ぶために受ける。省略時はグローバルの client を使う。
     """
     target = api_client or client
+    if limit is not None or offset is not None:
+        params: dict = {}
+        if limit is not None:
+            params["limit"] = limit
+        if offset is not None:
+            params["offset"] = offset
+        response = target.get("/projects.json", params=params)
+        response.raise_for_status()
+        return cast("list[Project]", response.json().get("projects", []))
+
     projects: list[Project] = []
-    offset = 0
+    page_offset = 0
     while True:
         response = target.get(
-            "/projects.json", params={"limit": PROJECTS_PAGE_LIMIT, "offset": offset}
+            "/projects.json",
+            params={"limit": PROJECTS_PAGE_LIMIT, "offset": page_offset},
         )
         response.raise_for_status()
         data = response.json()
@@ -66,7 +82,7 @@ def fetch_projects(api_client: RedmineClient | None = None) -> list[Project]:
         total_count = data.get("total_count")
         if not page or total_count is None or len(projects) >= total_count:
             return projects
-        offset += len(page)
+        page_offset += len(page)
 
 
 def fetch_project(project_id: str, include: str = "") -> Project:
