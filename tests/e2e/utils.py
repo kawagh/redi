@@ -36,6 +36,22 @@ def unique_identifier(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:8]}"
 
 
+def assert_paginates(*argv: str) -> None:
+    """`redi <argv...>` の一覧が --limit / --offset で切り出せることを確かめる。
+
+    絞り込みが効くかは Redmine のエンドポイント側の実装次第なので、
+    絞り込み無しの一覧を基準に突き合わせる。
+    """
+    full = run_redi(*argv).stdout.splitlines()
+    assert len(full) >= 3, f"検証には3件以上必要: {argv}"
+
+    assert run_redi(*argv, "--limit", "1").stdout.splitlines() == full[:1]
+    assert (
+        run_redi(*argv, "--limit", "2", "--offset", "1").stdout.splitlines()
+        == full[1:3]
+    )
+
+
 def _version_tuple(version: str) -> tuple[int, ...]:
     return tuple(int(part) for part in version.split("."))
 
