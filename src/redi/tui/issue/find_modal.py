@@ -44,7 +44,6 @@ def build_find_float(state: TuiState, show: FilterOrBool) -> Float:
                                 lambda: render_find_modal(state),
                                 show_cursor=False,
                             ),
-                            # 長いクエリでも打った内容が読めるように折り返す
                             wrap_lines=True,
                         ),
                         title=lambda: messages.tui_find_modal_title,
@@ -74,8 +73,6 @@ def close_find_modal(state: TuiState) -> None:
 def confirm_find(state: TuiState) -> None:
     """入力されたクエリで検索し直す。空のまま確定したら検索を解除する。"""
     state.issue_tab.find.query = state.issue_tab.find_modal.input_text.strip()
-    # 検索を掛けた場合も解除した場合も先頭ページから取り直す。どちらを取りに行くかは
-    # issue_tab.fetch_issues_with_filter が find を見て決める
     reload_with_filter(state)
     close_find_modal(state)
 

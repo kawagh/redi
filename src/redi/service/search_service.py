@@ -60,8 +60,7 @@ def search_issues_page(
     by_id: dict[int, Issue] = {
         issue["id"]: issue for issue in page["issues"] if issue.get("id") is not None
     }
-    # 引き直しの結果は id 降順で返るので、検索の並びに戻す。
-    # 検索後に削除されるなどして引けなかった id は落とす。
+    # 引き直しの結果は id 降順で返るので、検索の並びに戻す
     issues = [by_id[issue_id] for issue_id in issue_ids if issue_id in by_id]
     return IssuesPageResponse(
         issues=issues,

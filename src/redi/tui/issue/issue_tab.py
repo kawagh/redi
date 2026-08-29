@@ -281,10 +281,7 @@ def _on_enter(state: TuiState) -> None:
 
 
 def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse:
-    """現在の条件で1ページ取得する。検索中は検索結果が通常のフィルタを置き換える。
-
-    ページ送りもリロードもこの関数を通るので、検索への切り替えはここだけで済む。
-    """
+    """現在の条件で1ページ取得する。検索中は検索結果が通常のフィルタを置き換える。"""
     if state.issue_tab.find.is_active():
         return search_service.search_issues_page(
             query=state.issue_tab.find.query,
@@ -314,8 +311,8 @@ def _apply_page(state: TuiState, page: IssuesPageResponse, offset: int) -> None:
 def clear_find_for_filter(state: TuiState) -> None:
     """フィルタ操作に切り替えるため検索を解除する。
 
-    検索中は検索結果がフィルタを置き換えるので、フィルタを触っても一覧が変わらない。
-    黙って空振りさせず、最後に触った方を有効にして切り替わったことを flash で伝える。
+    検索中はフィルタを触っても一覧が変わらないので、黙って空振りさせず
+    最後に触った方を有効にする。
     """
     if not state.issue_tab.find.is_active():
         return
