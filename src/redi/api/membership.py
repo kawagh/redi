@@ -55,14 +55,23 @@ class MembershipNotFoundException(Exception):
         self.membership_id = membership_id
 
 
-def fetch_memberships(project_id: str) -> list[Membership]:
+def fetch_memberships(
+    project_id: str,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> list[Membership]:
     """プロジェクトのメンバーシップ一覧を取得する。
 
     Raises:
         ProjectNotFoundException: 対象プロジェクトが存在しない場合（HTTP 404）
         requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
     """
-    response = client.get(f"/projects/{project_id}/memberships.json")
+    params: dict = {}
+    if limit is not None:
+        params["limit"] = limit
+    if offset is not None:
+        params["offset"] = offset
+    response = client.get(f"/projects/{project_id}/memberships.json", params=params)
     if response.status_code == 404:
         raise ProjectNotFoundException(project_id)
     response.raise_for_status()

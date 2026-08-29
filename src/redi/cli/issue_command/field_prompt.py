@@ -29,7 +29,7 @@ from redi.service import project_service, version_service
 
 def prompt_project(default: str = "") -> str:
     """プロジェクトを選ばせて数値の id を返す。"""
-    projects = project_service.list_projects()
+    projects = project_service.list_projects(all_pages=True)
     options: list[tuple[str, str]] = [(str(p["id"]), p["name"]) for p in projects]
     labels = dict(options)
     value = inline_choice(messages.prompt_select_project, options, default=default)

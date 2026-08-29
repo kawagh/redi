@@ -355,7 +355,7 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
                     )
                 )
             else:
-                projects = project_service.list_projects()
+                projects = project_service.list_projects(all_pages=True)
                 valid_values: set[str] = set()
                 for p in projects:
                     valid_values.add(str(p["id"]))

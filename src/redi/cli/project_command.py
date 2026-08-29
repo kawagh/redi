@@ -24,16 +24,18 @@ from redi.cli.confirm import confirm_delete_with_identifier
 from redi.cli.editor import open_editor, shorten_to_oneline
 from redi.cli.interactive import ensure_interactive, exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.shared_options import full_option_parser
+from redi.cli.shared_options import full_option_parser, pagination_option_parser
 from redi.cli.validator import ProjectIdentifierValidator, RequiredValidator
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import project_service, version_service
 
 
-def _list_projects(full: bool = False) -> None:
+def _list_projects(
+    full: bool = False, limit: int | None = None, offset: int | None = None
+) -> None:
     """プロジェクト一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
-    projects = project_service.list_projects()
+    projects = project_service.list_projects(limit=limit, offset=offset)
     if full:
         print(json.dumps(projects, ensure_ascii=False))
         return
@@ -264,7 +266,7 @@ def _interactive_select_parent_id(current: str | None) -> str | None:
         ("", messages.prompt_select_parent_project_none)
     ] + [
         (str(project["id"]), f"{project['id']} {project['name']}")
-        for project in project_service.list_projects()
+        for project in project_service.list_projects(all_pages=True)
     ]
     labels = dict(options)
     selected = inline_choice(
@@ -694,14 +696,18 @@ def add_project_parser(
         "project",
         aliases=["p"],
         help=messages.arg_help_project_command,
-        parents=[*parents, full_option_parser()],
+        parents=[*parents, full_option_parser(), pagination_option_parser()],
     )
     p_subparsers = p_parser.add_subparsers(dest="project_command")
     p_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_project_list,
-        parents=[*parents, full_option_parser(postfix=True)],
+        parents=[
+            *parents,
+            full_option_parser(postfix=True),
+            pagination_option_parser(postfix=True),
+        ],
     )
     p_view_parser = p_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_project_view, parents=parents
@@ -861,4 +867,4 @@ def handle_project(args: argparse.Namespace) -> None:
             print(messages.update_canceled)
             sys.exit()
     elif cmd == "list" or cmd is None:
-        _list_projects(full=args.full)
+        _list_projects(full=args.full, limit=args.limit, offset=args.offset)
