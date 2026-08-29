@@ -588,9 +588,7 @@ class En(MessagesProto):
     tui_issue_delete_modal_hint = "Enter:confirm Esc:close"
     tui_find_modal_title = "Search issues (Esc to close)"
     tui_find_modal_input_label = "query> "
-    tui_find_modal_hint = (
-        "Enter:search (empty Enter clears) C-w:delete word C-u:clear Esc:close"
-    )
+    tui_find_modal_hint = "Enter:search (empty Enter clears) Esc:close"
     tui_wiki_delete_failed = "Failed to delete wiki page: {error}"
     tui_wiki_delete_page_missing = "Wiki page not found: {title}"
     tui_wiki_delete_modal_title = "Confirm wiki page deletion (Esc to close)"

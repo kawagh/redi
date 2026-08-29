@@ -597,9 +597,7 @@ class Ja(MessagesProto):
     tui_issue_delete_modal_hint = "Enter:確定 Esc:閉じる"
     tui_find_modal_title = "イシュー検索 (Esc で閉じる)"
     tui_find_modal_input_label = "クエリ> "
-    tui_find_modal_hint = (
-        "Enter:検索 (空のまま Enter で解除) C-w:単語削除 C-u:全消し Esc:閉じる"
-    )
+    tui_find_modal_hint = "Enter:検索 (空のまま Enter で解除) Esc:閉じる"
     tui_wiki_delete_failed = "Wikiページの削除に失敗しました: {error}"
     tui_wiki_delete_page_missing = "Wikiページが見つかりません: {title}"
     tui_wiki_delete_modal_title = "Wikiページ削除の確認 (Esc で閉じる)"
