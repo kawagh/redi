@@ -142,6 +142,7 @@ redi project # list projects
 redi project list # same as above (`redi project l` / `redi p list` / `redi p l` / `redi p` also work)
 redi project view <project_id> # view project
 redi project view <project_id> --include trackers,issue_categories
+redi project list --limit 10 --offset 10 # `list` returns all projects unless limited
 redi project create # (interactive)
 redi project create <name> <identifier>
 redi project create <name> <identifier> -d "description" --is_public true
@@ -223,10 +224,12 @@ redi me update -f <firstname> -l <lastname> -m <mail>
 
 # membership (alias: m)
 redi membership -p <project_id>
+redi membership list --limit 10 --offset 10
 redi membership view <membership_id>
 
 # news (alias: n)
 redi news -p <project_id>
+redi news list --limit 10 --offset 10
 redi news view <news_id>
 redi news view <news_id> --web # open in browser
 redi news create -p <project_id> # interactive: title, summary (optional), then the description in an editor
