@@ -71,7 +71,7 @@ def _query_exists(query_id: str) -> bool:
     ところを全件取得することになるが、404 のエラー経路でしか通らないので許容している。
     """
     try:
-        queries = query_api.fetch_queries()
+        queries = query_api.fetch_queries(all_pages=True)
     except requests.exceptions.RequestException:
         return False
     return any(str(query.get("id")) == str(query_id) for query in queries)

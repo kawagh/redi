@@ -36,6 +36,8 @@ class Issue(TypedDict):
     assigned_to: NotRequired[IdName]
     subject: str
     description: str
+    # 親チケットがある場合のみ含まれる
+    parent: NotRequired[IssueParent]
     start_date: str | None
     due_date: str | None
     done_ratio: int
@@ -54,6 +56,15 @@ class Issue(TypedDict):
     updated_on: str
     closed_on: str | None
     journals: NotRequired[list[Journal]]
+
+
+class IssueParent(TypedDict):
+    """親チケットの参照。
+
+    Redmine は親がある場合のみ `"parent": {"id": N}` を返し、subject は含まれない。
+    """
+
+    id: int
 
 
 class IssueCustomField(TypedDict):
@@ -107,6 +118,7 @@ class WatcherNotFoundException(Exception):
 
 def fetch_issues_page(
     project_id: str | None = None,
+    issue_id: str | None = None,
     fixed_version_id: str | None = None,
     assigned_to: str | None = None,
     status_id: str | None = None,
@@ -128,6 +140,8 @@ def fetch_issues_page(
     params: dict = {}
     if project_id:
         params["project_id"] = project_id
+    if issue_id:
+        params["issue_id"] = issue_id
     if fixed_version_id:
         params["fixed_version_id"] = fixed_version_id
     if assigned_to:

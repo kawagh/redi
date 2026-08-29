@@ -247,13 +247,15 @@ def _run() -> None:
                 elif tui_result.action == "comment":
                     if tui_result.issue_id is None:
                         continue
-                    notes = open_editor()
+                    notes = open_editor(name="issue_note")
                     if notes:
                         add_issue_note(tui_result.issue_id, notes)
                 elif tui_result.action == "edit_comment":
                     if tui_result.journal_id is None:
                         continue
-                    new_notes = open_editor(initial_text=tui_result.journal_notes)
+                    new_notes = open_editor(
+                        initial_text=tui_result.journal_notes, name="issue_note"
+                    )
                     if not new_notes:
                         print(messages.tui_comment_edit_canceled_empty)
                     else:

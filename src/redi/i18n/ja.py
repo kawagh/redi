@@ -541,6 +541,7 @@ class Ja(MessagesProto):
     )
     tui_status_search_active = "/{query} Esc:解除"
     tui_flash_reloaded = "再読込しました"
+    tui_flash_find_cleared_by_filter = "検索を解除してフィルタに切り替えました"
     tui_filter_unspecified = "(指定なし)"
     tui_filter_status_open_default = "open (デフォルト)"
     tui_filter_status_all = "全て (open + closed)"
@@ -598,6 +599,9 @@ class Ja(MessagesProto):
     tui_issue_delete_modal_mismatch = "issue_id が一致しません"
     tui_issue_delete_modal_empty = "issue_id を入力してください"
     tui_issue_delete_modal_hint = "Enter:確定 Esc:閉じる"
+    tui_find_modal_title = "イシュー検索 (Esc で閉じる)"
+    tui_find_modal_input_label = "クエリ> "
+    tui_find_modal_hint = "Enter:検索 (空のまま Enter で解除) Esc:閉じる"
     tui_wiki_delete_failed = "Wikiページの削除に失敗しました: {error}"
     tui_wiki_delete_page_missing = "Wikiページが見つかりません: {title}"
     tui_wiki_delete_modal_title = "Wikiページ削除の確認 (Esc で閉じる)"
@@ -716,9 +720,7 @@ class Ja(MessagesProto):
     arg_help_issue_done_ratio = "進捗率（0-100）"
     arg_help_issue_estimated_hours = "予定工数（例: 1.5）"
     arg_help_issue_notes = "コメント"
-    arg_help_issue_relate = (
-        "関係性のタイプ（relates, duplicates, blocks, precedes, follows など）"
-    )
+    arg_help_issue_relate = "関係性のタイプ（--to と併用）"
     arg_help_issue_relate_to = "関係先のイシューID"
     arg_help_issue_delete_relation = "関係性を削除（--to と併用）"
     arg_help_issue_attach = "添付ファイルのパス（複数指定可）"
@@ -1038,6 +1040,7 @@ class Ja(MessagesProto):
     tui_help_next_prev_match = "次 / 前の検索結果"
     tui_help_clear_search = "検索を解除 (検索クエリ設定時)"
     tui_help_filter_issues = "ステータス/担当者/トラッカー/クエリでフィルタ"
+    tui_help_find_issues = "Redmine 全体からイシューを検索 (全ページ対象)"
     tui_help_filter_user = "ユーザーでフィルタ"
     tui_help_switch_project = "プロジェクトを切り替え"
     tui_help_switch_profile = "プロファイルを切り替え"

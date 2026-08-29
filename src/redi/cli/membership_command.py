@@ -9,7 +9,7 @@ from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.membership import Membership, MembershipNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.shared_options import project_option_parser
+from redi.cli.shared_options import pagination_option_parser, project_option_parser
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import membership_service
@@ -29,10 +29,17 @@ def _format_membership_line(membership: Membership) -> str:
     return f"{membership['id']} [{principal_kind}] {principal_str} - {role_str}"
 
 
-def _list_memberships(project_id: str, full: bool = False) -> None:
+def _list_memberships(
+    project_id: str,
+    full: bool = False,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> None:
     """メンバーシップ一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
     try:
-        memberships = membership_service.list_memberships(project_id)
+        memberships = membership_service.list_memberships(
+            project_id, limit=limit, offset=offset
+        )
     except ProjectNotFoundException:
         eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
@@ -126,14 +133,18 @@ def add_membership_parser(
         "membership",
         aliases=["m"],
         help=messages.arg_help_membership_command,
-        parents=[*parents, project_option_parser()],
+        parents=[*parents, project_option_parser(), pagination_option_parser()],
     )
     m_subparsers = m_parser.add_subparsers(dest="membership_command")
     m_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_membership_list,
-        parents=[*parents, project_option_parser(postfix=True)],
+        parents=[
+            *parents,
+            project_option_parser(postfix=True),
+            pagination_option_parser(postfix=True),
+        ],
     )
 
     m_view_parser = m_subparsers.add_parser(
@@ -248,4 +259,6 @@ def handle_membership(args: argparse.Namespace) -> None:
         if not project_id:
             eprint(messages.project_id_required)
             sys.exit(1)
-        _list_memberships(project_id, full=args.full)
+        _list_memberships(
+            project_id, full=args.full, limit=args.limit, offset=args.offset
+        )

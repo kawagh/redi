@@ -61,3 +61,20 @@ class TestFetchIssuesPage:
 
         with pytest.raises(requests.exceptions.HTTPError):
             issue_module.fetch_issues_page()
+
+    def test_passes_issue_id_as_param(self, monkeypatch):
+        """issue_id を渡すと issue_id パラメータとして送出する (検索結果の引き直しで使う)"""
+        captured: dict = {}
+
+        def fake_get(path: str, **kwargs) -> requests.Response:
+            captured["params"] = kwargs.get("params")
+            response = requests.Response()
+            response.status_code = 200
+            response._content = b'{"issues": [], "total_count": 0}'
+            return response
+
+        monkeypatch.setattr(issue_module.client, "get", fake_get)
+
+        issue_module.fetch_issues_page(issue_id="12,34,56", status_id="*")
+
+        assert captured["params"]["issue_id"] == "12,34,56"
