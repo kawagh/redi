@@ -29,8 +29,14 @@ from redi.tui.issue.find_modal import (
     backspace as find_backspace,
 )
 from redi.tui.issue.find_modal import (
+    clear_input as find_clear_input,
+)
+from redi.tui.issue.find_modal import (
     close_find_modal,
     confirm_find,
+)
+from redi.tui.issue.find_modal import (
+    delete_word as find_delete_word,
 )
 from redi.tui.issue.find_modal import (
     input_char as find_input_char,
@@ -234,6 +240,14 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     @kb.add("backspace", filter=show_find_modal)
     def _(event):
         find_backspace(state)
+
+    @kb.add("c-w", filter=show_find_modal)
+    def _(event):
+        find_delete_word(state)
+
+    @kb.add("c-u", filter=show_find_modal)
+    def _(event):
+        find_clear_input(state)
 
     # 検索クエリは自由入力なので、印字できる1文字はそのまま受け付ける
     @kb.add("<any>", filter=show_find_modal)

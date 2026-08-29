@@ -106,3 +106,51 @@ class TestCloseFindModal:
 
         assert state.issue_tab.find_modal.show is False
         assert state.issue_tab.find.query == "hooks"
+
+
+class TestEditInput:
+    """検索クエリは自由入力なので、末尾からまとめて消す手段を用意する"""
+
+    def test_delete_word_removes_last_word(self):
+        """C-w は末尾の1単語を消し、区切りの空白は残す"""
+        state = TuiState()
+        state.issue_tab.find_modal.input_text = "hooks 発火 調査"
+
+        find_modal.delete_word(state)
+
+        assert state.issue_tab.find_modal.input_text == "hooks 発火 "
+
+    def test_delete_word_skips_trailing_spaces(self):
+        """末尾が空白でも、その手前の単語まで遡って消す"""
+        state = TuiState()
+        state.issue_tab.find_modal.input_text = "hooks 発火   "
+
+        find_modal.delete_word(state)
+
+        assert state.issue_tab.find_modal.input_text == "hooks "
+
+    def test_delete_word_handles_fullwidth_space(self):
+        """全角スペースも単語の区切りとして扱う"""
+        state = TuiState()
+        state.issue_tab.find_modal.input_text = "hooks　発火"
+
+        find_modal.delete_word(state)
+
+        assert state.issue_tab.find_modal.input_text == "hooks　"
+
+    def test_delete_word_on_empty_input(self):
+        """空の入力欄で C-w を押しても例外にならない"""
+        state = TuiState()
+
+        find_modal.delete_word(state)
+
+        assert state.issue_tab.find_modal.input_text == ""
+
+    def test_clear_input_empties_the_field(self):
+        """C-u は入力欄を空にする"""
+        state = TuiState()
+        state.issue_tab.find_modal.input_text = "hooks 発火 調査"
+
+        find_modal.clear_input(state)
+
+        assert state.issue_tab.find_modal.input_text == ""

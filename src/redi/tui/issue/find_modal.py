@@ -4,6 +4,8 @@
 置き換える。HTTP は `service.search_service` に任せ、ここでは入力と状態だけを扱う。
 """
 
+import re
+
 from prompt_toolkit.filters import FilterOrBool
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -17,6 +19,9 @@ from prompt_toolkit.widgets import Frame
 from redi.i18n import messages
 from redi.tui.issue.issue_tab import reload_with_filter
 from redi.tui.state import Renderable, TuiState
+
+# 末尾の1単語。全角スペースも Unicode の空白として区切りに使える
+_TRAILING_WORD = re.compile(r"\S+$")
 
 
 def render_find_modal(state: TuiState) -> Renderable:
@@ -84,3 +89,13 @@ def input_char(state: TuiState, char: str) -> None:
 def backspace(state: TuiState) -> None:
     modal = state.issue_tab.find_modal
     modal.input_text = modal.input_text[:-1]
+
+
+def delete_word(state: TuiState) -> None:
+    """末尾の1単語を消す。カーソルは常に末尾なので後ろから削るだけでよい。"""
+    modal = state.issue_tab.find_modal
+    modal.input_text = _TRAILING_WORD.sub("", modal.input_text.rstrip())
+
+
+def clear_input(state: TuiState) -> None:
+    state.issue_tab.find_modal.input_text = ""
