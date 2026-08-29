@@ -142,7 +142,7 @@ redi project # list projects
 redi project list # same as above (`redi project l` / `redi p list` / `redi p l` / `redi p` also work)
 redi project view <project_id> # view project
 redi project view <project_id> --include trackers,issue_categories
-redi project list --limit 10 --offset 10 # `list` returns all projects unless limited
+redi project list --limit 10 --offset 10 # `list` returns Redmine's default 25 unless limited
 redi project create # (interactive)
 redi project create <name> <identifier>
 redi project create <name> <identifier> -d "description" --is_public true
@@ -270,7 +270,7 @@ redi user list --status locked # active / registered / locked (default: active o
 redi user list --name kawagh # partial match on login / firstname / lastname / mail
 redi user list --group_id <group_id> # members of the group
 redi user --status locked list # filters can be placed before the subcommand too
-redi user list --limit 10 --offset 10 # `list` returns all users unless limited
+redi user list --limit 10 --offset 10 # `list` returns Redmine's default 25 unless limited
 redi user list --full # output full JSON
 
 # others
