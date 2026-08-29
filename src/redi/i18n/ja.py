@@ -716,9 +716,7 @@ class Ja(MessagesProto):
     arg_help_issue_done_ratio = "進捗率（0-100）"
     arg_help_issue_estimated_hours = "予定工数（例: 1.5）"
     arg_help_issue_notes = "コメント"
-    arg_help_issue_relate = (
-        "関係性のタイプ（relates, duplicates, blocks, precedes, follows など）"
-    )
+    arg_help_issue_relate = "関係性のタイプ（--to と併用）"
     arg_help_issue_relate_to = "関係先のイシューID"
     arg_help_issue_delete_relation = "関係性を削除（--to と併用）"
     arg_help_issue_attach = "添付ファイルのパス（複数指定可）"
