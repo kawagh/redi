@@ -537,6 +537,7 @@ class Ja(MessagesProto):
     )
     tui_status_search_active = "/{query} Esc:解除"
     tui_flash_reloaded = "再読込しました"
+    tui_flash_find_cleared_by_filter = "検索を解除してフィルタに切り替えました"
     tui_filter_unspecified = "(指定なし)"
     tui_filter_status_open_default = "open (デフォルト)"
     tui_filter_status_all = "全て (open + closed)"

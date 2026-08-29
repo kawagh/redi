@@ -311,6 +311,18 @@ def _apply_page(state: TuiState, page: IssuesPageResponse, offset: int) -> None:
     state.issue_tab.cursor = 0
 
 
+def clear_find_for_filter(state: TuiState) -> None:
+    """フィルタ操作に切り替えるため検索を解除する。
+
+    検索中は検索結果がフィルタを置き換えるので、フィルタを触っても一覧が変わらない。
+    黙って空振りさせず、最後に触った方を有効にして切り替わったことを flash で伝える。
+    """
+    if not state.issue_tab.find.is_active():
+        return
+    state.issue_tab.find.query = ""
+    state.flash_message = messages.tui_flash_find_cleared_by_filter
+
+
 def reload_with_filter(state: TuiState) -> None:
     """フィルタ条件で先頭ページから再取得する。filter modal からの適用で呼ぶ。"""
     _apply_page(state, fetch_issues_with_filter(state, 0), 0)

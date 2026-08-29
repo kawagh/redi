@@ -697,6 +697,7 @@ class MessagesProto(Protocol):
     tui_status_search_active: str
     """{query}"""
     tui_flash_reloaded: str
+    tui_flash_find_cleared_by_filter: str
     # 列を問わず「絞り込まない」を表す選択肢のラベル
     tui_filter_unspecified: str
     tui_filter_status_open_default: str
