@@ -639,8 +639,8 @@ class TestShowAllProfiles:
 
         config.show_all_profiles(config_path=config_path)
 
-        out = capsys.readouterr().out
-        assert "not found" in out
+        err = capsys.readouterr().err
+        assert "not found" in err
 
 
 @pytest.fixture

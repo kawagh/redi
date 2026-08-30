@@ -5,6 +5,7 @@ import sys
 from redi import config
 from redi.api.issue_template import TEMPLATE_KEYS, fetch_issue_templates
 from redi.i18n import messages
+from redi.output import eprint
 
 
 def add_issue_template_parser(
@@ -28,11 +29,11 @@ def add_issue_template_parser(
 def handle_issue_template(args: argparse.Namespace) -> None:
     project_id = args.project_id or config.default_project_id
     if not project_id:
-        print(messages.project_id_required)
+        eprint(messages.project_id_required)
         sys.exit(1)
     templates = fetch_issue_templates(project_id, tracker_id=args.tracker_id)
     if templates is None:
-        print(messages.issue_template_not_available)
+        eprint(messages.issue_template_not_available)
         sys.exit(1)
     if args.full:
         print(json.dumps(templates, ensure_ascii=False))

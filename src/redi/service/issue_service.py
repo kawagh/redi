@@ -13,7 +13,7 @@ from redi.api.exceptions import (
     ProjectNotFoundException,
     QueryNotFoundException,
 )
-from redi.api.issue import Issue
+from redi.api.issue import Issue, WatcherNotFoundException
 from redi.service.attachment_service import upload_file
 from redi.service.project_service import resolve_project_id
 
@@ -71,7 +71,7 @@ def _query_exists(query_id: str) -> bool:
     ところを全件取得することになるが、404 のエラー経路でしか通らないので許容している。
     """
     try:
-        queries = query_api.fetch_queries()
+        queries = query_api.fetch_queries(all_pages=True)
     except requests.exceptions.RequestException:
         return False
     return any(str(query.get("id")) == str(query_id) for query in queries)
@@ -209,11 +209,21 @@ def add_note(issue_id: str, notes: str) -> str:
 def add_watcher(issue_id: str, user_id: int) -> None:
     """イシューにウォッチャーを追加する。
 
+    Redmine はウォッチャーにできないユーザーIDを渡しても追加せずに 200 を返すため、
+    追加後にウォッチャー一覧を読み直して反映されたかどうかを確かめる。
+    ウォッチャーを参照する権限が無いと一覧が返らないので、その場合は確認しない。
+
     Raises:
         IssueNotFoundException: 対象イシューが存在しない (HTTP 404)
+        WatcherNotFoundException: 追加が反映されなかった (存在しないユーザーIDなど)
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
     issue_api.add_watcher(issue_id, user_id)
+    watchers = issue_api.fetch_issue(issue_id, include="watchers").get("watchers")
+    if watchers is None:
+        return
+    if not any(watcher.get("id") == user_id for watcher in watchers):
+        raise WatcherNotFoundException(issue_id, user_id)
 
 
 def remove_watcher(issue_id: str, user_id: int) -> None:

@@ -14,6 +14,7 @@ from redi.api.enumeration import (
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.tracker import fetch_trackers
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import query_service
 
 
@@ -112,8 +113,9 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
         "q",
         messages.arg_help_query_command,
         messages.arg_help_query_list,
-        # list_queries だけ refresh を取らないので合わせる
-        lambda refresh: query_service.list_queries(),
+        # list_queries だけ refresh を取らないので合わせる。
+        # --limit を持たないコマンドなので既定件数で打ち切らせない
+        lambda refresh: query_service.list_queries(all_pages=True),
         cached=False,
         format_lines=_format_query_lines,
     ),
@@ -220,6 +222,6 @@ def handle_enumeration(resource: EnumerationResource, args: argparse.Namespace) 
     # cached でないリソースには --refresh が無いので既定値で補う
     items = resource.fetch(getattr(args, "refresh", False))
     if items is None:
-        print(resource.unavailable_message)
+        eprint(resource.unavailable_message)
         sys.exit(1)
     _print_enumeration(items, args.full, resource)

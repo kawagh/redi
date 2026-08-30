@@ -18,7 +18,7 @@ def stub_user_api(monkeypatch):
     list_calls: list[dict] = []
 
     def fake_fetch_users(
-        status=None, name=None, group_id=None, limit=None, offset=None
+        status=None, name=None, group_id=None, limit=None, offset=None, all_pages=False
     ):
         list_calls.append(
             {

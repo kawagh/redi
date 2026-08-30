@@ -6,6 +6,7 @@ from redi.api.issue_relation import IssueRelation, RelationNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.shared_options import add_full_argument
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import issue_relation_service, issue_service
 
 
@@ -43,7 +44,7 @@ def read_relation(relation_id: str, full: bool = False) -> None:
     try:
         relation = issue_relation_service.read_relation(relation_id)
     except RelationNotFoundException:
-        print(messages.relation_not_found.format(id=relation_id))
+        eprint(messages.relation_not_found.format(id=relation_id))
         sys.exit(1)
     if full:
         print(json.dumps(relation, ensure_ascii=False))

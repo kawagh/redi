@@ -1,5 +1,6 @@
 import argparse
 
+from redi.api.issue_relation import RELATION_TYPES
 from redi.cli.shared_options import SharedOptionParser, add_full_argument
 from redi.i18n import messages
 
@@ -166,6 +167,7 @@ def add_issue_parser(
     )
     i_update_parser.add_argument(
         "--relate",
+        choices=RELATION_TYPES,
         help=messages.arg_help_issue_relate,
     )
     i_update_parser.add_argument(

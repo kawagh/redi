@@ -1,11 +1,32 @@
 import argparse
 import json
 import sys
+from types import MappingProxyType
 
 from redi.api.role import fetch_role, fetch_roles
 from redi.cli.alias import resolve_alias
 from redi.cli.shared_options import add_full_argument, full_option_parser
 from redi.i18n import messages
+from redi.output import eprint
+from redi.service.role_service import CATEGORY_OTHER, group_permissions
+
+CATEGORY_LABELS = MappingProxyType(
+    {
+        "project": messages.permission_category_project,
+        "boards": messages.permission_category_boards,
+        "calendar": messages.permission_category_calendar,
+        "documents": messages.permission_category_documents,
+        "files": messages.permission_category_files,
+        "gantt": messages.permission_category_gantt,
+        "issue_tracking": messages.permission_category_issue_tracking,
+        "news": messages.permission_category_news,
+        "repository": messages.permission_category_repository,
+        "time_tracking": messages.permission_category_time_tracking,
+        "wiki": messages.permission_category_wiki,
+        CATEGORY_OTHER: messages.permission_category_other,
+    }
+)
+"""カテゴリ名の表示ラベル。"""
 
 
 def _print_roles(full: bool) -> None:
@@ -20,7 +41,7 @@ def _print_roles(full: bool) -> None:
 def _print_role(role_id: str, full: bool) -> None:
     role = fetch_role(role_id)
     if role is None:
-        print(messages.role_not_found.format(id=role_id))
+        eprint(messages.role_not_found.format(id=role_id))
         sys.exit(1)
     if full:
         print(json.dumps(role, ensure_ascii=False))
@@ -44,9 +65,11 @@ def _print_role(role_id: str, full: bool) -> None:
         )
     permissions = role.get("permissions") or []
     if permissions:
-        lines.append(messages.label_permissions_header)
-        for p in permissions:
-            lines.append(f"  {p}")
+        lines.append(messages.label_permissions_header.format(count=len(permissions)))
+        for category, members in group_permissions(permissions):
+            lines.append(f"  [{CATEGORY_LABELS[category]}]")
+            for p in members:
+                lines.append(f"    {p}")
     print("\n".join(lines))
 
 

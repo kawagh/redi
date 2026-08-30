@@ -11,6 +11,7 @@ from redi.cli.confirm import confirm_delete_with_identifier
 from redi.cli.shared_options import SharedOptionParser, add_full_argument
 from redi.cli.user_format import format_user_detail, user_summary
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import user_service
 
 MAIL_NOTIFICATION_CHOICES = [
@@ -28,10 +29,10 @@ def _read_user(user_id: str, detail: bool = False) -> User:
     try:
         return user_service.read_user(user_id, detail=detail)
     except UserNotFoundException:
-        print(messages.user_not_found.format(id=user_id))
+        eprint(messages.user_not_found.format(id=user_id))
         sys.exit(1)
     except UserPermissionDeniedException:
-        print(messages.user_detail_permission_required)
+        eprint(messages.user_detail_permission_required)
         sys.exit(1)
 
 
@@ -62,12 +63,12 @@ def _create_user(
             admin=admin,
         )
     except UserPermissionDeniedException:
-        print(messages.user_create_admin_required)
+        eprint(messages.user_create_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.user_create_failed)
+        eprint(messages.user_create_failed)
         sys.exit(1)
     print(
         messages.user_created.format(
@@ -92,8 +93,8 @@ def _list_users(
             status=status, name=name, group_id=group_id, limit=limit, offset=offset
         )
     except UserPermissionDeniedException:
-        print(messages.user_list_admin_required)
-        print(messages.user_list_member_hint)
+        eprint(messages.user_list_admin_required)
+        eprint(messages.user_list_member_hint)
         return
     if full:
         print(json.dumps(users, ensure_ascii=False))
@@ -136,7 +137,7 @@ def _update_user(
         "admin": admin,
     }
     if all(value is None for value in fields.values()):
-        print(messages.update_canceled_no_changes)
+        eprint(messages.update_canceled_no_changes)
         sys.exit(1)
     try:
         user_service.update_user(
@@ -152,15 +153,15 @@ def _update_user(
             admin=admin,
         )
     except UserNotFoundException:
-        print(messages.user_not_found.format(id=user_id))
+        eprint(messages.user_not_found.format(id=user_id))
         sys.exit(1)
     except UserPermissionDeniedException:
-        print(messages.user_update_admin_required)
+        eprint(messages.user_update_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.user_update_failed)
+        eprint(messages.user_update_failed)
         sys.exit(1)
     print(messages.user_updated.format(id=user_id))
 
@@ -170,15 +171,15 @@ def _delete_user(user_id: str) -> None:
     try:
         user_service.delete_user(user_id)
     except UserNotFoundException:
-        print(messages.user_not_found.format(id=user_id))
+        eprint(messages.user_not_found.format(id=user_id))
         sys.exit(1)
     except UserPermissionDeniedException:
-        print(messages.user_delete_admin_required)
+        eprint(messages.user_delete_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.user_delete_failed)
+        eprint(messages.user_delete_failed)
         sys.exit(1)
     print(messages.user_deleted.format(id=user_id))
 

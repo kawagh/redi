@@ -56,3 +56,15 @@ def project_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
     parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
     add_full_argument(parser, postfix=postfix)
     return parser
+
+
+def pagination_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
+    """`--limit` と `--offset` を共有するパーサ
+
+    versions / wiki / groups / issue_categories は Redmine の API が
+    ページングに対応していないため、これらの一覧には足していない。
+    """
+    parser = SharedOptionParser(postfix=postfix)
+    parser.add_argument("--limit", type=int, help=messages.arg_help_limit)
+    parser.add_argument("--offset", type=int, help=messages.arg_help_offset)
+    return parser
