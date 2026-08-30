@@ -164,6 +164,10 @@ class En(MessagesProto):
     issue_update_failed = "Failed to update issue"
     issue_delete_failed = "Failed to delete issue"
     watcher_add_failed = "Failed to add watcher"
+    watcher_not_added = (
+        "Could not add watcher {user_id} to #{issue_id}: "
+        "the user does not exist or cannot be a watcher"
+    )
     watcher_remove_failed = "Failed to remove watcher"
     wiki_page_delete_failed = "Failed to delete wiki page"
     wiki_page_update_conflict = (
