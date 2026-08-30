@@ -4,6 +4,7 @@
 1 エントリとして書き出し、TUI の表示を後から追えるようにする。
 """
 
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -33,11 +34,16 @@ def _append_screen_yaml(path: Path, dumped: dict, key: str) -> None:
     lines = dumped["lines"]
     indented = "\n".join(f"    {line}" for line in lines) if lines else "    "
     entry = (
-        f"- timestamp: {timestamp}\n"
-        f"  key: {key}\n"
+        # クォートしないと YAML の timestamp 型 (datetime) として読まれるので
+        # 文字列に固定する
+        f'- timestamp: "{timestamp}"\n'
+        # 任意の文字が入るのでクォートして YAML の特殊構文と解釈させない
+        f"  key: {json.dumps(key, ensure_ascii=False)}\n"
         f"  width: {dumped['width']}\n"
         f"  height: {dumped['height']}\n"
-        f"  screen: |\n{indented}\n"
+        # 画面の 1 行目が空白で始まってもインデント幅を誤推定させないため
+        # インデント指示子を明示する (親ノードの 2 スペース + 2 = 4 スペース)
+        f"  screen: |2\n{indented}\n"
     )
     with open(path, "a", encoding="utf-8") as f:
         f.write(entry)
