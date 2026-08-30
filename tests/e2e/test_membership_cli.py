@@ -3,7 +3,7 @@ import subprocess
 
 import pytest
 
-from tests.e2e.utils import run_redi
+from tests.e2e.utils import assert_paginates, run_redi, unique_identifier
 
 PROJECT_ID = "reditest"
 
@@ -17,6 +17,31 @@ def _memberships() -> list[dict]:
 def _role_ids() -> list[str]:
     """ロールの id を並び順に返す。ロールの並びは Redmine の初期データ次第。"""
     return [line.split()[0] for line in run_redi("role", "list").stdout.splitlines()]
+
+
+def _create_group_member(role_id: str) -> None:
+    """新しいグループを作ってプロジェクトのメンバーに加える。
+
+    admin 以外のユーザーを増やさずにメンバーシップを増やすため、
+    ユーザーではなくグループを足している。
+    """
+    name = unique_identifier("e2e-page-member")
+    run_redi("group", "create", name)
+    group = next(
+        g
+        for g in json.loads(run_redi("group", "list", "--full").stdout)
+        if g["name"] == name
+    )
+    run_redi(
+        "membership",
+        "create",
+        "-p",
+        PROJECT_ID,
+        "-g",
+        str(group["id"]),
+        "-r",
+        role_id,
+    )
 
 
 def _membership_id_of(user_id: int) -> str | None:
@@ -38,6 +63,19 @@ def unassigned_user_id() -> int:
     if membership_id is not None:
         run_redi("membership", "delete", membership_id, "--yes")
     return user_id
+
+
+@pytest.mark.e2e
+class TestMembershipList:
+    """`redi membership list` はプロジェクトのメンバーシップ一覧を表示する"""
+
+    def test_slices_list_with_limit_and_offset(self):
+        """グループをメンバーに加えて3件以上にしてから絞り込む"""
+        role_id = _role_ids()[0]
+        for _ in range(3):
+            _create_group_member(role_id)
+
+        assert_paginates("membership", "list", "-p", PROJECT_ID)
 
 
 @pytest.mark.e2e
@@ -109,7 +147,7 @@ class TestMembershipCreateValidationError:
             )
 
         assert e.value.returncode == 1
-        assert e.value.stdout.strip() != ""
+        assert e.value.stderr.strip() != ""
 
 
 @pytest.mark.e2e
@@ -121,11 +159,11 @@ class TestMembershipNotFound:
         with pytest.raises(subprocess.CalledProcessError) as e:
             run_redi("membership", "view", "9999999")
 
-        assert "9999999" in e.value.stdout
+        assert "9999999" in e.value.stderr
 
     def test_delete_exits_with_error(self):
         """delete は見つからないと伝えて exit 1 で終わる"""
         with pytest.raises(subprocess.CalledProcessError) as e:
             run_redi("membership", "delete", "9999999", "--yes")
 
-        assert "9999999" in e.value.stdout
+        assert "9999999" in e.value.stderr

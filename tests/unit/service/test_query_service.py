@@ -34,7 +34,7 @@ class TestListQueriesForProject:
 
     def test_includes_project_and_global_queries(self, monkeypatch):
         """プロジェクト固有とグローバルを返し、他プロジェクトのものは外す"""
-        monkeypatch.setattr(query_service, "list_queries", lambda: QUERIES)
+        monkeypatch.setattr(query_service, "list_queries", lambda **kwargs: QUERIES)
 
         result = query_service.list_queries_for_project("1")
 
@@ -42,7 +42,7 @@ class TestListQueriesForProject:
 
     def test_returns_global_only_when_project_is_none(self, monkeypatch):
         """プロジェクト未指定ならグローバルクエリのみ返す"""
-        monkeypatch.setattr(query_service, "list_queries", lambda: QUERIES)
+        monkeypatch.setattr(query_service, "list_queries", lambda **kwargs: QUERIES)
 
         result = query_service.list_queries_for_project(None)
 
@@ -54,7 +54,7 @@ class TestListQueriesForProject:
         config の default_project_id には identifier も書けるが、クエリが持つ
         project_id は数値なので、解決しないとプロジェクト固有のクエリを落とす。
         """
-        monkeypatch.setattr(query_service, "list_queries", lambda: QUERIES)
+        monkeypatch.setattr(query_service, "list_queries", lambda **kwargs: QUERIES)
         monkeypatch.setattr(
             query_service,
             "resolve_project_id",
@@ -67,7 +67,7 @@ class TestListQueriesForProject:
 
     def test_falls_back_to_global_when_project_is_unknown(self, monkeypatch):
         """プロジェクトを解決できなければグローバルクエリだけでも選べるようにする"""
-        monkeypatch.setattr(query_service, "list_queries", lambda: QUERIES)
+        monkeypatch.setattr(query_service, "list_queries", lambda **kwargs: QUERIES)
 
         def raise_not_found(value):
             raise ProjectNotFoundException(value)
@@ -85,7 +85,7 @@ def stub_project_api(monkeypatch):
 
     state = SimpleNamespace(fetch_count=0)
 
-    def fake_fetch_projects():
+    def fake_fetch_projects(**kwargs):
         state.fetch_count += 1
         return PROJECTS
 
@@ -129,7 +129,7 @@ class TestResolveQueryProjectNames:
     def test_returns_empty_when_fetch_fails(self, monkeypatch):
         """一覧の補足情報でしかないので、プロジェクト取得の失敗は例外にしない"""
 
-        def failing_fetch_projects():
+        def failing_fetch_projects(**kwargs):
             raise requests.exceptions.HTTPError("403")
 
         monkeypatch.setattr(query_service, "list_projects", failing_fetch_projects)

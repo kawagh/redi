@@ -1,6 +1,12 @@
 from redi import config
 from redi.i18n import messages
-from redi.tui.state import IssueFilter, TimeEntryFilter, TuiResult, TuiState
+from redi.tui.state import (
+    IssueFilter,
+    IssueFind,
+    TimeEntryFilter,
+    TuiResult,
+    TuiState,
+)
 
 
 class TestIssueFilter:
@@ -195,6 +201,16 @@ class TestCarryOver:
 
         assert next_state.issue_tab.filter == prev.issue_tab.filter
         assert next_state.issue_tab.filter.status_id == "closed"
+
+    def test_issue_find_is_preserved(self):
+        """F で掛けた検索も次ループの TuiState に引き継がれる"""
+        prev = TuiState()
+        prev.issue_tab.find = IssueFind(query="hooks")
+        result = TuiResult(action="comment", tab="issues", issue_id="1")
+
+        next_state = prev.carry_over(result)
+
+        assert next_state.issue_tab.find.query == "hooks"
 
     def test_time_entry_filter_is_preserved(self):
         """time_entry タブの絞り込み条件も引き継がれる"""

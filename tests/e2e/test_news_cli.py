@@ -3,13 +3,25 @@ import subprocess
 
 import pytest
 
-from tests.e2e.utils import run_redi, unique_identifier
+from tests.e2e.utils import assert_paginates, run_redi, unique_identifier
 
 
 def _create_news(title: str, description: str = "e2e news body") -> str:
     """ニュースを作成し、出力された URL から id を取り出して返す。"""
     stdout = run_redi("news", "create", title, "-d", description).stdout
     return stdout.strip().rsplit("/", 1)[1]
+
+
+@pytest.mark.e2e
+class TestNewsList:
+    """`redi news list` はニュース一覧を表示する"""
+
+    def test_slices_list_with_limit_and_offset(self):
+        """3件以上にしてから絞り込む"""
+        for _ in range(3):
+            _create_news(unique_identifier("e2e-page-news"))
+
+        assert_paginates("news", "list")
 
 
 @pytest.mark.e2e

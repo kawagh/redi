@@ -3,10 +3,17 @@ import json
 from typing import cast
 
 import pytest
+import requests
 
 from redi import config
-from redi.api.exceptions import ProjectNotFoundException, QueryNotFoundException
-from redi.api.issue import Issue
+from redi.api.exceptions import (
+    ProjectNotFoundException,
+    QueryNotFoundException,
+    RedmineValidationException,
+)
+from redi.api.issue import Issue, WatcherNotFoundException
+from redi.api.issue_relation import RELATION_TYPES
+from redi.cli import editor as editor_module
 from redi.cli.issue_command import add_issue_parser
 from redi.cli.issue_command import create as create_module
 from redi.cli.issue_command import dispatch as dispatch_module
@@ -18,6 +25,17 @@ from redi.i18n import messages
 from redi.service.issue_format import OPEN_MARKER
 
 CREATED_ISSUE = {"id": 123, "subject": "件名"}
+
+
+def _raise_http_error(status_code: int):
+    """指定したステータスコードの HTTPError を投げるスタブを返す"""
+    response = requests.Response()
+    response.status_code = status_code
+
+    def _raise(**kwargs):
+        raise requests.exceptions.HTTPError(f"{status_code} Error", response=response)
+
+    return _raise
 
 
 def parse_issue_args(argv: list[str]) -> argparse.Namespace:
@@ -112,6 +130,102 @@ class TestIssueCreateArgsFromNamespace:
         assert create_args.full is True
 
 
+class TestBodyIsSavedOnFailure:
+    """送信に失敗したとき、エディタで書いた本文を一時ファイルへ退避する
+
+    422 (バリデーションエラー) だけでなく 404 / 500 などの HTTP エラーでも
+    退避されること。失敗経路によって本文が失われるのを防ぐ。
+    """
+
+    @pytest.fixture
+    def saved_paths(self, monkeypatch):
+        """退避先を固定し、退避された本文を集める"""
+        saved: list[str] = []
+
+        def fake_save(text: str) -> str:
+            saved.append(text)
+            return "/tmp/redi-test.md"
+
+        monkeypatch.setattr(editor_module, "save_text_to_tempfile", fake_save)
+        return saved
+
+    @pytest.mark.parametrize("status_code", [404, 500])
+    def test_create_saves_body_on_http_error(
+        self, monkeypatch, capsys, saved_paths, status_code
+    ):
+        """`issue create` が HTTP エラーで失敗しても本文が退避される"""
+        monkeypatch.setattr(
+            create_module.issue_service,
+            "create_issue",
+            _raise_http_error(status_code),
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            handle_issue_create(
+                parse_issue_args(
+                    ["issue", "create", "件名", "-p", "demo", "-d", "消えると困る本文"]
+                )
+            )
+
+        assert exc_info.value.code == 1
+        assert saved_paths == ["消えると困る本文"]
+        assert "/tmp/redi-test.md" in capsys.readouterr().out
+
+    def test_create_saves_body_on_validation_error(self, monkeypatch, saved_paths):
+        """`issue create` が 422 で失敗しても本文が退避される"""
+
+        def _raise(**kwargs):
+            raise RedmineValidationException("issue", "create", ["Subject is invalid"])
+
+        monkeypatch.setattr(create_module.issue_service, "create_issue", _raise)
+
+        with pytest.raises(RedmineValidationException):
+            handle_issue_create(
+                parse_issue_args(
+                    ["issue", "create", "件名", "-p", "demo", "-d", "消えると困る本文"]
+                )
+            )
+
+        assert saved_paths == ["消えると困る本文"]
+
+    @pytest.mark.parametrize("status_code", [404, 500])
+    def test_update_saves_body_on_http_error(
+        self, monkeypatch, capsys, saved_paths, status_code
+    ):
+        """`issue update` が HTTP エラーで失敗しても本文が退避される"""
+        monkeypatch.setattr(
+            update_module.issue_service,
+            "update_issue",
+            _raise_http_error(status_code),
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            handle_issue_update(
+                parse_issue_args(["issue", "update", "1", "-d", "消えると困る本文"])
+            )
+
+        assert exc_info.value.code == 1
+        assert saved_paths == ["消えると困る本文"]
+        assert "/tmp/redi-test.md" in capsys.readouterr().out
+
+    def test_update_saves_body_on_validation_error(self, monkeypatch, saved_paths):
+        """`issue update` が 422 で失敗しても本文が退避される"""
+
+        def _raise(**kwargs):
+            raise RedmineValidationException(
+                "issue", "update", ["Parent task is invalid"]
+            )
+
+        monkeypatch.setattr(update_module.issue_service, "update_issue", _raise)
+
+        with pytest.raises(RedmineValidationException):
+            handle_issue_update(
+                parse_issue_args(["issue", "update", "1", "-d", "消えると困る本文"])
+            )
+
+        assert saved_paths == ["消えると困る本文"]
+
+
 class TestIssueListNotFound:
     """`issue list` で存在しないプロジェクトを指定したとき"""
 
@@ -128,7 +242,7 @@ class TestIssueListNotFound:
 
         assert exc_info.value.code == 1
         assert (
-            messages.project_not_found.format(id="missing") in capsys.readouterr().out
+            messages.project_not_found.format(id="missing") in capsys.readouterr().err
         )
 
 
@@ -192,10 +306,10 @@ class TestIssueListQueryNotFound:
             view_module.list_issues(project_id="demo", query_id="5")
 
         assert exc_info.value.code == 1
-        out = capsys.readouterr().out
-        assert messages.query_not_found.format(id="5") in out
-        assert messages.query_not_found_hint in out
-        assert messages.project_not_found.format(id="demo") not in out
+        err = capsys.readouterr().err
+        assert messages.query_not_found.format(id="5") in err
+        assert messages.query_not_found_hint in err
+        assert messages.project_not_found.format(id="demo") not in err
 
 
 class TestIssueListQueryIdFilters:
@@ -223,7 +337,7 @@ class TestIssueListQueryIdFilters:
             dispatch_module.handle_issue(args)
 
         assert exc_info.value.code == 1
-        assert shown in capsys.readouterr().out
+        assert shown in capsys.readouterr().err
 
     def test_lists_all_ignored_filters(self, capsys):
         """複数指定した場合はすべての名前を示す"""
@@ -232,9 +346,9 @@ class TestIssueListQueryIdFilters:
         with pytest.raises(SystemExit):
             dispatch_module.handle_issue(args)
 
-        out = capsys.readouterr().out
-        assert "--status_id" in out
-        assert "--tracker_id" in out
+        err = capsys.readouterr().err
+        assert "--status_id" in err
+        assert "--tracker_id" in err
 
     def test_project_id_is_allowed(self, monkeypatch):
         """`--project_id` は Redmine 側でも併用が効くので通す"""
@@ -353,7 +467,7 @@ class TestIssueUpdateUnknownIdRejected:
             )
 
         assert exc_info.value.code == 1
-        assert messages.tracker_not_found.format(id="99999") in capsys.readouterr().out
+        assert messages.tracker_not_found.format(id="99999") in capsys.readouterr().err
         assert choices == {}
 
     def test_unknown_status_id_exits(self, choices, capsys):
@@ -364,7 +478,7 @@ class TestIssueUpdateUnknownIdRejected:
             )
 
         assert exc_info.value.code == 1
-        assert messages.status_not_found.format(id="99999") in capsys.readouterr().out
+        assert messages.status_not_found.format(id="99999") in capsys.readouterr().err
         assert choices == {}
 
     def test_shows_available_ids(self, choices, capsys):
@@ -374,7 +488,7 @@ class TestIssueUpdateUnknownIdRejected:
                 parse_issue_args(["issue", "update", "42", "--tracker_id", "99999"])
             )
 
-        assert "1:バグ" in capsys.readouterr().out
+        assert "1:バグ" in capsys.readouterr().err
 
     def test_id_missing_from_cache_is_rechecked_after_refresh(
         self, choices, monkeypatch
@@ -432,3 +546,208 @@ class TestIssueUpdateUnknownIdRejected:
 
         assert choices["tracker_id"] == "1"
         assert choices["status_id"] == "2"
+
+
+class TestIssueUpdateAddWatcher:
+    """`--add-watcher` に追加できないユーザーIDを渡したとき
+
+    Redmine はウォッチャーにできないユーザーIDを 200 で黙って無視するため、
+    追加できたかを確かめないと「追加しました」と出たまま追加されない。
+    """
+
+    def test_not_added_watcher_exits(self, monkeypatch, capsys):
+        """追加が反映されていなければ exit 1 し、成功メッセージを出さない"""
+
+        def fake_add_watcher(issue_id, user_id):
+            raise WatcherNotFoundException(issue_id, user_id)
+
+        monkeypatch.setattr(
+            update_module.issue_service, "add_watcher", fake_add_watcher
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            handle_issue_update(
+                parse_issue_args(["issue", "update", "42", "--add-watcher", "999"])
+            )
+
+        captured = capsys.readouterr()
+        assert exc_info.value.code == 1
+        assert (
+            messages.watcher_not_added.format(issue_id="42", user_id=999)
+            in captured.err
+        )
+        assert messages.watcher_added.format(issue_id="42", user_id=999) not in (
+            captured.out
+        )
+
+
+class TestIssueUpdateStatusChoices:
+    """`issue update` の対話でステータスを選ぶとき
+
+    ステータス一覧には活動中のプロジェクトで使っていないものも並ぶため、
+    そのイシューから遷移できるステータスだけに絞る。
+    """
+
+    @pytest.fixture
+    def selected_options(self, monkeypatch):
+        """ステータスだけ選んだ対話にして、提示された選択肢を記録する"""
+        monkeypatch.setattr(
+            update_module, "fetch_custom_fields", lambda *args, **kwargs: None
+        )
+        monkeypatch.setattr(
+            update_module,
+            "inline_checkbox",
+            lambda *args, **kwargs: ["status"],
+        )
+        recorded: list[tuple[str, str]] = []
+
+        def inline_choice(message, options, default=None):
+            recorded.extend(options)
+            return options[0][0]
+
+        monkeypatch.setattr(update_module, "inline_choice", inline_choice)
+        return recorded
+
+    def _stub_read_issue(self, monkeypatch, issue):
+        """read_issue をスタブし、渡された include を記録して返す"""
+        called = {}
+
+        def read_issue(issue_id, include=""):
+            called["include"] = include
+            return issue
+
+        monkeypatch.setattr(update_module.issue_service, "read_issue", read_issue)
+        return called
+
+    def test_limits_to_allowed_statuses(self, selected_options, monkeypatch):
+        """遷移できるステータス (allowed_statuses) だけを選択肢に出す"""
+        called = self._stub_read_issue(
+            monkeypatch,
+            {
+                "project": {"id": 1},
+                "tracker": {"id": 1},
+                "status": {"id": 2, "name": "進行中"},
+                "allowed_statuses": [
+                    {"id": 2, "name": "進行中"},
+                    {"id": 10, "name": "レビュー"},
+                ],
+            },
+        )
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert "allowed_statuses" in called["include"].split(",")
+        assert selected_options == [("2", "進行中"), ("10", "レビュー")]
+
+
+class TestIssueUpdateParentIssue:
+    """`issue update` の対話で親チケットを変更する"""
+
+    @pytest.fixture
+    def interactive(self, monkeypatch):
+        """親チケットだけ選んだ対話にして、提示された項目と入力の既定値を記録する"""
+        monkeypatch.setattr(
+            update_module, "fetch_custom_fields", lambda *args, **kwargs: None
+        )
+        recorded: dict = {}
+
+        def inline_checkbox(message, options, initial_value=None):
+            recorded["options"] = options
+            return ["parent_issue"]
+
+        monkeypatch.setattr(update_module, "inline_checkbox", inline_checkbox)
+        return recorded
+
+    def _stub_prompt(self, monkeypatch, recorded, value):
+        def prompt_parent_issue_id(default=""):
+            recorded["default"] = default
+            return value
+
+        monkeypatch.setattr(
+            update_module, "prompt_parent_issue_id", prompt_parent_issue_id
+        )
+
+    def _stub_read_issue(self, monkeypatch, issue):
+        monkeypatch.setattr(
+            update_module.issue_service,
+            "read_issue",
+            lambda issue_id, include="": issue,
+        )
+
+    def test_parent_issue_is_selectable(self, interactive, monkeypatch):
+        """更新項目に親チケットが並ぶ"""
+        self._stub_read_issue(monkeypatch, {"project": {"id": 1}, "tracker": {"id": 1}})
+        self._stub_prompt(monkeypatch, interactive, "100")
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert ("parent_issue", messages.field_parent_issue) in interactive["options"]
+        assert args.parent_issue_id == "100"
+
+    def test_current_parent_is_default(self, interactive, monkeypatch):
+        """現在の親チケット id を入力の既定値として出す"""
+        self._stub_read_issue(
+            monkeypatch,
+            {"project": {"id": 1}, "tracker": {"id": 1}, "parent": {"id": 7}},
+        )
+        self._stub_prompt(monkeypatch, interactive, "7")
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert interactive["default"] == "7"
+
+    def test_empty_input_clears_parent(self, interactive, monkeypatch):
+        """空入力は「親チケットを外す」として空文字のまま渡す"""
+        self._stub_read_issue(
+            monkeypatch,
+            {"project": {"id": 1}, "tracker": {"id": 1}, "parent": {"id": 7}},
+        )
+        self._stub_prompt(monkeypatch, interactive, "")
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert args.parent_issue_id == ""
+
+
+class TestIssueUpdateRelateChoices:
+    """`issue update --relate` の関係性タイプ
+
+    値の集合は Redmine 側で固定なので、API を叩く前にクライアントで弾き、
+    有効な値を一覧で示す。
+    """
+
+    @pytest.mark.parametrize("relation_type", RELATION_TYPES)
+    def test_accepts_every_relation_type(self, relation_type):
+        """Redmine が受け付ける 9 種はすべて指定できる"""
+        args = parse_issue_args(
+            ["issue", "update", "42", "--relate", relation_type, "--to", "43"]
+        )
+
+        assert args.relate == relation_type
+
+    def test_rejects_unknown_relation_type(self, capsys):
+        """不正なタイプは API を叩かずに弾き、有効な値を示す
+
+        `relates` のつもりで `related` と打ちやすいので、Redmine の 422 を
+        待たずにその場で候補を出す。
+        """
+        with pytest.raises(SystemExit):
+            parse_issue_args(
+                ["issue", "update", "42", "--relate", "related", "--to", "43"]
+            )
+
+        err = capsys.readouterr().err
+        for relation_type in RELATION_TYPES:
+            assert relation_type in err
+
+    def test_covers_relation_types_shown_in_view(self):
+        """表示できる関係性はすべて指定できる
+
+        `issue view` の読み替え表と集合がずれると、見えているのに作れない
+        (あるいはその逆の) タイプが出る。
+        """
+        assert set(RELATION_TYPES) == set(view_module.INVERSE_RELATION)

@@ -11,6 +11,7 @@ import webbrowser
 from redi.api.exceptions import ProjectNotFoundException, QueryNotFoundException
 from redi.api.issue import Issue, IssueNotFoundException
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import issue_service
 from redi.service.issue_format import format_issue_list
 from redi.text_format import issue_meta_rows, render_meta_table
@@ -59,11 +60,11 @@ def list_issues(
             offset=offset,
         )
     except QueryNotFoundException:
-        print(messages.query_not_found.format(id=query_id))
-        print(messages.query_not_found_hint)
+        eprint(messages.query_not_found.format(id=query_id))
+        eprint(messages.query_not_found_hint)
         sys.exit(1)
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=project_id))
+        eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
     if full:
         print(json.dumps(issues, ensure_ascii=False))
@@ -102,7 +103,7 @@ def view_issue(
     try:
         issue = issue_service.read_issue(issue_id, include=",".join(includes))
     except IssueNotFoundException:
-        print(messages.issue_not_found.format(id=issue_id))
+        eprint(messages.issue_not_found.format(id=issue_id))
         sys.exit(1)
     if full:
         print(json.dumps(issue, ensure_ascii=False))

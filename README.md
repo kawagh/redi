@@ -43,6 +43,7 @@ You can change it later with `redi config update --language <en|ja>`.
 
 Then, profile will be created in `~/.config/redi/config.toml` like below format.
 You can also create profile by `redi config create`, and update profile by `redi config update` (and also by manual edit).
+`redi config create` walks you through the same steps as `redi init` when the profile name, URL or API key is missing, so it works even after profiles exist.
 
 ```toml
 default_profile = "default"
@@ -127,6 +128,7 @@ redi --tui
 
 # config (alias: c)
 redi config
+redi config create # interactive: profile name / Redmine URL / API key / projects
 redi config create <profile_name> --url <url> --api_key <key> # create new profile
 redi config create <profile_name> --url <url> --api_key <key> --set_default
 redi config update # interactive: Enter to switch profile, u to update fields of the profile
@@ -140,10 +142,17 @@ redi project # list projects
 redi project list # same as above (`redi project l` / `redi p list` / `redi p l` / `redi p` also work)
 redi project view <project_id> # view project
 redi project view <project_id> --include trackers,issue_categories
+redi project list --limit 10 --offset 10 # `list` returns Redmine's default 25 unless limited
 redi project create # (interactive)
 redi project create <name> <identifier>
 redi project create <name> <identifier> -d "description" --is_public true
+redi project create <name> <identifier> --homepage https://example.com --inherit_members true
+redi project create <name> <identifier> --enabled_module_names issue_tracking,wiki --issue_custom_field_ids 1,2
+redi project update <project_id> # (interactive)
 redi project update <project_id> --name renamed_project
+redi project update <project_id> --enabled_module_names issue_tracking,time_tracking,wiki
+redi project update <project_id> --default_assigned_to_id 3 --default_version_id 5
+redi project update <project_id> --default_assigned_to_id "" # unset
 
 # issue (alias: i)
 redi issue # list issues
@@ -215,10 +224,12 @@ redi me update -f <firstname> -l <lastname> -m <mail>
 
 # membership (alias: m)
 redi membership -p <project_id>
+redi membership list --limit 10 --offset 10
 redi membership view <membership_id>
 
 # news (alias: n)
 redi news -p <project_id>
+redi news list --limit 10 --offset 10
 redi news view <news_id>
 redi news view <news_id> --web # open in browser
 redi news create -p <project_id> # interactive: title, summary (optional), then the description in an editor
@@ -259,7 +270,7 @@ redi user list --status locked # active / registered / locked (default: active o
 redi user list --name kawagh # partial match on login / firstname / lastname / mail
 redi user list --group_id <group_id> # members of the group
 redi user --status locked list # filters can be placed before the subcommand too
-redi user list --limit 10 --offset 10 # `list` returns all users unless limited
+redi user list --limit 10 --offset 10 # `list` returns Redmine's default 25 unless limited
 redi user list --full # output full JSON
 
 # others
@@ -278,7 +289,7 @@ redi --version
 
 ## Redmine version
 
-`redi` is developed against Redmine 6.1.
+`redi` is developed against Redmine 6.1, 7.0.
 
 ## Development
 

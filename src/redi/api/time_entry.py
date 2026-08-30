@@ -151,8 +151,9 @@ def update_time_entry(
                     https://www.redmine.org/projects/redmine/wiki/Rest_TimeEntries
 
     Raises:
+        TimeEntryNotFoundException: 対象の作業時間が存在しない場合（HTTP 404）
         RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
-        requests.exceptions.HTTPError: 422 以外の HTTP エラーが返った場合
+        requests.exceptions.HTTPError: 404 / 422 以外の HTTP エラーが返った場合
     """
     data: dict = {}
     if hours is not None:
@@ -170,6 +171,8 @@ def update_time_entry(
     response = client.put(
         f"/time_entries/{time_entry_id}.json", json={"time_entry": data}
     )
+    if response.status_code == 404:
+        raise TimeEntryNotFoundException(time_entry_id)
     if response.status_code == 422:
         raise RedmineValidationException.from_response("time_entry", "update", response)
     response.raise_for_status()

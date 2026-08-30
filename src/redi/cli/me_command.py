@@ -13,6 +13,7 @@ from redi.api.exceptions import print_http_error_body
 from redi.cli.alias import resolve_alias
 from redi.cli.user_format import format_user_detail
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import me_service
 
 
@@ -59,14 +60,14 @@ def update_my_account(
 ) -> None:
     """自分のアカウントを更新する。更新内容がなければ exit 1。"""
     if firstname is None and lastname is None and mail is None:
-        print(messages.update_canceled_no_changes)
+        eprint(messages.update_canceled_no_changes)
         sys.exit(1)
     try:
         me_service.update_my_account(firstname=firstname, lastname=lastname, mail=mail)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.account_update_failed)
+        eprint(messages.account_update_failed)
         sys.exit(1)
     print(messages.account_updated)
 
