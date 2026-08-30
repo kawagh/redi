@@ -36,6 +36,8 @@ class Issue(TypedDict):
     assigned_to: NotRequired[IdName]
     subject: str
     description: str
+    # 親チケットがある場合のみ含まれる
+    parent: NotRequired[IssueParent]
     start_date: str | None
     due_date: str | None
     done_ratio: int
@@ -46,10 +48,23 @@ class Issue(TypedDict):
     total_spent_hours: float
     # GET /issues/{id}では含まれる
     custom_fields: NotRequired[list[IssueCustomField]]
+    # include=allowed_statuses を指定したときだけ含まれる
+    allowed_statuses: NotRequired[list[IssueStatus]]
+    # include=watchers を指定し、かつ view_issue_watchers 権限があるときだけ含まれる
+    watchers: NotRequired[list[IdName]]
     created_on: str
     updated_on: str
     closed_on: str | None
     journals: NotRequired[list[Journal]]
+
+
+class IssueParent(TypedDict):
+    """親チケットの参照。
+
+    Redmine は親がある場合のみ `"parent": {"id": N}` を返し、subject は含まれない。
+    """
+
+    id: int
 
 
 class IssueCustomField(TypedDict):
@@ -103,6 +118,7 @@ class WatcherNotFoundException(Exception):
 
 def fetch_issues_page(
     project_id: str | None = None,
+    issue_id: str | None = None,
     fixed_version_id: str | None = None,
     assigned_to: str | None = None,
     status_id: str | None = None,
@@ -124,6 +140,8 @@ def fetch_issues_page(
     params: dict = {}
     if project_id:
         params["project_id"] = project_id
+    if issue_id:
+        params["issue_id"] = issue_id
     if fixed_version_id:
         params["fixed_version_id"] = fixed_version_id
     if assigned_to:
@@ -318,6 +336,10 @@ def update_issue(
 
 def add_watcher(issue_id: str, user_id: int) -> None:
     """イシューにウォッチャーを追加する
+
+    Redmine はウォッチャーにできないユーザーID（存在しない・ロック済みなど）を
+    渡しても追加せずに 200 を返すため、このレスポンスだけでは追加できたか判別できない。
+    追加できたかどうかは `issue_service.add_watcher` が確かめる。
 
     Raises:
         IssueNotFoundException: 対象イシューが存在しない場合（HTTP 404）

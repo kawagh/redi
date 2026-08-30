@@ -35,7 +35,7 @@ from redi.cli.custom_field_prompt import (
     prompt_custom_field_value,
 )
 from redi.cli.editor import open_editor, save_body_on_failure
-from redi.cli.interactive import prompt
+from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.issue_command.custom_fields import parse_custom_fields
 from redi.cli.issue_command.field_prompt import (
     parse_iso_date,
@@ -43,6 +43,7 @@ from redi.cli.issue_command.field_prompt import (
     prompt_due_date,
     prompt_estimated_hours,
     prompt_fixed_version,
+    prompt_parent_issue_id,
     prompt_project,
     prompt_start_date,
 )
@@ -98,10 +99,10 @@ class IssueUpdateArgs:
         return cls(**{f.name: getattr(args, f.name) for f in fields(cls)})
 
 
-def _read_issue(issue_id: str) -> Issue:
+def _read_issue(issue_id: str, include: str = "") -> Issue:
     """更新対象のイシューを取得する。存在しない場合は exit 1。"""
     try:
-        return issue_service.read_issue(issue_id)
+        return issue_service.read_issue(issue_id, include=include)
     except IssueNotFoundException:
         eprint(messages.issue_not_found.format(id=issue_id))
         sys.exit(1)
@@ -116,11 +117,8 @@ def _interactive_select_issue_id() -> str:
         (str(i["id"]), f"#{i['id']} {i['subject']}") for i in issues
     ]
     labels = dict(options)
-    try:
+    with exit_on_cancel():
         issue_id = inline_choice(messages.prompt_select_issue_to_update, options)
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     print(messages.update_target_issue.format(label=labels[issue_id]))
     return issue_id
 
@@ -128,7 +126,7 @@ def _interactive_select_issue_id() -> str:
 def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
     # 呼び出し側で issue_id は解決済み
     assert args.issue_id is not None
-    current = _read_issue(args.issue_id)
+    current = _read_issue(args.issue_id, include="allowed_statuses")
     field_values: list[tuple[str, str]] = [
         ("project", messages.field_project),
         ("tracker", messages.field_tracker),
@@ -138,6 +136,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         ("priority", messages.field_priority),
         ("assigned_to", messages.field_assignee),
         ("fixed_version", messages.field_fixed_version),
+        ("parent_issue", messages.field_parent_issue),
         ("start_date", messages.field_start_date),
         ("due_date", messages.field_due_date),
         ("done_ratio", messages.field_done_ratio),
@@ -166,21 +165,18 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         )
         for custom_field in applicable_custom_fields:
             field_values.append((f"cf_{custom_field['id']}", custom_field["name"]))
-    try:
+    with exit_on_cancel():
         selected = inline_checkbox(
             messages.prompt_select_update_items,
             field_values,
             initial_value="description",
         )
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if not selected:
         eprint(messages.canceled_no_items_selected)
         sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
-    try:
+    with exit_on_cancel():
         if "project" in selected:
             args.project_id = prompt_project(default=str(issue_project_id))
         # 移動する場合、トラッカーなどの選択肢は移動先プロジェクトのものを出す
@@ -215,7 +211,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         if "description" in selected:
             args.description = ""
         if "status" in selected:
-            statuses = fetch_issue_statuses()
+            statuses = current["allowed_statuses"]
             status_options: list[tuple[str, str]] = [
                 (str(s["id"]), s["name"]) for s in statuses
             ]
@@ -258,6 +254,13 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
             args.fixed_version_id = prompt_fixed_version(
                 str(project_id), default=default_version
             )
+        if "parent_issue" in selected:
+            current_parent_id = (current.get("parent") or {}).get("id")
+            default_parent = (
+                str(current_parent_id) if current_parent_id is not None else ""
+            )
+            # 空文字は「親チケットを外す」意味なので None に潰さずそのまま渡す
+            args.parent_issue_id = prompt_parent_issue_id(default=default_parent)
         if "start_date" in selected:
             args.start_date = prompt_start_date(
                 current.get("start_date") or date.today().isoformat()
@@ -354,9 +357,6 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
                 )
             else:
                 args.custom_fields = ",".join(added_custom_fields)
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
 
 
 class _IdNameFetcher(Protocol):
@@ -459,6 +459,9 @@ def _add_watcher(issue_id: str, user_id: int) -> None:
         issue_service.add_watcher(issue_id, user_id)
     except IssueNotFoundException:
         eprint(messages.issue_not_found.format(id=issue_id))
+        sys.exit(1)
+    except WatcherNotFoundException:
+        eprint(messages.watcher_not_added.format(issue_id=issue_id, user_id=user_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
         eprint(e)
@@ -579,7 +582,9 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
     description = args.description
     if description is not None and description == "":
         current = _read_issue(args.issue_id)
-        description = open_editor(current.get("description") or "")
+        description = open_editor(
+            current.get("description") or "", name="issue_description"
+        )
     # 空の説明は「変更しない」扱いなので更新対象から外す
     should_update_issue = (
         args.project_id

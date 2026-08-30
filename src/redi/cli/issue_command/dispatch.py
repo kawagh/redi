@@ -85,7 +85,7 @@ def handle_issue(args: argparse.Namespace) -> None:
         if args.notes:
             add_issue_note(args.issue_id, args.notes)
         else:
-            notes = open_editor()
+            notes = open_editor(name="issue_note")
             if notes:
                 add_issue_note(args.issue_id, notes)
             else:

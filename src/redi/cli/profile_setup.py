@@ -12,7 +12,7 @@ from prompt_toolkit.validation import Validator
 from redi.api.me import MyAccount
 from redi.api.project import Project, fetch_projects
 from redi.cli.connection import verify_connection
-from redi.cli.interactive import prompt
+from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.picker import inline_choice
 from redi.cli.validator import UrlValidator
 from redi.client import RedmineClient
@@ -34,7 +34,7 @@ def _fetch_projects(
     api_client: RedmineClient, messages: MessagesProto
 ) -> list[Project]:
     try:
-        return fetch_projects(api_client)
+        return fetch_projects(api_client, all_pages=True)
     except requests.exceptions.RequestException as e:
         eprint(messages.project_list_fetch_failed.format(error=e))
         return []
@@ -47,11 +47,8 @@ def _select_project_id(
         (str(p["id"]), f"{p['id']} {p['name']}")
         for p in sorted(projects, key=lambda p: p["id"], reverse=True)
     ]
-    try:
+    with exit_on_cancel(messages.canceled):
         return inline_choice(prompt_message, options)
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
 
 
 def _prompt_credentials(current: Profile, messages: MessagesProto) -> tuple[str, str]:
@@ -59,7 +56,7 @@ def _prompt_credentials(current: Profile, messages: MessagesProto) -> tuple[str,
         lambda text: len(text.strip()) > 0,
         error_message=messages.error_input_required,
     )
-    try:
+    with exit_on_cancel(messages.canceled):
         url = (
             current.redmine_url
             or prompt(messages.prompt_redmine_url, validator=UrlValidator()).strip()
@@ -72,9 +69,6 @@ def _prompt_credentials(current: Profile, messages: MessagesProto) -> tuple[str,
                 validator=non_empty_validator,
                 is_password=True,
             ).strip()
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     return url, api_key
 
 

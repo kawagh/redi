@@ -29,7 +29,7 @@ from redi.cli.custom_field_prompt import (
     prompt_custom_field_value,
 )
 from redi.cli.editor import open_editor, save_body_on_failure, shorten_to_oneline
-from redi.cli.interactive import prompt
+from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.issue_command.custom_fields import parse_custom_fields
 from redi.cli.issue_command.field_prompt import (
     parse_iso_date,
@@ -37,15 +37,10 @@ from redi.cli.issue_command.field_prompt import (
     prompt_due_date,
     prompt_estimated_hours,
     prompt_fixed_version,
+    prompt_parent_issue_id,
     prompt_start_date,
 )
-from redi.cli.keybinding import (
-    digit_only_key_bindings,
-)
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.validator import (
-    IntValidator,
-)
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import issue_service, project_service
@@ -144,11 +139,8 @@ def _interactive_fill_required_custom_fields(
     for cf in required:
         if cf["id"] in existing_ids:
             continue
-        try:
+        with exit_on_cancel():
             value = prompt_custom_field_value(cf, project_id)
-        except (KeyboardInterrupt, EOFError):
-            eprint(messages.canceled)
-            sys.exit(1)
         if value is SKIP_UNSUPPORTED_FIELD:
             browser_only = True
             continue
@@ -198,29 +190,21 @@ def _interactive_fill_optional_create_fields(args: IssueCreateArgs) -> None:
         ]
         for cf in optional_cfs:
             field_options.append((f"cf_{cf['id']}", cf["name"]))
-    try:
+    with exit_on_cancel():
         selected = inline_checkbox(
             messages.prompt_select_create_optional_items,
             field_options,
         )
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if not selected:
         return
     added_cfs: list[str] = []
-    try:
+    with exit_on_cancel():
         if "assigned_to" in selected:
             args.assigned_to_id = prompt_assignee(project_id)
         if "fixed_version" in selected:
             args.fixed_version_id = prompt_fixed_version(project_id)
         if "parent_issue" in selected:
-            value = prompt(
-                messages.prompt_parent_issue_id,
-                validator=IntValidator(allow_empty=True),
-                key_bindings=digit_only_key_bindings(),
-            ).strip()
-            args.parent_issue_id = value or None
+            args.parent_issue_id = prompt_parent_issue_id() or None
         if "start_date" in selected:
             args.start_date = prompt_start_date(date.today().isoformat()) or None
         if "due_date" in selected:
@@ -240,9 +224,6 @@ def _interactive_fill_optional_create_fields(args: IssueCreateArgs) -> None:
                     added_cfs.append(f"{cf['id']}={v}")
             else:
                 added_cfs.append(f"{cf['id']}={cf_value}")
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if not added_cfs:
         return
     if args.custom_fields:
@@ -266,11 +247,8 @@ def _interactive_select_issue_template(
         (str(t["id"]), t["title"]) for t in templates
     ]
     template_map = {str(t["id"]): t for t in templates}
-    try:
+    with exit_on_cancel():
         selected = inline_choice(messages.prompt_select_template, options)
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if not selected:
         return None
     template = template_map[selected]
@@ -313,13 +291,10 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
                 (str(t["id"]), t["name"]) for t in trackers
             ]
             labels = dict(tracker_options)
-            try:
+            with exit_on_cancel():
                 args.tracker_id = inline_choice(
                     messages.prompt_select_tracker, tracker_options
                 )
-            except (KeyboardInterrupt, EOFError):
-                eprint(messages.canceled)
-                sys.exit(1)
             print(messages.tracker_label.format(value=labels[args.tracker_id]))
         # テンプレートを選択し、題名・説明の初期値として反映させる
         template = _interactive_select_issue_template(project_id, args.tracker_id)
@@ -327,13 +302,10 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
         if template is not None:
             subject_default = template["issue_title"]
             template_description = template["description"]
-        try:
+        with exit_on_cancel():
             args.subject = prompt(
                 messages.prompt_subject, default=subject_default
             ).strip()
-        except (KeyboardInterrupt, EOFError):
-            eprint(messages.canceled)
-            sys.exit(1)
         if not args.subject:
             eprint(messages.canceled_empty_subject)
             sys.exit(1)
@@ -344,7 +316,9 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
             existing=args.custom_fields,
         )
     if args.description is None:
-        args.description = open_editor(initial_text=template_description)
+        args.description = open_editor(
+            initial_text=template_description, name="issue_description"
+        )
         if args.description:
             print(
                 messages.prompt_field_value.format(
@@ -367,11 +341,8 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
                     ("optional", messages.action_fill_optional),
                 ]
             )
-            try:
+            with exit_on_cancel():
                 action = inline_choice(messages.prompt_what_next, action_options)
-            except (KeyboardInterrupt, EOFError):
-                eprint(messages.canceled)
-                sys.exit(1)
             if action == "optional":
                 _interactive_fill_optional_create_fields(args)
                 continue

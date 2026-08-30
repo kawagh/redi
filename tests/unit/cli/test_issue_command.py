@@ -11,7 +11,8 @@ from redi.api.exceptions import (
     QueryNotFoundException,
     RedmineValidationException,
 )
-from redi.api.issue import Issue
+from redi.api.issue import Issue, WatcherNotFoundException
+from redi.api.issue_relation import RELATION_TYPES
 from redi.cli import editor as editor_module
 from redi.cli.issue_command import add_issue_parser
 from redi.cli.issue_command import create as create_module
@@ -499,3 +500,208 @@ class TestIssueUpdateUnknownIdRejected:
 
         assert choices["tracker_id"] == "1"
         assert choices["status_id"] == "2"
+
+
+class TestIssueUpdateAddWatcher:
+    """`--add-watcher` に追加できないユーザーIDを渡したとき
+
+    Redmine はウォッチャーにできないユーザーIDを 200 で黙って無視するため、
+    追加できたかを確かめないと「追加しました」と出たまま追加されない。
+    """
+
+    def test_not_added_watcher_exits(self, monkeypatch, capsys):
+        """追加が反映されていなければ exit 1 し、成功メッセージを出さない"""
+
+        def fake_add_watcher(issue_id, user_id):
+            raise WatcherNotFoundException(issue_id, user_id)
+
+        monkeypatch.setattr(
+            update_module.issue_service, "add_watcher", fake_add_watcher
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            handle_issue_update(
+                parse_issue_args(["issue", "update", "42", "--add-watcher", "999"])
+            )
+
+        captured = capsys.readouterr()
+        assert exc_info.value.code == 1
+        assert (
+            messages.watcher_not_added.format(issue_id="42", user_id=999)
+            in captured.err
+        )
+        assert messages.watcher_added.format(issue_id="42", user_id=999) not in (
+            captured.out
+        )
+
+
+class TestIssueUpdateStatusChoices:
+    """`issue update` の対話でステータスを選ぶとき
+
+    ステータス一覧には活動中のプロジェクトで使っていないものも並ぶため、
+    そのイシューから遷移できるステータスだけに絞る。
+    """
+
+    @pytest.fixture
+    def selected_options(self, monkeypatch):
+        """ステータスだけ選んだ対話にして、提示された選択肢を記録する"""
+        monkeypatch.setattr(
+            update_module, "fetch_custom_fields", lambda *args, **kwargs: None
+        )
+        monkeypatch.setattr(
+            update_module,
+            "inline_checkbox",
+            lambda *args, **kwargs: ["status"],
+        )
+        recorded: list[tuple[str, str]] = []
+
+        def inline_choice(message, options, default=None):
+            recorded.extend(options)
+            return options[0][0]
+
+        monkeypatch.setattr(update_module, "inline_choice", inline_choice)
+        return recorded
+
+    def _stub_read_issue(self, monkeypatch, issue):
+        """read_issue をスタブし、渡された include を記録して返す"""
+        called = {}
+
+        def read_issue(issue_id, include=""):
+            called["include"] = include
+            return issue
+
+        monkeypatch.setattr(update_module.issue_service, "read_issue", read_issue)
+        return called
+
+    def test_limits_to_allowed_statuses(self, selected_options, monkeypatch):
+        """遷移できるステータス (allowed_statuses) だけを選択肢に出す"""
+        called = self._stub_read_issue(
+            monkeypatch,
+            {
+                "project": {"id": 1},
+                "tracker": {"id": 1},
+                "status": {"id": 2, "name": "進行中"},
+                "allowed_statuses": [
+                    {"id": 2, "name": "進行中"},
+                    {"id": 10, "name": "レビュー"},
+                ],
+            },
+        )
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert "allowed_statuses" in called["include"].split(",")
+        assert selected_options == [("2", "進行中"), ("10", "レビュー")]
+
+
+class TestIssueUpdateParentIssue:
+    """`issue update` の対話で親チケットを変更する"""
+
+    @pytest.fixture
+    def interactive(self, monkeypatch):
+        """親チケットだけ選んだ対話にして、提示された項目と入力の既定値を記録する"""
+        monkeypatch.setattr(
+            update_module, "fetch_custom_fields", lambda *args, **kwargs: None
+        )
+        recorded: dict = {}
+
+        def inline_checkbox(message, options, initial_value=None):
+            recorded["options"] = options
+            return ["parent_issue"]
+
+        monkeypatch.setattr(update_module, "inline_checkbox", inline_checkbox)
+        return recorded
+
+    def _stub_prompt(self, monkeypatch, recorded, value):
+        def prompt_parent_issue_id(default=""):
+            recorded["default"] = default
+            return value
+
+        monkeypatch.setattr(
+            update_module, "prompt_parent_issue_id", prompt_parent_issue_id
+        )
+
+    def _stub_read_issue(self, monkeypatch, issue):
+        monkeypatch.setattr(
+            update_module.issue_service,
+            "read_issue",
+            lambda issue_id, include="": issue,
+        )
+
+    def test_parent_issue_is_selectable(self, interactive, monkeypatch):
+        """更新項目に親チケットが並ぶ"""
+        self._stub_read_issue(monkeypatch, {"project": {"id": 1}, "tracker": {"id": 1}})
+        self._stub_prompt(monkeypatch, interactive, "100")
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert ("parent_issue", messages.field_parent_issue) in interactive["options"]
+        assert args.parent_issue_id == "100"
+
+    def test_current_parent_is_default(self, interactive, monkeypatch):
+        """現在の親チケット id を入力の既定値として出す"""
+        self._stub_read_issue(
+            monkeypatch,
+            {"project": {"id": 1}, "tracker": {"id": 1}, "parent": {"id": 7}},
+        )
+        self._stub_prompt(monkeypatch, interactive, "7")
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert interactive["default"] == "7"
+
+    def test_empty_input_clears_parent(self, interactive, monkeypatch):
+        """空入力は「親チケットを外す」として空文字のまま渡す"""
+        self._stub_read_issue(
+            monkeypatch,
+            {"project": {"id": 1}, "tracker": {"id": 1}, "parent": {"id": 7}},
+        )
+        self._stub_prompt(monkeypatch, interactive, "")
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert args.parent_issue_id == ""
+
+
+class TestIssueUpdateRelateChoices:
+    """`issue update --relate` の関係性タイプ
+
+    値の集合は Redmine 側で固定なので、API を叩く前にクライアントで弾き、
+    有効な値を一覧で示す。
+    """
+
+    @pytest.mark.parametrize("relation_type", RELATION_TYPES)
+    def test_accepts_every_relation_type(self, relation_type):
+        """Redmine が受け付ける 9 種はすべて指定できる"""
+        args = parse_issue_args(
+            ["issue", "update", "42", "--relate", relation_type, "--to", "43"]
+        )
+
+        assert args.relate == relation_type
+
+    def test_rejects_unknown_relation_type(self, capsys):
+        """不正なタイプは API を叩かずに弾き、有効な値を示す
+
+        `relates` のつもりで `related` と打ちやすいので、Redmine の 422 を
+        待たずにその場で候補を出す。
+        """
+        with pytest.raises(SystemExit):
+            parse_issue_args(
+                ["issue", "update", "42", "--relate", "related", "--to", "43"]
+            )
+
+        err = capsys.readouterr().err
+        for relation_type in RELATION_TYPES:
+            assert relation_type in err
+
+    def test_covers_relation_types_shown_in_view(self):
+        """表示できる関係性はすべて指定できる
+
+        `issue view` の読み替え表と集合がずれると、見えているのに作れない
+        (あるいはその逆の) タイプが出る。
+        """
+        assert set(RELATION_TYPES) == set(view_module.INVERSE_RELATION)

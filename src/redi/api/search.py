@@ -1,4 +1,4 @@
-from typing import Literal, get_args
+from typing import Literal, TypedDict, cast, get_args
 
 from redi.client import client
 
@@ -21,6 +21,28 @@ SEARCH_TYPES: tuple[SearchType, ...] = get_args(SearchType)
 SEARCH_ATTACHMENTS: tuple[SearchAttachments, ...] = get_args(SearchAttachments)
 
 
+class SearchResult(TypedDict):
+    """検索結果1件。イシューでも wiki でも同じ形で返る。
+
+    `title` は Redmine 側で組み立て済みの文字列 (例: `サポート #223 (新規): 件名`) で、
+    トラッカーやステータスは構造化されていない。
+    """
+
+    id: int
+    title: str
+    type: str
+    url: str
+    description: str
+    datetime: str
+
+
+class SearchPageResponse(TypedDict):
+    results: list[SearchResult]
+    total_count: int
+    offset: int
+    limit: int
+
+
 # Optinal parameters
 def search(
     query: str,
@@ -33,7 +55,7 @@ def search(
     open_issues: bool = False,
     attachments: SearchAttachments | None = None,
     types: list[SearchType] | None = None,
-) -> dict:
+) -> SearchPageResponse:
     params: dict = {"q": query}
     if limit is not None:
         params["limit"] = limit
@@ -57,4 +79,4 @@ def search(
         params[search_type] = "1"
     response = client.get("/search.json", params=params)
     response.raise_for_status()
-    return response.json()
+    return cast(SearchPageResponse, response.json())

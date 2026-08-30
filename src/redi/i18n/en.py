@@ -164,6 +164,10 @@ class En(MessagesProto):
     issue_update_failed = "Failed to update issue"
     issue_delete_failed = "Failed to delete issue"
     watcher_add_failed = "Failed to add watcher"
+    watcher_not_added = (
+        "Could not add watcher {user_id} to #{issue_id}: "
+        "the user does not exist or cannot be a watcher"
+    )
     watcher_remove_failed = "Failed to remove watcher"
     wiki_page_delete_failed = "Failed to delete wiki page"
     wiki_page_update_conflict = (
@@ -557,6 +561,7 @@ class En(MessagesProto):
     tui_status_hint_time_entries = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
     tui_status_search_active = "/{query} Esc:clear"
     tui_flash_reloaded = "Reloaded"
+    tui_flash_find_cleared_by_filter = "Cleared the search and switched to filters"
     tui_filter_unspecified = "(unspecified)"
     tui_filter_status_open_default = "open (default)"
     tui_filter_status_all = "all (open + closed)"
@@ -610,6 +615,9 @@ class En(MessagesProto):
     tui_issue_delete_modal_mismatch = "issue_id does not match"
     tui_issue_delete_modal_empty = "Enter the issue_id"
     tui_issue_delete_modal_hint = "Enter:confirm Esc:close"
+    tui_find_modal_title = "Search issues (Esc to close)"
+    tui_find_modal_input_label = "query> "
+    tui_find_modal_hint = "Enter:search (empty Enter clears) Esc:close"
     tui_wiki_delete_failed = "Failed to delete wiki page: {error}"
     tui_wiki_delete_page_missing = "Wiki page not found: {title}"
     tui_wiki_delete_modal_title = "Confirm wiki page deletion (Esc to close)"
@@ -729,9 +737,7 @@ class En(MessagesProto):
     arg_help_issue_done_ratio = "Done ratio (0-100)"
     arg_help_issue_estimated_hours = "Estimated hours (e.g. 1.5)"
     arg_help_issue_notes = "Notes"
-    arg_help_issue_relate = (
-        "Relation type (relates, duplicates, blocks, precedes, follows, ...)"
-    )
+    arg_help_issue_relate = "Relation type (use with --to)"
     arg_help_issue_relate_to = "Related issue ID"
     arg_help_issue_delete_relation = "Delete relation (use with --to)"
     arg_help_issue_attach = "Attachment file path (repeatable)"
@@ -1066,6 +1072,7 @@ class En(MessagesProto):
     tui_help_next_prev_match = "Next / previous match"
     tui_help_clear_search = "Clear search (when a search query is set)"
     tui_help_filter_issues = "Filter by status/assignee/tracker/query"
+    tui_help_find_issues = "Search issues on Redmine (across all pages)"
     tui_help_filter_user = "Filter by user"
     tui_help_switch_project = "Switch project"
     tui_help_switch_profile = "Switch profile"
