@@ -27,7 +27,7 @@ class TestUpdate:
 
         assert e.value.code == 1
         assert called is False
-        assert messages.update_canceled_no_changes in capsys.readouterr().out
+        assert messages.update_canceled_no_changes in capsys.readouterr().err
 
 
 class TestList:
@@ -43,9 +43,9 @@ class TestList:
 
         user_command._list_users()
 
-        out = capsys.readouterr().out
-        assert messages.user_list_admin_required in out
-        assert messages.user_list_member_hint in out
+        err = capsys.readouterr().err
+        assert messages.user_list_admin_required in err
+        assert messages.user_list_member_hint in err
 
 
 class TestListFilterOptions:
@@ -153,4 +153,4 @@ class TestView:
             user_command._view_user("404")
 
         assert e.value.code == 1
-        assert expected in capsys.readouterr().out
+        assert expected in capsys.readouterr().err

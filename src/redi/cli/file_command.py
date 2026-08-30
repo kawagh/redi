@@ -5,10 +5,15 @@ import sys
 import requests
 
 from redi import config
-from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
+from redi.api.exceptions import (
+    ProjectNotFoundException,
+    ProjectPermissionDeniedException,
+    print_http_error_body,
+)
 from redi.cli.alias import resolve_alias
 from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import file_service
 from redi.service.attachment_service import LocalFileNotFoundException
 
@@ -49,7 +54,10 @@ def _list_files(project_id: str, full: bool = False) -> None:
     try:
         files = file_service.list_files(project_id)
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=project_id))
+        eprint(messages.project_not_found.format(id=project_id))
+        sys.exit(1)
+    except ProjectPermissionDeniedException:
+        eprint(messages.project_files_permission_denied.format(id=project_id))
         sys.exit(1)
     if full:
         print(json.dumps(files, ensure_ascii=False))
@@ -76,15 +84,15 @@ def _create_file(
             description=description,
         )
     except LocalFileNotFoundException as e:
-        print(messages.file_not_found.format(path=e.path))
+        eprint(messages.file_not_found.format(path=e.path))
         sys.exit(1)
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=project_id))
+        eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.file_upload_failed)
+        eprint(messages.file_upload_failed)
         sys.exit(1)
     print(messages.file_uploaded.format(filename=filename))
 
@@ -92,7 +100,7 @@ def _create_file(
 def handle_file(args: argparse.Namespace) -> None:
     project_id = args.project_id or config.default_project_id
     if not project_id:
-        print(messages.project_id_required)
+        eprint(messages.project_id_required)
         sys.exit(1)
     cmd = resolve_alias(args.file_command)
     if cmd == "create":

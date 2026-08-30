@@ -67,7 +67,9 @@ class TestQueryListOutput:
     def stub_projects(self, monkeypatch):
         """project_id を名前に解決するためのプロジェクト一覧を差し替える"""
         monkeypatch.setattr(
-            query_service, "list_projects", lambda: [{"id": 3, "name": "redi_df"}]
+            query_service,
+            "list_projects",
+            lambda **kwargs: [{"id": 3, "name": "redi_df"}],
         )
 
     def query_with(self, *queries) -> EnumerationResource:
@@ -149,7 +151,7 @@ class TestCustomFieldPermission:
             )
 
         assert e.value.code == 1
-        assert messages.custom_field_admin_required in capsys.readouterr().out
+        assert messages.custom_field_admin_required in capsys.readouterr().err
 
 
 class TestRefreshIsPassedToFetch:

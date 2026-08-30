@@ -238,6 +238,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     (messages.tui_help_section_search, ""),
     ("  /", messages.tui_help_start_search),
     ("  n / N", messages.tui_help_next_prev_match),
+    ("  Esc", messages.tui_help_clear_search),
     (messages.tui_help_section_filter, ""),
     ("  p", messages.tui_help_switch_project),
     ("  P", messages.tui_help_switch_profile),

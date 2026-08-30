@@ -119,7 +119,7 @@ class TestTextFormatUsesConstraints:
             inputs = iter(texts)
             initial_texts: list[str] = []
 
-            def fake_open_editor(initial_text: str = "") -> str:
+            def fake_open_editor(initial_text: str = "", name: str = "redi") -> str:
                 initial_texts.append(initial_text)
                 return next(inputs)
 

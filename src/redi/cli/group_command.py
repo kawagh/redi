@@ -21,18 +21,19 @@ from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.shared_options import full_option_parser
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import group_service
 
 
 def _exit_group_not_found(group_id: str) -> NoReturn:
-    print(messages.group_not_found.format(id=group_id))
+    eprint(messages.group_not_found.format(id=group_id))
     sys.exit(1)
 
 
 def _exit_http_error(e: requests.exceptions.HTTPError, message: str) -> NoReturn:
-    print(e)
+    eprint(e)
     print_http_error_body(e)
-    print(message)
+    eprint(message)
     sys.exit(1)
 
 
@@ -76,7 +77,7 @@ def _view_group(group_id: str, full: bool = False) -> None:
     except GroupNotFoundException:
         _exit_group_not_found(group_id)
     except GroupAdminRequiredException:
-        print(messages.group_get_admin_required)
+        eprint(messages.group_get_admin_required)
         sys.exit(1)
     if full:
         print(json.dumps(group, ensure_ascii=False))
@@ -89,7 +90,7 @@ def _create_group(name: str, user_ids: list[int] | None = None) -> None:
     try:
         created = group_service.create_group(name, user_ids=user_ids)
     except GroupAdminRequiredException:
-        print(messages.group_create_admin_required)
+        eprint(messages.group_create_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
         _exit_http_error(e, messages.group_create_failed)
@@ -113,7 +114,7 @@ def _update_group(
     except GroupNotFoundException:
         _exit_group_not_found(group_id)
     except GroupAdminRequiredException:
-        print(messages.group_update_admin_required)
+        eprint(messages.group_update_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
         _exit_http_error(e, messages.group_update_failed)
@@ -127,7 +128,7 @@ def _add_group_user(group_id: str, user_id: int) -> None:
     except GroupNotFoundException:
         _exit_group_not_found(group_id)
     except GroupAdminRequiredException:
-        print(messages.group_add_user_admin_required)
+        eprint(messages.group_add_user_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
         _exit_http_error(e, messages.group_add_user_failed)
@@ -139,12 +140,12 @@ def _remove_group_user(group_id: str, user_id: int) -> None:
     try:
         group_service.remove_group_user(group_id, user_id)
     except GroupUserNotFoundException:
-        print(
+        eprint(
             messages.group_or_user_not_found.format(group_id=group_id, user_id=user_id)
         )
         sys.exit(1)
     except GroupAdminRequiredException:
-        print(messages.group_remove_user_admin_required)
+        eprint(messages.group_remove_user_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
         _exit_http_error(e, messages.group_remove_user_failed)
@@ -158,7 +159,7 @@ def _delete_group(group_id: str) -> None:
     except GroupNotFoundException:
         _exit_group_not_found(group_id)
     except GroupAdminRequiredException:
-        print(messages.group_delete_admin_required)
+        eprint(messages.group_delete_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
         _exit_http_error(e, messages.group_delete_failed)
@@ -265,7 +266,7 @@ def handle_group(args: argparse.Namespace) -> None:
             except GroupNotFoundException:
                 _exit_group_not_found(args.group_id)
             except GroupAdminRequiredException:
-                print(messages.group_get_admin_required)
+                eprint(messages.group_get_admin_required)
                 sys.exit(1)
             confirm_delete(
                 messages.delete_target_group.format(id=group["id"], name=group["name"])

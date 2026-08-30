@@ -257,6 +257,8 @@ class MessagesProto(Protocol):
     issue_update_failed: str
     issue_delete_failed: str
     watcher_add_failed: str
+    watcher_not_added: str
+    """ウォッチャーに追加されなかった。{issue_id}, {user_id}"""
     watcher_remove_failed: str
     wiki_page_delete_failed: str
     wiki_page_update_conflict: str
@@ -392,6 +394,10 @@ class MessagesProto(Protocol):
     prompt_select_news_to_delete: str
     prompt_select_profile: str
     """プロファイル一覧の見出し。Enter でデフォルト設定 / u で項目更新の案内を含む"""
+    prompt_profile_name: str
+    """作成するプロファイル名の入力"""
+    prompt_set_default_profile: str
+    """作成したプロファイルをデフォルトにするかの確認。{name}"""
     prompt_default_project_id: str
     prompt_wiki_project_id: str
     prompt_editor: str
@@ -408,10 +414,18 @@ class MessagesProto(Protocol):
     prompt_version_name: str
     prompt_project_name: str
     prompt_project_identifier: str
+    prompt_project_homepage: str
     prompt_select_is_public: str
+    prompt_select_inherit_members: str
     prompt_select_parent_project: str
     prompt_select_parent_project_none: str
+    prompt_select_default_assignee: str
+    prompt_select_default_assignee_none: str
+    prompt_select_default_version: str
+    prompt_select_default_version_none: str
     prompt_select_trackers: str
+    prompt_select_enabled_modules: str
+    prompt_select_issue_custom_fields: str
     prompt_description_optional: str
     prompt_wiki_comments: str
     prompt_due_date_optional: str
@@ -427,6 +441,10 @@ class MessagesProto(Protocol):
     """{name}, {value}"""
     prompt_custom_field_label: str
     """{name}"""
+    choice_yes: str
+    """はい/いいえ の選択肢: はい"""
+    choice_no: str
+    """はい/いいえ の選択肢: いいえ"""
     label_bool_true: str
     """カスタムフィールド bool 形式の真の表示ラベル"""
     label_bool_false: str
@@ -483,9 +501,16 @@ class MessagesProto(Protocol):
     field_notes: str
     field_time_entry: str
     field_version_name: str
+    field_project_name: str
+    field_default_assignee: str
+    field_default_version: str
+    field_homepage: str
     field_is_public: str
     field_parent_project: str
+    field_inherit_members: str
     field_trackers: str
+    field_enabled_modules: str
+    field_issue_custom_fields: str
     field_sharing: str
     field_hours: str
     field_activity: str
@@ -546,6 +571,19 @@ class MessagesProto(Protocol):
     label_users_visibility: str
     """{value}"""
     label_permissions_header: str
+    """{count}"""
+    permission_category_project: str
+    permission_category_issue_tracking: str
+    permission_category_time_tracking: str
+    permission_category_news: str
+    permission_category_documents: str
+    permission_category_files: str
+    permission_category_wiki: str
+    permission_category_repository: str
+    permission_category_boards: str
+    permission_category_calendar: str
+    permission_category_gantt: str
+    permission_category_other: str
     label_mail: str
     """{value}"""
     label_admin: str
@@ -593,6 +631,8 @@ class MessagesProto(Protocol):
     label_sharing_field: str
     """{value}"""
     label_parent_project: str
+    """{id}, {name}"""
+    label_default_version: str
     """{id}, {name}"""
     label_trackers_header: str
     label_issue_categories_header: str
@@ -657,7 +697,11 @@ class MessagesProto(Protocol):
     tui_status_hint_wiki: str
     tui_status_hint_time_entries: str
     """{page_label}"""
+    # 検索確定後もクエリが残っていることをステータスバーに出す
+    tui_status_search_active: str
+    """{query}"""
     tui_flash_reloaded: str
+    tui_flash_find_cleared_by_filter: str
     # 列を問わず「絞り込まない」を表す選択肢のラベル
     tui_filter_unspecified: str
     tui_filter_status_open_default: str
@@ -721,6 +765,9 @@ class MessagesProto(Protocol):
     tui_issue_delete_modal_mismatch: str
     tui_issue_delete_modal_empty: str
     tui_issue_delete_modal_hint: str
+    tui_find_modal_title: str
+    tui_find_modal_input_label: str
+    tui_find_modal_hint: str
     tui_wiki_delete_failed: str
     """{error}"""
     tui_wiki_delete_page_missing: str
@@ -765,9 +812,15 @@ class MessagesProto(Protocol):
     arg_help_project_identifier: str
     label_project_identifier: str
     arg_help_description: str
+    arg_help_project_homepage: str
     arg_help_project_is_public: str
     arg_help_parent_id: str
+    arg_help_project_inherit_members: str
     arg_help_tracker_ids: str
+    arg_help_enabled_module_names: str
+    arg_help_issue_custom_field_ids: str
+    arg_help_project_default_assigned_to_id: str
+    arg_help_project_default_version_id: str
     arg_help_project_delete: str
     arg_help_project_delete_id: str
     arg_help_project_update: str
@@ -997,6 +1050,7 @@ class MessagesProto(Protocol):
     arg_help_time_entry_hours: str
     arg_help_time_entry_issue_id: str
     arg_help_time_entry_activity_id: str
+    arg_help_time_entry_create_activity_id: str
     arg_help_time_entry_spent_on: str
     arg_help_time_entry_comments: str
     arg_help_time_entry_view: str
@@ -1080,6 +1134,19 @@ class MessagesProto(Protocol):
     arg_help_issue_template_command: str
     issue_template_not_available: str
 
+    # ---- project files ----
+    project_files_permission_denied: str
+    """{id}"""
+
+    # ---- unhandled http error ----
+    http_error_unhandled: str
+    """{status} {reason}"""
+    http_error_unhandled_unknown: str
+
+    # ---- connection error ----
+    connection_unreachable: str
+    """{url}"""
+
     # ---- config_command suffix ----
     config_profile_suffix: str
     """{name}"""
@@ -1108,7 +1175,9 @@ class MessagesProto(Protocol):
     tui_help_preview_scroll_half_page: str
     tui_help_start_search: str
     tui_help_next_prev_match: str
+    tui_help_clear_search: str
     tui_help_filter_issues: str
+    tui_help_find_issues: str
     tui_help_filter_user: str
     tui_help_switch_project: str
     tui_help_switch_profile: str
