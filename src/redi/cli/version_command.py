@@ -11,14 +11,15 @@ from prompt_toolkit.shortcuts import choice
 from prompt_toolkit.validation import Validator
 
 from redi import config
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.version import Version, VersionNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.interactive import ensure_interactive, prompt
+from redi.cli.interactive import ensure_interactive, exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import project_option_parser
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import version_service
 
 
@@ -35,13 +36,22 @@ def _read_version_or_exit(version_id: str) -> Version:
     try:
         return version_service.read_version(version_id)
     except VersionNotFoundException:
-        print(messages.version_not_found.format(id=version_id))
+        eprint(messages.version_not_found.format(id=version_id))
+        sys.exit(1)
+
+
+def _read_versions(project_id: str) -> list[Version]:
+    """バージョン一覧を取得する。プロジェクトが存在しなければ exit 1。"""
+    try:
+        return version_service.list_versions(project_id)
+    except ProjectNotFoundException:
+        eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
 
 
 def _list_versions(project_id: str, full: bool = False) -> None:
     """バージョン一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
-    versions = version_service.list_versions(project_id)
+    versions = _read_versions(project_id)
     if full:
         print(json.dumps(versions, ensure_ascii=False))
         return
@@ -98,9 +108,9 @@ def _create_version(
             sharing=sharing,
         )
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.version_create_failed)
+        eprint(messages.version_create_failed)
         sys.exit(1)
     print(
         messages.version_created.format(
@@ -139,12 +149,12 @@ def _update_version(
             sharing=sharing,
         )
     except VersionNotFoundException:
-        print(messages.version_not_found.format(id=version_id))
+        eprint(messages.version_not_found.format(id=version_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.version_update_failed)
+        eprint(messages.version_update_failed)
         sys.exit(1)
     print(
         messages.version_updated.format(
@@ -158,12 +168,12 @@ def _delete_version(version_id: str) -> None:
     try:
         version_service.delete_version(version_id)
     except VersionNotFoundException:
-        print(messages.version_not_found.format(id=version_id))
+        eprint(messages.version_not_found.format(id=version_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.version_delete_failed)
+        eprint(messages.version_delete_failed)
         sys.exit(1)
     print(messages.version_deleted.format(id=version_id))
 
@@ -252,17 +262,14 @@ def add_version_parser(
 def _interactive_select_version_id(project_id: str) -> str:
     versions = version_service.list_versions(project_id)
     if not versions:
-        print(messages.no_versions_available)
+        eprint(messages.no_versions_available)
         sys.exit(1)
     options: list[tuple[str, str]] = [
         (str(v["id"]), f"{v['id']} {v['name']} ({v['status']})") for v in versions
     ]
     labels = dict(options)
-    try:
+    with exit_on_cancel():
         selected = inline_choice(messages.prompt_select_version_to_update, options)
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        sys.exit(1)
     print(messages.update_target_version.format(label=labels[selected]))
     return selected
 
@@ -276,17 +283,14 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
         ("description", messages.field_description),
         ("sharing", messages.field_sharing),
     ]
-    try:
+    with exit_on_cancel():
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        sys.exit(1)
     if not selected:
-        print(messages.canceled_no_items_selected)
+        eprint(messages.canceled_no_items_selected)
         sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
-    try:
+    with exit_on_cancel():
         if "name" in selected:
             args.name = prompt(
                 messages.prompt_version_name, default=current.get("name") or ""
@@ -332,9 +336,6 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
                 default=current.get("sharing") or "none",
             )
             print(messages.sharing_label.format(value=args.sharing))
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        sys.exit(1)
 
 
 def _interactive_create_version(project_id: str, args: argparse.Namespace) -> None:
@@ -342,25 +343,12 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
         lambda text: len(text.strip()) > 0,
         error_message=messages.error_input_required,
     )
-    try:
+    with exit_on_cancel():
         name = prompt(
             messages.prompt_version_name, validator=non_empty_validator
         ).strip()
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        sys.exit(1)
-
-    try:
         due_date = prompt(messages.prompt_due_date_optional).strip() or None
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        sys.exit(1)
-
-    try:
         description = prompt(messages.prompt_description_optional).strip() or None
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        sys.exit(1)
 
     sharing_options: list[tuple[str, str]] = [
         ("none", messages.sharing_none),
@@ -380,16 +368,13 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
         event.app.key_processor.feed(KeyPress(Keys.Down))
 
     ensure_interactive(messages.prompt_select_sharing)
-    try:
+    with exit_on_cancel():
         sharing_input = choice(
             messages.prompt_select_sharing,
             options=sharing_options,
             default="none",
             key_bindings=choice_kb,
         )
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        sys.exit(1)
     sharing = sharing_input if sharing_input != "none" else None
 
     _create_version(
@@ -408,7 +393,7 @@ def handle_version(args: argparse.Namespace) -> None:
     elif cmd == "create":
         project_id = args.project_id or config.default_project_id
         if not project_id:
-            print(messages.project_id_required)
+            eprint(messages.project_id_required)
             sys.exit(1)
         if args.name is None:
             _interactive_create_version(project_id, args)
@@ -434,7 +419,7 @@ def handle_version(args: argparse.Namespace) -> None:
         if not args.version_id:
             project_id = args.project_id or config.default_project_id
             if not project_id:
-                print(messages.project_id_required)
+                eprint(messages.project_id_required)
                 sys.exit(1)
             args.version_id = _interactive_select_version_id(project_id)
         no_args_provided = not version_service.has_update_fields(
@@ -457,6 +442,6 @@ def handle_version(args: argparse.Namespace) -> None:
     elif cmd == "list" or cmd is None:
         project_id = args.project_id or config.default_project_id
         if not project_id:
-            print(messages.project_id_required)
+            eprint(messages.project_id_required)
             sys.exit(1)
         _list_versions(project_id, full=args.full)

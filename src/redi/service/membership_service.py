@@ -3,15 +3,15 @@
 CLI と TUI で共通の手順をここに置く。HTTP とステータスコードの解釈は `api.membership` が持つ。
 """
 
-from __future__ import annotations
-
 from redi.api import membership as membership_api
 from redi.api.membership import Membership
 
 
-def list_memberships(project_id: str) -> list[Membership]:
+def list_memberships(
+    project_id: str, limit: int | None = None, offset: int | None = None
+) -> list[Membership]:
     """プロジェクトのメンバーシップ一覧を取得する。"""
-    return membership_api.fetch_memberships(project_id)
+    return membership_api.fetch_memberships(project_id, limit=limit, offset=offset)
 
 
 def read_membership(membership_id: str) -> Membership:

@@ -1,8 +1,15 @@
 from types import SimpleNamespace
 
 import pytest
+import requests
 
 from redi import config
+from redi.api.exceptions import (
+    IssueListNotFoundException,
+    ProjectNotFoundException,
+    QueryNotFoundException,
+)
+from redi.api.issue import WatcherNotFoundException
 from redi.service import issue_service
 
 
@@ -80,3 +87,115 @@ class TestAddNote:
         url = issue_service.add_note("42", "コメント")
 
         assert url == "http://localhost:3001/issues/42"
+
+
+class TestListIssuesNotFound:
+    """`--query_id` と `--project_id` を同時に指定した 404 の切り分け
+
+    Redmine はどちらが原因でも 404 を返すため、クエリ一覧を引いて原因の側を指す。
+    default_project_id が設定されていると常に両方指定になるため、切り分けないと
+    クエリ由来の 404 がすべてプロジェクトのせいに見えてしまう。
+    """
+
+    @pytest.fixture
+    def stub_not_found(self, monkeypatch):
+        """イシュー取得を必ず IssueListNotFoundException にする"""
+
+        def fake_fetch_issues(**kwargs):
+            raise IssueListNotFoundException("demo", "5")
+
+        monkeypatch.setattr(issue_service.issue_api, "fetch_issues", fake_fetch_issues)
+
+    def test_raises_query_not_found_when_query_is_missing(
+        self, stub_not_found, monkeypatch
+    ):
+        """クエリ一覧に無ければクエリ未検出のまま送出する"""
+        monkeypatch.setattr(
+            issue_service.query_api, "fetch_queries", lambda **kwargs: [{"id": 8}]
+        )
+
+        with pytest.raises(QueryNotFoundException) as exc_info:
+            issue_service.list_issues(project_id="demo", query_id="5")
+
+        assert exc_info.value.query_id == "5"
+
+    def test_raises_project_not_found_when_query_exists(
+        self, stub_not_found, monkeypatch
+    ):
+        """クエリが実在するならプロジェクト側が原因なので送出し直す"""
+        monkeypatch.setattr(
+            issue_service.query_api, "fetch_queries", lambda **kwargs: [{"id": 5}]
+        )
+
+        with pytest.raises(ProjectNotFoundException) as exc_info:
+            issue_service.list_issues(project_id="demo", query_id="5")
+
+        assert exc_info.value.project_id == "demo"
+
+    def test_raises_query_not_found_when_queries_are_unavailable(
+        self, stub_not_found, monkeypatch
+    ):
+        """クエリ一覧を取得できない場合は指定した側 (クエリ) を指す"""
+
+        def fake_fetch_queries(**kwargs):
+            raise requests.exceptions.HTTPError()
+
+        monkeypatch.setattr(
+            issue_service.query_api, "fetch_queries", fake_fetch_queries
+        )
+
+        with pytest.raises(QueryNotFoundException):
+            issue_service.list_issues(project_id="demo", query_id="5")
+
+
+class TestAddWatcher:
+    """add_watcher が追加の反映を確かめる
+
+    Redmine はウォッチャーにできないユーザーIDを渡しても追加せずに 200 を返すため、
+    API の戻りだけを信じると追加できていないのに成功扱いになる。
+    """
+
+    @pytest.fixture
+    def stub_watcher_api(self, monkeypatch):
+        """POST を `added` に記録し、追加後に返るウォッチャー一覧を `watchers` で差し替える"""
+
+        state = SimpleNamespace(watchers=[], added=[])
+
+        def fake_add_watcher(issue_id, user_id):
+            state.added.append((issue_id, user_id))
+
+        def fake_fetch_issue(issue_id, include=""):
+            issue = {"id": int(issue_id)}
+            if state.watchers is not None:
+                issue["watchers"] = state.watchers
+            return issue
+
+        monkeypatch.setattr(issue_service.issue_api, "add_watcher", fake_add_watcher)
+        monkeypatch.setattr(issue_service.issue_api, "fetch_issue", fake_fetch_issue)
+        return state
+
+    def test_succeeds_when_watcher_is_added(self, stub_watcher_api):
+        """追加後の一覧に指定したユーザーがいれば成功とみなす"""
+        stub_watcher_api.watchers = [{"id": 7, "name": "redi"}]
+
+        issue_service.add_watcher("42", 7)
+
+        assert stub_watcher_api.added == [("42", 7)]
+
+    def test_raises_when_watcher_is_not_added(self, stub_watcher_api):
+        """追加後の一覧に指定したユーザーがいなければ追加できていないので送出する"""
+        stub_watcher_api.watchers = [{"id": 1, "name": "other"}]
+
+        with pytest.raises(WatcherNotFoundException) as exc_info:
+            issue_service.add_watcher("42", 999)
+
+        assert exc_info.value.issue_id == "42"
+        assert exc_info.value.user_id == 999
+
+    def test_does_not_raise_when_watchers_are_unavailable(self, stub_watcher_api):
+        """ウォッチャーを参照する権限が無いと一覧が返らないので、確認せず成功とみなす"""
+        stub_watcher_api.watchers = None
+
+        issue_service.add_watcher("42", 7)
+
+        assert stub_watcher_api.added == [("42", 7)]

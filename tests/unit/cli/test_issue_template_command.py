@@ -23,7 +23,7 @@ class TestHandleIssueTemplate:
             )
 
         assert e.value.code == 1
-        assert messages.issue_template_not_available in capsys.readouterr().out
+        assert messages.issue_template_not_available in capsys.readouterr().err
 
     def test_prints_templates_by_section(self, monkeypatch, capsys):
         """テンプレートは種別を見出しにして `{id} {title}` で並べる"""

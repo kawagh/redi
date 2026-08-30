@@ -8,7 +8,7 @@ from redi.api.issue import (
     fetch_issues_page,
 )
 from redi.i18n import messages
-from redi.service import issue_service
+from redi.service import issue_service, search_service
 from redi.text_format import highlight_segments, issue_meta_rows, render_meta_table
 from redi.tui.state import (
     CommentSelectState,
@@ -119,6 +119,9 @@ def _status_hint(state: TuiState) -> str:
     if state.issue_tab.comment_select.active:
         return messages.tui_comment_select_status_hint
     hint = messages.tui_status_hint_issues.format(page_label=_page_label(state))
+    # 検索中はフィルタ条件を無視して検索結果を出しているので、フィルタのラベルは出さない
+    if state.issue_tab.find.is_active():
+        return f" [{state.issue_tab.find.short_label()}]" + hint
     if state.issue_tab.filter.is_active():
         hint = f" [{state.issue_tab.filter.short_label()}]" + hint
     return hint
@@ -311,6 +314,14 @@ def _on_enter(state: TuiState) -> None:
 
 
 def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse:
+    """現在の条件で1ページ取得する。検索中は検索結果が通常のフィルタを置き換える。"""
+    if state.issue_tab.find.is_active():
+        return search_service.search_issues_page(
+            query=state.issue_tab.find.query,
+            project_id=state.effective_project_id(),
+            limit=state.page_size,
+            offset=offset,
+        )
     f = state.issue_tab.filter
     return fetch_issues_page(
         project_id=state.effective_project_id(),
@@ -328,6 +339,18 @@ def _apply_page(state: TuiState, page: IssuesPageResponse, offset: int) -> None:
     state.issue_tab.issues = page["issues"]
     state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
     state.issue_tab.cursor = 0
+
+
+def clear_find_for_filter(state: TuiState) -> None:
+    """フィルタ操作に切り替えるため検索を解除する。
+
+    検索中はフィルタを触っても一覧が変わらないので、黙って空振りさせず
+    最後に触った方を有効にする。
+    """
+    if not state.issue_tab.find.is_active():
+        return
+    state.issue_tab.find.query = ""
+    state.flash_message = messages.tui_flash_find_cleared_by_filter
 
 
 def reload_with_filter(state: TuiState) -> None:
@@ -425,6 +448,8 @@ _HELP_LINES: list[tuple[str, str]] = [
     (messages.tui_help_section_search, ""),
     ("  /", messages.tui_help_start_search),
     ("  n / N", messages.tui_help_next_prev_match),
+    ("  Esc", messages.tui_help_clear_search),
+    ("  F", messages.tui_help_find_issues),
     (messages.tui_help_section_filter, ""),
     ("  f", messages.tui_help_filter_issues),
     ("  p", messages.tui_help_switch_project),

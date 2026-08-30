@@ -3,6 +3,7 @@ import logging
 import requests
 
 from redi import config
+from redi.api.exceptions import RedmineConnectionException
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +27,20 @@ class RedmineClient:
         self.session.cookies.clear()
 
     def _request(self, method: str, path: str, **kwargs) -> requests.Response:
+        """すべてのリクエストが通る唯一の経路。
+
+        接続自体ができないケースはどのコマンドでも起きるので、
+        個々の api モジュールではなくここで redi の例外に変換する。
+        """
         url = self.base_url + path
         logger.debug("%s %s", method, url)
-        response = getattr(self.session, method)(url, **kwargs)
+        try:
+            response = getattr(self.session, method)(url, **kwargs)
+        except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+        ) as e:
+            raise RedmineConnectionException(self.base_url) from e
         logger.debug("%s %s", response.status_code, response.reason)
         return response
 

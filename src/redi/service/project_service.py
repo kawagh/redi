@@ -3,8 +3,6 @@
 CLI と TUI で共通の手順をここに置く。HTTP とステータスコードの解釈は `api.project` が持つ。
 """
 
-from __future__ import annotations
-
 import re
 
 from redi import config
@@ -14,6 +12,22 @@ from redi.api.project import Project
 
 # Redmine のプロジェクト識別子の最大長
 IDENTIFIER_MAX_LENGTH = 100
+
+# Redmine 標準のモジュール名。
+# 有効化できるモジュールを返す REST API が無いため対話の選択肢としてこれを出す。
+# プラグインが追加するモジュール名は含まないので、引数で渡された値の検証には使わない。
+MODULE_NAME_CHOICES = [
+    "boards",
+    "calendar",
+    "documents",
+    "files",
+    "gantt",
+    "issue_tracking",
+    "news",
+    "repository",
+    "time_tracking",
+    "wiki",
+]
 
 
 def suggest_identifier(name: str) -> str:
@@ -35,9 +49,17 @@ def project_url(project_id: str) -> str:
     return f"{config.redmine_url}/projects/{project_id}"
 
 
-def list_projects() -> list[Project]:
-    """アクセスできるプロジェクトを全件取得する。"""
-    return project_api.fetch_projects()
+def list_projects(
+    limit: int | None = None,
+    offset: int | None = None,
+    all_pages: bool = False,
+) -> list[Project]:
+    """アクセスできるプロジェクトを取得する。
+
+    既定では Redmine の一覧 API の既定件数で打ち切られる。
+    取りこぼせない用途では all_pages を指定する。
+    """
+    return project_api.fetch_projects(limit=limit, offset=offset, all_pages=all_pages)
 
 
 def sort_projects_by_id_desc(projects: list[Project]) -> list[Project]:
@@ -56,7 +78,7 @@ def resolve_project_id(value: str) -> str:
     """
     if str(value).isdigit():
         return str(value)
-    for project in project_api.fetch_projects():
+    for project in project_api.fetch_projects(all_pages=True):
         if project.get("identifier") == value or project.get("name") == value:
             return str(project["id"])
     raise ProjectNotFoundException(value)
@@ -77,9 +99,13 @@ def create_project(
     name: str,
     identifier: str,
     description: str | None = None,
+    homepage: str | None = None,
     is_public: bool | None = None,
     parent_id: str | None = None,
+    inherit_members: bool | None = None,
     tracker_ids: list[int] | None = None,
+    enabled_module_names: list[str] | None = None,
+    issue_custom_field_ids: list[int] | None = None,
 ) -> Project:
     """プロジェクトを作成し、作成されたプロジェクトを返す。
 
@@ -91,9 +117,49 @@ def create_project(
         name=name,
         identifier=identifier,
         description=description,
+        homepage=homepage,
         is_public=is_public,
         parent_id=parent_id,
+        inherit_members=inherit_members,
         tracker_ids=tracker_ids,
+        enabled_module_names=enabled_module_names,
+        issue_custom_field_ids=issue_custom_field_ids,
+    )
+
+
+def has_update_fields(
+    name: str | None = None,
+    description: str | None = None,
+    homepage: str | None = None,
+    is_public: bool | None = None,
+    parent_id: str | None = None,
+    inherit_members: bool | None = None,
+    tracker_ids: list[int] | None = None,
+    enabled_module_names: list[str] | None = None,
+    issue_custom_field_ids: list[int] | None = None,
+    default_assigned_to_id: str | None = None,
+    default_version_id: str | None = None,
+) -> bool:
+    """更新する項目が指定されているかを返す。
+
+    description / homepage / default_* は空文字が値を消す指定なので、
+    値の真偽ではなく None かどうかで判定する。
+    """
+    return any(
+        value is not None
+        for value in (
+            name,
+            description,
+            homepage,
+            is_public,
+            parent_id,
+            inherit_members,
+            tracker_ids,
+            enabled_module_names,
+            issue_custom_field_ids,
+            default_assigned_to_id,
+            default_version_id,
+        )
     )
 
 
@@ -101,9 +167,15 @@ def update_project(
     project_id: str,
     name: str | None = None,
     description: str | None = None,
+    homepage: str | None = None,
     is_public: bool | None = None,
     parent_id: str | None = None,
+    inherit_members: bool | None = None,
     tracker_ids: list[int] | None = None,
+    enabled_module_names: list[str] | None = None,
+    issue_custom_field_ids: list[int] | None = None,
+    default_assigned_to_id: str | None = None,
+    default_version_id: str | None = None,
 ) -> None:
     """プロジェクトを更新する。
 
@@ -116,9 +188,15 @@ def update_project(
         project_id,
         name=name,
         description=description,
+        homepage=homepage,
         is_public=is_public,
         parent_id=parent_id,
+        inherit_members=inherit_members,
         tracker_ids=tracker_ids,
+        enabled_module_names=enabled_module_names,
+        issue_custom_field_ids=issue_custom_field_ids,
+        default_assigned_to_id=default_assigned_to_id,
+        default_version_id=default_version_id,
     )
 
 

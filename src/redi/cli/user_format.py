@@ -4,8 +4,6 @@
 インデントはここで付け、i18n の文字列にはラベルだけを持たせる。
 """
 
-from __future__ import annotations
-
 from redi.api.user import User
 from redi.i18n import messages
 

@@ -1,3 +1,4 @@
+# carry_over() が自分自身の型 TuiState を返すため、注釈の評価を遅らせる
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -179,6 +180,33 @@ class CommentSelectState:
 
 
 @dataclass
+class IssueFind:
+    """F で開く検索の条件。Redmine の検索 API に渡すクエリを保持する。
+
+    `/` のバッファ内検索 (`TuiState.search_query`) とは別物で、こちらは API を叩いて
+    イシュー一覧そのものを置き換える。
+    """
+
+    query: str = ""
+
+    def is_active(self) -> bool:
+        return bool(self.query)
+
+    def short_label(self) -> str:
+        if not self.query:
+            return ""
+        return f"find={self.query}"
+
+
+@dataclass
+class IssueFindModalState:
+    """F で開く検索 modal の表示と入力状態。"""
+
+    show: bool = False
+    input_text: str = ""
+
+
+@dataclass
 class IssueDeleteModalState:
     """D で開く issue 削除確認 modal の状態。"""
 
@@ -198,6 +226,8 @@ class IssueTabState:
     total_count: int = 0
     filter: IssueFilter = field(default_factory=IssueFilter)
     filter_modal: FilterModalState = field(default_factory=FilterModalState)
+    find: IssueFind = field(default_factory=IssueFind)
+    find_modal: IssueFindModalState = field(default_factory=IssueFindModalState)
     comment_select: CommentSelectState = field(default_factory=CommentSelectState)
     delete_modal: IssueDeleteModalState = field(default_factory=IssueDeleteModalState)
 
@@ -318,6 +348,7 @@ class TuiState:
 
         next_state = TuiState(last_result=result)
         next_state.issue_tab.filter = self.issue_tab.filter
+        next_state.issue_tab.find = self.issue_tab.find
         next_state.time_entry_tab.filter = self.time_entry_tab.filter
         next_state.project_id = self.project_id
         next_state.project_label = self.project_label

@@ -1,4 +1,4 @@
-"""対話入力に入る前に非TTY環境を弾くためのヘルパー。
+"""対話入力に入る前後の共通処理をまとめたヘルパー。
 
 エージェントやCIが引数不足のまま実行すると prompt_toolkit が EOFError を送出し、
 スタックトレースだけが残って何の入力が足りないのか分からないため、
@@ -6,18 +6,21 @@
 """
 
 import sys
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from prompt_toolkit import prompt as _prompt
 
 from redi.i18n import messages
+from redi.output import eprint
 
 
 def ensure_interactive(message: str) -> None:
     """標準入力がTTYでなければ、求めていた入力を示して exit 1 する。"""
     if sys.stdin.isatty():
         return
-    print(
+    eprint(
         messages.non_interactive_input_required.format(
             message=message.strip().rstrip(":").strip()
         )
@@ -32,3 +35,17 @@ def prompt(message: str, **kwargs: Any) -> str:
     """
     ensure_interactive(message)
     return str(_prompt(message, **kwargs))
+
+
+@contextmanager
+def exit_on_cancel(notice: str | None = None) -> Iterator[None]:
+    """キャンセルを掴んで標準エラーに通知し、exit 1 する。
+
+    notice は `redi init` のように設定とは別の言語で表示する箇所のためのもので、
+    省略すると設定の言語で通知する。
+    """
+    try:
+        yield
+    except (KeyboardInterrupt, EOFError):
+        eprint(notice or messages.canceled)
+        sys.exit(1)

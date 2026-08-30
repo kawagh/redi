@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import NotRequired, TypedDict, cast
 
 from redi.api.exceptions import (
@@ -32,30 +30,51 @@ class Project(TypedDict):
     inherit_members: bool
     created_on: str
     updated_on: str
+    # 設定されている場合のみ存在
+    default_assignee: NotRequired[IdName]
+    default_version: NotRequired[IdName]
     # 親プロジェクトを持つ場合のみ存在
     parent: NotRequired[IdName]
     # include 指定時のみ存在
     trackers: NotRequired[list[IdName]]
     issue_categories: NotRequired[list[IdName]]
+    issue_custom_fields: NotRequired[list[IdName]]
     time_entry_activities: NotRequired[list[IdName]]
     enabled_modules: NotRequired[list[IdName]]
 
 
-def fetch_projects(api_client: RedmineClient | None = None) -> list[Project]:
-    """アクセスできるプロジェクトを全件返す。
+def fetch_projects(
+    api_client: RedmineClient | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    all_pages: bool = False,
+) -> list[Project]:
+    """アクセスできるプロジェクトを取得する。
 
-    Redmine の一覧 API は limit 未指定だと既定件数しか返さないため、
-    `total_count` を見て全件揃うまで offset を進める。
+    既定では一覧 API を1回だけ呼ぶので、limit 未指定なら Redmine の
+    既定件数で打ち切られる。all_pages を指定したときだけ `total_count` を
+    見て全件揃うまで offset を進める (このとき limit / offset は見ない)。
 
     `api_client` は config 未確定の `redi init` から、入力されたばかりの
     URL/API キーで呼ぶために受ける。省略時はグローバルの client を使う。
     """
     target = api_client or client
+    if not all_pages:
+        params: dict = {}
+        if limit is not None:
+            params["limit"] = limit
+        if offset is not None:
+            params["offset"] = offset
+        response = target.get("/projects.json", params=params)
+        response.raise_for_status()
+        return cast("list[Project]", response.json().get("projects", []))
+
     projects: list[Project] = []
-    offset = 0
+    page_offset = 0
     while True:
         response = target.get(
-            "/projects.json", params={"limit": PROJECTS_PAGE_LIMIT, "offset": offset}
+            "/projects.json",
+            params={"limit": PROJECTS_PAGE_LIMIT, "offset": page_offset},
         )
         response.raise_for_status()
         data = response.json()
@@ -64,7 +83,7 @@ def fetch_projects(api_client: RedmineClient | None = None) -> list[Project]:
         total_count = data.get("total_count")
         if not page or total_count is None or len(projects) >= total_count:
             return projects
-        offset += len(page)
+        page_offset += len(page)
 
 
 def fetch_project(project_id: str, include: str = "") -> Project:
@@ -93,9 +112,13 @@ def create_project(
     name: str,
     identifier: str,
     description: str | None = None,
+    homepage: str | None = None,
     is_public: bool | None = None,
     parent_id: str | None = None,
+    inherit_members: bool | None = None,
     tracker_ids: list[int] | None = None,
+    enabled_module_names: list[str] | None = None,
+    issue_custom_field_ids: list[int] | None = None,
 ) -> Project:
     """プロジェクトを作成し、作成されたプロジェクトを返す
 
@@ -109,12 +132,20 @@ def create_project(
     }
     if description is not None:
         data["description"] = description
+    if homepage is not None:
+        data["homepage"] = homepage
     if is_public is not None:
         data["is_public"] = is_public
     if parent_id is not None:
         data["parent_id"] = parent_id
+    if inherit_members is not None:
+        data["inherit_members"] = inherit_members
     if tracker_ids is not None:
         data["tracker_ids"] = tracker_ids
+    if enabled_module_names is not None:
+        data["enabled_module_names"] = enabled_module_names
+    if issue_custom_field_ids is not None:
+        data["issue_custom_field_ids"] = issue_custom_field_ids
     response = client.post("/projects.json", json={"project": data})
     if response.status_code == 422:
         raise RedmineValidationException.from_response("project", "create", response)
@@ -126,9 +157,15 @@ def update_project(
     project_id: str,
     name: str | None = None,
     description: str | None = None,
+    homepage: str | None = None,
     is_public: bool | None = None,
     parent_id: str | None = None,
+    inherit_members: bool | None = None,
     tracker_ids: list[int] | None = None,
+    enabled_module_names: list[str] | None = None,
+    issue_custom_field_ids: list[int] | None = None,
+    default_assigned_to_id: str | None = None,
+    default_version_id: str | None = None,
 ) -> None:
     """プロジェクトを更新する
 
@@ -142,12 +179,24 @@ def update_project(
         data["name"] = name
     if description is not None:
         data["description"] = description
+    if homepage is not None:
+        data["homepage"] = homepage
     if is_public is not None:
         data["is_public"] = is_public
     if parent_id is not None:
         data["parent_id"] = parent_id
+    if inherit_members is not None:
+        data["inherit_members"] = inherit_members
     if tracker_ids is not None:
         data["tracker_ids"] = tracker_ids
+    if enabled_module_names is not None:
+        data["enabled_module_names"] = enabled_module_names
+    if issue_custom_field_ids is not None:
+        data["issue_custom_field_ids"] = issue_custom_field_ids
+    if default_assigned_to_id is not None:
+        data["default_assigned_to_id"] = default_assigned_to_id
+    if default_version_id is not None:
+        data["default_version_id"] = default_version_id
     response = client.put(f"/projects/{project_id}.json", json={"project": data})
     if response.status_code == 404:
         raise ProjectNotFoundException(project_id)

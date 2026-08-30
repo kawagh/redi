@@ -5,12 +5,13 @@ import sys
 import requests
 
 from redi import config
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.membership import Membership, MembershipNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.shared_options import project_option_parser
+from redi.cli.shared_options import pagination_option_parser, project_option_parser
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import membership_service
 
 
@@ -28,9 +29,20 @@ def _format_membership_line(membership: Membership) -> str:
     return f"{membership['id']} [{principal_kind}] {principal_str} - {role_str}"
 
 
-def _list_memberships(project_id: str, full: bool = False) -> None:
+def _list_memberships(
+    project_id: str,
+    full: bool = False,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> None:
     """メンバーシップ一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
-    memberships = membership_service.list_memberships(project_id)
+    try:
+        memberships = membership_service.list_memberships(
+            project_id, limit=limit, offset=offset
+        )
+    except ProjectNotFoundException:
+        eprint(messages.project_not_found.format(id=project_id))
+        sys.exit(1)
     if full:
         print(json.dumps(memberships, ensure_ascii=False))
         return
@@ -43,7 +55,7 @@ def _read_membership(membership_id: str) -> Membership:
     try:
         return membership_service.read_membership(membership_id)
     except MembershipNotFoundException:
-        print(messages.membership_not_found.format(id=membership_id))
+        eprint(messages.membership_not_found.format(id=membership_id))
         sys.exit(1)
 
 
@@ -77,9 +89,9 @@ def _create_membership(project_id: str, principal_id: int, role_ids: list[int]) 
             project_id, principal_id, role_ids
         )
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.membership_create_failed)
+        eprint(messages.membership_create_failed)
         sys.exit(1)
     print(messages.membership_created.format(line=_format_membership_line(created)))
 
@@ -89,12 +101,12 @@ def _update_membership(membership_id: str, role_ids: list[int]) -> None:
     try:
         membership_service.update_membership(membership_id, role_ids)
     except MembershipNotFoundException:
-        print(messages.membership_not_found.format(id=membership_id))
+        eprint(messages.membership_not_found.format(id=membership_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.membership_update_failed)
+        eprint(messages.membership_update_failed)
         sys.exit(1)
     print(messages.membership_updated.format(id=membership_id))
 
@@ -104,12 +116,12 @@ def _delete_membership(membership_id: str) -> None:
     try:
         membership_service.delete_membership(membership_id)
     except MembershipNotFoundException:
-        print(messages.membership_not_found.format(id=membership_id))
+        eprint(messages.membership_not_found.format(id=membership_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.membership_delete_failed)
+        eprint(messages.membership_delete_failed)
         sys.exit(1)
     print(messages.membership_deleted.format(id=membership_id))
 
@@ -121,14 +133,18 @@ def add_membership_parser(
         "membership",
         aliases=["m"],
         help=messages.arg_help_membership_command,
-        parents=[*parents, project_option_parser()],
+        parents=[*parents, project_option_parser(), pagination_option_parser()],
     )
     m_subparsers = m_parser.add_subparsers(dest="membership_command")
     m_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_membership_list,
-        parents=[*parents, project_option_parser(postfix=True)],
+        parents=[
+            *parents,
+            project_option_parser(postfix=True),
+            pagination_option_parser(postfix=True),
+        ],
     )
 
     m_view_parser = m_subparsers.add_parser(
@@ -201,10 +217,10 @@ def handle_membership(args: argparse.Namespace) -> None:
     if cmd == "create":
         project_id = args.project_id or config.default_project_id
         if not project_id:
-            print(messages.project_id_required)
+            eprint(messages.project_id_required)
             sys.exit(1)
         if args.user_id is None and args.group_id is None:
-            print(messages.user_or_group_flag_required)
+            eprint(messages.user_or_group_flag_required)
             sys.exit(1)
         principal_id = args.user_id if args.user_id is not None else args.group_id
         _create_membership(
@@ -241,6 +257,8 @@ def handle_membership(args: argparse.Namespace) -> None:
     if cmd == "list" or cmd is None:
         project_id = args.project_id or config.default_project_id
         if not project_id:
-            print(messages.project_id_required)
+            eprint(messages.project_id_required)
             sys.exit(1)
-        _list_memberships(project_id, full=args.full)
+        _list_memberships(
+            project_id, full=args.full, limit=args.limit, offset=args.offset
+        )

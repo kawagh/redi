@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import NotRequired, TypedDict, cast
 
 from redi.api.types import IdName
@@ -80,12 +78,13 @@ def fetch_users(
     group_id: int | None = None,
     limit: int | None = None,
     offset: int | None = None,
+    all_pages: bool = False,
 ) -> list[User]:
     """条件に合うユーザーを取得する
 
-    limit / offset のどちらかを指定するとその1ページだけを返す。
-    どちらも未指定なら、Redmine の一覧 API が既定件数で打ち切るのを避けるため
-    `total_count` を見て全件揃うまで offset を進める。
+    既定では一覧 API を1回だけ呼ぶので、limit 未指定なら Redmine の
+    既定件数で打ち切られる。all_pages を指定したときだけ `total_count` を
+    見て全件揃うまで offset を進める (このとき limit / offset は見ない)。
 
     Args:
         status: `USER_STATUS` の数値。未指定なら Redmine の既定 (active のみ)
@@ -93,6 +92,7 @@ def fetch_users(
         group_id: 所属グループ
         limit: 取得件数
         offset: 取得開始位置
+        all_pages: 既定件数で打ち切らず全件取得するか
 
     Raises:
         UserPermissionDeniedException: 管理者権限が無い場合（HTTP 403）
@@ -106,7 +106,7 @@ def fetch_users(
     if group_id is not None:
         filters["group_id"] = group_id
 
-    if limit is not None or offset is not None:
+    if not all_pages:
         page_params = dict(filters)
         if limit is not None:
             page_params["limit"] = limit

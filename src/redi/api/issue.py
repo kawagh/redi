@@ -1,8 +1,15 @@
+# Issue / IssueStatus / IssueCustomField / Journal / JournalDetail が
+# 自分より下で定義される TypedDict を参照しているため、注釈の評価を遅らせる
 from __future__ import annotations
 
 from typing import NotRequired, TypedDict, cast
 
-from redi.api.exceptions import ProjectNotFoundException, RedmineValidationException
+from redi.api.exceptions import (
+    IssueListNotFoundException,
+    ProjectNotFoundException,
+    QueryNotFoundException,
+    RedmineValidationException,
+)
 from redi.api.types import IdName
 from redi.client import client
 
@@ -29,6 +36,8 @@ class Issue(TypedDict):
     assigned_to: NotRequired[IdName]
     subject: str
     description: str
+    # 親チケットがある場合のみ含まれる
+    parent: NotRequired[IssueParent]
     start_date: str | None
     due_date: str | None
     done_ratio: int
@@ -39,10 +48,23 @@ class Issue(TypedDict):
     total_spent_hours: float
     # GET /issues/{id}では含まれる
     custom_fields: NotRequired[list[IssueCustomField]]
+    # include=allowed_statuses を指定したときだけ含まれる
+    allowed_statuses: NotRequired[list[IssueStatus]]
+    # include=watchers を指定し、かつ view_issue_watchers 権限があるときだけ含まれる
+    watchers: NotRequired[list[IdName]]
     created_on: str
     updated_on: str
     closed_on: str | None
     journals: NotRequired[list[Journal]]
+
+
+class IssueParent(TypedDict):
+    """親チケットの参照。
+
+    Redmine は親がある場合のみ `"parent": {"id": N}` を返し、subject は含まれない。
+    """
+
+    id: int
 
 
 class IssueCustomField(TypedDict):
@@ -96,6 +118,7 @@ class WatcherNotFoundException(Exception):
 
 def fetch_issues_page(
     project_id: str | None = None,
+    issue_id: str | None = None,
     fixed_version_id: str | None = None,
     assigned_to: str | None = None,
     status_id: str | None = None,
@@ -105,9 +128,20 @@ def fetch_issues_page(
     limit: int | None = None,
     offset: int | None = None,
 ) -> IssuesPageResponse:
+    """イシュー一覧を1ページ分取得する
+
+    Raises:
+        IssueListNotFoundException: project_id と query_id の両方を指定して 404 が返った場合
+            (どちらが原因かはレスポンスから判別できない)
+        QueryNotFoundException: query_id だけを指定して 404 が返った場合
+        ProjectNotFoundException: project_id だけを指定して 404 が返った場合
+        requests.exceptions.HTTPError: それ以外の HTTP エラーが返った場合
+    """
     params: dict = {}
     if project_id:
         params["project_id"] = project_id
+    if issue_id:
+        params["issue_id"] = issue_id
     if fixed_version_id:
         params["fixed_version_id"] = fixed_version_id
     if assigned_to:
@@ -125,9 +159,16 @@ def fetch_issues_page(
     if offset is not None:
         params["offset"] = offset
     response = client.get("/issues.json", params=params)
-    # 存在しない (または閲覧できない) プロジェクトを指定すると Redmine は 404 を返す
-    if response.status_code == 404 and project_id:
-        raise ProjectNotFoundException(project_id)
+    # 存在しない (または閲覧できない) プロジェクト・カスタムクエリのどちらでも
+    # Redmine は 404 を返す。指定が片方だけなら原因は一意に決まるが、両方指定されている
+    # 場合はレスポンスから判別できないので、原因を断定せず切り分けを service 層に任せる
+    if response.status_code == 404:
+        if project_id and query_id:
+            raise IssueListNotFoundException(project_id, query_id)
+        if query_id:
+            raise QueryNotFoundException(query_id)
+        if project_id:
+            raise ProjectNotFoundException(project_id)
     response.raise_for_status()
     return cast(IssuesPageResponse, response.json())
 
@@ -295,6 +336,10 @@ def update_issue(
 
 def add_watcher(issue_id: str, user_id: int) -> None:
     """イシューにウォッチャーを追加する
+
+    Redmine はウォッチャーにできないユーザーID（存在しない・ロック済みなど）を
+    渡しても追加せずに 200 を返すため、このレスポンスだけでは追加できたか判別できない。
+    追加できたかどうかは `issue_service.add_watcher` が確かめる。
 
     Raises:
         IssueNotFoundException: 対象イシューが存在しない場合（HTTP 404）

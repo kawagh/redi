@@ -69,14 +69,17 @@ RUBY
 ADMIN_API_KEY=$(echo "$API_KEYS_OUTPUT" | grep '^ADMIN_KEY=' | tail -1 | cut -d= -f2)
 DEVELOPER_API_KEY=$(echo "$API_KEYS_OUTPUT" | grep '^DEVELOPER_KEY=' | tail -1 | cut -d= -f2)
 
-redi config create dogfooding_admin || true # profile作成がべき等でないので失敗するのを当座で防ぐ
+# profile作成がべき等でないので失敗するのを当座で防ぐ。
+redi config create dogfooding_admin \
+    --url "http://localhost:3001" --api_key "$ADMIN_API_KEY" || true
 redi config update --default_profile dogfooding_admin
 redi config update dogfooding_admin \
     --url "http://localhost:3001" \
     --api_key "$ADMIN_API_KEY" \
     --project_id "redi_df"
 
-redi config create dogfooding_developer || true
+redi config create dogfooding_developer \
+    --url "http://localhost:3001" --api_key "$DEVELOPER_API_KEY" || true
 redi config update dogfooding_developer \
     --url "http://localhost:3001" \
     --api_key "$DEVELOPER_API_KEY" \

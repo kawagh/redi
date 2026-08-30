@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import TypedDict, cast
 
 from redi.client import client
@@ -11,7 +9,8 @@ QUERIES_PAGE_LIMIT = 100
 class Query(TypedDict):
     """`queries[]` の要素。
 
-    `project_id` はプロジェクト固有クエリのみ持ち、グローバルクエリでは欠ける。
+    4 つとも常に返る (Redmine 6.1 / 7.0 で実測)。グローバルクエリは
+    `project_id` のキーが欠けるのではなく `null` が入る。
     """
 
     id: int
@@ -20,12 +19,17 @@ class Query(TypedDict):
     project_id: int | None
 
 
-def fetch_queries() -> list[Query]:
-    """参照できるカスタムクエリを全件返す。
+def fetch_queries(all_pages: bool = False) -> list[Query]:
+    """参照できるカスタムクエリを取得する。
 
-    Redmine の一覧 API は既定件数で打ち切られるため、`total_count` を見て
-    全件揃うまで offset を進める。
+    既定では一覧 API を1回だけ呼ぶので Redmine の既定件数で打ち切られる。
+    all_pages を指定したときだけ `total_count` を見て全件揃うまで offset を進める。
     """
+    if not all_pages:
+        response = client.get("/queries.json")
+        response.raise_for_status()
+        return cast("list[Query]", response.json().get("queries", []))
+
     queries: list[Query] = []
     offset = 0
     while True:
