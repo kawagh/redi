@@ -1,10 +1,3 @@
-"""端末リサイズに追従して page_size を更新し、一覧を取り直す。
-
-prompt_toolkit は SIGWINCH とサイズのポーリングの 2 経路で再描画するので、
-`after_render` を 1 本フックすれば両方拾える。サイズが動いている間は API を
-叩かず、止まってから 1 回だけ取り直す (デバウンス)。
-"""
-
 import asyncio
 from collections.abc import Callable, Coroutine
 from typing import Any, Protocol
@@ -18,11 +11,9 @@ from redi.tui.state import TuiState, TuiTab
 from redi.tui.tab import noop
 from redi.tui.tabs import TABS
 
-# サイズが止まったと見なすまでの待ち時間 (秒)。
 DEBOUNCE_SECONDS = 0.3
 
 # page_size に応じてサーバーから 1 ページ分だけ取るタブ。
-# ページングしないタブ (wiki) は on_resize が noop なのでそこから導く。
 PAGED_TABS: frozenset[TuiTab] = frozenset(
     tab for tab, view in TABS.items() if view.on_resize is not noop
 )
@@ -44,6 +35,7 @@ class ResizeWatcher:
         state: TuiState,
         *,
         get_rows: Callable[[], int],
+        # prompt_toolkit依存部分
         is_ready: Callable[[], bool],
         schedule: Callable[[Coroutine[Any, Any, None]], _Cancellable],
         invalidate: Callable[[], None],
