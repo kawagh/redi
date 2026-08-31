@@ -7,14 +7,14 @@ from prompt_toolkit.key_binding import KeyBindings
 from redi.service import me_service
 from redi.tui.app_layout import build_layout
 from redi.tui.conditions import build_conditions
+from redi.tui.hooks.resize_watcher import attach_resize_watcher
+from redi.tui.hooks.screen_logger import attach_screen_log
 from redi.tui.issue.issue_tab import fetch_issues_with_filter, load_journals
 from redi.tui.keybindings import (
     modal_keybindings,
     normal_keybindings,
     submode_keybindings,
 )
-from redi.tui.resize import attach_resize_watcher
-from redi.tui.screen_log import attach_screen_log
 from redi.tui.state import (
     TuiPosition,
     TuiResult,

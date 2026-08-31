@@ -9,8 +9,8 @@ from dataclasses import replace
 
 import requests
 
-from redi.tui import resize
-from redi.tui.resize import ResizeWatcher
+from redi.tui.hooks import resize_watcher
+from redi.tui.hooks.resize_watcher import ResizeWatcher
 from redi.tui.state import TuiState, compute_page_size
 from redi.tui.tabs import TABS
 
@@ -182,7 +182,7 @@ class TestReloadNow:
         """アクティブなタブの on_resize() を呼ぶ"""
         called = []
         monkeypatch.setitem(
-            resize.TABS,
+            resize_watcher.TABS,
             "issues",
             _tab_stub(lambda state: called.append(state)),
         )
@@ -222,7 +222,7 @@ class TestReloadNow:
         def fail(state):
             raise requests.exceptions.ConnectionError("boom")
 
-        monkeypatch.setitem(resize.TABS, "issues", _tab_stub(fail))
+        monkeypatch.setitem(resize_watcher.TABS, "issues", _tab_stub(fail))
         harness = _Harness(_state(), rows=30)
         harness.render()
         harness.render(rows=15)
@@ -238,7 +238,7 @@ class TestReloadNow:
         def fail(state):
             raise requests.exceptions.ConnectionError("boom")
 
-        monkeypatch.setitem(resize.TABS, "issues", _tab_stub(fail))
+        monkeypatch.setitem(resize_watcher.TABS, "issues", _tab_stub(fail))
         harness = _Harness(_state(), rows=30)
         harness.render()
         harness.render(rows=15)
@@ -257,7 +257,7 @@ class TestDebouncedReloadCoroutine:
         """待機が明けたら取り直して再描画を要求する"""
         called = []
         monkeypatch.setitem(
-            resize.TABS, "issues", _tab_stub(lambda state: called.append(state))
+            resize_watcher.TABS, "issues", _tab_stub(lambda state: called.append(state))
         )
         harness = _Harness(_state(), rows=30)
         harness.render()
@@ -272,7 +272,7 @@ class TestDebouncedReloadCoroutine:
         """待機中に取り消されたら取り直さない"""
         called = []
         monkeypatch.setitem(
-            resize.TABS, "issues", _tab_stub(lambda state: called.append(state))
+            resize_watcher.TABS, "issues", _tab_stub(lambda state: called.append(state))
         )
         harness = _Harness(_state(), rows=30)
         harness.watcher._delay = 10
