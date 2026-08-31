@@ -1,11 +1,15 @@
 from redi import config
 from redi.i18n import messages
 from redi.tui.state import (
+    FIXED_ROWS,
+    MAX_PAGE_SIZE,
     IssueFilter,
     IssueFind,
     TimeEntryFilter,
     TuiResult,
     TuiState,
+    compute_page_size,
+    realign_page,
 )
 
 
@@ -232,3 +236,80 @@ class TestCarryOver:
 
         assert next_state.project_id == "2"
         assert next_state.project_label == "Beta"
+
+
+class TestComputePageSize:
+    """compute_page_size() は端末の行数から 1 ページの取得件数を決める"""
+
+    def test_subtracts_fixed_rows(self):
+        """タブバー・罫線・ステータスバーの固定行を引いた値が一覧に使える行数になる"""
+        assert compute_page_size(30) == 30 - FIXED_ROWS
+
+    def test_returns_at_least_one(self):
+        """固定行しか入らない小さな端末でも 1 件は取得する"""
+        assert compute_page_size(FIXED_ROWS) == 1
+        assert compute_page_size(1) == 1
+
+    def test_clamps_to_redmine_limit(self):
+        """Redmine の limit 上限を超える行数では上限で頭打ちにする
+
+        上限を超える limit を投げても実際には上限件数しか返らず、
+        ステータスバーの Page 表示と実データがずれるため。
+        """
+        assert compute_page_size(MAX_PAGE_SIZE + FIXED_ROWS + 50) == MAX_PAGE_SIZE
+
+
+class TestApplyTerminalRows:
+    """apply_terminal_rows() は page_size を更新し、変化の有無を返す"""
+
+    def test_updates_and_reports_change(self):
+        """page_size が変わったら値を書き換えて True を返す"""
+        state = TuiState()
+        state.page_size = 10
+
+        assert state.apply_terminal_rows(30 + FIXED_ROWS) is True
+        assert state.page_size == 30
+
+    def test_reports_no_change_when_same(self):
+        """同じ行数なら page_size を据え置き False を返す"""
+        state = TuiState()
+        state.page_size = compute_page_size(30)
+
+        assert state.apply_terminal_rows(30) is False
+        assert state.page_size == compute_page_size(30)
+
+    def test_reports_no_change_when_clamped_to_same_value(self):
+        """行数が変わっても上限に丸められて同じ値になるなら False を返す"""
+        state = TuiState()
+        state.apply_terminal_rows(MAX_PAGE_SIZE + FIXED_ROWS + 10)
+
+        assert state.apply_terminal_rows(MAX_PAGE_SIZE + FIXED_ROWS + 20) is False
+        assert state.page_size == MAX_PAGE_SIZE
+
+
+class TestRealignPage:
+    """realign_page() は選択行を保ったまま offset をページ境界へ揃える"""
+
+    def test_keeps_selected_row_when_page_size_shrinks(self):
+        """page_size が縮んでも選択行の絶対位置は変わらない"""
+        offset, cursor = realign_page(offset=0, cursor=15, page_size=10)
+
+        assert offset + cursor == 15
+        assert (offset, cursor) == (10, 5)
+
+    def test_keeps_selected_row_when_page_size_grows(self):
+        """page_size が広がっても選択行の絶対位置は変わらない"""
+        offset, cursor = realign_page(offset=20, cursor=3, page_size=40)
+
+        assert offset + cursor == 23
+        assert (offset, cursor) == (0, 23)
+
+    def test_offset_is_multiple_of_page_size(self):
+        """揃えた後の offset は必ず page_size の倍数になる (Page 表示がずれないため)"""
+        for page_size in (3, 7, 25):
+            offset, _cursor = realign_page(offset=13, cursor=4, page_size=page_size)
+            assert offset % page_size == 0
+
+    def test_first_page_stays_at_zero(self):
+        """先頭ページ内の選択行は offset 0 のまま維持される"""
+        assert realign_page(offset=0, cursor=2, page_size=10) == (0, 2)
