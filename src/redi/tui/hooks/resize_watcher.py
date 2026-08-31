@@ -63,7 +63,7 @@ class ResizeWatcher:
         """描画のたびに呼ばれ、page_size の更新と再取得の予約だけを行う。
 
         描画中に一覧を差し替えると表示が壊れるため、ここで書き換えるのは
-        page_size とブックキーピングのみ。取得は必ず待機タスクの中で行う。
+        page_size と _stale / _pending のみ。取得は必ず _debounced_reload の中で行う。
         """
         resized = self._state.apply_terminal_rows(self._get_rows())
         if resized:
