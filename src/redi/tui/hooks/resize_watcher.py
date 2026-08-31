@@ -87,6 +87,11 @@ class ResizeWatcher:
     async def _debounced_reload(self) -> None:
         await asyncio.sleep(self._delay)
         self._scheduled_task = None
+        # 待機中に modal が開いた場合は差し替えない (予約時のガードだけでは
+        # すり抜ける)。タブは _stale_tabs に残るので、modal を閉じた後の
+        # 描画で予約し直される。
+        if not self._is_ready():
+            return
         self.reload_now()
         self._invalidate()
 

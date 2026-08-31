@@ -162,6 +162,32 @@ class TestModalSuspendsRefetch:
         assert state.page_size == compute_page_size(15)
         assert harness.tasks == []
 
+    def test_modal_opened_during_wait_skips_reload(self, monkeypatch):
+        """予約後の待機中に modal が開いたら発火時に取り直さない
+
+        予約時のガードだけでは 0.3 秒の待機中に開いた y/N 確認をすり抜け、
+        確定時に別の行を消してしまう。タブは stale のまま残り、modal を
+        閉じた後の描画で予約し直す。
+        """
+        called = []
+        monkeypatch.setitem(
+            resize_watcher.TABS, "issues", _tab_stub(lambda state: called.append(state))
+        )
+        harness = _Harness(_state(), rows=30)
+        harness.render()
+        harness.render(rows=15)
+        harness.ready = False
+
+        asyncio.run(harness.watcher._debounced_reload())
+
+        assert called == []
+        assert harness.invalidated == 0
+
+        harness.ready = True
+        scheduled = len(harness.tasks)
+        harness.render()
+        assert len(harness.tasks) == scheduled + 1
+
     def test_refetches_after_modal_closes(self):
         """modal を閉じた後の再描画で取り直しを予約する"""
         harness = _Harness(_state(), rows=30)
