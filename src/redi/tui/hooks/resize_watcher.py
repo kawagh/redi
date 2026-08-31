@@ -56,37 +56,37 @@ class ResizeWatcher:
         self._invalidate = invalidate
         self._delay = delay
         # page_size が変わったまま取り直していないタブ。
-        self._stale: set[TuiTab] = set()
-        self._pending: _Cancellable | None = None
+        self._stale_tabs: set[TuiTab] = set()
+        self._scheduled_task: _Cancellable | None = None
 
     def on_render(self) -> None:
         """描画のたびに呼ばれ、page_size の更新と再取得の予約だけを行う。
 
         描画中に一覧を差し替えると表示が壊れるため、ここで書き換えるのは
-        page_size と _stale / _pending のみ。取得は必ず _debounced_reload の中で行う。
+        page_size と _stale_tabs / _scheduled_task のみ。取得は必ず _debounced_reload の中で行う。
         """
         resized = self._state.apply_terminal_rows(self._get_rows())
         if resized:
-            self._stale = set(PAGED_TABS)
-        if self._state.tab not in self._stale or not self._is_ready():
+            self._stale_tabs = set(PAGED_TABS)
+        if self._state.tab not in self._stale_tabs or not self._is_ready():
             return
         # resized: サイズが動いている間は待ち直す (デバウンス)
-        # _pending is None: modal を閉じた / タブを切り替えた等で今から待ち始める
-        if resized or self._pending is None:
+        # _scheduled_task is None: modal を閉じた / タブを切り替えた等で今から待ち始める
+        if resized or self._scheduled_task is None:
             self._restart()
 
     def _restart(self) -> None:
-        self._cancel_pending()
-        self._pending = self._schedule(self._debounced_reload())
+        self._cancel_scheduled_task()
+        self._scheduled_task = self._schedule(self._debounced_reload())
 
-    def _cancel_pending(self) -> None:
-        if self._pending is not None:
-            self._pending.cancel()
-            self._pending = None
+    def _cancel_scheduled_task(self) -> None:
+        if self._scheduled_task is not None:
+            self._scheduled_task.cancel()
+            self._scheduled_task = None
 
     async def _debounced_reload(self) -> None:
         await asyncio.sleep(self._delay)
-        self._pending = None
+        self._scheduled_task = None
         self.reload_now()
         self._invalidate()
 
@@ -95,7 +95,7 @@ class ResizeWatcher:
         tab = self._state.tab
         # 成否によらず stale から降ろす。失敗のたびに再描画 → 再予約を繰り返して
         # リトライし続けるのを避ける (次のリサイズまで待つ)。
-        self._stale.discard(tab)
+        self._stale_tabs.discard(tab)
         try:
             TABS[tab].on_resize(self._state)
         except requests.exceptions.RequestException as e:
