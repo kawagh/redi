@@ -15,14 +15,17 @@ from prompt_toolkit import Application
 from redi.i18n import messages
 from redi.tui.conditions import Conditions
 from redi.tui.state import TuiState, TuiTab
+from redi.tui.tab import noop
 from redi.tui.tabs import TABS
 
 # サイズが止まったと見なすまでの待ち時間 (秒)。
 DEBOUNCE_SECONDS = 0.3
 
 # page_size に応じてサーバーから 1 ページ分だけ取るタブ。
-# wiki は全件ロードなので対象外。
-PAGED_TABS: frozenset[TuiTab] = frozenset({"issues", "time_entries"})
+# ページングしないタブ (wiki) は on_resize が noop なのでそこから導く。
+PAGED_TABS: frozenset[TuiTab] = frozenset(
+    tab for tab, view in TABS.items() if view.on_resize is not noop
+)
 
 
 class _Cancellable(Protocol):
@@ -52,7 +55,6 @@ class ResizeWatcher:
         self._schedule = schedule
         self._invalidate = invalidate
         self._delay = delay
-        self._last_rows: int | None = None
         # page_size が変わったまま取り直していないタブ。
         self._stale: set[TuiTab] = set()
         self._pending: _Cancellable | None = None
@@ -63,15 +65,9 @@ class ResizeWatcher:
         描画中に一覧を差し替えると表示が壊れるため、ここで書き換えるのは
         page_size とブックキーピングのみ。取得は必ず待機タスクの中で行う。
         """
-        rows = self._get_rows()
-        resized = rows != self._last_rows
+        resized = self._state.apply_terminal_rows(self._get_rows())
         if resized:
-            self._last_rows = rows
-            if self._state.apply_terminal_rows(rows):
-                self._stale = set(PAGED_TABS)
-            else:
-                # 行数は動いたが page_size は変わらなかった (上限や下限に丸められた)。
-                resized = False
+            self._stale = set(PAGED_TABS)
         if self._state.tab not in self._stale or not self._is_ready():
             return
         # resized: サイズが動いている間は待ち直す (デバウンス)
@@ -112,7 +108,6 @@ def attach_resize_watcher(
     app: Application,
     state: TuiState,
     conditions: Conditions,
-    delay: float = DEBOUNCE_SECONDS,
 ) -> ResizeWatcher:
     """描画のたびに端末サイズを確認するフックを登録する。"""
     watcher = ResizeWatcher(
@@ -121,7 +116,6 @@ def attach_resize_watcher(
         is_ready=lambda: not app.is_done and conditions.normal(),
         schedule=app.create_background_task,
         invalidate=app.invalidate,
-        delay=delay,
     )
 
     def _on_after_render(sender: Application) -> None:
