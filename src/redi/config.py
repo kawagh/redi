@@ -157,12 +157,20 @@ def apply_profile(profile_name: str | None, config_path: Path | None = None) -> 
 
 
 def profile_has_credentials(profile_name: str, config_path: Path | None = None) -> bool:
-    """接続に必要な設定が揃ったプロファイルかを返す。
+    """切替先として使えるプロファイルかを返す。
 
     `check_config()` は sys.exit するため、TUI からの切り替え前チェックには使えない。
+    判定は `redi config check` と同じ静的検証で行う。疎通確認まではしないのは、
+    TUI の切替時に通信でブロックしたくないため。
     """
-    profile = resolve_merged_config(profile_name, load_toml(config_path))
-    return bool(profile.redmine_url) and bool(profile.redmine_api_key)
+    # 起動時に `redi.i18n` -> `redi.config` の順で import されるため、
+    # `redi.i18n` を経由する config_schema はここで import する。
+    from redi.config_schema import has_error, validate_profile
+
+    values = load_toml(config_path).get(profile_name)
+    if not isinstance(values, dict):
+        return False
+    return not has_error(validate_profile(profile_name, values))
 
 
 # 起動時のプロファイル解決。`redi.i18n` が import 時に `language` を読むなど、
@@ -182,9 +190,11 @@ apply_profile(_profile_name)
 def check_config() -> None:
     if not redmine_url:
         eprint(f"set REDMINE_URL or add redmine_url to {CONFIG_PATH}")
+        eprint("run `redi config check` to see what is wrong with the profile")
         sys.exit(1)
     if not redmine_api_key:
         eprint(f"set REDMINE_API_KEY or add redmine_api_key to {CONFIG_PATH}")
+        eprint("run `redi config check` to see what is wrong with the profile")
         sys.exit(1)
 
 

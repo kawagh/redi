@@ -135,6 +135,10 @@ redi config update # interactive: Enter to switch profile, u to update fields of
 redi config update --default_profile <profile_name> # switch profile
 redi config update <profile_name> --editor nvim # update profile
 redi config update --language ja # switch language ("en" or "ja")
+redi config check # validate the profile in use (schema + connection), exits 1 on error
+redi config check <profile_name>
+redi config check --all # validate every profile
+redi config check --no-connection # validate the schema only
 redi --profile <profile_name> issue # temporarily switch profile for this command
 
 # project (alias: p)

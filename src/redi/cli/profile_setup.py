@@ -9,8 +9,9 @@ import sys
 import requests
 from prompt_toolkit.validation import Validator
 
-from redi.api.me import MyAccount, fetch_my_account
+from redi.api.me import MyAccount
 from redi.api.project import Project, fetch_projects
+from redi.cli.connection import verify_connection
 from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.picker import inline_choice
 from redi.cli.validator import UrlValidator
@@ -19,28 +20,14 @@ from redi.config import Profile
 from redi.i18n import MessagesProto
 from redi.output import eprint
 
-# 接続確認は入力されたばかりの URL に対して行うため、応答が返らないときに
-# 待たされ続けないよう timeout を置く
-_VERIFY_TIMEOUT_SECONDS = 10
-
 
 def _verify_connection(
     api_client: RedmineClient, messages: MessagesProto
 ) -> MyAccount | None:
-    try:
-        return fetch_my_account(api_client, timeout=_VERIFY_TIMEOUT_SECONDS)
-    except requests.exceptions.HTTPError as e:
-        if e.response is not None:
-            eprint(
-                messages.connection_failed_http.format(
-                    status=e.response.status_code, reason=e.response.reason
-                )
-            )
-        else:
-            eprint(messages.connection_failed_other.format(error=e))
-    except requests.exceptions.RequestException as e:
-        eprint(messages.connection_failed_other.format(error=e))
-    return None
+    result = verify_connection(api_client, messages)
+    if result.error:
+        eprint(result.error)
+    return result.user
 
 
 def _fetch_projects(
