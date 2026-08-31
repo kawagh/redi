@@ -44,6 +44,7 @@ def _fake_tab(on_activate: Callable[[TuiState], None]) -> TabView:
         on_open_web_by_id=noop_jump,
         on_activate=on_activate,
         on_reload=noop,
+        on_resize=noop,
         on_action_key=lambda s, k: None,
         on_search=lambda *args, **kwargs: None,
         get_cursor_y=lambda s: 0,
