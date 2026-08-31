@@ -1,8 +1,8 @@
 from redi import config
+from redi.api import PAGE_LIMIT_MAX
 from redi.i18n import messages
 from redi.tui.state import (
     FIXED_ROWS,
-    MAX_PAGE_SIZE,
     IssueFilter,
     IssueFind,
     TimeEntryFilter,
@@ -256,7 +256,7 @@ class TestComputePageSize:
         上限を超える limit を投げても実際には上限件数しか返らず、
         ステータスバーの Page 表示と実データがずれるため。
         """
-        assert compute_page_size(MAX_PAGE_SIZE + FIXED_ROWS + 50) == MAX_PAGE_SIZE
+        assert compute_page_size(PAGE_LIMIT_MAX + FIXED_ROWS + 50) == PAGE_LIMIT_MAX
 
 
 class TestApplyTerminalRows:
@@ -281,10 +281,10 @@ class TestApplyTerminalRows:
     def test_reports_no_change_when_clamped_to_same_value(self):
         """行数が変わっても上限に丸められて同じ値になるなら False を返す"""
         state = TuiState()
-        state.apply_terminal_rows(MAX_PAGE_SIZE + FIXED_ROWS + 10)
+        state.apply_terminal_rows(PAGE_LIMIT_MAX + FIXED_ROWS + 10)
 
-        assert state.apply_terminal_rows(MAX_PAGE_SIZE + FIXED_ROWS + 20) is False
-        assert state.page_size == MAX_PAGE_SIZE
+        assert state.apply_terminal_rows(PAGE_LIMIT_MAX + FIXED_ROWS + 20) is False
+        assert state.page_size == PAGE_LIMIT_MAX
 
 
 class TestRealignPage:
