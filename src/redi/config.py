@@ -15,6 +15,10 @@ CONFIG_PATH = Path.home() / ".config" / "redi" / "config.toml"
 
 SUPPORTED_LANGUAGES = ("en", "ja")
 
+# Redmine の「テキスト書式」。サーバー側の設定で REST API からは取得できないため、
+# ユーザーが config.toml に書いておき、投稿前に参照する
+SUPPORTED_TEXT_FORMATTINGS = ("markdown", "textile")
+
 # 言語未確定の場面で表示するため、翻訳せず各言語の自称表記を使う
 LANGUAGE_LABELS = {"en": "English (en)", "ja": "日本語 (ja)"}
 
@@ -33,6 +37,7 @@ class Profile:
     wiki_project_id: str | None = None
     editor: str | None = None
     language: str | None = None
+    text_formatting: str | None = None
 
     @classmethod
     def field_names(cls) -> tuple[str, ...]:
@@ -68,7 +73,10 @@ class Profile:
 
 
 # プロファイルにも環境変数にも項目が無いときに使う値
-DEFAULT_PROFILE = Profile(editor="vim", language="en")
+DEFAULT_PROFILE = Profile(editor="vim", language="en", text_formatting="markdown")
+
+# config.toml のトップレベルに置けて、全プロファイルの既定になる項目
+TOP_LEVEL_DEFAULT_KEYS = ("text_formatting",)
 
 
 def load_toml(config_path: Path | None = None) -> dict:
@@ -119,13 +127,23 @@ default_project_id: str | None = None
 wiki_project_id: str | None = None
 editor: str = ""
 language: str = ""
+text_formatting: str = ""
+
+
+def load_top_level_defaults(toml_doc: dict) -> Profile:
+    """config.toml のトップレベルに書かれた全プロファイル共通の既定値を返す。
+
+    TOP_LEVEL_DEFAULT_KEYS 以外のキー(default_profile やプロファイルのテーブル)は
+    見ない。
+    """
+    return Profile.from_dict({key: toml_doc.get(key) for key in TOP_LEVEL_DEFAULT_KEYS})
 
 
 def resolve_merged_config(profile_name: str | None, toml_doc: dict) -> Profile:
     """プロファイルと環境変数をマージした設定値を返す。
 
-    優先順位は デフォルト < プロファイル < 環境変数。未設定の項目は重ねても
-    上書きしないため、下位の値がそのまま残る。
+    優先順位は デフォルト < トップレベル < プロファイル < 環境変数。未設定の項目は
+    重ねても上書きしないため、下位の値がそのまま残る。
     """
     profile_table = toml_doc.get(profile_name) if profile_name else None
     profile = (
@@ -133,7 +151,11 @@ def resolve_merged_config(profile_name: str | None, toml_doc: dict) -> Profile:
         if isinstance(profile_table, dict)
         else Profile()
     )
-    return DEFAULT_PROFILE.merge(profile).merge(load_env_config())
+    return (
+        DEFAULT_PROFILE.merge(load_top_level_defaults(toml_doc))
+        .merge(profile)
+        .merge(load_env_config())
+    )
 
 
 def apply_profile(profile_name: str | None, config_path: Path | None = None) -> None:
@@ -143,7 +165,7 @@ def apply_profile(profile_name: str | None, config_path: Path | None = None) -> 
     接続先を抱えているので呼び出し側で `reconfigure()` も呼ぶこと。
     """
     global current_profile, redmine_url, redmine_api_key
-    global default_project_id, wiki_project_id, editor, language
+    global default_project_id, wiki_project_id, editor, language, text_formatting
 
     profile = resolve_merged_config(profile_name, load_toml(config_path))
     current_profile = profile_name
@@ -154,6 +176,7 @@ def apply_profile(profile_name: str | None, config_path: Path | None = None) -> 
     wiki_project_id = profile.wiki_project_id
     editor = profile.editor or ""
     language = profile.language or ""
+    text_formatting = profile.text_formatting or ""
 
 
 def profile_has_credentials(profile_name: str, config_path: Path | None = None) -> bool:
@@ -333,6 +356,7 @@ def show_config(full: bool = False, config_path: Path | None = None) -> None:
         "wiki_project_id": wiki_project_id or "",
         "editor": editor,
         "language": language,
+        "text_formatting": text_formatting,
     }
     doc = tomlkit.document()
     # config.toml と同じく `[profile_name]` の見出しで示し、由来はコメントで添える。

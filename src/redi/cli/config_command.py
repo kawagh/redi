@@ -8,6 +8,7 @@ from redi.cli.profile_setup import prompt_connection_profile
 from redi.cli.validator import ProfileNameValidator, RequiredValidator, UrlValidator
 from redi.config import (
     SUPPORTED_LANGUAGES,
+    SUPPORTED_TEXT_FORMATTINGS,
     Profile,
     create_profile,
     get_default_profile,
@@ -51,6 +52,11 @@ def add_config_parser(
         choices=SUPPORTED_LANGUAGES,
         help=messages.arg_help_config_set_language,
     )
+    c_update_parser.add_argument(
+        "--text_formatting",
+        choices=SUPPORTED_TEXT_FORMATTINGS,
+        help=messages.arg_help_config_set_text_formatting,
+    )
     c_update_parser.add_argument("--api_key", help=messages.arg_help_config_set_api_key)
     c_update_parser.add_argument("--url", help=messages.arg_help_config_set_url)
     c_update_parser.add_argument(
@@ -77,6 +83,11 @@ def add_config_parser(
         "--language",
         choices=SUPPORTED_LANGUAGES,
         help=messages.arg_help_config_language,
+    )
+    c_create_parser.add_argument(
+        "--text_formatting",
+        choices=SUPPORTED_TEXT_FORMATTINGS,
+        help=messages.arg_help_config_text_formatting,
     )
     c_create_parser.add_argument(
         "--set_default",
@@ -122,6 +133,7 @@ def _update_field_values(profile: str) -> list[tuple[str, str]]:
         ("wiki_project_id", messages.field_wiki_project_id),
         ("editor", messages.field_editor),
         ("language", messages.field_language),
+        ("text_formatting", messages.field_text_formatting),
     ]
     if profile != get_default_profile():
         field_values.append(("set_default", messages.field_set_default_profile))
@@ -184,6 +196,12 @@ def _interactive_fill_config_update_args(
                 [(v, v) for v in SUPPORTED_LANGUAGES],
                 default=current.language,
             )
+        if "text_formatting" in selected:
+            args.text_formatting = inline_choice(
+                messages.prompt_select_text_formatting,
+                [(v, v) for v in SUPPORTED_TEXT_FORMATTINGS],
+                default=current.text_formatting,
+            )
         if "set_default" in selected:
             args.default_profile = profile
     args.profile_name = profile
@@ -216,6 +234,7 @@ def _handle_config_create(args: argparse.Namespace) -> None:
         wiki_project_id=args.wiki_project_id,
         editor=args.editor,
         language=args.language,
+        text_formatting=args.text_formatting,
     )
     profile_name = args.profile_name
     set_default = args.set_default
@@ -249,6 +268,7 @@ def handle_config(args: argparse.Namespace) -> None:
         or args.wiki_project_id
         or args.editor
         or args.language
+        or args.text_formatting
         or args.api_key
         or args.url
         or args.default_profile
@@ -269,6 +289,7 @@ def handle_config(args: argparse.Namespace) -> None:
         wiki_project_id=args.wiki_project_id,
         editor=args.editor,
         language=args.language,
+        text_formatting=args.text_formatting,
     )
     if values.to_dict():
         update_profile(values, profile)
@@ -292,6 +313,12 @@ def handle_config(args: argparse.Namespace) -> None:
         print(
             new_lang_messages.language_set.format(
                 value=args.language, suffix=profile_suffix
+            )
+        )
+    if args.text_formatting:
+        print(
+            messages.text_formatting_set.format(
+                value=args.text_formatting, suffix=profile_suffix
             )
         )
     if args.api_key:

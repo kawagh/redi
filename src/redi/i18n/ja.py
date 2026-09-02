@@ -11,6 +11,7 @@ class Ja(MessagesProto):
     default_project_id_set = "default_project_idを {value} に設定しました{suffix}"
     editor_set = "editorを {value} に設定しました{suffix}"
     language_set = "languageを {value} に設定しました{suffix}"
+    text_formatting_set = "text_formattingを {value} に設定しました{suffix}"
     redmine_api_key_set = "redmine_api_keyを設定しました{suffix}"
     redmine_url_set = "redmine_urlを {value} に設定しました{suffix}"
     wiki_project_id_set = "wiki_project_idを {value} に設定しました{suffix}"
@@ -289,6 +290,7 @@ class Ja(MessagesProto):
     prompt_wiki_project_id = "wiki_project_id: "
     prompt_editor = "editor: "
     prompt_select_language = "言語を選択"
+    prompt_select_text_formatting = "Redmine のテキスト書式を選択"
     prompt_start_date = "開始日（YYYY-MM-DD、省略可）: "
     prompt_due_date = "期日（YYYY-MM-DD、省略可）: "
     prompt_estimated_hours = "予定工数（例: 1.5 (h)）: "
@@ -403,6 +405,7 @@ class Ja(MessagesProto):
     field_wiki_project_id = "Wikiプロジェクト (wiki_project_id)"
     field_editor = "エディタ (editor)"
     field_language = "言語 (language)"
+    field_text_formatting = "テキスト書式 (text_formatting)"
     field_set_default_profile = "デフォルトプロファイルにする (default_profile)"
 
     # ---- sharing options ----
@@ -777,6 +780,9 @@ class Ja(MessagesProto):
     arg_help_config_set_wiki_project_id = "Wiki用プロジェクトIDを設定"
     arg_help_config_set_editor = "エディタを設定"
     arg_help_config_set_language = "言語を設定 (en または ja)"
+    arg_help_config_set_text_formatting = (
+        "Redmine のテキスト書式を設定 (markdown または textile)"
+    )
     arg_help_config_set_api_key = "Redmine APIキーを設定"
     arg_help_config_set_url = "Redmine URLを設定"
     arg_help_config_set_default_profile = "デフォルトプロファイルを設定"
@@ -788,6 +794,7 @@ class Ja(MessagesProto):
     arg_help_config_wiki_project_id = "Wiki用プロジェクトID"
     arg_help_config_editor = "エディタ"
     arg_help_config_language = "言語 (en または ja)"
+    arg_help_config_text_formatting = "Redmine のテキスト書式 (markdown または textile)"
     arg_help_config_set_default_flag = "作成したプロファイルをdefault_profileに設定"
 
     # ---- argparse helps (init) ----

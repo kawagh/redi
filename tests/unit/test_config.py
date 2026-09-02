@@ -746,6 +746,85 @@ class TestApplyProfile:
         assert config.editor == "vim"
 
 
+@pytest.fixture
+def text_formatting_config(tmp_path):
+    config_path = tmp_path / "config.toml"
+    config_path.write_text(
+        textwrap.dedent("""\
+        default_profile = "main"
+        text_formatting = "textile"
+
+        [main]
+        redmine_url = "https://main.example.com"
+        redmine_api_key = "secret-main"
+
+        [md]
+        redmine_url = "https://md.example.com"
+        redmine_api_key = "secret-md"
+        text_formatting = "markdown"
+    """)
+    )
+    return config_path
+
+
+class TestTextFormatting:
+    """text_formattingはRedmineの記法をエージェントが投稿前に参照するための設定
+
+    サーバー側の設定でREST APIからは取得できないため、ユーザーがconfig.tomlに書き、
+    `redi config` / `redi config --full` で参照する。
+    """
+
+    def test_top_level_is_default_for_all_profiles(
+        self, text_formatting_config, no_redmine_env
+    ):
+        """トップレベルの値は、項目を持たないプロファイルの既定になる"""
+        merged = config.resolve_merged_config(
+            "main", config.load_toml(text_formatting_config)
+        )
+
+        assert merged.text_formatting == "textile"
+
+    def test_profile_overrides_top_level(self, text_formatting_config, no_redmine_env):
+        """プロファイル内の値はトップレベルより優先される"""
+        merged = config.resolve_merged_config(
+            "md", config.load_toml(text_formatting_config)
+        )
+
+        assert merged.text_formatting == "markdown"
+
+    def test_defaults_to_markdown(self, two_profiles, no_redmine_env):
+        """どちらにも無ければRedmineの新規インストール既定に合わせてmarkdown"""
+        merged = config.resolve_merged_config("main", config.load_toml(two_profiles))
+
+        assert merged.text_formatting == "markdown"
+
+    def test_show_config_includes_resolved_value(
+        self, text_formatting_config, no_redmine_env, monkeypatch, capsys
+    ):
+        """`redi config` はトップレベルから引き継いだ値も含めて表示する"""
+        monkeypatch.setattr(config.sys, "argv", ["redi", "config"])
+        original_profile = config.current_profile
+        config.apply_profile("main", config_path=text_formatting_config)
+        try:
+            config.show_config()
+        finally:
+            config.apply_profile(original_profile)
+
+        doc = tomllib.loads(capsys.readouterr().out)
+        assert doc["main"]["text_formatting"] == "textile"
+
+    def test_show_all_profiles_keeps_top_level_value(
+        self, text_formatting_config, capsys
+    ):
+        """`redi config --full` はトップレベルの値とプロファイルの上書きを両方出す"""
+        config.show_all_profiles(config_path=text_formatting_config)
+
+        doc = tomllib.loads(capsys.readouterr().out)
+        assert doc["text_formatting"] == "textile"
+        assert doc["md"]["text_formatting"] == "markdown"
+        assert "text_formatting" not in doc["main"]
+
+
 class TestProfileHasCredentials:
     """profile_has_credentials()は切替先として使えるプロファイルかを判定する"""
 

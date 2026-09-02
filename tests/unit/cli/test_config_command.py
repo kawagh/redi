@@ -16,6 +16,7 @@ def _create_args(**overrides) -> argparse.Namespace:
         "wiki_project_id": None,
         "editor": None,
         "language": None,
+        "text_formatting": None,
         "set_default": False,
     }
     values.update(overrides)
