@@ -11,7 +11,21 @@ from tomlkit.items import Table
 
 from redi.output import eprint
 
-CONFIG_PATH = Path.home() / ".config" / "redi" / "config.toml"
+DEFAULT_CONFIG_PATH = Path.home() / ".config" / "redi" / "config.toml"
+
+
+def resolve_config_path(env: Mapping[str, str] | None = None) -> Path:
+    """config.toml の場所を返す。`REDI_CONFIG_PATH` で差し替えられる。
+
+    E2E や CI がユーザーのグローバル設定に触れずに動けるようにするための逃げ道。
+    """
+    value = (os.environ if env is None else env).get("REDI_CONFIG_PATH")
+    if not value:
+        return DEFAULT_CONFIG_PATH
+    return Path(value).expanduser()
+
+
+CONFIG_PATH = resolve_config_path()
 
 SUPPORTED_LANGUAGES = ("en", "ja")
 

@@ -54,6 +54,7 @@ tasks:
 
   e2e:
     internal: true
+    # 設定とキャッシュは .e2e/<version>/ に隔離される (init-redmine.sh と tests/e2e/utils.py)
     cmds:
       - ./script/init-redmine.sh {{.REDMINE_VERSION}}
       - REDI_E2E_REDMINE_VERSION={{.REDMINE_VERSION}} uv run pytest -m e2e

@@ -1,9 +1,38 @@
 import textwrap
 import tomllib
+from pathlib import Path
 
 import pytest
 
 from redi import config
+
+
+class TestResolveConfigPath:
+    """config.tomlの場所は環境変数REDI_CONFIG_PATHで差し替えられる"""
+
+    def test_defaults_to_user_config(self):
+        """未設定なら~/.config/redi/config.tomlを使う"""
+        assert config.resolve_config_path({}) == config.DEFAULT_CONFIG_PATH
+
+    def test_empty_value_falls_back_to_default(self):
+        """空文字は未設定と同じ扱いにし、意図せず相対パスを掴まないようにする"""
+        assert (
+            config.resolve_config_path({"REDI_CONFIG_PATH": ""})
+            == config.DEFAULT_CONFIG_PATH
+        )
+
+    def test_uses_given_path(self):
+        """指定されたパスをそのまま使う"""
+        assert config.resolve_config_path(
+            {"REDI_CONFIG_PATH": "/tmp/redi/config.toml"}
+        ) == Path("/tmp/redi/config.toml")
+
+    def test_expands_home(self):
+        """シェルを介さず渡されても~を展開する"""
+        assert (
+            config.resolve_config_path({"REDI_CONFIG_PATH": "~/e2e/config.toml"})
+            == Path.home() / "e2e" / "config.toml"
+        )
 
 
 class TestProfile:
