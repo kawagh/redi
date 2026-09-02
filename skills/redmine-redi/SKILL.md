@@ -44,9 +44,8 @@ A profile may define `default_project_id`, in which case `--project_id` can be o
 
 ## Before you write: check the text formatting
 
-Redmine renders body text as **Markdown or Textile** (a server-side setting the
-REST API does not expose). Check `text_formatting` first and write in that syntax;
-if it is not set, assume `markdown`:
+Check `text_formatting` and write body text in that syntax (`markdown` or
+`textile`). If it is not set, assume `markdown`:
 
 ```sh
 redi config   # ... text_formatting = "markdown" (or "textile")
