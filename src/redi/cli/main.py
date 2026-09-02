@@ -14,6 +14,7 @@ from redi.api.exceptions import (
     RedmineValidationException,
 )
 from redi.api.wiki import WikiUpdateConflictException
+from redi.cli.argument_parser import RediArgumentParser
 from redi.cli.attachment_command import add_attachment_parser, handle_attachment
 from redi.cli.config_command import add_config_parser, handle_config
 from redi.cli.editor import open_editor
@@ -119,7 +120,10 @@ def _profile_parser(profile_names: list[str]) -> argparse.ArgumentParser:
 
 
 def build_redi_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=messages.arg_help_root_description)
+    parser = RediArgumentParser(
+        description=messages.arg_help_root_description,
+        epilog=messages.arg_help_root_epilog,
+    )
     parser.add_argument(
         "-V", "--version", action="version", version=f"redi {version('redtile')}"
     )
