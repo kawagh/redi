@@ -42,31 +42,17 @@ Note: there is no `redi config list`. Use `redi config --full`.
 
 A profile may define `default_project_id`, in which case `--project_id` can be omitted.
 
-## Before you write: check the text formatting (Markdown or Textile)
+## Before you write: check the text formatting
 
-Redmine renders descriptions, comments and wiki pages as **Markdown or Textile**
-depending on a server-side setting that the REST API does not expose. Posting
-Textile (`h2.`, `@code@`, `|_. head |`) to a Markdown server, or the other way
-round, produces garbled text that has to be rewritten by hand.
-
-Check `text_formatting` before writing any body text, and write in that syntax:
+Redmine renders body text as **Markdown or Textile** (a server-side setting the
+REST API does not expose). Check `text_formatting` first and write in that syntax;
+if it is not set, assume `markdown`:
 
 ```sh
-redi config                   # resolved value for the current profile
-redi --profile work config    # for another profile
+redi config   # ... text_formatting = "markdown" (or "textile")
 ```
 
-```toml
-[work]
-...
-text_formatting = "markdown"  # or "textile"
-```
-
-`redi config --full` shows the top-level default and per-profile overrides. If
-`text_formatting` is missing everywhere, assume `markdown`.
-
-Do **not** read `~/.config/redi/config.toml` directly — it contains API keys.
-`redi config` and `redi config --full` omit `redmine_api_key`, so always go through them.
+Do not read `~/.config/redi/config.toml` directly — it contains API keys.
 
 ## Resolve IDs before writing
 
