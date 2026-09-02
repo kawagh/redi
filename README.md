@@ -47,6 +47,7 @@ You can also create profile by `redi config create`, and update profile by `redi
 
 ```toml
 default_profile = "default"
+text_formatting = "markdown"  # default for all profiles: "markdown" (default) or "textile"
 
 ["default"]
 redmine_url = "https://redmine.example.com"
@@ -62,7 +63,23 @@ redmine_api_key = "<your_api_key>"
 default_project_id = "2"
 wiki_project_id = "3"
 editor = "code"
+text_formatting = "textile"  # overrides the top-level value for this profile only
 ```
+
+#### text_formatting (for AI agents)
+
+Redmine renders issue descriptions, comments and wiki pages as Markdown or Textile depending on
+"Administration → Settings → Text formatting". The REST API does not expose this setting, so
+`redi` cannot detect it. Write it in `config.toml` as `text_formatting` (`markdown` / `textile`)
+so that AI agents can look it up before posting:
+
+- the top-level value is the default for all profiles
+- a value inside a profile overrides it for that profile only
+- when neither is set, `markdown` is assumed (the default of a fresh Redmine install)
+
+Agents should read it with `redi config` (resolved value for the current profile) or
+`redi config --full` (every profile, with `redmine_api_key` removed) instead of reading
+`~/.config/redi/config.toml`, which contains API keys.
 
 #### environment variable
 
@@ -135,6 +152,7 @@ redi config update # interactive: Enter to switch profile, u to update fields of
 redi config update --default_profile <profile_name> # switch profile
 redi config update <profile_name> --editor nvim # update profile
 redi config update --language ja # switch language ("en" or "ja")
+redi config update --text_formatting textile # text formatting of the Redmine server ("markdown" or "textile")
 redi --profile <profile_name> issue # temporarily switch profile for this command
 
 # project (alias: p)
