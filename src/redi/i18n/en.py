@@ -9,6 +9,7 @@ class En(MessagesProto):
     default_project_id_set = "Set default_project_id to {value}{suffix}"
     editor_set = "Set editor to {value}{suffix}"
     language_set = "Set language to {value}{suffix}"
+    text_formatting_set = "Set text_formatting to {value}{suffix}"
     redmine_api_key_set = "Set redmine_api_key{suffix}"
     redmine_url_set = "Set redmine_url to {value}{suffix}"
     wiki_project_id_set = "Set wiki_project_id to {value}{suffix}"
@@ -286,6 +287,7 @@ class En(MessagesProto):
     prompt_wiki_project_id = "wiki_project_id: "
     prompt_editor = "editor: "
     prompt_select_language = "Select language"
+    prompt_select_text_formatting = "Select text formatting of the Redmine server"
     prompt_start_date = "Start date (YYYY-MM-DD, optional): "
     prompt_due_date = "Due date (YYYY-MM-DD, optional): "
     prompt_estimated_hours = "Estimated hours (e.g. 1.5 (h)): "
@@ -400,6 +402,7 @@ class En(MessagesProto):
     field_wiki_project_id = "wiki_project_id"
     field_editor = "editor"
     field_language = "language"
+    field_text_formatting = "text formatting (text_formatting)"
     field_set_default_profile = "set as default_profile"
 
     # ---- sharing options ----
@@ -769,6 +772,9 @@ class En(MessagesProto):
     arg_help_config_set_wiki_project_id = "Set wiki project ID"
     arg_help_config_set_editor = "Set editor"
     arg_help_config_set_language = "Set language (en or ja)"
+    arg_help_config_set_text_formatting = (
+        "Set text formatting of the Redmine server (markdown or textile)"
+    )
     arg_help_config_set_api_key = "Set Redmine API key"
     arg_help_config_set_url = "Set Redmine URL"
     arg_help_config_set_default_profile = "Set default profile"
@@ -780,6 +786,9 @@ class En(MessagesProto):
     arg_help_config_wiki_project_id = "Wiki project ID"
     arg_help_config_editor = "Editor"
     arg_help_config_language = "Language (en or ja)"
+    arg_help_config_text_formatting = (
+        "Text formatting of the Redmine server (markdown or textile)"
+    )
     arg_help_config_set_default_flag = "Set the created profile as default_profile"
 
     # ---- argparse helps (init) ----

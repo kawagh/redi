@@ -23,6 +23,8 @@ class MessagesProto(Protocol):
     """editor を設定。{value}, {suffix}"""
     language_set: str
     """language を設定。{value}, {suffix}"""
+    text_formatting_set: str
+    """text_formatting を設定。{value}, {suffix}"""
     redmine_api_key_set: str
     """redmine_api_key を設定。{suffix}"""
     redmine_url_set: str
@@ -402,6 +404,7 @@ class MessagesProto(Protocol):
     prompt_wiki_project_id: str
     prompt_editor: str
     prompt_select_language: str
+    prompt_select_text_formatting: str
     prompt_start_date: str
     prompt_due_date: str
     prompt_estimated_hours: str
@@ -523,6 +526,7 @@ class MessagesProto(Protocol):
     field_wiki_project_id: str
     field_editor: str
     field_language: str
+    field_text_formatting: str
     field_set_default_profile: str
 
     # ---- sharing options ----
@@ -919,6 +923,7 @@ class MessagesProto(Protocol):
     arg_help_config_set_wiki_project_id: str
     arg_help_config_set_editor: str
     arg_help_config_set_language: str
+    arg_help_config_set_text_formatting: str
     arg_help_config_set_api_key: str
     arg_help_config_set_url: str
     arg_help_config_set_default_profile: str
@@ -930,6 +935,7 @@ class MessagesProto(Protocol):
     arg_help_config_wiki_project_id: str
     arg_help_config_editor: str
     arg_help_config_language: str
+    arg_help_config_text_formatting: str
     arg_help_config_set_default_flag: str
 
     # ---- argparse helps (init) ----

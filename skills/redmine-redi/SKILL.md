@@ -42,6 +42,17 @@ Note: there is no `redi config list`. Use `redi config --full`.
 
 A profile may define `default_project_id`, in which case `--project_id` can be omitted.
 
+## Before you write: check the text formatting
+
+Check `text_formatting` and write body text in that syntax (`markdown` or
+`textile`). If it is not set, assume `markdown`:
+
+```sh
+redi config   # ... text_formatting = "markdown" (or "textile")
+```
+
+Do not read `~/.config/redi/config.toml` directly — it contains API keys.
+
 ## Resolve IDs before writing
 
 Redmine takes numeric IDs for project, tracker, status and priority. Look them up first:
