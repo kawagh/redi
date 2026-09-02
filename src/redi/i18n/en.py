@@ -568,7 +568,7 @@ class En(MessagesProto):
     meta_issue = "Issue"
     tui_preview_comments_header = "Comments:"
     tui_comment_select_status_hint = (
-        "Comment select: jk:move u:update D:delete Esc/q:cancel"
+        "Comment select: jk:move C-d/C-u:scroll u:update D:delete Esc/q:cancel"
     )
     tui_comment_edit_canceled_empty = "Canceled (empty comment)"
     tui_comment_delete_prompt = "Delete comment? {summary} [y/N]"
