@@ -17,7 +17,7 @@ from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.interactive import ensure_interactive, exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.shared_options import project_option_parser
+from redi.cli.shared_options import add_full_argument, project_option_parser
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import version_service
@@ -198,9 +198,7 @@ def add_version_parser(
         "view", aliases=["v"], help=messages.arg_help_version_view, parents=parents
     )
     v_view_parser.add_argument("version_id", help=messages.arg_help_version_view_id)
-    v_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_full_argument(v_view_parser, postfix=True)
     v_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )

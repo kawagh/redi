@@ -9,7 +9,11 @@ from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.membership import Membership, MembershipNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.shared_options import pagination_option_parser, project_option_parser
+from redi.cli.shared_options import (
+    add_full_argument,
+    pagination_option_parser,
+    project_option_parser,
+)
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import membership_service
@@ -153,9 +157,7 @@ def add_membership_parser(
     m_view_parser.add_argument(
         "membership_id", help=messages.arg_help_membership_view_id
     )
-    m_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_full_argument(m_view_parser, postfix=True)
 
     m_create_parser = m_subparsers.add_parser(
         "create",

@@ -19,7 +19,7 @@ from redi.api.group import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.shared_options import full_option_parser
+from redi.cli.shared_options import add_full_argument, full_option_parser
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import group_service
@@ -186,9 +186,7 @@ def add_group_parser(
         "view", aliases=["v"], help=messages.arg_help_group_view, parents=parents
     )
     g_view_parser.add_argument("group_id", help=messages.arg_help_group_view_id)
-    g_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_full_argument(g_view_parser, postfix=True)
     g_create_parser = group_subparsers.add_parser(
         "create", aliases=["c"], help=messages.arg_help_group_create, parents=parents
     )

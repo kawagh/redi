@@ -1,7 +1,7 @@
 import argparse
 
 from redi.api.issue_relation import RELATION_TYPES
-from redi.cli.shared_options import SharedOptionParser
+from redi.cli.shared_options import SharedOptionParser, add_full_argument
 from redi.i18n import messages
 
 
@@ -65,9 +65,7 @@ def add_issue_parser(
         "--include",
         help=messages.arg_help_issue_include,
     )
-    i_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_full_argument(i_view_parser, postfix=True)
     i_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
@@ -114,9 +112,7 @@ def add_issue_parser(
         "--custom_fields",
         help=messages.arg_help_custom_fields,
     )
-    i_create_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_full_argument(i_create_parser, postfix=True)
     i_update_parser = i_subparsers.add_parser(
         "update", aliases=["u"], help=messages.arg_help_issue_update, parents=parents
     )

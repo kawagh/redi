@@ -225,6 +225,86 @@ class TestSharedOptionPlacement:
         assert getattr(args, dest) == expected
 
 
+# `<resource> <action>` の両方に --full を書ける (親側にも --full がある) リソース
+FULL_FLAG_VIEW_TARGETS = [
+    ["project", "view", "1"],
+    ["issue", "view", "1"],
+    ["issue", "create", "subject"],
+    ["version", "view", "1"],
+    ["wiki", "view", "Home"],
+    ["user", "view", "1"],
+    ["membership", "view", "1"],
+    ["news", "view", "1"],
+    ["role", "view", "1"],
+    ["group", "view", "1"],
+    ["issue_category", "view", "1"],
+    ["relation", "view", "1"],
+    ["time_entry", "view", "1"],
+]
+
+
+class TestFullFlagPlacement:
+    """--full はリソースとサブコマンドのどちら側に置いても効く"""
+
+    @pytest.fixture
+    def parser(self, monkeypatch) -> argparse.ArgumentParser:
+        monkeypatch.setattr(main_module, "list_profile_names", list)
+        return build_redi_parser()
+
+    @pytest.mark.parametrize("argv", FULL_FLAG_VIEW_TARGETS)
+    def test_before_subcommand(self, parser, argv):
+        """`<resource> --full <action>` が silent に無視されない"""
+        args = parser.parse_args([argv[0], "--full", *argv[1:]])
+
+        assert args.full is True
+
+    @pytest.mark.parametrize("argv", FULL_FLAG_VIEW_TARGETS)
+    def test_after_subcommand(self, parser, argv):
+        """`<resource> <action> --full` も従来どおり効く"""
+        args = parser.parse_args([*argv, "--full"])
+
+        assert args.full is True
+
+    @pytest.mark.parametrize("argv", FULL_FLAG_VIEW_TARGETS)
+    def test_defaults_to_false(self, parser, argv):
+        """指定が無ければ False"""
+        args = parser.parse_args(argv)
+
+        assert args.full is False
+
+    def test_no_subparser_shadows_parent_full(self, parser):
+        """--full を持つ親パーサの下では、サブパーサの --full は未指定時に値を載せない
+
+        argparse はサブパーサのデフォルト値でパース済みの値を上書きするため、
+        default=False のままだと前置した --full が silent に落ちる。
+        """
+        shadowing = _find_shadowing_full_defaults(parser, ["redi"])
+
+        assert shadowing == []
+
+
+def _find_shadowing_full_defaults(
+    parser: argparse.ArgumentParser, path: list[str], parent_has_full: bool = False
+) -> list[str]:
+    """親が --full を持つのに default を SUPPRESS にしていないサブパーサを集める"""
+    has_full = parent_has_full
+    shadowing = []
+    for action in parser._actions:
+        if action.dest != "full" or not action.option_strings:
+            continue
+        if parent_has_full and action.default is not argparse.SUPPRESS:
+            shadowing.append(" ".join(path))
+        has_full = True
+    for action in parser._actions:
+        if not isinstance(action, argparse._SubParsersAction):
+            continue
+        for name, subparser in action.choices.items():
+            shadowing += _find_shadowing_full_defaults(
+                subparser, [*path, name], has_full
+            )
+    return shadowing
+
+
 class TestTuiProfileSwitchLoop:
     """TUI が switch_profile で抜けたらプロファイルを適用して state 無しで再起動する"""
 

@@ -4,6 +4,7 @@ import sys
 
 from redi.api.issue_relation import IssueRelation, RelationNotFoundException
 from redi.cli.alias import resolve_alias
+from redi.cli.shared_options import add_full_argument
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import issue_relation_service, issue_service
@@ -24,9 +25,7 @@ def add_relation_parser(
         "view", aliases=["v"], help=messages.arg_help_relation_view, parents=parents
     )
     r_view_parser.add_argument("relation_id", help=messages.arg_help_relation_view_id)
-    r_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_full_argument(r_view_parser, postfix=True)
 
 
 def format_relation_detail(relation: IssueRelation) -> list[str]:
