@@ -698,6 +698,8 @@ class Ja(MessagesProto):
     arg_help_limit = "取得件数"
     arg_help_offset = "オフセット"
     arg_help_issue_list = "イシュー一覧"
+    arg_help_issue_list_url = "一覧に各イシューのURLも出す"
+    issue_list_unassigned = "未担当"
     arg_help_issue_view = "イシュー詳細"
     arg_help_issue_view_id = "イシューID"
     arg_help_issue_include = "追加情報（children,attachments,relations,changesets,journals,watchers,allowed_statuses）"

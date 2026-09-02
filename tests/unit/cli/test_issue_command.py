@@ -22,6 +22,7 @@ from redi.cli.issue_command import view as view_module
 from redi.cli.issue_command.create import IssueCreateArgs, handle_issue_create
 from redi.cli.issue_command.update import IssueUpdateArgs, handle_issue_update
 from redi.i18n import messages
+from redi.service.issue_format import OPEN_MARKER
 
 CREATED_ISSUE = {"id": 123, "subject": "件名"}
 
@@ -243,6 +244,51 @@ class TestIssueListNotFound:
         assert (
             messages.project_not_found.format(id="missing") in capsys.readouterr().err
         )
+
+
+class TestIssueListOutput:
+    """`issue list` の整形出力"""
+
+    @pytest.fixture
+    def listed_issue(self, monkeypatch):
+        """一覧取得をスタブし、Redmine の URL を固定する"""
+        monkeypatch.setattr(
+            view_module.issue_service,
+            "list_issues",
+            lambda **kwargs: [
+                {
+                    "id": 123,
+                    "subject": "件名",
+                    "tracker": {"id": 1, "name": "Bug"},
+                    "status": {"id": 1, "name": "New", "is_closed": False},
+                    "assigned_to": {"id": 1, "name": "Admin"},
+                }
+            ],
+        )
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+
+    def test_prints_tracker_status_and_assignee(self, listed_issue, capsys):
+        """triage できるよう open/closed マーカー・トラッカー・担当者を出す"""
+        dispatch_module.handle_issue(parse_issue_args(["issue", "list"]))
+
+        out = capsys.readouterr().out
+        assert out.startswith(OPEN_MARKER)
+        assert "#123" in out
+        assert "[Bug]" in out
+        assert "件名" in out
+        assert "(Admin)" in out
+
+    def test_omits_url_by_default(self, listed_issue, capsys):
+        """URL は横幅を占めるので既定では出さない"""
+        dispatch_module.handle_issue(parse_issue_args(["issue", "list"]))
+
+        assert "http://localhost:3001/issues/123" not in capsys.readouterr().out
+
+    def test_url_option_prints_url(self, listed_issue, capsys):
+        """`--url` を渡したときだけ URL を出す"""
+        dispatch_module.handle_issue(parse_issue_args(["issue", "list", "--url"]))
+
+        assert "http://localhost:3001/issues/123" in capsys.readouterr().out
 
 
 class TestIssueListQueryNotFound:

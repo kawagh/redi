@@ -116,4 +116,5 @@ def handle_issue(args: argparse.Namespace) -> None:
             limit=args.limit,
             offset=args.offset,
             full=args.full,
+            show_url=args.url,
         )
