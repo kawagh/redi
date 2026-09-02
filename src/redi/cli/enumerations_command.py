@@ -3,9 +3,13 @@ import json
 import sys
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
-from redi.api.custom_field import fetch_custom_fields
+from redi.api.custom_field import (
+    CustomField,
+    fetch_custom_fields,
+    find_custom_field,
+)
 from redi.api.enumeration import (
     fetch_document_categories,
     fetch_issue_priorities,
@@ -13,6 +17,7 @@ from redi.api.enumeration import (
 )
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.tracker import fetch_trackers
+from redi.cli.alias import resolve_alias
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import query_service
@@ -38,6 +43,16 @@ class EnumerationResource:
     # `{id} {name}` では情報が落ちるリソースだけ整形を差し替える。
     # 一覧全体を受けるのは、行を組み立てる前に一括で引きたい情報があるため
     format_lines: Callable[[Sequence[Mapping[str, Any]]], list[str]] | None = None
+    # list 以外のサブコマンドを持つリソースだけが使う拡張点。
+    # add_subcommands は list と同じ subparsers に追加登録し、
+    # handle_subcommand は自分が扱えたときに True を返す。
+    add_subcommands: (
+        Callable[[argparse._SubParsersAction, list[argparse.ArgumentParser]], None]
+        | None
+    ) = None
+    handle_subcommand: (
+        Callable[[Sequence[Mapping[str, Any]], argparse.Namespace], bool] | None
+    ) = None
 
 
 def _format_query_lines(queries: Sequence[Mapping[str, Any]]) -> list[str]:
@@ -70,6 +85,117 @@ def _format_query_lines(queries: Sequence[Mapping[str, Any]]) -> list[str]:
                 parts.append(messages.query_list_project.format(name=project_name))
         lines.append(" ".join(parts))
     return lines
+
+
+# ---- custom_field だけが持つ view サブコマンド ----
+
+
+def _add_custom_field_view_parser(
+    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
+) -> None:
+    """custom_field に view <id> を追加する。"""
+    view_parser = subparsers.add_parser(
+        "view",
+        aliases=["v"],
+        help=messages.arg_help_custom_field_view,
+        parents=parents,
+    )
+    view_parser.add_argument(
+        "custom_field_id", help=messages.arg_help_custom_field_view_id
+    )
+    view_parser.add_argument(
+        "--full",
+        action="store_true",
+        # 未指定時に親パーサの --full を上書きしないようにする
+        default=argparse.SUPPRESS,
+        help=messages.arg_help_full_json,
+    )
+    _add_refresh_option(view_parser, postfix=True)
+
+
+def _format_bool(value: bool) -> str:
+    return messages.label_bool_true if value else messages.label_bool_false
+
+
+def _format_possible_value(possible_value: Mapping[str, Any]) -> str:
+    """possible_values の 1 件を表示用の文字列にする。
+
+    enumeration 形式は value が id・label が表示名なので両方出す。
+    list 形式は value と label が同じ値なので value だけ出す。
+    """
+    value = str(possible_value.get("value", ""))
+    label = str(possible_value.get("label", ""))
+    if label and label != value:
+        return f"{value} {label}"
+    return value
+
+
+def _print_custom_field(custom_field: CustomField, full: bool) -> None:
+    """カスタムフィールド 1 件の詳細を表示する。"""
+    if full:
+        print(json.dumps(custom_field, ensure_ascii=False))
+        return
+    lines = [f"{custom_field['id']} {custom_field['name']}"]
+    if custom_field.get("description"):
+        lines.append(
+            messages.label_description_field.format(value=custom_field["description"])
+        )
+    if custom_field.get("customized_type"):
+        lines.append(
+            messages.label_customized_type.format(value=custom_field["customized_type"])
+        )
+    if custom_field.get("field_format"):
+        lines.append(
+            messages.label_field_format.format(value=custom_field["field_format"])
+        )
+    lines.append(
+        messages.label_is_required.format(
+            value=_format_bool(bool(custom_field.get("is_required")))
+        )
+    )
+    if custom_field.get("default_value"):
+        lines.append(
+            messages.label_default_value.format(value=custom_field["default_value"])
+        )
+    if custom_field.get("regexp"):
+        lines.append(messages.label_regexp.format(value=custom_field["regexp"]))
+    if custom_field.get("min_length") is not None:
+        lines.append(messages.label_min_length.format(value=custom_field["min_length"]))
+    if custom_field.get("max_length") is not None:
+        lines.append(messages.label_max_length.format(value=custom_field["max_length"]))
+    possible_values = custom_field.get("possible_values") or []
+    if possible_values:
+        lines.append(messages.label_possible_values_header)
+        for pv in possible_values:
+            lines.append(f"  {_format_possible_value(pv)}")
+    trackers = custom_field.get("trackers") or []
+    if trackers:
+        lines.append(messages.label_trackers_header)
+        for tracker in trackers:
+            lines.append(f"  {tracker['id']} {tracker['name']}")
+    roles = custom_field.get("roles") or []
+    if roles:
+        lines.append(messages.label_roles_header)
+        for role in roles:
+            lines.append(f"  {role['id']} {role['name']}")
+    print("\n".join(lines))
+
+
+def _handle_custom_field_view(
+    items: Sequence[Mapping[str, Any]], args: argparse.Namespace
+) -> bool:
+    """view が選ばれていれば 1 件表示して True を返す。"""
+    if resolve_alias(getattr(args, "custom_field_command", None)) != "view":
+        return False
+    # /custom_fields/:id.json が無いので一覧から絞り込む
+    custom_field = find_custom_field(
+        cast(list[CustomField], list(items)), args.custom_field_id
+    )
+    if custom_field is None:
+        print(messages.custom_field_not_found.format(id=args.custom_field_id))
+        sys.exit(1)
+    _print_custom_field(custom_field, args.full)
+    return True
 
 
 ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
@@ -126,6 +252,8 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
         messages.arg_help_custom_field_list,
         fetch_custom_fields,
         unavailable_message=messages.custom_field_admin_required,
+        add_subcommands=_add_custom_field_view_parser,
+        handle_subcommand=_handle_custom_field_view,
     ),
 )
 
@@ -153,11 +281,12 @@ def _add_list_subparser(
     parser: argparse.ArgumentParser,
     resource: EnumerationResource,
     parents: list[argparse.ArgumentParser],
-) -> None:
-    """一覧専用リソースに list (alias: l) サブコマンドを追加する
+) -> argparse._SubParsersAction:
+    """リソースに list (alias: l) サブコマンドを追加し、その subparsers を返す
 
     引数無しの呼び出しと同じ挙動になるよう、handle 側では dest を参照しない。
     cached なリソースは応答をキャッシュするので --refresh も受け付ける。
+    戻り値の subparsers に list 以外のサブコマンドを足せる。
     """
     subparsers = parser.add_subparsers(dest=f"{resource.name}_command")
     list_parser = subparsers.add_parser(
@@ -172,6 +301,7 @@ def _add_list_subparser(
     )
     if resource.cached:
         _add_refresh_option(list_parser, postfix=True)
+    return subparsers
 
 
 def _add_refresh_option(
@@ -207,7 +337,9 @@ def add_enumeration_parsers(
         )
         if resource.cached:
             _add_refresh_option(parser)
-        _add_list_subparser(parser, resource, parents)
+        list_subparsers = _add_list_subparser(parser, resource, parents)
+        if resource.add_subcommands is not None:
+            resource.add_subcommands(list_subparsers, parents)
 
 
 def find_enumeration_resource(command: str) -> EnumerationResource | None:
@@ -224,4 +356,8 @@ def handle_enumeration(resource: EnumerationResource, args: argparse.Namespace) 
     if items is None:
         eprint(resource.unavailable_message)
         sys.exit(1)
+    if resource.handle_subcommand is not None and resource.handle_subcommand(
+        items, args
+    ):
+        return
     _print_enumeration(items, args.full, resource)

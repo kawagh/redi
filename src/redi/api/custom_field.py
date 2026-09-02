@@ -68,6 +68,20 @@ def fetch_custom_fields(refresh: bool = False) -> list[CustomField] | None:
     return cast(list[CustomField], data)
 
 
+def find_custom_field(
+    custom_fields: list[CustomField], custom_field_id: str
+) -> CustomField | None:
+    """一覧から id が一致するカスタムフィールドを 1 件返す。見つからなければ None。
+
+    Redmine の REST API に `/custom_fields/:id.json` は無いため、
+    一覧を取得したうえでクライアント側で絞り込む。
+    """
+    for custom_field in custom_fields:
+        if str(custom_field["id"]) == str(custom_field_id):
+            return custom_field
+    return None
+
+
 def fetch_project_issue_custom_field_ids(project_id: str) -> set[int]:
     """プロジェクトで有効なイシュー用カスタムフィールドのIDを取得する。"""
     response = client.get(

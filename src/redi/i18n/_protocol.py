@@ -149,6 +149,8 @@ class MessagesProto(Protocol):
     user_update_admin_required: str
     user_delete_admin_required: str
     custom_field_admin_required: str
+    custom_field_not_found: str
+    """{id}"""
     project_permission_denied: str
     """プロジェクトを参照できない(アーカイブ済みか権限不足)。{id}"""
     group_get_admin_required: str
@@ -449,7 +451,7 @@ class MessagesProto(Protocol):
     choice_no: str
     """はい/いいえ の選択肢: いいえ"""
     label_bool_true: str
-    """カスタムフィールド bool 形式の真の表示ラベル"""
+    """真偽値の真の表示ラベル"""
     label_bool_false: str
     """カスタムフィールド bool 形式の偽の表示ラベル"""
     label_project_public: str
@@ -647,6 +649,21 @@ class MessagesProto(Protocol):
     """{name}, {id}"""
     label_project_in_te: str
     """{name}, {id}"""
+    label_customized_type: str
+    """{value}"""
+    label_field_format: str
+    """{value}"""
+    label_is_required: str
+    """{value}"""
+    label_default_value: str
+    """{value}"""
+    label_regexp: str
+    """{value}"""
+    label_min_length: str
+    """{value}"""
+    label_max_length: str
+    """{value}"""
+    label_possible_values_header: str
 
     # ---- relation labels ----
     relation_label_relates: str
@@ -1135,6 +1152,8 @@ class MessagesProto(Protocol):
     """{id}"""
     arg_help_custom_field_command: str
     arg_help_custom_field_list: str
+    arg_help_custom_field_view: str
+    arg_help_custom_field_view_id: str
 
     # ---- argparse helps (issue_template) ----
     arg_help_issue_template_command: str

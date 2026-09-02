@@ -91,6 +91,7 @@ class En(MessagesProto):
     user_update_admin_required = "Admin privilege required to update user"
     user_delete_admin_required = "Admin privilege required to delete user"
     custom_field_admin_required = "Admin privilege required to fetch custom fields"
+    custom_field_not_found = "Custom field not found: #{id}"
     project_permission_denied = (
         "Cannot access project: {id} (archived or no permission to view)"
     )
@@ -491,6 +492,14 @@ class En(MessagesProto):
     label_comments_field = "  Comments: {value}"
     label_user_in_te = "  User: {name} (id={id})"
     label_project_in_te = "  Project: {name} (id={id})"
+    label_customized_type = "Customized type: {value}"
+    label_field_format = "Field format: {value}"
+    label_is_required = "Required: {value}"
+    label_default_value = "Default value: {value}"
+    label_regexp = "Regexp: {value}"
+    label_min_length = "Min length: {value}"
+    label_max_length = "Max length: {value}"
+    label_possible_values_header = "Possible values:"
 
     # ---- relation labels ----
     relation_label_relates = "relates to"
@@ -632,7 +641,7 @@ class En(MessagesProto):
 
     # ---- argparse helps (subcommand summary) ----
     arg_help_crud_subcommands = "list(l), view(v), create(c), update(u), delete(d)"
-    arg_help_role_subcommands = "list(l), view(v)"
+    arg_help_list_view_subcommands = "list(l), view(v)"
     arg_help_file_subcommands = "list(l), create(c) (upload)"
     arg_help_list_only_subcommands = "list(l)"
 
@@ -941,7 +950,7 @@ class En(MessagesProto):
     arg_help_file_description = "Description"
 
     # ---- argparse helps (role) ----
-    arg_help_role_command = arg_help_role_subcommands
+    arg_help_role_command = arg_help_list_view_subcommands
     arg_help_role_list = "List roles"
     arg_help_role_view = "Role details"
     arg_help_role_view_id = "Role ID"
@@ -1002,8 +1011,10 @@ class En(MessagesProto):
     query_list_all_projects = "(all projects)"
     query_list_project = "({name})"
     query_list_unknown_project = "(project {id})"
-    arg_help_custom_field_command = arg_help_list_only_subcommands
+    arg_help_custom_field_command = arg_help_list_view_subcommands
     arg_help_custom_field_list = "List custom fields"
+    arg_help_custom_field_view = "Custom field details"
+    arg_help_custom_field_view_id = "Custom field ID"
 
     # ---- argparse helps (issue_template) ----
     arg_help_issue_template_command = (

@@ -301,6 +301,7 @@ redi document_category # list document categories (alias: dc)
 redi role # list roles (alias: r)
 redi group # list groups (alias: g)
 redi custom_field # list custom fields (alias: cf)
+redi custom_field view <custom_field_id> # show a custom field detail (possible_values, trackers, roles)
 redi query # list custom queries (alias: q)
 redi --version
 ```
