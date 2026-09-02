@@ -26,6 +26,16 @@ from redi.i18n import messages
 CREATED_ISSUE = {"id": 123, "subject": "件名"}
 
 
+def _page(issues: list, total_count: int | None = None, offset: int = 0) -> dict:
+    """GET /issues.json のレスポンスを組み立てる"""
+    return {
+        "issues": issues,
+        "total_count": len(issues) if total_count is None else total_count,
+        "offset": offset,
+        "limit": 25,
+    }
+
+
 def _raise_http_error(status_code: int):
     """指定したステータスコードの HTTPError を投げるスタブを返す"""
     response = requests.Response()
@@ -234,7 +244,7 @@ class TestIssueListNotFound:
         def _raise(**kwargs):
             raise ProjectNotFoundException("missing")
 
-        monkeypatch.setattr(view_module.issue_service, "list_issues", _raise)
+        monkeypatch.setattr(view_module.issue_service, "list_issues_page", _raise)
 
         with pytest.raises(SystemExit) as exc_info:
             view_module.list_issues(project_id="missing")
@@ -254,7 +264,7 @@ class TestIssueListQueryNotFound:
         def _raise(**kwargs):
             raise QueryNotFoundException("5")
 
-        monkeypatch.setattr(view_module.issue_service, "list_issues", _raise)
+        monkeypatch.setattr(view_module.issue_service, "list_issues_page", _raise)
 
         with pytest.raises(SystemExit) as exc_info:
             view_module.list_issues(project_id="demo", query_id="5")
@@ -309,8 +319,8 @@ class TestIssueListQueryIdFilters:
         called = {}
         monkeypatch.setattr(
             view_module.issue_service,
-            "list_issues",
-            lambda **kwargs: called.update(kwargs) or [],
+            "list_issues_page",
+            lambda **kwargs: called.update(kwargs) or _page([]),
         )
         args = parse_issue_args(["issue", "list", "-q", "5", "-p", "demo"])
 
@@ -318,6 +328,71 @@ class TestIssueListQueryIdFilters:
 
         assert called["query_id"] == "5"
         assert called["project_id"] == "demo"
+
+
+class TestIssueListTruncation:
+    """`issue list` は Redmine が既定 25 件で打ち切った結果をそのまま出している
+
+    総件数も続きの有無も出ないと、全件見えているものと取り違えて
+    重複起票などの判断を誤るため、表示範囲と総件数を伝える。
+    """
+
+    @pytest.fixture
+    def redmine_url(self, monkeypatch):
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+
+    def _stub(self, monkeypatch, page):
+        monkeypatch.setattr(
+            view_module.issue_service, "list_issues_page", lambda **kwargs: page
+        )
+
+    def test_notice_is_printed_to_stderr(self, monkeypatch, capsys, redmine_url):
+        """打ち切られたら表示範囲と総件数を出す。一覧を汚さないよう標準エラーに出す"""
+        issues = [{"id": i, "subject": f"件名{i}"} for i in range(1, 26)]
+        self._stub(monkeypatch, _page(issues, total_count=74))
+
+        view_module.list_issues()
+
+        captured = capsys.readouterr()
+        assert captured.out.count("\n") == 25
+        assert (
+            messages.issue_list_truncated.format(start=1, end=25, total=74)
+            in captured.err
+        )
+
+    def test_no_notice_when_all_issues_are_shown(
+        self, monkeypatch, capsys, redmine_url
+    ):
+        """全件出せている場合は何も出さない"""
+        issues = [{"id": 1, "subject": "件名"}]
+        self._stub(monkeypatch, _page(issues))
+
+        view_module.list_issues()
+
+        assert capsys.readouterr().err == ""
+
+    def test_offset_is_reflected_in_the_range(self, monkeypatch, capsys, redmine_url):
+        """--offset を渡した場合は、その位置からの表示範囲を出す"""
+        issues = [{"id": i, "subject": f"件名{i}"} for i in range(26, 31)]
+        self._stub(monkeypatch, _page(issues, total_count=74, offset=25))
+
+        view_module.list_issues(offset=25, limit=5)
+
+        assert (
+            messages.issue_list_truncated.format(start=26, end=30, total=74)
+            in capsys.readouterr().err
+        )
+
+    def test_full_includes_total_count(self, monkeypatch, capsys, redmine_url):
+        """--full では Redmine が返した total_count も含めて出す"""
+        issues = [{"id": 1, "subject": "件名"}]
+        self._stub(monkeypatch, _page(issues, total_count=74))
+
+        view_module.list_issues(full=True)
+
+        printed = json.loads(capsys.readouterr().out)
+        assert printed["total_count"] == 74
+        assert printed["issues"] == issues
 
 
 VIEWED_ISSUE = cast(

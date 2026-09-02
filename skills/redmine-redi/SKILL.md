@@ -82,6 +82,8 @@ redi project list --full
 redi issue list                              # default project
 redi issue list --project_id 15              # one project
 redi issue list --status_id 1 --limit 10
+redi issue list --limit 100                  # default is 25; the range and total go to stderr
+redi issue list --offset 25 --limit 25       # next page
 redi issue view 160                          # one issue
 redi issue view 160 --full                   # JSON
 redi issue view 160 --include watchers       # + watchers (see -h for the list)

@@ -628,6 +628,8 @@ class MessagesProto(Protocol):
     label_allowed_statuses_header: str
     label_revisions_header: str
     label_journals_header: str
+    issue_list_truncated: str
+    """{start}, {end}, {total}"""
     label_due_date_field: str
     """{value}"""
     label_sharing_field: str
