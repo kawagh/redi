@@ -53,6 +53,25 @@ class TestRelationCreate:
         assert f"/issues/{to_id}" in run_redi("issue", "view", from_id).stdout
         assert f"/issues/{from_id}" in run_redi("issue", "view", to_id).stdout
 
+    def test_exits_with_error_for_missing_related_issue(self):
+        """存在しないイシューを --to に渡したら見つからないと伝えて exit 1 で終わる"""
+        # Redmine の 422 は "Related issue cannot be blank" で、--to に値を渡して
+        # いないように読めてしまう
+        from_id = _create_issue(unique_identifier("e2e-relation-missing-to"))
+        missing_id = "99999999"
+
+        with pytest.raises(subprocess.CalledProcessError) as relate_error_info:
+            run_redi(
+                "issue", "update", from_id, "--relate", "relates", "--to", missing_id
+            )
+
+        relate_error = relate_error_info.value
+        assert relate_error.returncode == 1
+        assert f"Related issue not found: #{missing_id}" in relate_error.stdout, (
+            f"想定外のエラーで relate が失敗\n"
+            f"stdout:\n{relate_error.stdout}\nstderr:\n{relate_error.stderr}"
+        )
+
 
 @pytest.mark.e2e
 class TestRelationView:

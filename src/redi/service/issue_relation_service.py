@@ -4,8 +4,18 @@ CLI と TUI で共通の手順をここに置く。HTTP とステータスコー
 `api.issue_relation` が持つ。
 """
 
+from redi.api import issue as issue_api
 from redi.api import issue_relation as issue_relation_api
+from redi.api.issue import IssueNotFoundException
 from redi.api.issue_relation import IssueRelation
+
+
+class RelatedIssueNotFoundException(Exception):
+    """関係先に指定されたイシューが存在しないときに送出する例外。"""
+
+    def __init__(self, issue_to_id: str) -> None:
+        super().__init__(issue_to_id)
+        self.issue_to_id = issue_to_id
 
 
 class RelationBetweenNotFoundException(Exception):
@@ -37,9 +47,17 @@ def create_relation(
 ) -> IssueRelation:
     """関係性を作成し、作成された関係性を返す。
 
+    関係先が存在しないときの Redmine の 422 は "Related issue cannot be blank" で、
+    値を渡していないように読めてしまうため、送信前に存在を確かめる。
+
     Raises:
+        RelatedIssueNotFoundException: 関係先のイシューが存在しない
         requests.exceptions.HTTPError: HTTP エラー
     """
+    try:
+        issue_api.fetch_issue(issue_to_id)
+    except IssueNotFoundException as e:
+        raise RelatedIssueNotFoundException(issue_to_id) from e
     return issue_relation_api.create_relation(
         issue_id=issue_id,
         issue_to_id=issue_to_id,
