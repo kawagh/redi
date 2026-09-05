@@ -16,7 +16,8 @@ redi --tui               # launch the TUI
 redi issue               # or list issues
 ```
 
-See [Setup](#setup) for profile / environment variable details and [Usage (examples)](#usage-examples) for the full command reference.
+`redi init` verifies the credentials and writes a profile to `~/.config/redi/config.toml`.
+See [Usage (examples)](#usage-examples) for the full command reference.
 
 ## Install
 
@@ -26,102 +27,15 @@ I recommend installation via [uv](https://github.com/astral-sh/uv).
 uv tool install redtile  # name on PyPI is redtile, NOT redi
 ```
 
-## Setup
+## Documentation
 
-### Config
+https://kawagh.github.io/redi/ (also available in [Japanese](https://kawagh.github.io/redi/ja/))
 
-To use redi, you need to set the Redmine URL and API key in one of the ways below.
-
-#### redi init (interactive, recommended for first time)
-
-```sh
-redi init
-```
-
-`redi init` first asks which language to use (`en` / `ja`), and the rest of the setup is shown in the selected language.
-You can change it later with `redi config update --language <en|ja>`.
-
-Then, profile will be created in `~/.config/redi/config.toml` like below format.
-You can also create profile by `redi config create`, and update profile by `redi config update` (and also by manual edit).
-`redi config create` walks you through the same steps as `redi init` when the profile name, URL or API key is missing, so it works even after profiles exist.
-
-```toml
-default_profile = "default"
-text_formatting = "markdown"  # default for all profiles: "markdown" (default) or "textile"
-
-["default"]
-redmine_url = "https://redmine.example.com"
-redmine_api_key = "<your_api_key>"
-default_project_id = "1"
-wiki_project_id = "2"
-editor = "nvim"
-language = "en"  # "en" (default) or "ja"
-
-["sub"]
-redmine_url = "https://redmine.example.com"
-redmine_api_key = "<your_api_key>"
-default_project_id = "2"
-wiki_project_id = "3"
-editor = "code"
-text_formatting = "textile"  # overrides the top-level value for this profile only
-```
-
-#### text_formatting (for AI agents)
-
-Redmine renders issue descriptions, comments and wiki pages as Markdown or Textile depending on
-"Administration → Settings → Text formatting". The REST API does not expose this setting, so
-`redi` cannot detect it. Write it in `config.toml` as `text_formatting` (`markdown` / `textile`)
-so that AI agents can look it up before posting:
-
-- the top-level value is the default for all profiles
-- a value inside a profile overrides it for that profile only
-- when neither is set, `markdown` is assumed (the default of a fresh Redmine install)
-
-Agents should read it with `redi config` (resolved value for the current profile) or
-`redi config --full` (every profile, with `redmine_api_key` removed) instead of reading
-`~/.config/redi/config.toml`, which contains API keys.
-
-#### environment variable
-
-```sh
-export REDMINE_URL=https://redmine.example.com
-export REDMINE_API_KEY=<your_api_key>
-```
-
-
-### Shell completion
-
-```sh
-uv tool install argcomplete
-echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
-```
-
-### Agent skill
-
-`redmine-redi` is a skill that lets coding agents (Claude Code, Codex) know to
-reach for `redi` when a task involves Redmine.
-
-Install it globally (user scope) so that it is available in every project.
-`curl` needs no extra tooling:
-
-```sh
-# Claude Code
-mkdir -p ~/.claude/skills/redmine-redi && \
-  curl -sL https://raw.githubusercontent.com/kawagh/redi/main/skills/redmine-redi/SKILL.md \
-    -o ~/.claude/skills/redmine-redi/SKILL.md
-
-# Codex
-mkdir -p ~/.agents/skills/redmine-redi && \
-  curl -sL https://raw.githubusercontent.com/kawagh/redi/main/skills/redmine-redi/SKILL.md \
-    -o ~/.agents/skills/redmine-redi/SKILL.md
-```
-
-Or with a skill manager:
-
-```sh
-npx skills add kawagh/redi --skill redmine-redi -g
-gh skill install kawagh/redi redmine-redi --scope user  # requires gh v2.90+ and a GitHub account
-```
+- [Getting Started](https://kawagh.github.io/redi/getting-started/) — install and connect
+- [TUI](https://kawagh.github.io/redi/tui/) — tabs and keys
+- [Command Structure](https://kawagh.github.io/redi/cli/command-structure/) — the rule every command follows
+- [Agent Skill](https://kawagh.github.io/redi/cli/agent-skill/) — let coding agents reach for redi
+- [Configuration](https://kawagh.github.io/redi/configuration/) — config.toml, environment variables, shell completion
 
 ## Usage (examples)
 
