@@ -1,0 +1,29 @@
+---
+title: redi
+description: Redmine REST API をラップする CLI/TUI ツール。
+hero:
+  tagline: Redmine REST API をラップする CLI/TUI ツール
+  actions:
+    - text: はじめに
+      link: /redi/ja/guides/getting-started/
+      icon: right-arrow
+    - text: GitHub
+      link: https://github.com/kawagh/redi
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+## できること
+
+<CardGrid>
+  <Card title="CLI" icon="seti:powershell">
+    チケット・Wiki・作業時間・ニュースをシェルから読み書きできます。
+    引数が足りなければ対話的に尋ねますが、CI やエージェントから使えるよう
+    引数だけで完結する形も用意しています。
+  </Card>
+  <Card title="TUI" icon="laptop">
+    `redi --tui` でチケットを閲覧・編集するターミナル UI が開きます。
+  </Card>
+</CardGrid>
