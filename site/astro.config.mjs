@@ -4,6 +4,9 @@ import starlight from '@astrojs/starlight';
 
 // https://astro.build/config
 export default defineConfig({
+    // 参考: https://docs.astro.build/ja/guides/deploy/github/
+    site: 'https://kawagh.github.io',
+    base: '/redi',
 	integrations: [
 		starlight({
 			title: 'My Docs',
