@@ -9,8 +9,8 @@ export default defineConfig({
     base: '/redi',
 	integrations: [
 		starlight({
-			title: 'My Docs',
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
+			title: 'redi',
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/kawagh/redi' }],
 			sidebar: [
 				{
 					label: 'Guides',
