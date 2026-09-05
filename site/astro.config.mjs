@@ -18,22 +18,11 @@ export default defineConfig({
 			},
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/kawagh/redi' }],
 			sidebar: [
-				{
-					label: 'Guides',
-					translations: { ja: 'ガイド' },
-					items: [
-						{
-							label: 'Getting Started',
-							translations: { ja: 'はじめに' },
-							slug: 'guides/getting-started',
-						},
-					],
-				},
-				{
-					label: 'Reference',
-					translations: { ja: 'リファレンス' },
-					items: [{ autogenerate: { directory: 'reference' } }],
-				},
+				{ label: 'Getting Started', translations: { ja: 'はじめに' }, slug: 'getting-started' },
+				{ label: 'TUI', slug: 'tui' },
+				// ページを足せば並ぶ。ラベルは各ページの title から取られるので言語ごとに正しく出る
+				{ label: 'CLI', items: [{ autogenerate: { directory: 'cli' } }] },
+				{ label: 'Configuration', translations: { ja: '設定' }, slug: 'configuration' },
 			],
 		}),
 	],
