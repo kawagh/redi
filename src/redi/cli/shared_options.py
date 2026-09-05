@@ -25,18 +25,64 @@ class SharedOptionParser(argparse.ArgumentParser):
         return super().add_argument(*args, **kwargs)
 
 
+FORMAT_PLAIN = "plain"
+FORMAT_JSON = "json"
+OUTPUT_FORMATS = (FORMAT_PLAIN, FORMAT_JSON)
+
+
+def add_format_options(
+    parser: argparse.ArgumentParser, *, postfix: bool = False
+) -> None:
+    """出力形式を選ぶ `--format` と、その別名の `--full` を足す
+
+    `--format` は親パーサとサブパーサの双方に足されるため、デフォルト値を持たせない。
+    持たせると後から解釈するサブパーサ側の値が親の解釈結果を上書きしてしまう。
+    未指定時の既定値は `resolve_format` が補う。
+
+    postfix=True では `--full` も同様に namespace に載せない。
+    """
+    parser.add_argument(
+        "--format",
+        choices=OUTPUT_FORMATS,
+        default=argparse.SUPPRESS,
+        help=messages.arg_help_format,
+    )
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        default=argparse.SUPPRESS if postfix else False,
+        help=messages.arg_help_full_json,
+    )
+
+
+def resolve_format(args: argparse.Namespace) -> str:
+    """`--format` と `--full` から出力形式を決める
+
+    両方指定された場合は、形式を直接示している `--format` を優先する。
+    """
+    fmt = getattr(args, "format", None)
+    if fmt is not None:
+        return fmt
+    return FORMAT_JSON if getattr(args, "full", False) else FORMAT_PLAIN
+
+
+def wants_json(args: argparse.Namespace) -> bool:
+    """JSON 出力が求められているか"""
+    return resolve_format(args) == FORMAT_JSON
+
+
 def full_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
-    """`--full` だけを共有するパーサ"""
+    """出力形式のオプションだけを共有するパーサ"""
     parser = SharedOptionParser(postfix=postfix)
-    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    add_format_options(parser)
     return parser
 
 
 def project_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
-    """`--project_id` と `--full` を共有するパーサ"""
+    """`--project_id` と出力形式のオプションを共有するパーサ"""
     parser = SharedOptionParser(postfix=postfix)
     parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
-    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    add_format_options(parser)
     return parser
 
 

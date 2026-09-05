@@ -11,6 +11,7 @@ from redi.api.search import (
     SearchType,
     search,
 )
+from redi.cli.shared_options import add_format_options, wants_json
 from redi.i18n import messages
 from redi.output import eprint
 
@@ -85,9 +86,7 @@ def add_search_parser(
         type=_parse_search_types,
         help=messages.arg_help_search_type.format(choices=",".join(SEARCH_TYPES)),
     )
-    search_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(search_parser)
 
 
 def handle_search(args: argparse.Namespace) -> None:
@@ -104,7 +103,7 @@ def handle_search(args: argparse.Namespace) -> None:
         attachments=args.attachments,
         types=args.type,
     )
-    if args.full:
+    if wants_json(args):
         print(json.dumps(data, ensure_ascii=False))
         return
     results = data.get("results", [])

@@ -798,6 +798,7 @@ class MessagesProto(Protocol):
     arg_help_refresh: str
 
     # ---- argparse helps (common) ----
+    arg_help_format: str
     arg_help_full_json: str
     arg_help_skip_confirm: str
     arg_help_open_web: str

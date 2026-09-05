@@ -5,7 +5,7 @@ from types import MappingProxyType
 
 from redi.api.role import fetch_role, fetch_roles
 from redi.cli.alias import resolve_alias
-from redi.cli.shared_options import full_option_parser
+from redi.cli.shared_options import add_format_options, full_option_parser, wants_json
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service.role_service import CATEGORY_OTHER, group_permissions
@@ -93,14 +93,12 @@ def add_role_parser(
         "view", aliases=["v"], help=messages.arg_help_role_view, parents=parents
     )
     role_view_parser.add_argument("role_id", help=messages.arg_help_role_view_id)
-    role_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(role_view_parser)
 
 
 def handle_role(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.role_command)
     if cmd == "view":
-        _print_role(args.role_id, full=args.full)
+        _print_role(args.role_id, full=wants_json(args))
     elif cmd == "list" or cmd is None:
-        _print_roles(full=args.full)
+        _print_roles(full=wants_json(args))

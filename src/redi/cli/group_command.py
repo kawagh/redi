@@ -19,7 +19,7 @@ from redi.api.group import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.shared_options import full_option_parser
+from redi.cli.shared_options import add_format_options, full_option_parser, wants_json
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import group_service
@@ -186,9 +186,7 @@ def add_group_parser(
         "view", aliases=["v"], help=messages.arg_help_group_view, parents=parents
     )
     g_view_parser.add_argument("group_id", help=messages.arg_help_group_view_id)
-    g_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(g_view_parser)
     g_create_parser = group_subparsers.add_parser(
         "create", aliases=["c"], help=messages.arg_help_group_create, parents=parents
     )
@@ -238,7 +236,7 @@ def add_group_parser(
 def handle_group(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.group_command)
     if cmd == "view":
-        _view_group(args.group_id, full=args.full)
+        _view_group(args.group_id, full=wants_json(args))
         return
     if cmd == "create":
         _create_group(name=args.name, user_ids=args.user_ids)
@@ -274,4 +272,4 @@ def handle_group(args: argparse.Namespace) -> None:
         _delete_group(args.group_id)
         return
     if cmd == "list" or cmd is None:
-        _list_groups(full=args.full)
+        _list_groups(full=wants_json(args))

@@ -13,6 +13,7 @@ from redi.api.enumeration import (
 )
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.tracker import fetch_trackers
+from redi.cli.shared_options import add_format_options, wants_json
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import query_service
@@ -163,13 +164,8 @@ def _add_list_subparser(
     list_parser = subparsers.add_parser(
         "list", aliases=["l"], help=resource.list_help, parents=parents
     )
-    list_parser.add_argument(
-        "--full",
-        action="store_true",
-        # 未指定時に親パーサの --full を上書きしないようにする
-        default=argparse.SUPPRESS,
-        help=messages.arg_help_full_json,
-    )
+    # 未指定時に親パーサの値を上書きしないよう postfix で足す
+    add_format_options(list_parser, postfix=True)
     if resource.cached:
         _add_refresh_option(list_parser, postfix=True)
 
@@ -202,9 +198,7 @@ def add_enumeration_parsers(
             help=resource.command_help,
             parents=parents,
         )
-        parser.add_argument(
-            "--full", action="store_true", help=messages.arg_help_full_json
-        )
+        add_format_options(parser)
         if resource.cached:
             _add_refresh_option(parser)
         _add_list_subparser(parser, resource, parents)
@@ -224,4 +218,4 @@ def handle_enumeration(resource: EnumerationResource, args: argparse.Namespace) 
     if items is None:
         eprint(resource.unavailable_message)
         sys.exit(1)
-    _print_enumeration(items, args.full, resource)
+    _print_enumeration(items, wants_json(args), resource)

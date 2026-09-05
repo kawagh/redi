@@ -8,7 +8,7 @@ from redi.api.exceptions import print_http_error_body
 from redi.api.user import User, UserNotFoundException, UserPermissionDeniedException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
-from redi.cli.shared_options import SharedOptionParser
+from redi.cli.shared_options import SharedOptionParser, add_format_options, wants_json
 from redi.cli.user_format import format_user_detail, user_summary
 from redi.i18n import messages
 from redi.output import eprint
@@ -196,7 +196,7 @@ def _user_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParse
     parser.add_argument("--group_id", type=int, help=messages.arg_help_user_group_id)
     parser.add_argument("--limit", type=int, help=messages.arg_help_limit)
     parser.add_argument("--offset", type=int, help=messages.arg_help_offset)
-    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    add_format_options(parser)
     return parser
 
 
@@ -256,9 +256,7 @@ def add_user_parser(
         "view", aliases=["v"], help=messages.arg_help_user_view, parents=parents
     )
     u_view_parser.add_argument("user_id", help=messages.arg_help_user_view_id)
-    u_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(u_view_parser)
 
     u_update_parser = u_subparsers.add_parser(
         "update", aliases=["u"], help=messages.arg_help_user_update, parents=parents
@@ -320,7 +318,7 @@ def handle_user(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "view":
-        _view_user(args.user_id, full=args.full)
+        _view_user(args.user_id, full=wants_json(args))
         return
     if cmd == "update":
         _update_user(
@@ -352,5 +350,5 @@ def handle_user(args: argparse.Namespace) -> None:
             group_id=args.group_id,
             limit=args.limit,
             offset=args.offset,
-            full=args.full,
+            full=wants_json(args),
         )

@@ -17,7 +17,11 @@ from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.interactive import ensure_interactive, exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.shared_options import project_option_parser
+from redi.cli.shared_options import (
+    add_format_options,
+    project_option_parser,
+    wants_json,
+)
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import version_service
@@ -198,9 +202,7 @@ def add_version_parser(
         "view", aliases=["v"], help=messages.arg_help_version_view, parents=parents
     )
     v_view_parser.add_argument("version_id", help=messages.arg_help_version_view_id)
-    v_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(v_view_parser)
     v_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
@@ -389,7 +391,7 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
 def handle_version(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.version_command)
     if cmd == "view":
-        _view_version(args.version_id, full=args.full, web=args.web)
+        _view_version(args.version_id, full=wants_json(args), web=args.web)
     elif cmd == "create":
         project_id = args.project_id or config.default_project_id
         if not project_id:
@@ -444,4 +446,4 @@ def handle_version(args: argparse.Namespace) -> None:
         if not project_id:
             eprint(messages.project_id_required)
             sys.exit(1)
-        _list_versions(project_id, full=args.full)
+        _list_versions(project_id, full=wants_json(args))

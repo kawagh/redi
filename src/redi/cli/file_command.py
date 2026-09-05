@@ -11,7 +11,7 @@ from redi.api.exceptions import (
     print_http_error_body,
 )
 from redi.cli.alias import resolve_alias
-from redi.cli.shared_options import project_option_parser
+from redi.cli.shared_options import project_option_parser, wants_json
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import file_service
@@ -112,4 +112,4 @@ def handle_file(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "list" or cmd is None:
-        _list_files(project_id, full=args.full)
+        _list_files(project_id, full=wants_json(args))

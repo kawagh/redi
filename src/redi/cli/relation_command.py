@@ -4,6 +4,7 @@ import sys
 
 from redi.api.issue_relation import IssueRelation, RelationNotFoundException
 from redi.cli.alias import resolve_alias
+from redi.cli.shared_options import add_format_options, wants_json
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import issue_relation_service, issue_service
@@ -15,18 +16,14 @@ def add_relation_parser(
     r_parser = subparsers.add_parser(
         "relation", help=messages.arg_help_relation_command, parents=parents
     )
-    r_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(r_parser)
     r_subparsers = r_parser.add_subparsers(dest="relation_command")
     r_parser.set_defaults(_print_help=r_parser.print_help)
     r_view_parser = r_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_relation_view, parents=parents
     )
     r_view_parser.add_argument("relation_id", help=messages.arg_help_relation_view_id)
-    r_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(r_view_parser)
 
 
 def format_relation_detail(relation: IssueRelation) -> list[str]:
@@ -57,6 +54,6 @@ def read_relation(relation_id: str, full: bool = False) -> None:
 def handle_relation(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.relation_command)
     if cmd == "view":
-        read_relation(args.relation_id, full=args.full)
+        read_relation(args.relation_id, full=wants_json(args))
         return
     args._print_help()

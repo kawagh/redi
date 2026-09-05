@@ -20,7 +20,7 @@ from redi.cli.keybinding import (
     digit_only_key_bindings,
 )
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.shared_options import SharedOptionParser
+from redi.cli.shared_options import SharedOptionParser, add_format_options, wants_json
 from redi.cli.validator import DateValidator, HourValidator, is_yyyy_mm_dd
 from redi.i18n import messages
 from redi.output import eprint
@@ -233,7 +233,7 @@ def _time_entry_list_option_parser(*, postfix: bool = False) -> argparse.Argumen
     )
     parser.add_argument("--limit", "-l", type=int, help=messages.arg_help_limit)
     parser.add_argument("--offset", "-o", type=int, help=messages.arg_help_offset)
-    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    add_format_options(parser)
     return parser
 
 
@@ -283,9 +283,7 @@ def add_time_entry_parser(
     te_view_parser.add_argument(
         "time_entry_id", help=messages.arg_help_time_entry_view_id
     )
-    te_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(te_view_parser)
     te_update_parser = te_subparsers.add_parser(
         "update",
         aliases=["u"],
@@ -495,7 +493,7 @@ def handle_time_entry(args: argparse.Namespace) -> None:
             comments=args.comments,
         )
     elif cmd == "view":
-        _view_time_entry(args.time_entry_id, full=args.full)
+        _view_time_entry(args.time_entry_id, full=wants_json(args))
     elif cmd == "update":
         if (
             args.hours is None
@@ -537,5 +535,5 @@ def handle_time_entry(args: argparse.Namespace) -> None:
             to_date=args.to_date,
             limit=args.limit,
             offset=args.offset,
-            full=args.full,
+            full=wants_json(args),
         )
