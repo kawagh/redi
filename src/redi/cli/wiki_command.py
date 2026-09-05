@@ -18,7 +18,11 @@ from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor
 from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.picker import inline_choice
-from redi.cli.shared_options import project_option_parser
+from redi.cli.shared_options import (
+    add_format_options,
+    project_option_parser,
+    wants_json,
+)
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import wiki_service
@@ -172,9 +176,7 @@ def add_wiki_parser(
         "view", aliases=["v"], help=messages.arg_help_wiki_view, parents=parents
     )
     w_view_parser.add_argument("page_title", help=messages.arg_help_wiki_page_title)
-    w_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(w_view_parser)
     w_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
@@ -241,7 +243,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
         _view_page(
             project_id,
             args.page_title,
-            full=args.full,
+            full=wants_json(args),
             web=args.web,
             version=args.version,
         )
@@ -351,4 +353,4 @@ def handle_wiki(args: argparse.Namespace) -> None:
         else:
             print(messages.canceled_empty_text)
     elif cmd == "list" or cmd is None:
-        _list_pages(project_id, full=args.full)
+        _list_pages(project_id, full=wants_json(args))

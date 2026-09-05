@@ -10,6 +10,7 @@ from redi.api.exceptions import (
 )
 from redi.cli import main as main_module
 from redi.cli.main import build_redi_parser
+from redi.cli.shared_options import FORMAT_JSON, FORMAT_PLAIN, resolve_format
 from redi.i18n import messages
 
 
@@ -148,6 +149,65 @@ class TestListOnlyResourceListSubcommand:
             args = parser.parse_args(argv)
 
             assert args.full is True, argv
+
+
+class TestFormatOptionPlacement:
+    """--format はサブコマンドの前後どちらに置いても受け付けられる"""
+
+    @pytest.fixture
+    def parser(self, monkeypatch) -> argparse.ArgumentParser:
+        monkeypatch.setattr(main_module, "list_profile_names", list)
+        return build_redi_parser()
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["issue", "list", "--format", "json"],
+            ["issue", "--format", "json", "list"],
+            ["issue", "view", "1", "--format", "json"],
+            ["issue", "--format", "json", "view", "1"],
+            ["issue", "create", "--format", "json"],
+            ["project", "list", "--format", "json"],
+            ["project", "--format", "json", "list"],
+            ["tracker", "list", "--format", "json"],
+            ["tracker", "--format", "json", "list"],
+            ["tracker", "--format", "json"],
+            ["wiki", "--project_id", "1", "list", "--format", "json"],
+            ["me", "--format", "json"],
+        ],
+    )
+    def test_json_is_resolved_on_either_side(self, parser, argv):
+        """置き場所によらず json として解釈される"""
+        args = parser.parse_args(argv)
+
+        assert resolve_format(args) == FORMAT_JSON, argv
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["issue", "list"],
+            ["issue", "view", "1"],
+            ["project", "list"],
+            ["tracker", "list"],
+            ["me"],
+        ],
+    )
+    def test_defaults_to_plain(self, parser, argv):
+        """未指定なら plain"""
+        args = parser.parse_args(argv)
+
+        assert resolve_format(args) == FORMAT_PLAIN, argv
+
+    def test_full_stays_as_alias(self, parser):
+        """既存の `--full` は `--format json` の別名として残る"""
+        args = parser.parse_args(["issue", "list", "--full"])
+
+        assert resolve_format(args) == FORMAT_JSON
+
+    def test_rejects_unknown_format(self, parser):
+        """未対応の形式はエラーにする"""
+        with pytest.raises(SystemExit):
+            parser.parse_args(["issue", "list", "--format", "tsv"])
 
 
 class TestSharedOptionPlacement:

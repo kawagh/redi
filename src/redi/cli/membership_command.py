@@ -9,7 +9,12 @@ from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.membership import Membership, MembershipNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.shared_options import pagination_option_parser, project_option_parser
+from redi.cli.shared_options import (
+    add_format_options,
+    pagination_option_parser,
+    project_option_parser,
+    wants_json,
+)
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import membership_service
@@ -153,9 +158,7 @@ def add_membership_parser(
     m_view_parser.add_argument(
         "membership_id", help=messages.arg_help_membership_view_id
     )
-    m_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(m_view_parser)
 
     m_create_parser = m_subparsers.add_parser(
         "create",
@@ -212,7 +215,7 @@ def add_membership_parser(
 def handle_membership(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.membership_command)
     if cmd == "view":
-        _view_membership(args.membership_id, full=args.full)
+        _view_membership(args.membership_id, full=wants_json(args))
         return
     if cmd == "create":
         project_id = args.project_id or config.default_project_id
@@ -260,5 +263,5 @@ def handle_membership(args: argparse.Namespace) -> None:
             eprint(messages.project_id_required)
             sys.exit(1)
         _list_memberships(
-            project_id, full=args.full, limit=args.limit, offset=args.offset
+            project_id, full=wants_json(args), limit=args.limit, offset=args.offset
         )

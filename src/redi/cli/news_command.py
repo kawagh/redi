@@ -18,7 +18,12 @@ from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor, shorten_to_oneline
 from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.shared_options import pagination_option_parser, project_option_parser
+from redi.cli.shared_options import (
+    add_format_options,
+    pagination_option_parser,
+    project_option_parser,
+    wants_json,
+)
 from redi.cli.validator import RequiredValidator
 from redi.i18n import messages
 from redi.output import eprint
@@ -284,9 +289,7 @@ def add_news_parser(
         "view", aliases=["v"], help=messages.arg_help_news_view, parents=parents
     )
     n_view_parser.add_argument("news_id", help=messages.arg_help_news_view_id)
-    n_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(n_view_parser)
     n_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
@@ -346,7 +349,7 @@ def add_news_parser(
 def handle_news(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.news_command)
     if cmd == "view":
-        _view_news(args.news_id, full=args.full, web=args.web)
+        _view_news(args.news_id, full=wants_json(args), web=args.web)
         return
     if cmd == "create":
         project_id = args.project_id or config.default_project_id
@@ -410,7 +413,7 @@ def handle_news(args: argparse.Namespace) -> None:
         project_id = args.project_id or config.default_project_id
         _list_news(
             project_id=project_id,
-            full=args.full,
+            full=wants_json(args),
             limit=args.limit,
             offset=args.offset,
         )

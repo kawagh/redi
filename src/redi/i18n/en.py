@@ -624,7 +624,8 @@ class En(MessagesProto):
     )
 
     # ---- argparse helps (common) ----
-    arg_help_full_json = "Output full JSON"
+    arg_help_format = "Output format (default: plain)"
+    arg_help_full_json = "Output full JSON (same as --format json)"
     arg_help_skip_confirm = "Skip confirmation prompt"
     arg_help_open_web = "Open the Redmine page in a browser"
     arg_help_project_id = "Project ID"

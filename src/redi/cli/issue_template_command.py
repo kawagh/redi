@@ -4,6 +4,7 @@ import sys
 
 from redi import config
 from redi.api.issue_template import TEMPLATE_KEYS, fetch_issue_templates
+from redi.cli.shared_options import add_format_options, wants_json
 from redi.i18n import messages
 from redi.output import eprint
 
@@ -21,9 +22,7 @@ def add_issue_template_parser(
     it_parser.add_argument(
         "--tracker_id", "-t", help=messages.arg_help_issue_filter_tracker
     )
-    it_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(it_parser)
 
 
 def handle_issue_template(args: argparse.Namespace) -> None:
@@ -35,7 +34,7 @@ def handle_issue_template(args: argparse.Namespace) -> None:
     if templates is None:
         eprint(messages.issue_template_not_available)
         sys.exit(1)
-    if args.full:
+    if wants_json(args):
         print(json.dumps(templates, ensure_ascii=False))
         return
     for key in TEMPLATE_KEYS:

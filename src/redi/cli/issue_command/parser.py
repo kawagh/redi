@@ -1,14 +1,14 @@
 import argparse
 
 from redi.api.issue_relation import RELATION_TYPES
-from redi.cli.shared_options import SharedOptionParser
+from redi.cli.shared_options import SharedOptionParser, add_format_options
 from redi.i18n import messages
 
 
 def _issue_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
     """issue の一覧フィルタと出力形式のオプション"""
     parser = SharedOptionParser(postfix=postfix)
-    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    add_format_options(parser)
     parser.add_argument(
         "--project_id", "-p", help=messages.arg_help_issue_filter_project
     )
@@ -65,9 +65,7 @@ def add_issue_parser(
         "--include",
         help=messages.arg_help_issue_include,
     )
-    i_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(i_view_parser)
     i_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
@@ -114,9 +112,7 @@ def add_issue_parser(
         "--custom_fields",
         help=messages.arg_help_custom_fields,
     )
-    i_create_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(i_create_parser)
     i_update_parser = i_subparsers.add_parser(
         "update", aliases=["u"], help=messages.arg_help_issue_update, parents=parents
     )

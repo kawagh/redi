@@ -12,6 +12,7 @@ from redi.cli.editor import open_editor
 from redi.cli.issue_command.create import handle_issue_create
 from redi.cli.issue_command.update import handle_issue_update
 from redi.cli.issue_command.view import list_issues, view_issue
+from redi.cli.shared_options import wants_json
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import issue_service
@@ -74,7 +75,7 @@ def handle_issue(args: argparse.Namespace) -> None:
         view_issue(
             args.issue_id,
             include=args.include or "",
-            full=args.full,
+            full=wants_json(args),
             web=args.web,
         )
     elif cmd == "create":
@@ -115,5 +116,5 @@ def handle_issue(args: argparse.Namespace) -> None:
             query_id=args.query_id,
             limit=args.limit,
             offset=args.offset,
-            full=args.full,
+            full=wants_json(args),
         )

@@ -41,6 +41,7 @@ from redi.cli.issue_command.field_prompt import (
     prompt_start_date,
 )
 from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.shared_options import wants_json
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import issue_service, project_service
@@ -71,7 +72,10 @@ class IssueCreateArgs:
     @classmethod
     def from_namespace(cls, args: argparse.Namespace) -> Self:
         # dest 名がずれていたら AttributeError で気付けるよう getattr は防御しない
-        return cls(**{f.name: getattr(args, f.name) for f in fields(cls)})
+        values = {f.name: getattr(args, f.name) for f in fields(cls)}
+        # --format と --full を出力形式に正規化してから持ち回る
+        values["full"] = wants_json(args)
+        return cls(**values)
 
 
 def _build_create_issue_url(args: IssueCreateArgs) -> str:
