@@ -18,6 +18,8 @@ export default defineConfig({
 			},
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/kawagh/redi' }],
 			customCss: ['./src/styles/custom.css'],
+			editLink: { baseUrl: 'https://github.com/kawagh/redi/edit/develop/site/' },
+			lastUpdated: true,
 			sidebar: [
 				{ label: 'Getting Started', translations: { ja: 'はじめに' }, slug: 'getting-started' },
 				{ label: 'TUI', slug: 'tui' },
