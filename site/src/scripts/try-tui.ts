@@ -47,25 +47,49 @@ const cyan = (s: string) => `${ESC}36m${s}${reset}`;
 const magenta = (s: string) => `${ESC}35m${s}${reset}`;
 const green = (s: string) => `${ESC}32m${s}${reset}`;
 
-/** 表示幅。全角を 2 桁として数える */
+const SGR = /^\x1b\[[0-9;]*m/;
+
+/** 1 文字の表示幅。全角を 2 桁として数える */
+function charWidth(ch: string): number {
+  const c = ch.codePointAt(0) ?? 0;
+  return c >= 0x1100 && (c <= 0x115f || (c >= 0x2e80 && c <= 0xa4cf) || (c >= 0xac00 && c <= 0xd7a3) || (c >= 0xf900 && c <= 0xfaff) || (c >= 0xff00 && c <= 0xff60)) ? 2 : 1;
+}
+
+/** 表示幅。色や装飾のエスケープは 0 桁として扱う */
 function width(s: string): number {
   let w = 0;
-  for (const ch of s) {
-    const c = ch.codePointAt(0) ?? 0;
-    w += c >= 0x1100 && (c <= 0x115f || (c >= 0x2e80 && c <= 0xa4cf) || (c >= 0xac00 && c <= 0xd7a3) || (c >= 0xf900 && c <= 0xfaff) || (c >= 0xff00 && c <= 0xff60)) ? 2 : 1;
+  let i = 0;
+  while (i < s.length) {
+    const m = SGR.exec(s.slice(i));
+    if (m) {
+      i += m[0].length;
+      continue;
+    }
+    const ch = String.fromCodePoint(s.codePointAt(i) ?? 0);
+    w += charWidth(ch);
+    i += ch.length;
   }
   return w;
 }
 
-/** 表示幅で切り詰める */
+/** 表示幅で切り詰める。エスケープは幅に数えず、そのまま残す */
 function clip(s: string, max: number): string {
   let out = "";
   let w = 0;
-  for (const ch of s) {
-    const cw = width(ch);
+  let i = 0;
+  while (i < s.length) {
+    const m = SGR.exec(s.slice(i));
+    if (m) {
+      out += m[0];
+      i += m[0].length;
+      continue;
+    }
+    const ch = String.fromCodePoint(s.codePointAt(i) ?? 0);
+    const cw = charWidth(ch);
     if (w + cw > max) break;
     out += ch;
     w += cw;
+    i += ch.length;
   }
   return out;
 }
@@ -449,7 +473,7 @@ export function createTui(lang: Lang, write: (s: string) => void) {
       const widths = cols.map((c) => Math.max(...c.map(width)) + 2);
       const rows = Math.max(...cols.map((c) => c.length));
       const box: string[] = [];
-      box.push(m.filterCols.map((c, i) => pad(i === s.filterCol ? bold(`[${c}]`) : `[${c}]`, widths[i] + (i === s.filterCol ? 8 : 0))).join(""));
+      box.push(m.filterCols.map((c, i) => pad(i === s.filterCol ? bold(`[${c}]`) : `[${c}]`, widths[i] + 2)).join(""));
       for (let r = 0; r < rows; r++) {
         box.push(cols.map((c, i) => pad(c[r] ? (r === 0 ? `> ${c[r]}` : `  ${c[r]}`) : "", widths[i] + 2)).join(""));
       }
