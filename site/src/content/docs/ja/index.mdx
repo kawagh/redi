@@ -19,11 +19,10 @@ import { Card, CardGrid } from "@astrojs/starlight/components";
 
 <CardGrid>
   <Card title="CLI" icon="seti:powershell">
-    チケット・Wiki・作業時間・ニュースをシェルから読み書きできます。
-    引数が足りなければ対話的に尋ねますが、CI やエージェントから使えるよう
-    引数だけで完結する形も用意しています。
+    対話的 (人向け)、非対話的 (エージェント・CI 向け) なコマンドを提供します
   </Card>
   <Card title="TUI" icon="laptop">
-    `redi --tui` でチケットを閲覧・編集するターミナル UI が開きます。
+    端末上で連続した操作を行う人向けです。
+    チケットの閲覧、作成、更新といった操作が連続して行えます
   </Card>
 </CardGrid>
