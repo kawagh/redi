@@ -1,0 +1,23 @@
+---
+title: TUI playground
+description: redi の TUI をブラウザ上で操作してみる。
+tableOfContents: false
+---
+
+import TryTui from "../../../components/TryTui.astro";
+
+`redi --tui` で開く TUI を模したものを配置しています。
+
+<TryTui lang="ja" />
+
+## 試せること
+
+| キー | |
+| --- | --- |
+| `j` / `k` | 一覧を移動します。右ペインが追従します |
+| `Tab` | イシュー / 作業時間 / Wiki を切り替えます |
+| `/` | 検索します。入力して `Enter`、`Esc` で解除 |
+| `f` | 絞り込みを開きます。`Tab` / `h` `l` で列、`j` `k` で移動、`Enter` で適用、`c` で全クリア |
+| `?` | 現在のタブのヘルプ |
+| `Enter` | Wiki タブでページの本文を読み込みます |
+| `q` | 終了 |

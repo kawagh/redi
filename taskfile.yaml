@@ -18,6 +18,13 @@ tasks:
     desc: format
     cmds:
       - uv run ruff format
+      - task: format:site
+
+  format:site:
+    desc: format site (astro / ts / css)
+    dir: site
+    cmds:
+      - pnpm exec biome format . --write
 
   lint:
     desc: lint
