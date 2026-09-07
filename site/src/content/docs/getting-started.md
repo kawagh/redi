@@ -63,4 +63,4 @@ redi issue view 160   # one issue
 
 - [TUI](/redi/tui/) — tabs and keys
 - [Command Structure](/redi/cli/command-structure/) — the rule every command follows
-- [Agent Skill](/redi/cli/agent-skill/) — the skill for coding agents
+- [Plugin (Agent Skill + Hook)](/redi/cli/agent-skill/) — the plugin for coding agents

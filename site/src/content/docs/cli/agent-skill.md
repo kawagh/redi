@@ -1,23 +1,16 @@
 ---
-title: Agent Skill
+title: Plugin (Agent Skill + Hook)
 description: Let coding agents reach for redi when a task involves Redmine.
 sidebar:
   order: 3
 ---
 
-`redmine-redi` is a skill that tells coding agents (Claude Code, Codex) to use `redi` when a
-task involves Redmine, instead of calling the REST API by hand.
+`redmine-redi` makes coding agents (Claude Code, Codex) use `redi` for Redmine work.
 
-It ships two ways: as a **plugin**, which adds a hook that keeps agents out of
-`~/.config/redi/config.toml`, or as the **skill on its own**.
+It bundles an **Agent Skill** that teaches agents how to use `redi`, and a **`PreToolUse`
+hook** that denies direct reads of the config file.
 
-Installing at user scope is what I recommend.
-
-## Install as a plugin
-
-The plugin bundles the skill with a `PreToolUse` hook. When an agent tries to open
-`~/.config/redi/config.toml` — which holds your API keys — the hook denies the call and
-points it at `redi config` instead, so the keys stay out of the conversation log.
+## Install Plugin (Recommended)
 
 ```sh
 # Claude Code
@@ -29,7 +22,7 @@ codex plugin marketplace add kawagh/redi
 codex plugin add redmine-redi@redi
 ```
 
-## Install the skill on its own
+## Install Skill
 
 The hook does not come along, so the skill only asks the agent not to read the config file.
 
