@@ -308,7 +308,8 @@ export function createTui(lang: Lang, write: (s: string) => void) {
     const rows = ROWS - 4;
     for (let i = 0; i < rows; i++) {
       const l = pad(left[i] ?? "", LEFT);
-      const r = right[i] ?? "";
+      // COLS を超えると端末が折り返し、画面が 1 行ずつずれてスクロールする
+      const r = clip(right[i] ?? "", COLS - LEFT - 1);
       out.push(`${l}│${r}`);
     }
     return out;
@@ -369,7 +370,7 @@ export function createTui(lang: Lang, write: (s: string) => void) {
       right.push(row(f.project, "redi demo (id=1)"));
       right.push(row(f.user, "Redmine Admin (id=1)"));
       right.push(row(f.activity, cur.activity));
-      right.push(row(f.issue, clip(`#${cur.issueId} ${cur.issueSubject}`, COLS - LEFT - 14)));
+      right.push(row(f.issue, clip(`#${cur.issueId} ${cur.issueSubject}`, COLS - LEFT - w - 4)));
       right.push(row(f.created, "2026-09-07T06:00:46Z"));
       right.push(row(f.updated, "2026-09-07T06:00:46Z"));
       right.push("");
