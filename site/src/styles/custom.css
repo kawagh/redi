@@ -1,0 +1,12 @@
+/* アクセントカラーを赤基調にする (Starlight デフォルトは青系の hue 224/234) */
+:root {
+	--sl-color-accent-low: hsl(0, 45%, 20%);
+	--sl-color-accent: hsl(0, 72%, 50%);
+	--sl-color-accent-high: hsl(0, 90%, 82%);
+}
+
+:root[data-theme='light'] {
+	--sl-color-accent-high: hsl(0, 70%, 30%);
+	--sl-color-accent: hsl(0, 78%, 42%);
+	--sl-color-accent-low: hsl(0, 85%, 92%);
+}

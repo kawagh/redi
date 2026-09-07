@@ -17,6 +17,7 @@ export default defineConfig({
 				ja: { label: '日本語' },
 			},
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/kawagh/redi' }],
+			customCss: ['./src/styles/custom.css'],
 			sidebar: [
 				{ label: 'Getting Started', translations: { ja: 'はじめに' }, slug: 'getting-started' },
 				{ label: 'TUI', slug: 'tui' },
