@@ -22,18 +22,9 @@ and the project you are looking at.
 
 ![Issue list](/redi/img/tui-issues-en.png)
 
-The list is on the left and the selected issue on the right — status, priority, tracker,
-assignee, progress, spent hours and the description. Moving with `j` / `k` updates the right
-pane as you go, so you can skim a list without opening anything.
-
-The status bar shows the page you are on and how many issues matched.
-
 ### Time entries
 
 ![Time entries](/redi/img/tui-time-entries-en.png)
-
-Hours logged in the project, newest first. The right pane shows which issue an entry belongs
-to, so you can tell what the time was spent on without leaving the tab.
 
 ### Wiki
 
