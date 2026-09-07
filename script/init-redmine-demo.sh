@@ -1,8 +1,7 @@
 #!/bin/bash
 set -e
 
-# デモ用の Redmine を作り直し、英語版 (redidemo-en) と日本語版 (redidemo-ja) の
-# 2 プロジェクトにダミーデータを投入する。
+# デモ用の Redmine を英語版 / 日本語版それぞれ作り直し、ダミーデータを投入する。
 # vhs での収録は --profile demo_en / demo_ja を切り替えて行う。
 
 # 言語ごとに Redmine インスタンスを分ける。ステータス/トラッカー/優先度は
@@ -62,17 +61,16 @@ setup_profile demo_en "http://localhost:3002" "$EN_KEY" en
 setup_profile demo_ja "http://localhost:3003" "$JA_KEY" ja
 uv run redi config update --default_profile demo_en
 
-# 作成したイシューの ID を拾う。メッセージは言語で変わるので最初の数値を取る。
+# 作成したイシューの ID を JSON から取る。
 create_issue() {
     local profile="$1"
     shift
-    uv run redi issue create --profile "$profile" "$@" | grep -oE '[0-9]+' | head -1
+    uv run redi issue create --profile "$profile" --format json "$@" | jq -r '.id'
 }
 
 # 作業時間の活動 ID は環境依存なのでインスタンスごとに一覧の先頭を使う
 activity_id_of() {
-    uv run redi time_entry_activity list --profile "$1" --format json |
-        python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["id"])'
+    uv run redi time_entry_activity list --profile "$1" --format json | jq -r '.[0].id'
 }
 
 # ---------------------------------------------------------------- 英語データ
