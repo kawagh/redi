@@ -11,6 +11,9 @@ importers:
       '@astrojs/starlight':
         specifier: ^0.42.0
         version: 0.42.0(astro@7.3.1(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@24.13.3))
+      '@wterm/dom':
+        specifier: ^0.5.0
+        version: 0.5.0
       astro:
         specifier: ^7.2.10
         version: 7.3.1(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@24.13.3)
@@ -771,6 +774,12 @@ packages:
 
   '@ungap/structured-clone@1.4.0':
     resolution: {integrity: sha512-1mEZtMKPM09vDmQt5y7YvmN2+DFTP7Tg0EWXdic8/C6VRnpb33e4ghisCIE3WZjsE2N8mf+QV1Zqh7ZFYLWInQ==}
+
+  '@wterm/core@0.5.0':
+    resolution: {integrity: sha512-2bodU1AK0GmDghJ/GpkQ1v2YHC6j8CI4utXFI6NBPDJ3sU5lvzRYBAEm9fUVOCN2Gjs6fug/+6XRDtWre9lYMA==}
+
+  '@wterm/dom@0.5.0':
+    resolution: {integrity: sha512-vMIaca+p6uytiIL86Dxu7lFsx2eiOmg4JnL/rCnwdapAoPuVEVV24SyecdaoQXSaQg8HoAx4misKT73goYRWHQ==}
 
   am-i-vibing@0.4.0:
     resolution: {integrity: sha512-MxT4XZL7pzLHpuvhDKdMaQHMGGkJDLluKBLsbstn+8wv9sWcFT6h+0ve9qkml95amVTZtZV83gQe2hY+ojgHLg==}
@@ -2295,6 +2304,12 @@ snapshots:
   '@types/unist@3.0.3': {}
 
   '@ungap/structured-clone@1.4.0': {}
+
+  '@wterm/core@0.5.0': {}
+
+  '@wterm/dom@0.5.0':
+    dependencies:
+      '@wterm/core': 0.5.0
 
   am-i-vibing@0.4.0:
     dependencies:

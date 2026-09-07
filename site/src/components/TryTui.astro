@@ -1,0 +1,105 @@
+---
+/**
+ * ブラウザ上で redi の TUI を触れるようにする。
+ *
+ * redi 本体は Python + Redmine API なのでブラウザでは動かない。ここでは
+ * `task demo:site` で使っているデモデータと同じ内容を持ち、画面の描画とキー操作だけを
+ * 再現している。実物と違う点は下の注意書きに出す。
+ */
+const { lang = "en" } = Astro.props;
+
+const t = {
+  en: {
+    hint: "Click the terminal and try <kbd>j</kbd> <kbd>k</kbd> <kbd>Tab</kbd> <kbd>/</kbd> <kbd>f</kbd> <kbd>?</kbd>",
+    note: "A reproduction of the screen, not redi itself. Editing and anything that talks to a server is left out.",
+    reset: "Reset",
+  },
+  ja: {
+    hint: "ターミナルをクリックして <kbd>j</kbd> <kbd>k</kbd> <kbd>Tab</kbd> <kbd>/</kbd> <kbd>f</kbd> <kbd>?</kbd> を押してみてください",
+    note: "画面の再現であって redi 本体ではありません。編集やサーバとの通信は含みません。",
+    reset: "リセット",
+  },
+}[lang];
+---
+
+<div class="try-tui">
+  <p class="try-tui__hint" set:html={t.hint} />
+  <div class="try-tui__term" id="try-tui-term" data-lang={lang}></div>
+  <p class="try-tui__note">
+    {t.note}
+    <button class="try-tui__reset" id="try-tui-reset">{t.reset}</button>
+  </p>
+</div>
+
+<style>
+  .try-tui {
+    margin: 1.5rem 0;
+  }
+  .try-tui .try-tui__term {
+    /* wterm の .wterm より詳細度を上げないと CSS 変数を上書きできない。
+       Starlight の本文用 line-height が効くと行が伸びて画面が切れるのも防ぐ */
+    --term-font-size: 12px;
+    --term-line-height: 1.25;
+    --term-row-height: 15px;
+    line-height: 1.25;
+    /* wterm は rows から高さを決めるが、Starlight のレイアウト下では縮むので明示する
+       (row-height 15px x 24 行 + .wterm の padding 12px x 2) */
+    height: calc(15px * 24 + 24px);
+    border-radius: 0.5rem;
+  }
+  .try-tui .try-tui__term :global(.term-grid) {
+    line-height: 1.25;
+  }
+  /* Starlight が本文の隣接要素に付ける margin-top が端末の各行に効いて
+     行間が倍になるため打ち消す */
+  .try-tui .try-tui__term :global(.term-grid > *) {
+    margin: 0 !important;
+  }
+  .try-tui__hint,
+  .try-tui__note {
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-3);
+    margin: 0.5rem 0;
+  }
+  .try-tui__hint kbd {
+    background: var(--sl-color-gray-6);
+    border-radius: 0.25rem;
+    padding: 0.1em 0.4em;
+    font-size: 0.9em;
+  }
+  .try-tui__reset {
+    margin-inline-start: 0.5rem;
+    font-size: inherit;
+    color: var(--sl-color-text-accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+</style>
+
+<script>
+  import { WTerm } from "@wterm/dom";
+  import "@wterm/dom/css";
+  import { createTui } from "../scripts/try-tui";
+
+  const el = document.getElementById("try-tui-term");
+  if (el) {
+    const lang = el.dataset.lang === "ja" ? "ja" : "en";
+    const term = new WTerm(el, {
+      cols: 100,
+      rows: 24,
+      autoResize: false,
+      onData: (data) => tui.handleInput(data),
+    });
+    const tui = createTui(lang, (screen) => term.write(screen));
+    await term.init();
+    tui.render();
+    term.focus();
+
+    document.getElementById("try-tui-reset")?.addEventListener("click", () => {
+      tui.reset();
+      term.focus();
+    });
+  }
+</script>
