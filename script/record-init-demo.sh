@@ -13,6 +13,9 @@ WORK=$(mktemp -d)
 BACKUP="$WORK/config.toml.bak"
 had_config=
 
+# 退避を終えるまでは config.toml に触れない。ここで失敗しても消さないため。
+trap 'rm -rf "$WORK"' EXIT
+
 restore_config() {
     if [ -n "$had_config" ]; then
         mkdir -p "$(dirname "$CONFIG")"
@@ -22,7 +25,6 @@ restore_config() {
     fi
     rm -rf "$WORK"
 }
-trap restore_config EXIT
 
 api_key_of() {
     uv run python -c "
@@ -40,6 +42,7 @@ if [ -f "$CONFIG" ]; then
     cp "$CONFIG" "$BACKUP"
     had_config=1
 fi
+trap restore_config EXIT
 
 for lang in en ja; do
     key_var="${lang^^}_KEY"
