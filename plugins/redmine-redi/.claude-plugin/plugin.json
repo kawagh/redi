@@ -1,0 +1,15 @@
+{
+  "name": "redmine-redi",
+  "description": "Use the redi CLI for Redmine work, and block direct reads of ~/.config/redi/config.toml",
+  "version": "0.0.77",
+  "author": {
+    "name": "kawagh",
+    "url": "https://github.com/kawagh"
+  },
+  "homepage": "https://kawagh.github.io/redi/",
+  "repository": "https://github.com/kawagh/redi",
+  "license": "MIT",
+  "keywords": ["redmine", "redi", "redtile", "issue", "wiki"],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json"
+}

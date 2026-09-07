@@ -1,0 +1,17 @@
+{
+  "plugins": [
+    {
+      "name": "redmine-redi",
+      "description": "Use the redi CLI for Redmine work, and block direct reads of ~/.config/redi/config.toml",
+      "source": {
+        "source": "local",
+        "path": "./plugins/redmine-redi"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
