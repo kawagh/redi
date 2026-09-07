@@ -30,7 +30,7 @@ type TimeEntry = {
 
 type WikiPage = { title: string; body: string[] };
 
-const COLS = 92;
+const COLS = 96;
 const ROWS = 24;
 const LEFT = 50; // 左ペインの幅。区切り線の位置
 
@@ -483,7 +483,7 @@ export function createTui(lang: Lang, write: (s: string) => void) {
     }
     // 2J だけだと消した内容がスクロールバックに積まれてグリッドが伸び続けるため、
     // 3J (Erase Saved Lines) でスクロールバックごと消してから描き直す
-    write(`${reset}${ESC}2J${ESC}3J${ESC}H` + lines.join("\r\n") + reset);
+    write(`${reset}${ESC}?25l${ESC}2J${ESC}3J${ESC}H` + lines.join("\r\n") + reset);
   }
 
   function move(delta: number) {

@@ -87,7 +87,7 @@ const t = {
   if (el) {
     const lang = el.dataset.lang === "ja" ? "ja" : "en";
     const term = new WTerm(el, {
-      cols: 100,
+      cols: 96,
       rows: 24,
       autoResize: false,
       onData: (data) => tui.handleInput(data),
