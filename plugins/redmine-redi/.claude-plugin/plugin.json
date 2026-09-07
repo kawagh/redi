@@ -9,7 +9,13 @@
   "homepage": "https://kawagh.github.io/redi/",
   "repository": "https://github.com/kawagh/redi",
   "license": "MIT",
-  "keywords": ["redmine", "redi", "redtile", "issue", "wiki"],
+  "keywords": [
+    "redmine",
+    "redi",
+    "redtile",
+    "issue",
+    "wiki"
+  ],
   "skills": "./skills/",
   "hooks": "./hooks/hooks.json"
 }
