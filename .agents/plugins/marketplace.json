@@ -1,4 +1,5 @@
 {
+  "name": "redi",
   "plugins": [
     {
       "name": "redmine-redi",
