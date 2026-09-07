@@ -29,8 +29,11 @@ redi --version
 redi init
 ```
 
-It asks for the language (`en` / `ja`), then the Redmine URL and API key, **checks that they work**, and writes a profile to `~/.config/redi/config.toml`. If it
-finishes without complaining, you are connected.
+![redi init](/redi/img/init-en.gif)
+
+It asks for the language (`en` / `ja`), then the Redmine URL and API key. The key is not
+echoed. It then **checks that the connection works**, lists the projects it found so you can
+pick the default one, and writes a profile to `~/.config/redi/config.toml`.
 
 The API key is under **My account → API access key** in Redmine. If it is not there, an
 administrator has to enable the REST API under **Administration → Settings → API**.

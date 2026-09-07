@@ -90,10 +90,12 @@ tasks:
       TUI の GIF / 静止画を生成する
       ./doc/tape/tui-en.tape -> ./site/public/img/*-en.{gif,png}
       ./doc/tape/tui-ja.tape -> ./site/public/img/*-ja.{gif,png}
+      ./doc/tape/init-*.tape.template -> ./site/public/img/init-*.gif
     cmds:
       - bash ./script/init-redmine-demo.sh
       - vhs ./doc/tape/tui-en.tape
       - vhs ./doc/tape/tui-ja.tape
+      - bash ./script/record-init-demo.sh
 
   rulesync:
     desc: sync skills

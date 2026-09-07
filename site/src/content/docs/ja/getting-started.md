@@ -29,9 +29,11 @@ redi --version
 redi init
 ```
 
-言語 (`en` / `ja`) を尋ねたあと Redmine の URL と API キーを聞き、
-**疎通を確認してから** `~/.config/redi/config.toml` にプロファイルを書き込みます。
-何も言われずに終われば接続できています。
+![redi init](/redi/img/init-ja.gif)
+
+言語 (`en` / `ja`) を尋ねたあと Redmine の URL と API キーを聞きます。キーは画面に
+表示されません。続けて**疎通を確認**し、見つかったプロジェクトを一覧から選ばせたうえで
+`~/.config/redi/config.toml` にプロファイルを書き込みます。
 
 API キーは Redmine の**個人設定 → API アクセスキー**にあります。見当たらない場合は
 REST API が無効なので、管理者が**管理 → 設定 → API** から有効にします。
