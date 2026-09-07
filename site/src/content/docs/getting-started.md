@@ -6,7 +6,7 @@ description: Install redi, connect it to a Redmine instance, and open the TUI.
 `redi` is a TUI/CLI tool for Redmine. It wraps the REST API and offers a TUI for people
 working at a terminal, and a CLI that people and programs (agents, scripts) can both run.
 
-![redi TUI](https://raw.githubusercontent.com/kawagh/redi/main/doc/demo.gif)
+![redi TUI](/redi/img/demo.gif)
 
 ## Install
 

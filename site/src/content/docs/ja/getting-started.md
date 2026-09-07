@@ -6,7 +6,7 @@ description: redi をインストールし、Redmine につないで TUI を開�
 `redi` は Redmine の TUI/CLI ツールです。REST API をラップし、ターミナルを操作する人向けの
 TUI と、人／プログラム (エージェント、スクリプト) のいずれもが実行できる CLI を提供します。
 
-![redi の TUI](https://raw.githubusercontent.com/kawagh/redi/main/doc/demo.gif)
+![redi の TUI](/redi/img/demo.gif)
 
 ## インストール
 
