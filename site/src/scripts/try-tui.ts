@@ -30,6 +30,9 @@ type TimeEntry = {
 
 type WikiPage = { title: string; body: string[] };
 
+/** フィルタの選択肢。`[Redmine API に渡す値, 表示ラベル]` で、実物の choices と同じ形 */
+type Choice = [string | null, string];
+
 const COLS = 96;
 const ROWS = 24;
 const LEFT = 50; // 左ペインの幅。区切り線の位置
@@ -181,15 +184,25 @@ const L = {
     statusIssues: "jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit",
     statusWiki: "jk:move /:search p:project c:create u:update D:delete v:web ?:help q:quit",
     page: (a: number, b: number, n: number) => `Page 1/1 (${a}-${b} / ${n})`,
-    userFilter: "[user=me]",
     helpTitle: "Help - Issues tab (any key to close)",
     filterTitle: "Filter (Esc/f to close)",
+    filterTitleTe: "Filter user (Esc/f to close)",
     filterCols: ["Status", "Assignee", "Tracker", "Query"],
+    filterUserCol: "User",
     filterHelp: "Tab/h/l:column jk:move Enter:apply c:clear all Esc/f:close",
-    filterStatus: ["* open (default)", "all (open + closed)", "closed only", "New", "In Progress", "Resolved", "Feedback", "Closed", "Rejected"],
-    filterAssignee: ["* (unspecified)", "me", "unassigned"],
-    filterTracker: ["* (unspecified)", "Bug", "Feature", "Support"],
-    filterQuery: ["* (unspecified)", "Issues assigned to me", "Reported issues", "Updated issues", "Watched issues"],
+    filterHelpSingle: "jk:move Enter:apply c:clear Esc/f:close",
+    filterStatus: [[null, "open (default)"], ["*", "all (open + closed)"], ["closed", "closed only"], ["1", "New"], ["2", "In Progress"], ["3", "Resolved"], ["4", "Feedback"], ["5", "Closed"], ["6", "Rejected"]] as Choice[],
+    filterAssignee: [[null, "(unspecified)"], ["me", "me"], ["!*", "unassigned"]] as Choice[],
+    filterTracker: [[null, "(unspecified)"], ["1", "Bug"], ["2", "Feature"], ["3", "Support"]] as Choice[],
+    filterQuery: [[null, "(unspecified)"], ["1", "Open bugs"], ["2", "High priority"], ["3", "Not started"]] as Choice[],
+    filterUser: [[null, "(unspecified)"], ["me", "me"]] as Choice[],
+    // クエリの中身は Redmine の保存済みクエリなので、デモ用に用意した 3 件を再現する
+    queryMatch: {
+      "1": (i: Issue) => i.tracker === "Bug" && !i.closed,
+      "2": (i: Issue) => i.priority === "Urgent" || i.priority === "High",
+      "3": (i: Issue) => i.progress === 0 && !i.closed,
+    } as Record<string, (i: Issue) => boolean>,
+    flashFindCleared: "Cleared the search and switched to filters",
     quit: "Thanks for trying it. Press r or click Reset to start over.",
     help: [
       ["Navigation", ""],
@@ -218,15 +231,25 @@ const L = {
     statusIssues: "jk:移動 /:検索 f:フィルタ p:プロジェクト c:作成 u:更新 v:web ?:ヘルプ q:終了",
     statusWiki: "jk:移動 /:検索 p:プロジェクト c:作成 u:更新 D:削除 v:web ?:ヘルプ q:終了",
     page: (a: number, b: number, n: number) => `Page 1/1 (${a}-${b} / ${n})`,
-    userFilter: "[user=me]",
     helpTitle: "ヘルプ - イシュータブ (任意のキーで閉じる)",
     filterTitle: "フィルタ (Esc/f で閉じる)",
+    filterTitleTe: "ユーザーでフィルタ (Esc/f で閉じる)",
     filterCols: ["ステータス", "担当者", "トラッカー", "クエリ"],
+    filterUserCol: "ユーザー",
     filterHelp: "Tab/h/l:列切替 jk:移動 Enter:適用 c:全クリア Esc/f:閉じる",
-    filterStatus: ["* open (デフォルト)", "全て (open + closed)", "closed のみ", "新規", "進行中", "解決", "フィードバック", "終了", "却下"],
-    filterAssignee: ["* (指定なし)", "自分", "未割当"],
-    filterTracker: ["* (指定なし)", "バグ", "機能", "サポート"],
-    filterQuery: ["* (指定なし)", "ウォッチしているチケット", "報告したチケット", "担当しているチケット", "更新したチケット"],
+    filterHelpSingle: "jk:移動 Enter:適用 c:クリア Esc/f:閉じる",
+    filterStatus: [[null, "open (デフォルト)"], ["*", "全て (open + closed)"], ["closed", "closed のみ"], ["1", "新規"], ["2", "進行中"], ["3", "解決"], ["4", "フィードバック"], ["5", "終了"], ["6", "却下"]] as Choice[],
+    filterAssignee: [[null, "(指定なし)"], ["me", "自分"], ["!*", "未割当"]] as Choice[],
+    filterTracker: [[null, "(指定なし)"], ["1", "バグ"], ["2", "機能"], ["3", "サポート"]] as Choice[],
+    filterQuery: [[null, "(指定なし)"], ["1", "未解決のバグ"], ["2", "優先度が高いもの"], ["3", "未着手"]] as Choice[],
+    filterUser: [[null, "(指定なし)"], ["me", "自分"]] as Choice[],
+    // クエリの中身は Redmine の保存済みクエリなので、デモ用に用意した 3 件を再現する
+    queryMatch: {
+      "1": (i: Issue) => i.tracker === "バグ" && !i.closed,
+      "2": (i: Issue) => i.priority === "急いで" || i.priority === "高め",
+      "3": (i: Issue) => i.progress === 0 && !i.closed,
+    } as Record<string, (i: Issue) => boolean>,
+    flashFindCleared: "検索を解除してフィルタに切り替えました",
     quit: "お試しありがとうございます。r かリセットでやり直せます。",
     help: [
       ["Navigation", ""],
@@ -255,11 +278,22 @@ export function createTui(lang: Lang, write: (s: string) => void) {
   const wiki = lang === "ja" ? WIKI_JA : WIKI_EN;
   const m = L[lang];
 
+  const filterChoices = [m.filterStatus, m.filterAssignee, m.filterTracker, m.filterQuery];
+  const FILTER_KEYS = ["status", "assignee", "tracker"];
+
   const initial = () => ({
     tab: 0,
     cursor: [0, 0, 0],
-    modal: null as null | "help" | "filter",
+    modal: null as null | "help" | "filter" | "teFilter",
     filterCol: 0,
+    // status / assignee / tracker / query それぞれで適用中の選択肢の index
+    filter: [0, 0, 0, 0],
+    // 各列のカーソル行。適用済みの行とは別に動く
+    filterCursor: [0, 0, 0, 0],
+    // 作業時間タブの user フィルタ。実物と同じく既定は「自分」
+    teFilter: 1,
+    teCursor: 1,
+    flash: null as null | string,
     search: null as null | string,
     searching: false,
     wikiLoaded: false,
@@ -269,11 +303,63 @@ export function createTui(lang: Lang, write: (s: string) => void) {
   let s = initial();
 
   const visibleIssues = () => {
-    const open = issues.filter((i) => !i.closed);
-    if (!s.search) return open;
+    const [status, assignee, tracker, query] = filterChoices.map((c, i) => c[s.filter[i]]);
+    let list = issues;
+    if (query[0] !== null) {
+      // クエリはカスタムクエリ側の条件だけで決まる。status/assignee/tracker は apply で外れている
+      list = list.filter(m.queryMatch[query[0]]);
+    } else {
+      if (status[0] === null) list = list.filter((i) => !i.closed);
+      else if (status[0] === "closed") list = list.filter((i) => i.closed);
+      else if (status[0] !== "*") list = list.filter((i) => i.status === status[1]);
+      // デモのイシューには担当者が付いていないので、me は 0 件、未割当は全件になる
+      if (assignee[0] === "me") list = [];
+      if (tracker[0] !== null) list = list.filter((i) => i.tracker === tracker[1]);
+    }
+    if (!s.search) return list;
     const q = s.search.toLowerCase();
-    return open.filter((i) => i.subject.toLowerCase().includes(q));
+    return list.filter((i) => i.subject.toLowerCase().includes(q));
   };
+
+  /** フィルタ modal で選ばれた 1 項目を反映する */
+  function applyFilter(col: number, idx: number) {
+    s.filter[col] = idx;
+    if (filterChoices[col][idx][0] !== null) {
+      // クエリと status/assignee/tracker は Redmine 側で両立しないため排他にする
+      if (col === 3) s.filter[0] = s.filter[1] = s.filter[2] = 0;
+      else s.filter[3] = 0;
+    }
+    // 排他で外れた列のカーソルが `*` からずれないよう、適用のたびに合わせ直す
+    s.filterCursor = [...s.filter];
+    clearSearchForFilter();
+    s.cursor[0] = 0;
+  }
+
+  function clearFilter() {
+    s.filter = [0, 0, 0, 0];
+    s.filterCursor = [0, 0, 0, 0];
+    clearSearchForFilter();
+    s.cursor[0] = 0;
+  }
+
+  /** 検索中はフィルタを触っても一覧が変わらないので、最後に触った方を有効にする */
+  function clearSearchForFilter() {
+    if (!s.search) return;
+    s.search = null;
+    s.flash = m.flashFindCleared;
+  }
+
+  /** ステータスラインに出す絞り込みの要約 */
+  function filterLabel(): string {
+    const query = m.filterQuery[s.filter[3]];
+    if (query[0] !== null) return `query=${query[1]}`;
+    const parts: string[] = [];
+    FILTER_KEYS.forEach((key, i) => {
+      const c = filterChoices[i][s.filter[i]];
+      if (c[0] !== null) parts.push(`${key}=${c[1]}`);
+    });
+    return parts.join(" ");
+  }
 
   function highlight(text: string): string {
     if (!s.search) return text;
@@ -410,14 +496,19 @@ export function createTui(lang: Lang, write: (s: string) => void) {
   }
 
   function statusBar(): string {
+    if (s.flash) return bold(clip(` ${s.flash} `, COLS));
     if (s.searching) return bold(clip(`/${s.search ?? ""}`, COLS));
     if (s.tab === 0) {
       const list = visibleIssues();
       const page = list.length ? m.page(1, list.length, list.length) : m.page(0, 0, 0);
-      return dim(clip(` ${page}  ${m.statusIssues}`, COLS));
+      const label = filterLabel();
+      const hint = ` ${page}  ${m.statusIssues}`;
+      return dim(clip(label ? ` [${label}]${hint}` : hint, COLS));
     }
     if (s.tab === 1) {
-      return dim(clip(` ${m.userFilter} ${m.page(1, entries.length, entries.length)}  ${m.statusIssues}`, COLS));
+      const user = m.filterUser[s.teFilter];
+      const hint = ` ${m.page(1, entries.length, entries.length)}  ${m.statusIssues}`;
+      return dim(clip(user[0] !== null ? ` [user=${user[1]}]${hint}` : hint, COLS));
     }
     return dim(clip(` ${m.statusWiki}`, COLS));
   }
@@ -436,6 +527,42 @@ export function createTui(lang: Lang, write: (s: string) => void) {
     return out;
   }
 
+  /** 選択肢 1 行。`>` がカーソル、`*` が適用中を示す */
+  function choiceLine(label: string, cursor: boolean, active: boolean): string {
+    const line = ` ${cursor ? ">" : " "} ${active ? "*" : " "} ${label}`;
+    if (cursor) return invert(line);
+    return active ? bold(line) : line;
+  }
+
+  /** フィルタ modal の中身。4 列を横に並べる */
+  function filterBox(): string[] {
+    const cols = filterChoices.map((choices, i) => {
+      const focused = i === s.filterCol;
+      const head = `[${m.filterCols[i]}]`;
+      const rows = choices.map(([, label], r) =>
+        choiceLine(label, focused && r === s.filterCursor[i], r === s.filter[i]),
+      );
+      return [focused ? bold(cyan(head)) : bold(head), ...rows];
+    });
+    const widths = cols.map((c) => Math.max(...c.map(width)));
+    const height = Math.max(...cols.map((c) => c.length));
+    const box: string[] = [];
+    for (let r = 0; r < height; r++) {
+      box.push(cols.map((c, i) => pad(c[r] ?? "", widths[i])).join(" │ "));
+    }
+    box.push("");
+    box.push(m.filterHelp);
+    return box;
+  }
+
+  /** 作業時間タブのフィルタ modal の中身。列はユーザーだけ */
+  function teFilterBox(): string[] {
+    const rows = m.filterUser.map(([, label], r) =>
+      choiceLine(label, r === s.teCursor, r === s.teFilter),
+    );
+    return [bold(cyan(`[${m.filterUserCol}]`)), ...rows, "", m.filterHelpSingle];
+  }
+
   /** モーダルを画面の上に重ねる */
   function overlay(lines: string[], box: string[], title: string, top: number, left: number): string[] {
     const inner = Math.max(...box.map(width), width(title) + 4);
@@ -450,7 +577,10 @@ export function createTui(lang: Lang, write: (s: string) => void) {
       // ANSI を含む行に重ねると崩れるので、モーダル行は素の文字で作り直す
       const plain = stripAnsi(base);
       const before = pad(clip(plain, left), left);
-      const after = plain.length > left + width(row) ? clip(plain.slice(left + row.length), COLS - left - width(row)) : "";
+      // モーダルが覆う範囲は表示幅で切り出す。全角があると文字数とずれるので
+      // slice の位置は clip した結果の長さから取る
+      const covered = clip(plain, left + width(row));
+      const after = clip(plain.slice(covered.length), COLS - left - width(row));
       out[y] = before + row + after;
     });
     return out;
@@ -470,17 +600,9 @@ export function createTui(lang: Lang, write: (s: string) => void) {
       const box = m.help.map(([k, v]) => (v ? `${pad(k, w)}  ${v}` : k ? bold(k) : ""));
       lines = overlay(lines, box, ` ${m.helpTitle} `, 2, 8);
     } else if (s.modal === "filter") {
-      const cols = [m.filterStatus, m.filterAssignee, m.filterTracker, m.filterQuery];
-      const widths = cols.map((c) => Math.max(...c.map(width)) + 2);
-      const rows = Math.max(...cols.map((c) => c.length));
-      const box: string[] = [];
-      box.push(m.filterCols.map((c, i) => pad(i === s.filterCol ? bold(`[${c}]`) : `[${c}]`, widths[i] + 2)).join(""));
-      for (let r = 0; r < rows; r++) {
-        box.push(cols.map((c, i) => pad(c[r] ? (r === 0 ? `> ${c[r]}` : `  ${c[r]}`) : "", widths[i] + 2)).join(""));
-      }
-      box.push("");
-      box.push(m.filterHelp);
-      lines = overlay(lines, box, ` ${m.filterTitle} `, 3, 4);
+      lines = overlay(lines, filterBox(), ` ${m.filterTitle} `, 3, 4);
+    } else if (s.modal === "teFilter") {
+      lines = overlay(lines, teFilterBox(), ` ${m.filterTitleTe} `, 3, 4);
     }
     // 2J だけだと消した内容がスクロールバックに積まれてグリッドが伸び続けるため、
     // 3J (Erase Saved Lines) でスクロールバックごと消してから描き直す
@@ -512,13 +634,31 @@ export function createTui(lang: Lang, write: (s: string) => void) {
 
     if (s.modal === "help") { s.modal = null; render(); return; }
     if (s.modal === "filter") {
-      if (data === "\x1b" || data === "f" || data === "\r") s.modal = null;
-      else if (data === "\t" || data === "l") s.filterCol = (s.filterCol + 1) % 4;
-      else if (data === "h") s.filterCol = (s.filterCol + 3) % 4;
+      const col = s.filterCol;
+      const last = filterChoices[col].length - 1;
+      if (data === "\x1b" || data === "f" || data === "q") s.modal = null;
+      else if (data === "\t" || data === "l" || data === "\x1b[C") s.filterCol = (col + 1) % 4;
+      else if (data === "\x1b[Z" || data === "h" || data === "\x1b[D") s.filterCol = (col + 3) % 4;
+      else if (data === "j" || data === "\x1b[B" || data === "\x0e") s.filterCursor[col] = Math.min(last, s.filterCursor[col] + 1);
+      else if (data === "k" || data === "\x1b[A" || data === "\x10") s.filterCursor[col] = Math.max(0, s.filterCursor[col] - 1);
+      // 実物と同じく、適用しても modal は開いたままにして続けて絞り込めるようにする
+      else if (data === "\r" || data === "\n") applyFilter(col, s.filterCursor[col]);
+      else if (data === "c") clearFilter();
+      render();
+      return;
+    }
+    if (s.modal === "teFilter") {
+      const last = m.filterUser.length - 1;
+      if (data === "\x1b" || data === "f" || data === "q") s.modal = null;
+      else if (data === "j" || data === "\x1b[B" || data === "\x0e") s.teCursor = Math.min(last, s.teCursor + 1);
+      else if (data === "k" || data === "\x1b[A" || data === "\x10") s.teCursor = Math.max(0, s.teCursor - 1);
+      else if (data === "\r" || data === "\n") { s.teFilter = s.teCursor; s.modal = null; }
+      else if (data === "c") { s.teFilter = 0; s.teCursor = 0; }
       render();
       return;
     }
 
+    s.flash = null;
     switch (data) {
       case "j": case "\x1b[B": case "\x0e": move(1); break;
       case "k": case "\x1b[A": case "\x10": move(-1); break;
@@ -530,7 +670,11 @@ export function createTui(lang: Lang, write: (s: string) => void) {
       case "\t": s.tab = (s.tab + 1) % 3; s.wikiLoaded = false; break;
       case "\x1b[Z": s.tab = (s.tab + 2) % 3; s.wikiLoaded = false; break;
       case "?": s.modal = "help"; break;
-      case "f": if (s.tab !== 2) s.modal = "filter"; break;
+      case "f":
+        // 開くたびにカーソルを適用中の行へ合わせ、focus を先頭の列に戻す
+        if (s.tab === 0) { s.modal = "filter"; s.filterCol = 0; s.filterCursor = [...s.filter]; }
+        else if (s.tab === 1) { s.modal = "teFilter"; s.teCursor = s.teFilter; }
+        break;
       case "/": s.searching = true; s.search = ""; break;
       case "\x1b": s.search = null; break;
       case "\r": case "\n": if (s.tab === 2) s.wikiLoaded = true; break;
