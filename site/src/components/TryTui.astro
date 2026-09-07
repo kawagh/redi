@@ -10,7 +10,10 @@ const { lang = "en" } = Astro.props;
 
 // 他のページのリンクと同じく base 込みで書く。見出しの id は Starlight が
 // 見出しテキストから作るので、日本語ページはそのまま日本語になる
-const install = lang === "ja" ? "/redi/ja/getting-started/#インストール" : "/redi/getting-started/#install";
+const install =
+  lang === "ja"
+    ? "/redi/ja/getting-started/#インストール"
+    : "/redi/getting-started/#install";
 
 const t = {
   en: {
@@ -36,74 +39,74 @@ const t = {
 </div>
 
 <style>
-  .try-tui {
-    margin: 1.5rem 0;
-  }
-  .try-tui .try-tui__term {
-    /* wterm の .wterm より詳細度を上げないと CSS 変数を上書きできない。
+.try-tui {
+  margin: 1.5rem 0;
+}
+.try-tui .try-tui__term {
+  /* wterm の .wterm より詳細度を上げないと CSS 変数を上書きできない。
        Starlight の本文用 line-height が効くと行が伸びて画面が切れるのも防ぐ */
-    --term-font-size: 12px;
-    --term-line-height: 1.25;
-    --term-row-height: 15px;
-    line-height: 1.25;
-    /* wterm は rows から高さを決めるが、Starlight のレイアウト下では縮むので明示する
+  --term-font-size: 12px;
+  --term-line-height: 1.25;
+  --term-row-height: 15px;
+  line-height: 1.25;
+  /* wterm は rows から高さを決めるが、Starlight のレイアウト下では縮むので明示する
        (row-height 15px x 24 行 + .wterm の padding 12px x 2) */
-    height: calc(15px * 24 + 24px);
-    border-radius: 0.5rem;
-  }
-  .try-tui .try-tui__term :global(.term-grid) {
-    line-height: 1.25;
-  }
-  /* Starlight が本文の隣接要素に付ける margin-top が端末の各行に効いて
+  height: calc(15px * 24 + 24px);
+  border-radius: 0.5rem;
+}
+.try-tui .try-tui__term :global(.term-grid) {
+  line-height: 1.25;
+}
+/* Starlight が本文の隣接要素に付ける margin-top が端末の各行に効いて
      行間が倍になるため打ち消す */
-  .try-tui .try-tui__term :global(.term-grid > *) {
-    margin: 0 !important;
-  }
-  .try-tui__hint,
-  .try-tui__note {
-    font-size: var(--sl-text-sm);
-    color: var(--sl-color-gray-3);
-    margin: 0.5rem 0;
-  }
-  .try-tui__hint kbd {
-    background: var(--sl-color-gray-6);
-    border-radius: 0.25rem;
-    padding: 0.1em 0.4em;
-    font-size: 0.9em;
-  }
-  .try-tui__reset {
-    margin-inline-start: 0.5rem;
-    font-size: inherit;
-    color: var(--sl-color-text-accent);
-    background: none;
-    border: none;
-    cursor: pointer;
-    text-decoration: underline;
-  }
+.try-tui .try-tui__term :global(.term-grid > *) {
+  margin: 0 !important;
+}
+.try-tui__hint,
+.try-tui__note {
+  font-size: var(--sl-text-sm);
+  color: var(--sl-color-gray-3);
+  margin: 0.5rem 0;
+}
+.try-tui__hint kbd {
+  background: var(--sl-color-gray-6);
+  border-radius: 0.25rem;
+  padding: 0.1em 0.4em;
+  font-size: 0.9em;
+}
+.try-tui__reset {
+  margin-inline-start: 0.5rem;
+  font-size: inherit;
+  color: var(--sl-color-text-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
 </style>
 
 <script>
-  import { WTerm } from "@wterm/dom";
-  import "@wterm/dom/css";
-  import { createTui } from "../scripts/try-tui";
+import { WTerm } from "@wterm/dom";
+import "@wterm/dom/css";
+import { createTui } from "../scripts/try-tui";
 
-  const el = document.getElementById("try-tui-term");
-  if (el) {
-    const lang = el.dataset.lang === "ja" ? "ja" : "en";
-    const term = new WTerm(el, {
-      cols: 96,
-      rows: 24,
-      autoResize: false,
-      onData: (data) => tui.handleInput(data),
-    });
-    const tui = createTui(lang, (screen) => term.write(screen));
-    await term.init();
-    tui.render();
+const el = document.getElementById("try-tui-term");
+if (el) {
+  const lang = el.dataset.lang === "ja" ? "ja" : "en";
+  const term = new WTerm(el, {
+    cols: 96,
+    rows: 24,
+    autoResize: false,
+    onData: (data) => tui.handleInput(data),
+  });
+  const tui = createTui(lang, (screen) => term.write(screen));
+  await term.init();
+  tui.render();
+  term.focus();
+
+  document.getElementById("try-tui-reset")?.addEventListener("click", () => {
+    tui.reset();
     term.focus();
-
-    document.getElementById("try-tui-reset")?.addEventListener("click", () => {
-      tui.reset();
-      term.focus();
-    });
-  }
+  });
+}
 </script>

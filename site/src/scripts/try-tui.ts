@@ -55,7 +55,14 @@ const SGR = /^\x1b\[[0-9;]*m/;
 /** 1 文字の表示幅。全角を 2 桁として数える */
 function charWidth(ch: string): number {
   const c = ch.codePointAt(0) ?? 0;
-  return c >= 0x1100 && (c <= 0x115f || (c >= 0x2e80 && c <= 0xa4cf) || (c >= 0xac00 && c <= 0xd7a3) || (c >= 0xf900 && c <= 0xfaff) || (c >= 0xff00 && c <= 0xff60)) ? 2 : 1;
+  return c >= 0x1100 &&
+    (c <= 0x115f ||
+      (c >= 0x2e80 && c <= 0xa4cf) ||
+      (c >= 0xac00 && c <= 0xd7a3) ||
+      (c >= 0xf900 && c <= 0xfaff) ||
+      (c >= 0xff00 && c <= 0xff60))
+    ? 2
+    : 1;
 }
 
 /** 表示幅。色や装飾のエスケープは 0 桁として扱う */
@@ -103,6 +110,7 @@ function pad(s: string, max: number): string {
 
 // ---------------------------------------------------------------- データ
 
+// biome-ignore format: 1 レコード 1 行の表として読みたい
 const ISSUES_EN: Issue[] = [
   { id: 1, subject: "Login times out on slow networks", status: "In Progress", priority: "Urgent", tracker: "Bug", progress: 60, spent: 3.5, description: "Reported from a mobile network. The request gives up before the server responds." },
   { id: 2, subject: "Add CSV export to the issue list", status: "New", priority: "Normal", tracker: "Feature", progress: 0, spent: 0, description: "Needed for the monthly report. The same columns as the list view are enough." },
@@ -124,6 +132,7 @@ const ISSUES_EN: Issue[] = [
   { id: 18, subject: "Allow filtering issues by assignee", status: "New", priority: "Normal", tracker: "Feature", progress: 0, spent: 0, description: "Useful when several people share one project." },
 ];
 
+// biome-ignore format: 1 レコード 1 行の表として読みたい
 const ISSUES_JA: Issue[] = [
   { id: 1, subject: "低速な回線でログインがタイムアウトする", status: "進行中", priority: "急いで", tracker: "バグ", progress: 60, spent: 3.5, description: "モバイル回線から報告あり。サーバの応答を待たずに諦めてしまう。" },
   { id: 2, subject: "チケット一覧に CSV エクスポートを追加する", status: "新規", priority: "通常", tracker: "機能", progress: 0, spent: 0, description: "月次レポートで必要。一覧と同じ項目が出れば十分。" },
@@ -145,6 +154,7 @@ const ISSUES_JA: Issue[] = [
   { id: 18, subject: "担当者でチケットを絞り込めるようにする", status: "新規", priority: "通常", tracker: "機能", progress: 0, spent: 0, description: "複数人で 1 つのプロジェクトを使うときに要る。" },
 ];
 
+// biome-ignore format: 1 レコード 1 行の表として読みたい
 const TIME_ENTRIES_EN: TimeEntry[] = [
   { id: 4, hours: 0.5, activity: "Design", issueId: 6, issueSubject: "Crash when the API key is empty", comment: "Reviewed the patch" },
   { id: 3, hours: 3.0, activity: "Design", issueId: 4, issueSubject: "Support multiple profiles in one config file", comment: "Implemented profile switching" },
@@ -152,6 +162,7 @@ const TIME_ENTRIES_EN: TimeEntry[] = [
   { id: 1, hours: 2.5, activity: "Design", issueId: 1, issueSubject: "Login times out on slow networks", comment: "Investigated the timeout" },
 ];
 
+// biome-ignore format: 1 レコード 1 行の表として読みたい
 const TIME_ENTRIES_JA: TimeEntry[] = [
   { id: 4, hours: 0.5, activity: "Design", issueId: 6, issueSubject: "API キーが空のときにクラッシュする", comment: "パッチのレビュー" },
   { id: 3, hours: 3.0, activity: "Design", issueId: 4, issueSubject: "1 つの設定ファイルで複数プロファイルを扱えるようにする", comment: "プロファイル切り替えの実装" },
@@ -159,12 +170,14 @@ const TIME_ENTRIES_JA: TimeEntry[] = [
   { id: 1, hours: 2.5, activity: "Design", issueId: 1, issueSubject: "低速な回線でログインがタイムアウトする", comment: "タイムアウトの調査" },
 ];
 
+// biome-ignore format: 1 レコード 1 行の表として読みたい
 const WIKI_EN: WikiPage[] = [
   { title: "Coding_guidelines", body: ["# Coding guidelines", "", "- Keep the CLI usable without a TTY", "- Report failures on stderr", "- Write the specification you want to keep as a test"] },
   { title: "Release_notes", body: ["# Release notes", "", "## 0.2.0", "", "- Added CSV export", "- Fixed the login timeout on slow networks"] },
   { title: "Wiki", body: ["# Welcome", "", "This is the wiki of the demo project.", "", "- [Release notes](Release_notes)", "- [Coding guidelines](Coding_guidelines)"] },
 ];
 
+// biome-ignore format: 1 レコード 1 行の表として読みたい
 const WIKI_JA: WikiPage[] = [
   { title: "Wiki", body: ["# ようこそ", "", "デモ用プロジェクトの Wiki です。", "", "- [リリースノート](リリースノート)", "- [コーディング規約](コーディング規約)"] },
   { title: "コーディング規約", body: ["# コーディング規約", "", "- TTY が無くても CLI が使える状態を保つ", "- 失敗は標準エラー出力に出す", "- 守りたい仕様はテストとして書く"] },
@@ -173,6 +186,7 @@ const WIKI_JA: WikiPage[] = [
 
 // ---------------------------------------------------------------- 文言
 
+// biome-ignore format: 文言の表なので 1 キー 1 行で読みたい
 const L = {
   en: {
     tabs: ["Issues", "Time entries", "Wiki"],
@@ -276,7 +290,12 @@ export function createTui(lang: Lang, write: (s: string) => void) {
   const wiki = lang === "ja" ? WIKI_JA : WIKI_EN;
   const m = L[lang];
 
-  const filterChoices = [m.filterStatus, m.filterAssignee, m.filterTracker, m.filterQuery];
+  const filterChoices = [
+    m.filterStatus,
+    m.filterAssignee,
+    m.filterTracker,
+    m.filterQuery,
+  ];
   const FILTER_KEYS = ["status", "assignee", "tracker"];
 
   const initial = () => ({
@@ -301,7 +320,9 @@ export function createTui(lang: Lang, write: (s: string) => void) {
   let s = initial();
 
   const visibleIssues = () => {
-    const [status, assignee, tracker, query] = filterChoices.map((c, i) => c[s.filter[i]]);
+    const [status, assignee, tracker, query] = filterChoices.map(
+      (c, i) => c[s.filter[i]],
+    );
     let list = issues;
     if (query[0] !== null) {
       // クエリはカスタムクエリ側の条件だけで決まる。status/assignee/tracker は apply で外れている
@@ -309,10 +330,12 @@ export function createTui(lang: Lang, write: (s: string) => void) {
     } else {
       if (status[0] === null) list = list.filter((i) => !i.closed);
       else if (status[0] === "closed") list = list.filter((i) => i.closed);
-      else if (status[0] !== "*") list = list.filter((i) => i.status === status[1]);
+      else if (status[0] !== "*")
+        list = list.filter((i) => i.status === status[1]);
       // デモのイシューには担当者が付いていないので、me は 0 件、未割当は全件になる
       if (assignee[0] === "me") list = [];
-      if (tracker[0] !== null) list = list.filter((i) => i.tracker === tracker[1]);
+      if (tracker[0] !== null)
+        list = list.filter((i) => i.tracker === tracker[1]);
     }
     if (!s.search) return list;
     const q = s.search.toLowerCase();
@@ -364,7 +387,11 @@ export function createTui(lang: Lang, write: (s: string) => void) {
     const q = s.search;
     const idx = text.toLowerCase().indexOf(q.toLowerCase());
     if (idx < 0) return text;
-    return text.slice(0, idx) + invert(text.slice(idx, idx + q.length)) + text.slice(idx + q.length);
+    return (
+      text.slice(0, idx) +
+      invert(text.slice(idx, idx + q.length)) +
+      text.slice(idx + q.length)
+    );
   }
 
   /** 画面を組み立てる。行の配列で返す */
@@ -372,11 +399,20 @@ export function createTui(lang: Lang, write: (s: string) => void) {
     const lines: string[] = [];
 
     // ヘッダー
-    const tabs = m.tabs.map((label, i) => (i === s.tab ? invert(` ${label} `) : ` ${label} `)).join("  ");
-    lines.push(` ${tabs}   ${dim(m.switch)}  ${bold(magenta("[profile: demo_" + lang + "]"))}  ${bold(cyan("[project: redidemo]"))}`);
+    const tabs = m.tabs
+      .map((label, i) => (i === s.tab ? invert(` ${label} `) : ` ${label} `))
+      .join("  ");
+    lines.push(
+      ` ${tabs}   ${dim(m.switch)}  ${bold(magenta("[profile: demo_" + lang + "]"))}  ${bold(cyan("[project: redidemo]"))}`,
+    );
     lines.push("─".repeat(COLS));
 
-    const body = s.tab === 0 ? buildIssues() : s.tab === 1 ? buildTimeEntries() : buildWiki();
+    const body =
+      s.tab === 0
+        ? buildIssues()
+        : s.tab === 1
+          ? buildTimeEntries()
+          : buildWiki();
     lines.push(...body);
 
     // 残りを埋め、区切り線の下にステータスバーを置く
@@ -432,7 +468,8 @@ export function createTui(lang: Lang, write: (s: string) => void) {
       right.push(row(f.updated, "2026-09-07T06:00:56Z"));
       right.push("");
       right.push("----");
-      for (const line of wrap(cur.description, COLS - LEFT - 2)) right.push(line);
+      for (const line of wrap(cur.description, COLS - LEFT - 2))
+        right.push(line);
     }
     return twoPane(left, right);
   }
@@ -441,7 +478,10 @@ export function createTui(lang: Lang, write: (s: string) => void) {
     const cur = entries[s.cursor[1]];
     const left = entries.map((e, i) => {
       const mark = i === s.cursor[1] ? green(">") : " ";
-      const label = clip(`${e.id}  (2026-09-07)  Redmine Admin  ${e.hours.toFixed(1)}h  ${e.activity}  #${e.issueId}`, LEFT - 3);
+      const label = clip(
+        `${e.id}  (2026-09-07)  Redmine Admin  ${e.hours.toFixed(1)}h  ${e.activity}  #${e.issueId}`,
+        LEFT - 3,
+      );
       return `${mark} ${label}`;
     });
     const right: string[] = [];
@@ -454,7 +494,12 @@ export function createTui(lang: Lang, write: (s: string) => void) {
       right.push(row(f.project, "redi demo (id=1)"));
       right.push(row(f.user, "Redmine Admin (id=1)"));
       right.push(row(f.activity, cur.activity));
-      right.push(row(f.issue, clip(`#${cur.issueId} ${cur.issueSubject}`, COLS - LEFT - w - 4)));
+      right.push(
+        row(
+          f.issue,
+          clip(`#${cur.issueId} ${cur.issueSubject}`, COLS - LEFT - w - 4),
+        ),
+      );
       right.push(row(f.created, "2026-09-07T06:00:46Z"));
       right.push(row(f.updated, "2026-09-07T06:00:46Z"));
       right.push("");
@@ -498,7 +543,9 @@ export function createTui(lang: Lang, write: (s: string) => void) {
     if (s.searching) return bold(clip(`/${s.search ?? ""}`, COLS));
     if (s.tab === 0) {
       const list = visibleIssues();
-      const page = list.length ? m.page(1, list.length, list.length) : m.page(0, 0, 0);
+      const page = list.length
+        ? m.page(1, list.length, list.length)
+        : m.page(0, 0, 0);
       const label = filterLabel();
       const hint = ` ${page}  ${m.statusIssues}`;
       return dim(clip(label ? ` [${label}]${hint}` : hint, COLS));
@@ -506,7 +553,9 @@ export function createTui(lang: Lang, write: (s: string) => void) {
     if (s.tab === 1) {
       const user = m.filterUser[s.teFilter];
       const hint = ` ${m.page(1, entries.length, entries.length)}  ${m.statusIssues}`;
-      return dim(clip(user[0] !== null ? ` [user=${user[1]}]${hint}` : hint, COLS));
+      return dim(
+        clip(user[0] !== null ? ` [user=${user[1]}]${hint}` : hint, COLS),
+      );
     }
     return dim(clip(` ${m.statusWiki}`, COLS));
   }
@@ -538,7 +587,11 @@ export function createTui(lang: Lang, write: (s: string) => void) {
       const focused = i === s.filterCol;
       const head = `[${m.filterCols[i]}]`;
       const rows = choices.map(([, label], r) =>
-        choiceLine(label, focused && r === s.filterCursor[i], r === s.filter[i]),
+        choiceLine(
+          label,
+          focused && r === s.filterCursor[i],
+          r === s.filter[i],
+        ),
       );
       return [focused ? bold(cyan(head)) : bold(head), ...rows];
     });
@@ -558,15 +611,30 @@ export function createTui(lang: Lang, write: (s: string) => void) {
     const rows = m.filterUser.map(([, label], r) =>
       choiceLine(label, r === s.teCursor, r === s.teFilter),
     );
-    return [bold(cyan(`[${m.filterUserCol}]`)), ...rows, "", m.filterHelpSingle];
+    return [
+      bold(cyan(`[${m.filterUserCol}]`)),
+      ...rows,
+      "",
+      m.filterHelpSingle,
+    ];
   }
 
   /** モーダルを画面の上に重ねる */
-  function overlay(lines: string[], box: string[], title: string, top: number, left: number): string[] {
+  function overlay(
+    lines: string[],
+    box: string[],
+    title: string,
+    top: number,
+    left: number,
+  ): string[] {
     const inner = Math.max(...box.map(width), width(title) + 4);
     const w = Math.min(inner + 2, COLS - left - 1);
     const head = `┌─${title}${"─".repeat(Math.max(0, w - width(title) - 3))}┐`;
-    const framed = [head, ...box.map((b) => `│${pad(clip(b, w - 2), w - 2)}│`), `└${"─".repeat(w - 2)}┘`];
+    const framed = [
+      head,
+      ...box.map((b) => `│${pad(clip(b, w - 2), w - 2)}│`),
+      `└${"─".repeat(w - 2)}┘`,
+    ];
     const out = [...lines];
     framed.forEach((row, i) => {
       const y = top + i;
@@ -595,7 +663,9 @@ export function createTui(lang: Lang, write: (s: string) => void) {
       lines[1] = ` ${green(m.quit)}`;
     } else if (s.modal === "help") {
       const w = Math.max(...m.help.map(([k]) => width(k))) + 2;
-      const box = m.help.map(([k, v]) => (v ? `${pad(k, w)}  ${v}` : k ? bold(k) : ""));
+      const box = m.help.map(([k, v]) =>
+        v ? `${pad(k, w)}  ${v}` : k ? bold(k) : "",
+      );
       lines = overlay(lines, box, ` ${m.helpTitle} `, 2, 8);
     } else if (s.modal === "filter") {
       lines = overlay(lines, filterBox(), ` ${m.filterTitle} `, 3, 4);
@@ -604,11 +674,18 @@ export function createTui(lang: Lang, write: (s: string) => void) {
     }
     // 2J だけだと消した内容がスクロールバックに積まれてグリッドが伸び続けるため、
     // 3J (Erase Saved Lines) でスクロールバックごと消してから描き直す
-    write(`${reset}${ESC}?25l${ESC}2J${ESC}3J${ESC}H` + lines.join("\r\n") + reset);
+    write(
+      `${reset}${ESC}?25l${ESC}2J${ESC}3J${ESC}H` + lines.join("\r\n") + reset,
+    );
   }
 
   function move(delta: number) {
-    const len = s.tab === 0 ? visibleIssues().length : s.tab === 1 ? entries.length : wiki.length;
+    const len =
+      s.tab === 0
+        ? visibleIssues().length
+        : s.tab === 1
+          ? entries.length
+          : wiki.length;
     if (!len) return;
     s.cursor[s.tab] = Math.min(len - 1, Math.max(0, s.cursor[s.tab] + delta));
     if (s.tab === 2) s.wikiLoaded = false;
@@ -616,31 +693,50 @@ export function createTui(lang: Lang, write: (s: string) => void) {
 
   function handleInput(data: string) {
     if (s.quit) {
-      if (data === "r") { s = initial(); render(); }
+      if (data === "r") {
+        s = initial();
+        render();
+      }
       return;
     }
 
     // 検索入力中
     if (s.searching) {
-      if (data === "\r" || data === "\n") { s.searching = false; }
-      else if (data === "\x1b") { s.searching = false; s.search = null; }
-      else if (data === "\x7f") { s.search = (s.search ?? "").slice(0, -1); }
-      else if (data >= " ") { s.search = (s.search ?? "") + data; s.cursor[0] = 0; }
+      if (data === "\r" || data === "\n") {
+        s.searching = false;
+      } else if (data === "\x1b") {
+        s.searching = false;
+        s.search = null;
+      } else if (data === "\x7f") {
+        s.search = (s.search ?? "").slice(0, -1);
+      } else if (data >= " ") {
+        s.search = (s.search ?? "") + data;
+        s.cursor[0] = 0;
+      }
       render();
       return;
     }
 
-    if (s.modal === "help") { s.modal = null; render(); return; }
+    if (s.modal === "help") {
+      s.modal = null;
+      render();
+      return;
+    }
     if (s.modal === "filter") {
       const col = s.filterCol;
       const last = filterChoices[col].length - 1;
       if (data === "\x1b" || data === "f" || data === "q") s.modal = null;
-      else if (data === "\t" || data === "l" || data === "\x1b[C") s.filterCol = (col + 1) % 4;
-      else if (data === "\x1b[Z" || data === "h" || data === "\x1b[D") s.filterCol = (col + 3) % 4;
-      else if (data === "j" || data === "\x1b[B" || data === "\x0e") s.filterCursor[col] = Math.min(last, s.filterCursor[col] + 1);
-      else if (data === "k" || data === "\x1b[A" || data === "\x10") s.filterCursor[col] = Math.max(0, s.filterCursor[col] - 1);
+      else if (data === "\t" || data === "l" || data === "\x1b[C")
+        s.filterCol = (col + 1) % 4;
+      else if (data === "\x1b[Z" || data === "h" || data === "\x1b[D")
+        s.filterCol = (col + 3) % 4;
+      else if (data === "j" || data === "\x1b[B" || data === "\x0e")
+        s.filterCursor[col] = Math.min(last, s.filterCursor[col] + 1);
+      else if (data === "k" || data === "\x1b[A" || data === "\x10")
+        s.filterCursor[col] = Math.max(0, s.filterCursor[col] - 1);
       // 実物と同じく、適用しても modal は開いたままにして続けて絞り込めるようにする
-      else if (data === "\r" || data === "\n") applyFilter(col, s.filterCursor[col]);
+      else if (data === "\r" || data === "\n")
+        applyFilter(col, s.filterCursor[col]);
       else if (data === "c") clearFilter();
       render();
       return;
@@ -648,35 +744,82 @@ export function createTui(lang: Lang, write: (s: string) => void) {
     if (s.modal === "teFilter") {
       const last = m.filterUser.length - 1;
       if (data === "\x1b" || data === "f" || data === "q") s.modal = null;
-      else if (data === "j" || data === "\x1b[B" || data === "\x0e") s.teCursor = Math.min(last, s.teCursor + 1);
-      else if (data === "k" || data === "\x1b[A" || data === "\x10") s.teCursor = Math.max(0, s.teCursor - 1);
-      else if (data === "\r" || data === "\n") { s.teFilter = s.teCursor; s.modal = null; }
-      else if (data === "c") { s.teFilter = 0; s.teCursor = 0; }
+      else if (data === "j" || data === "\x1b[B" || data === "\x0e")
+        s.teCursor = Math.min(last, s.teCursor + 1);
+      else if (data === "k" || data === "\x1b[A" || data === "\x10")
+        s.teCursor = Math.max(0, s.teCursor - 1);
+      else if (data === "\r" || data === "\n") {
+        s.teFilter = s.teCursor;
+        s.modal = null;
+      } else if (data === "c") {
+        s.teFilter = 0;
+        s.teCursor = 0;
+      }
       render();
       return;
     }
 
     s.flash = null;
     switch (data) {
-      case "j": case "\x1b[B": case "\x0e": move(1); break;
-      case "k": case "\x1b[A": case "\x10": move(-1); break;
-      case "G": s.cursor[s.tab] = 999; move(0); break;
-      case "g":
-        if (s.pendingG) { s.cursor[s.tab] = 0; s.pendingG = false; }
-        else { s.pendingG = true; return; }
+      case "j":
+      case "\x1b[B":
+      case "\x0e":
+        move(1);
         break;
-      case "\t": s.tab = (s.tab + 1) % 3; s.wikiLoaded = false; break;
-      case "\x1b[Z": s.tab = (s.tab + 2) % 3; s.wikiLoaded = false; break;
-      case "?": s.modal = "help"; break;
+      case "k":
+      case "\x1b[A":
+      case "\x10":
+        move(-1);
+        break;
+      case "G":
+        s.cursor[s.tab] = 999;
+        move(0);
+        break;
+      case "g":
+        if (s.pendingG) {
+          s.cursor[s.tab] = 0;
+          s.pendingG = false;
+        } else {
+          s.pendingG = true;
+          return;
+        }
+        break;
+      case "\t":
+        s.tab = (s.tab + 1) % 3;
+        s.wikiLoaded = false;
+        break;
+      case "\x1b[Z":
+        s.tab = (s.tab + 2) % 3;
+        s.wikiLoaded = false;
+        break;
+      case "?":
+        s.modal = "help";
+        break;
       case "f":
         // 開くたびにカーソルを適用中の行へ合わせ、focus を先頭の列に戻す
-        if (s.tab === 0) { s.modal = "filter"; s.filterCol = 0; s.filterCursor = [...s.filter]; }
-        else if (s.tab === 1) { s.modal = "teFilter"; s.teCursor = s.teFilter; }
+        if (s.tab === 0) {
+          s.modal = "filter";
+          s.filterCol = 0;
+          s.filterCursor = [...s.filter];
+        } else if (s.tab === 1) {
+          s.modal = "teFilter";
+          s.teCursor = s.teFilter;
+        }
         break;
-      case "/": s.searching = true; s.search = ""; break;
-      case "\x1b": s.search = null; break;
-      case "\r": case "\n": if (s.tab === 2) s.wikiLoaded = true; break;
-      case "q": s.quit = true; break;
+      case "/":
+        s.searching = true;
+        s.search = "";
+        break;
+      case "\x1b":
+        s.search = null;
+        break;
+      case "\r":
+      case "\n":
+        if (s.tab === 2) s.wikiLoaded = true;
+        break;
+      case "q":
+        s.quit = true;
+        break;
     }
     if (data !== "g") s.pendingG = false;
     render();
@@ -685,6 +828,9 @@ export function createTui(lang: Lang, write: (s: string) => void) {
   return {
     render,
     handleInput,
-    reset() { s = initial(); render(); },
+    reset() {
+      s = initial();
+      render();
+    },
   };
 }
