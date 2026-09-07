@@ -142,13 +142,15 @@ def format_issue_detail(issue: Issue) -> list[str]:
             else:
                 # unknown rel_type
                 label = rel_type
-            lines.append(f"  [{label}] {issue_service.issue_url(str(other))}")
+            lines.append(f"  {r['id']} [{label}] {issue_service.issue_url(str(other))}")
     attachments = issue.get("attachments") or []
     if attachments:
         lines.append("")
         lines.append(messages.label_attachments_header)
         for a in attachments:
-            lines.append(f"  {a['filename']} {a.get('content_url', '')}")
+            lines.append(
+                f"  {a['id']} {a['filename']} {a.get('content_url', '')}".rstrip()
+            )
     children = issue.get("children") or []
     if children:
         lines.append("")
@@ -181,7 +183,7 @@ def format_issue_detail(issue: Issue) -> list[str]:
         for j in journals:
             author = (j.get("user") or {}).get("name", "")
             created = j.get("created_on", "")
-            lines.append(f"  [{created}] {author}")
+            lines.append(f"  {j['id']} [{created}] {author}")
             for d in j.get("details") or []:
                 name = d.get("name", "")
                 old = d.get("old_value", "")

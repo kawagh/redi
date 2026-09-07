@@ -339,9 +339,26 @@ VIEWED_ISSUE = cast(
         "updated_on": "2026-04-02T00:00:00Z",
         "journals": [
             {
+                "id": 238,
                 "user": {"name": "コメントした人"},
                 "created_on": "2026-04-29T02:26:43Z",
                 "notes": "テストコメント",
+            }
+        ],
+        "relations": [
+            {
+                "id": 13,
+                "issue_id": 42,
+                "issue_to_id": 162,
+                "relation_type": "blocks",
+                "delay": None,
+            }
+        ],
+        "attachments": [
+            {
+                "id": 40,
+                "filename": "sample.txt",
+                "content_url": "http://localhost:3001/attachments/download/40/sample.txt",
             }
         ],
     },
@@ -365,6 +382,28 @@ class TestFormatIssueDetail:
         lines = view_module.format_issue_detail(VIEWED_ISSUE)
 
         assert lines[lines.index("本文") - 1] == "----"
+
+    def test_shows_journal_id(self):
+        """コメントの行頭に journal_id を出す (`issue_journal update/delete` に渡せる)"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
+        assert "  238 [2026-04-29T02:26:43Z] コメントした人" in lines
+
+    def test_shows_relation_id(self):
+        """関係性の行頭に relation_id を出す (`relation view` に渡せる)"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
+        relation_line = lines[lines.index(messages.label_relations_header) + 1]
+        assert relation_line.startswith("  13 [")
+        assert "162" in relation_line
+
+    def test_shows_attachment_id(self):
+        """添付ファイルの行頭に attachment_id を出す (`attachment view` などに渡せる)"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
+        assert lines[lines.index(messages.label_attachments_header) + 1].startswith(
+            "  40 sample.txt "
+        )
 
 
 class TestViewIssueComments:
