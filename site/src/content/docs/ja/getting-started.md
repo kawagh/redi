@@ -62,4 +62,4 @@ redi issue view 160   # 1件の詳細
 
 - [TUI](/redi/ja/tui/) — タブとキー操作
 - [コマンド体系](/redi/ja/cli/command-structure/) — コマンドの原則
-- [エージェントスキル](/redi/ja/cli/agent-skill/) — エージェント向けのスキル
+- [プラグイン (Agent Skill + Hook)](/redi/ja/cli/plugin/) — エージェント向けのプラグイン

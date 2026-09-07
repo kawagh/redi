@@ -34,7 +34,7 @@ https://kawagh.github.io/redi/ (also available in [Japanese](https://kawagh.gith
 - [Getting Started](https://kawagh.github.io/redi/getting-started/) — install and connect
 - [TUI](https://kawagh.github.io/redi/tui/) — tabs and keys
 - [Command Structure](https://kawagh.github.io/redi/cli/command-structure/) — the rule every command follows
-- [Agent Skill](https://kawagh.github.io/redi/cli/agent-skill/) — let coding agents reach for redi
+- [Plugin (Agent Skill + Hook)](https://kawagh.github.io/redi/cli/plugin/) — let coding agents reach for redi
 - [Configuration](https://kawagh.github.io/redi/configuration/) — config.toml, environment variables, shell completion
 
 ## Usage (examples)
