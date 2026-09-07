@@ -89,3 +89,5 @@ Only the keys used most often are listed here.
 | `v` | Open the item in a browser |
 | `?` | Help for the current tab |
 | `q` | Quit |
+
+The movement keys and a few others can be experienced in the browser on the [TUI playground](/redi/tui-playground/).

@@ -8,15 +8,19 @@
  */
 const { lang = "en" } = Astro.props;
 
+// 他のページのリンクと同じく base 込みで書く。見出しの id は Starlight が
+// 見出しテキストから作るので、日本語ページはそのまま日本語になる
+const install = lang === "ja" ? "/redi/ja/getting-started/#インストール" : "/redi/getting-started/#install";
+
 const t = {
   en: {
     hint: "Click the terminal and try <kbd>j</kbd> <kbd>k</kbd> <kbd>Tab</kbd> <kbd>/</kbd> <kbd>f</kbd> <kbd>?</kbd>",
-    note: "A reproduction of the screen, not redi itself. Editing and anything that talks to a server is left out.",
+    note: `Only part of what redi does. <a href="${install}">Install</a> it and try the real thing on your machine.`,
     reset: "Reset",
   },
   ja: {
     hint: "ターミナルをクリックして <kbd>j</kbd> <kbd>k</kbd> <kbd>Tab</kbd> <kbd>/</kbd> <kbd>f</kbd> <kbd>?</kbd> を押してみてください",
-    note: "画面の再現であって redi 本体ではありません。編集やサーバとの通信は含みません。",
+    note: `一部機能に絞っています。ぜひ<a href="${install}">インストール</a>して手元でためしてみてください。`,
     reset: "リセット",
   },
 }[lang];
@@ -26,7 +30,7 @@ const t = {
   <p class="try-tui__hint" set:html={t.hint} />
   <div class="try-tui__term" id="try-tui-term" data-lang={lang}></div>
   <p class="try-tui__note">
-    {t.note}
+    <Fragment set:html={t.note} />
     <button class="try-tui__reset" id="try-tui-reset">{t.reset}</button>
   </p>
 </div>
