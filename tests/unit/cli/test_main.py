@@ -10,7 +10,13 @@ from redi.api.exceptions import (
 )
 from redi.cli import main as main_module
 from redi.cli.main import build_redi_parser
-from redi.cli.shared_options import FORMAT_JSON, FORMAT_PLAIN, resolve_format
+from redi.cli.shared_options import (
+    FORMAT_JSON,
+    FORMAT_PLAIN,
+    FORMAT_TSV,
+    resolve_format,
+    resolve_list_format,
+)
 from redi.i18n import messages
 
 
@@ -207,7 +213,44 @@ class TestFormatOptionPlacement:
     def test_rejects_unknown_format(self, parser):
         """未対応の形式はエラーにする"""
         with pytest.raises(SystemExit):
-            parser.parse_args(["issue", "list", "--format", "tsv"])
+            parser.parse_args(["issue", "list", "--format", "yaml"])
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["issue", "list", "--format", "tsv"],
+            ["issue", "--format", "tsv", "list"],
+            ["issue", "--format", "tsv"],
+            ["project", "list", "--format", "tsv"],
+            ["user", "list", "--format", "tsv"],
+            ["time_entry", "list", "--format", "tsv"],
+            ["query", "list", "--format", "tsv"],
+            ["tracker", "--format", "tsv"],
+            ["wiki", "--project_id", "1", "list", "--format", "tsv"],
+            ["group", "list", "--format", "tsv", "--no-header"],
+            ["group", "--no-header", "list", "--format", "tsv"],
+        ],
+    )
+    def test_list_accepts_tsv(self, parser, argv):
+        """list 系は置き場所によらず `--format tsv` を受け付ける"""
+        args = parser.parse_args(argv)
+
+        assert resolve_list_format(args) == FORMAT_TSV, argv
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["issue", "view", "1", "--format", "tsv"],
+            ["project", "view", "1", "--format", "tsv"],
+            ["issue", "create", "--format", "tsv"],
+            ["me", "--format", "tsv"],
+            ["search", "keyword", "--format", "tsv"],
+        ],
+    )
+    def test_view_rejects_tsv(self, parser, argv):
+        """view 系は `--format tsv` を受け付けない"""
+        with pytest.raises(SystemExit):
+            parser.parse_args(argv)
 
 
 class TestSharedOptionPlacement:

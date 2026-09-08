@@ -625,6 +625,12 @@ class En(MessagesProto):
 
     # ---- argparse helps (common) ----
     arg_help_format = "Output format (default: plain)"
+    arg_help_format_list = (
+        "Output format (default: plain). "
+        "tsv: header row + tab-separated columns, for pipes and spreadsheets "
+        "(header names are fixed in English)"
+    )
+    arg_help_no_header = "Omit the header row of tsv output"
     arg_help_full_json = "Output full JSON (same as --format json)"
     arg_help_skip_confirm = "Skip confirmation prompt"
     arg_help_open_web = "Open the Redmine page in a browser"
@@ -683,6 +689,9 @@ class En(MessagesProto):
     arg_help_issue_filter_query = (
         "Filter by custom query ID (see `redi query`; "
         "cannot be combined with filters other than --project_id)"
+    )
+    error_format_tsv_list_only = (
+        "--format tsv is only available for list commands (use plain or json)"
     )
     error_query_id_conflicts_filters = (
         "--query_id cannot be used with {options} "

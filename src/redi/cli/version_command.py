@@ -18,12 +18,17 @@ from redi.cli.confirm import confirm_delete
 from redi.cli.interactive import ensure_interactive, exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import (
+    FORMAT_JSON,
+    FORMAT_PLAIN,
+    FORMAT_TSV,
     add_format_options,
     project_option_parser,
+    resolve_list_format,
+    wants_header,
     wants_json,
 )
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv
 from redi.service import version_service
 
 
@@ -53,11 +58,23 @@ def _read_versions(project_id: str) -> list[Version]:
         sys.exit(1)
 
 
-def _list_versions(project_id: str, full: bool = False) -> None:
-    """バージョン一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
+def _list_versions(
+    project_id: str, fmt: str = FORMAT_PLAIN, header: bool = True
+) -> None:
+    """バージョン一覧を標準出力に出す。json では取得した JSON をそのまま出す。"""
     versions = _read_versions(project_id)
-    if full:
+    if fmt == FORMAT_JSON:
         print(json.dumps(versions, ensure_ascii=False))
+        return
+    if fmt == FORMAT_TSV:
+        print_tsv(
+            ("id", "name", "status", "url"),
+            (
+                (v["id"], v["name"], v["status"], version_service.version_url(v["id"]))
+                for v in versions
+            ),
+            with_header=header,
+        )
         return
     for version in versions:
         print(_version_line(version))
@@ -446,4 +463,6 @@ def handle_version(args: argparse.Namespace) -> None:
         if not project_id:
             eprint(messages.project_id_required)
             sys.exit(1)
-        _list_versions(project_id, full=wants_json(args))
+        _list_versions(
+            project_id, fmt=resolve_list_format(args), header=wants_header(args)
+        )

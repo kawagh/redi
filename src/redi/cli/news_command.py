@@ -19,14 +19,19 @@ from redi.cli.editor import open_editor, shorten_to_oneline
 from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import (
+    FORMAT_JSON,
+    FORMAT_PLAIN,
+    FORMAT_TSV,
     add_format_options,
     pagination_option_parser,
     project_option_parser,
+    resolve_list_format,
+    wants_header,
     wants_json,
 )
 from redi.cli.validator import RequiredValidator
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv
 from redi.service import news_service
 
 
@@ -52,14 +57,32 @@ def _fetch_news(news_id: str) -> News:
 
 def _list_news(
     project_id: str | None = None,
-    full: bool = False,
+    fmt: str = FORMAT_PLAIN,
+    header: bool = True,
     limit: int | None = None,
     offset: int | None = None,
 ) -> None:
-    """ニュース一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
+    """ニュース一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
     news_list = _fetch_news_list(project_id, limit=limit, offset=offset)
-    if full:
+    if fmt == FORMAT_JSON:
         print(json.dumps(news_list, ensure_ascii=False))
+        return
+    if fmt == FORMAT_TSV:
+        print_tsv(
+            ("id", "title", "project_id", "project_name", "author_name", "created_on"),
+            (
+                (
+                    n["id"],
+                    n["title"],
+                    n["project"]["id"],
+                    n["project"]["name"],
+                    n["author"]["name"],
+                    n["created_on"],
+                )
+                for n in news_list
+            ),
+            with_header=header,
+        )
         return
     for news in news_list:
         parts = [str(news["id"]), news["title"]]
@@ -413,7 +436,8 @@ def handle_news(args: argparse.Namespace) -> None:
         project_id = args.project_id or config.default_project_id
         _list_news(
             project_id=project_id,
-            full=wants_json(args),
+            fmt=resolve_list_format(args),
+            header=wants_header(args),
             limit=args.limit,
             offset=args.offset,
         )

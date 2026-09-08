@@ -52,7 +52,23 @@ redi i l                # redi issue list
 | Option | |
 | --- | --- |
 | `--profile <name>` | Use another Redmine for this one command. Works at every level |
-| `--format <plain\|json>` | Output format. `plain` (default) is the human-readable output, `json` is the raw JSON |
+| `--format <plain\|tsv\|json>` | Output format. `plain` (default) is the human-readable output, `tsv` is a header row plus tab-separated columns (`list` only), `json` is the raw JSON |
 | `--full` | Alias of `--format json` |
+| `--no-header` | Omit the header row of `tsv` output (`list` only) |
 
 `list` actions also take `--limit` / `--offset` for paging, plus filters that vary per resource.
+
+### TSV output
+
+`--format tsv` is meant for pipes and spreadsheets. `view` actions accept only `plain` / `json`.
+
+```sh
+redi query list --format tsv
+redi query list --format tsv | column -t -s $'\t'   # aligned, wide characters included
+redi issue list --format tsv --no-header | cut -f1     # ids only
+```
+
+- Header names are fixed in English regardless of `language` in your profile, so scripts keep working
+- Tabs and newlines inside a value are collapsed to a single space, so one record is always one line
+- `null` is an empty cell, booleans are `true` / `false`
+- Columns are only ever appended at the end. Reordering or removing a column counts as a breaking change, so refer to columns by position or by header name with that in mind

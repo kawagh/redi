@@ -52,7 +52,23 @@ redi i l                # redi issue list
 | オプション | |
 | --- | --- |
 | `--profile <name>` | そのコマンドだけ別の Redmine を見る。どの階層でも指定できます |
-| `--format <plain\|json>` | 出力形式。`plain` (既定) は人が読む整形出力、`json` は生の JSON |
+| `--format <plain\|tsv\|json>` | 出力形式。`plain` (既定) は人が読む整形出力、`tsv` はヘッダー行 + タブ区切り (`list` のみ)、`json` は生の JSON |
 | `--full` | `--format json` の別名 |
+| `--no-header` | `tsv` 出力のヘッダー行を省く (`list` のみ) |
 
 `list` にはさらに `--limit` / `--offset` があり、リソースごとのフィルタも付きます。
+
+### TSV 出力
+
+`--format tsv` はパイプや表計算ソフト向けです。`view` は `plain` / `json` のみ受け付けます。
+
+```sh
+redi query list --format tsv
+redi query list --format tsv | column -t -s $'\t'   # 全角込みで列が揃う
+redi issue list --format tsv --no-header | cut -f1     # id だけ取り出す
+```
+
+- ヘッダー名はプロファイルの `language` によらず英語固定です (i18n の対象外)。スクリプトが壊れないようにするためです
+- 値の中のタブと改行は空白 1 つに潰し、1 レコード 1 行を守ります
+- `null` は空セル、真偽値は `true` / `false` です
+- 列は末尾に足すことしかしません。並べ替えや削除は破壊的変更として扱います

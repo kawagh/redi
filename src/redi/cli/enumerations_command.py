@@ -13,9 +13,15 @@ from redi.api.enumeration import (
 )
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.tracker import fetch_trackers
-from redi.cli.shared_options import add_format_options, wants_json
+from redi.cli.shared_options import (
+    FORMAT_JSON,
+    FORMAT_TSV,
+    add_format_options,
+    resolve_list_format,
+    wants_header,
+)
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv
 from redi.service import query_service
 
 
@@ -39,6 +45,8 @@ class EnumerationResource:
     # `{id} {name}` では情報が落ちるリソースだけ整形を差し替える。
     # 一覧全体を受けるのは、行を組み立てる前に一括で引きたい情報があるため
     format_lines: Callable[[Sequence[Mapping[str, Any]]], list[str]] | None = None
+    # tsv の列。応答のキーをそのまま列名にする
+    tsv_columns: tuple[str, ...] = ("id", "name")
 
 
 def _format_query_lines(queries: Sequence[Mapping[str, Any]]) -> list[str]:
@@ -119,6 +127,8 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
         lambda refresh: query_service.list_queries(all_pages=True),
         cached=False,
         format_lines=_format_query_lines,
+        # /queries.json が返すのはこの 4 つだけ
+        tsv_columns=("id", "name", "is_public", "project_id"),
     ),
     EnumerationResource(
         "custom_field",
@@ -132,15 +142,26 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
 
 
 def _print_enumeration(
-    items: Iterable[Mapping[str, Any]], full: bool, resource: EnumerationResource
+    items: Iterable[Mapping[str, Any]],
+    fmt: str,
+    resource: EnumerationResource,
+    header: bool = True,
 ) -> None:
     """一覧専用リソースを 1 行ずつ表示する。
 
-    既定は `{id} {name}` で、リソースが整形を持つ場合はそちらに任せる。
+    plain の既定は `{id} {name}` で、リソースが整形を持つ場合はそちらに任せる。
     """
     items = list(items)
-    if full:
+    if fmt == FORMAT_JSON:
         print(json.dumps(items, ensure_ascii=False))
+        return
+    if fmt == FORMAT_TSV:
+        columns = resource.tsv_columns
+        print_tsv(
+            columns,
+            ([item.get(column) for column in columns] for item in items),
+            with_header=header,
+        )
         return
     if resource.format_lines is not None:
         lines = resource.format_lines(items)
@@ -165,7 +186,7 @@ def _add_list_subparser(
         "list", aliases=["l"], help=resource.list_help, parents=parents
     )
     # 未指定時に親パーサの値を上書きしないよう postfix で足す
-    add_format_options(list_parser, postfix=True)
+    add_format_options(list_parser, postfix=True, tsv=True)
     if resource.cached:
         _add_refresh_option(list_parser, postfix=True)
 
@@ -198,7 +219,7 @@ def add_enumeration_parsers(
             help=resource.command_help,
             parents=parents,
         )
-        add_format_options(parser)
+        add_format_options(parser, tsv=True)
         if resource.cached:
             _add_refresh_option(parser)
         _add_list_subparser(parser, resource, parents)
@@ -218,4 +239,6 @@ def handle_enumeration(resource: EnumerationResource, args: argparse.Namespace) 
     if items is None:
         eprint(resource.unavailable_message)
         sys.exit(1)
-    _print_enumeration(items, wants_json(args), resource)
+    _print_enumeration(
+        items, resolve_list_format(args), resource, header=wants_header(args)
+    )

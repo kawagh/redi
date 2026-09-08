@@ -25,24 +25,39 @@ from redi.cli.editor import open_editor, shorten_to_oneline
 from redi.cli.interactive import ensure_interactive, exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import (
+    FORMAT_JSON,
+    FORMAT_PLAIN,
+    FORMAT_TSV,
     add_format_options,
     full_option_parser,
     pagination_option_parser,
+    resolve_list_format,
+    wants_header,
     wants_json,
 )
 from redi.cli.validator import ProjectIdentifierValidator, RequiredValidator
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv
 from redi.service import project_service, version_service
 
 
 def _list_projects(
-    full: bool = False, limit: int | None = None, offset: int | None = None
+    fmt: str = FORMAT_PLAIN,
+    header: bool = True,
+    limit: int | None = None,
+    offset: int | None = None,
 ) -> None:
-    """プロジェクト一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
+    """プロジェクト一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
     projects = project_service.list_projects(limit=limit, offset=offset)
-    if full:
+    if fmt == FORMAT_JSON:
         print(json.dumps(projects, ensure_ascii=False))
+        return
+    if fmt == FORMAT_TSV:
+        print_tsv(
+            ("id", "name", "identifier"),
+            ((p["id"], p["name"], p.get("identifier")) for p in projects),
+            with_header=header,
+        )
         return
     for project in projects:
         print(f"{project['id']} {project['name']}")
@@ -870,4 +885,9 @@ def handle_project(args: argparse.Namespace) -> None:
             print(messages.update_canceled)
             sys.exit()
     elif cmd == "list" or cmd is None:
-        _list_projects(full=wants_json(args), limit=args.limit, offset=args.offset)
+        _list_projects(
+            fmt=resolve_list_format(args),
+            header=wants_header(args),
+            limit=args.limit,
+            offset=args.offset,
+        )

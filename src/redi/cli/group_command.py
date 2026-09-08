@@ -19,9 +19,18 @@ from redi.api.group import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.shared_options import add_format_options, full_option_parser, wants_json
+from redi.cli.shared_options import (
+    FORMAT_JSON,
+    FORMAT_PLAIN,
+    FORMAT_TSV,
+    add_format_options,
+    full_option_parser,
+    resolve_list_format,
+    wants_header,
+    wants_json,
+)
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv
 from redi.service import group_service
 
 
@@ -37,11 +46,18 @@ def _exit_http_error(e: requests.exceptions.HTTPError, message: str) -> NoReturn
     sys.exit(1)
 
 
-def _list_groups(full: bool = False) -> None:
-    """グループ一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
+def _list_groups(fmt: str = FORMAT_PLAIN, header: bool = True) -> None:
+    """グループ一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
     groups = group_service.list_groups()
-    if full:
+    if fmt == FORMAT_JSON:
         print(json.dumps(groups, ensure_ascii=False))
+        return
+    if fmt == FORMAT_TSV:
+        print_tsv(
+            ("id", "name"),
+            ((g["id"], g["name"]) for g in groups),
+            with_header=header,
+        )
         return
     for group in groups:
         print(f"{group['id']} {group['name']}")
@@ -272,4 +288,4 @@ def handle_group(args: argparse.Namespace) -> None:
         _delete_group(args.group_id)
         return
     if cmd == "list" or cmd is None:
-        _list_groups(full=wants_json(args))
+        _list_groups(fmt=resolve_list_format(args), header=wants_header(args))

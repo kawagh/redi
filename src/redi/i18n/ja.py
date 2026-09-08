@@ -631,6 +631,12 @@ class Ja(MessagesProto):
 
     # ---- argparse helps (common) ----
     arg_help_format = "出力形式（既定: plain）"
+    arg_help_format_list = (
+        "出力形式（既定: plain）。"
+        "tsv はヘッダー行 + タブ区切りで、パイプや表計算ソフト向け"
+        "（ヘッダー名は英語固定）"
+    )
+    arg_help_no_header = "tsv 出力のヘッダー行を省く"
     arg_help_full_json = "JSON形式で全情報を出力（--format json と同じ）"
     arg_help_skip_confirm = "確認プロンプトをスキップ"
     arg_help_open_web = "ブラウザでRedmineのページを開く"
@@ -692,6 +698,7 @@ class Ja(MessagesProto):
         "カスタムクエリIDでフィルタリング"
         "（`redi query`で取得可、--project_id 以外のフィルタと併用不可）"
     )
+    error_format_tsv_list_only = "--format tsv は list 系コマンドでのみ使えます（plain か json を指定してください）"
     error_query_id_conflicts_filters = (
         "--query_id は {options} と併用できません"
         "（カスタムクエリの条件が優先され {options} は無視されます）"

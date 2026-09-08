@@ -1,7 +1,9 @@
 import argparse
+import sys
 from typing import Any
 
 from redi.i18n import messages
+from redi.output import eprint
 
 
 class SharedOptionParser(argparse.ArgumentParser):
@@ -26,12 +28,16 @@ class SharedOptionParser(argparse.ArgumentParser):
 
 
 FORMAT_PLAIN = "plain"
+FORMAT_TSV = "tsv"
 FORMAT_JSON = "json"
+# view 系が受け付ける形式。tsv は 1 レコード 1 行が前提なので一覧にしか出せない
 OUTPUT_FORMATS = (FORMAT_PLAIN, FORMAT_JSON)
+# list 系が受け付ける形式
+LIST_OUTPUT_FORMATS = (FORMAT_PLAIN, FORMAT_TSV, FORMAT_JSON)
 
 
 def add_format_options(
-    parser: argparse.ArgumentParser, *, postfix: bool = False
+    parser: argparse.ArgumentParser, *, postfix: bool = False, tsv: bool = False
 ) -> None:
     """出力形式を選ぶ `--format` と、その別名の `--full` を足す
 
@@ -40,12 +46,16 @@ def add_format_options(
     未指定時の既定値は `resolve_format` が補う。
 
     postfix=True では `--full` も同様に namespace に載せない。
+
+    tsv=True は list 系のパーサ用で、`--format tsv` と、ヘッダー行を省く
+    `--no-header` を受け付ける。短縮形 `-f` は `--firstname` / `--filename` と
+    衝突するので付けない。
     """
     parser.add_argument(
         "--format",
-        choices=OUTPUT_FORMATS,
+        choices=LIST_OUTPUT_FORMATS if tsv else OUTPUT_FORMATS,
         default=argparse.SUPPRESS,
-        help=messages.arg_help_format,
+        help=messages.arg_help_format_list if tsv else messages.arg_help_format,
     )
     parser.add_argument(
         "--full",
@@ -53,6 +63,14 @@ def add_format_options(
         default=argparse.SUPPRESS if postfix else False,
         help=messages.arg_help_full_json,
     )
+    if tsv:
+        parser.add_argument(
+            "--no-header",
+            dest="no_header",
+            action="store_true",
+            default=argparse.SUPPRESS if postfix else False,
+            help=messages.arg_help_no_header,
+        )
 
 
 def resolve_format(args: argparse.Namespace) -> str:
@@ -66,23 +84,51 @@ def resolve_format(args: argparse.Namespace) -> str:
     return FORMAT_JSON if getattr(args, "full", False) else FORMAT_PLAIN
 
 
+def resolve_list_format(args: argparse.Namespace) -> str:
+    """list 系コマンドの出力形式を決める
+
+    `--format tsv` を受け付けるパーサから呼ぶ。
+    """
+    return resolve_format(args)
+
+
+def wants_header(args: argparse.Namespace) -> bool:
+    """tsv 出力にヘッダー行を付けるか (`--no-header` で外す)"""
+    return not getattr(args, "no_header", False)
+
+
 def wants_json(args: argparse.Namespace) -> bool:
-    """JSON 出力が求められているか"""
-    return resolve_format(args) == FORMAT_JSON
+    """JSON 出力が求められているか (list 以外のサブコマンド用)
+
+    tsv は list 系にしか無いので、ここに来るのは親パーサ側の `--format tsv` が
+    view などに流れてきたとき。#461 のように黙って別の形式で出すのではなく、
+    受け付けない旨を示して exit 1 する。
+    """
+    fmt = resolve_format(args)
+    if fmt == FORMAT_TSV:
+        eprint(messages.error_format_tsv_list_only)
+        sys.exit(1)
+    return fmt == FORMAT_JSON
 
 
 def full_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
-    """出力形式のオプションだけを共有するパーサ"""
+    """出力形式のオプションだけを共有するパーサ
+
+    リソースの親パーサと `list` サブパーサで共有するので tsv を受け付ける。
+    """
     parser = SharedOptionParser(postfix=postfix)
-    add_format_options(parser)
+    add_format_options(parser, tsv=True)
     return parser
 
 
 def project_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
-    """`--project_id` と出力形式のオプションを共有するパーサ"""
+    """`--project_id` と出力形式のオプションを共有するパーサ
+
+    リソースの親パーサと `list` サブパーサで共有するので tsv を受け付ける。
+    """
     parser = SharedOptionParser(postfix=postfix)
     parser.add_argument("--project_id", "-p", help=messages.arg_help_project_id)
-    add_format_options(parser)
+    add_format_options(parser, tsv=True)
     return parser
 
 
