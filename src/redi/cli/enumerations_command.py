@@ -43,8 +43,26 @@ class EnumerationResource:
     # `{id} {name}` では情報が落ちるリソースだけ整形を差し替える。
     # 一覧全体を受けるのは、行を組み立てる前に一括で引きたい情報があるため
     format_lines: Callable[[Sequence[Mapping[str, Any]]], list[str]] | None = None
-    # tsv の列。応答のキーをそのまま列名にする
-    tsv_columns: tuple[str, ...] = ("id", "name")
+    # tsv の列。応答のキーをそのまま列名にする (`xxx_id` / `xxx_name` は
+    # ネストした参照 `xxx: {id, name}` からも引く)。
+    # 既定は enumerations (priority / activity / document_category) が返す 4 つ
+    tsv_columns: tuple[str, ...] = ("id", "name", "is_default", "active")
+
+
+def _tsv_value(item: Mapping[str, Any], column: str) -> object:
+    """tsv の 1 セル分の値を応答から取る。
+
+    キーがそのまま無ければ、`default_status_id` のような列名を
+    `default_status: {id, name}` の参照として解決する。どちらも無ければ None。
+    """
+    if column in item:
+        return item[column]
+    for suffix in ("_id", "_name"):
+        if column.endswith(suffix):
+            ref = item.get(column.removesuffix(suffix))
+            if isinstance(ref, Mapping):
+                return ref.get(suffix[1:])
+    return None
 
 
 def _format_query_lines(queries: Sequence[Mapping[str, Any]]) -> list[str]:
@@ -86,6 +104,13 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
         messages.arg_help_tracker_command,
         messages.arg_help_tracker_list,
         fetch_trackers,
+        tsv_columns=(
+            "id",
+            "name",
+            "default_status_id",
+            "default_status_name",
+            "description",
+        ),
     ),
     EnumerationResource(
         "issue_status",
@@ -93,6 +118,7 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
         messages.arg_help_issue_status_command,
         messages.arg_help_issue_status_list,
         fetch_issue_statuses,
+        tsv_columns=("id", "name", "is_closed", "description"),
     ),
     EnumerationResource(
         "issue_priority",
@@ -135,6 +161,20 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
         messages.arg_help_custom_field_list,
         fetch_custom_fields,
         unavailable_message=messages.custom_field_admin_required,
+        # possible_values / trackers / roles のような可変長の値は json に任せる
+        tsv_columns=(
+            "id",
+            "name",
+            "customized_type",
+            "field_format",
+            "is_required",
+            "is_for_all",
+            "is_filter",
+            "multiple",
+            "visible",
+            "editable",
+            "default_value",
+        ),
     ),
 )
 
@@ -156,7 +196,7 @@ def _print_enumeration(
             columns = resource.tsv_columns
             print_tsv(
                 columns,
-                ([item.get(column) for column in columns] for item in items),
+                ([_tsv_value(item, column) for column in columns] for item in items),
             )
         case OutputFormat.PLAIN:
             if resource.format_lines is not None:
