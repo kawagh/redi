@@ -26,6 +26,8 @@ class User(TypedDict):
     firstname: str
     lastname: str
     created_on: str
+    # 1=有効, 2=登録済, 3=ロック中。管理者で取得したときのみ返る
+    status: NotRequired[int]
     mail: NotRequired[str]
     admin: NotRequired[bool]
     last_login_on: NotRequired[str]

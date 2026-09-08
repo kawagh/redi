@@ -108,8 +108,29 @@ def _list_users(
             print(json.dumps(users, ensure_ascii=False))
         case OutputFormat.TSV:
             print_tsv(
-                ("id", "login"),
-                ((u["id"], u["login"]) for u in users),
+                (
+                    "id",
+                    "login",
+                    "firstname",
+                    "lastname",
+                    "mail",
+                    "admin",
+                    "status",
+                    "last_login_on",
+                ),
+                (
+                    (
+                        u["id"],
+                        u["login"],
+                        u.get("firstname"),
+                        u.get("lastname"),
+                        u.get("mail"),
+                        u.get("admin"),
+                        u.get("status"),
+                        u.get("last_login_on"),
+                    )
+                    for u in users
+                ),
             )
         case OutputFormat.PLAIN:
             for user in users:

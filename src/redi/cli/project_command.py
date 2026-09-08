@@ -35,7 +35,7 @@ from redi.cli.shared_options import (
 )
 from redi.cli.validator import ProjectIdentifierValidator, RequiredValidator
 from redi.i18n import messages
-from redi.output import eprint, print_tsv
+from redi.output import eprint, print_tsv, tsv_ref
 from redi.service import project_service, version_service
 
 
@@ -51,8 +51,30 @@ def _list_projects(
             print(json.dumps(projects, ensure_ascii=False))
         case OutputFormat.TSV:
             print_tsv(
-                ("id", "name", "identifier"),
-                ((p["id"], p["name"], p.get("identifier")) for p in projects),
+                (
+                    "id",
+                    "name",
+                    "identifier",
+                    "status",
+                    "is_public",
+                    "parent_id",
+                    "parent_name",
+                    "created_on",
+                    "updated_on",
+                ),
+                (
+                    (
+                        p["id"],
+                        p["name"],
+                        p.get("identifier"),
+                        p.get("status"),
+                        p.get("is_public"),
+                        *tsv_ref(p, "parent"),
+                        p.get("created_on"),
+                        p.get("updated_on"),
+                    )
+                    for p in projects
+                ),
             )
         case OutputFormat.PLAIN:
             for project in projects:

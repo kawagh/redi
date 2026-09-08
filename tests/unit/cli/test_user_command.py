@@ -6,6 +6,7 @@ from redi.api.user import UserNotFoundException, UserPermissionDeniedException
 from redi.cli import main as main_module
 from redi.cli import user_command
 from redi.cli.main import build_redi_parser
+from redi.cli.shared_options import OutputFormat
 from redi.i18n import messages
 
 
@@ -154,3 +155,36 @@ class TestView:
 
         assert e.value.code == 1
         assert expected in capsys.readouterr().err
+
+
+class TestListTsv:
+    """`user list --format tsv` は id / login の後ろに名前と権限・状態を並べる"""
+
+    def test_admin_only_fields_are_empty_when_absent(self, monkeypatch, capsys):
+        """mail / admin / last_login_on は管理者でないと返らないので、無ければ空セルにする"""
+        monkeypatch.setattr(
+            user_command.user_service,
+            "list_users",
+            lambda **kwargs: [
+                {
+                    "id": 1,
+                    "login": "admin",
+                    "firstname": "Redmine",
+                    "lastname": "Admin",
+                    "mail": "admin@example.com",
+                    "admin": True,
+                    "status": 1,
+                    "last_login_on": "2026-09-01T00:00:00Z",
+                },
+                {"id": 5, "login": "dev", "firstname": "Sandbox", "lastname": "Dev"},
+            ],
+        )
+
+        user_command._list_users(fmt=OutputFormat.TSV)
+
+        assert capsys.readouterr().out == (
+            "id\tlogin\tfirstname\tlastname\tmail\tadmin\tstatus\tlast_login_on\n"
+            "1\tadmin\tRedmine\tAdmin\tadmin@example.com\ttrue\t1"
+            "\t2026-09-01T00:00:00Z\n"
+            "5\tdev\tSandbox\tDev\t\t\t\t\n"
+        )
