@@ -19,7 +19,7 @@ from redi.cli.shared_options import (
     wants_json,
 )
 from redi.i18n import messages
-from redi.output import eprint, print_tsv
+from redi.output import eprint, print_tsv, tsv_ref
 from redi.service import membership_service
 
 
@@ -48,6 +48,7 @@ def _membership_tsv_row(membership: Membership) -> tuple[object, ...]:
         principal.get("id"),
         principal.get("name"),
         ",".join(r.get("name", "") for r in roles),
+        *tsv_ref(membership, "project"),
     )
 
 
@@ -70,7 +71,15 @@ def _list_memberships(
             print(json.dumps(memberships, ensure_ascii=False))
         case OutputFormat.TSV:
             print_tsv(
-                ("id", "principal_kind", "principal_id", "principal_name", "roles"),
+                (
+                    "id",
+                    "principal_kind",
+                    "principal_id",
+                    "principal_name",
+                    "roles",
+                    "project_id",
+                    "project_name",
+                ),
                 (_membership_tsv_row(m) for m in memberships),
             )
         case OutputFormat.PLAIN:

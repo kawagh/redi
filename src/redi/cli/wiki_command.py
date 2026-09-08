@@ -72,7 +72,7 @@ def _list_pages(project_id: str, fmt: OutputFormat = OutputFormat.PLAIN) -> None
             print(json.dumps(pages, ensure_ascii=False))
         case OutputFormat.TSV:
             print_tsv(
-                ("title", "parent_title", "version", "updated_on", "url"),
+                ("title", "parent_title", "version", "updated_on", "url", "created_on"),
                 (
                     (
                         p["title"],
@@ -80,6 +80,7 @@ def _list_pages(project_id: str, fmt: OutputFormat = OutputFormat.PLAIN) -> None
                         p.get("version"),
                         p.get("updated_on"),
                         wiki_service.page_url(project_id, p["title"]),
+                        p.get("created_on"),
                     )
                     for p, _ in wiki_service.flatten_wiki_tree(pages)
                 ),

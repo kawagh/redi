@@ -73,6 +73,8 @@ def _list_news(
                     "project_name",
                     "author_name",
                     "created_on",
+                    "author_id",
+                    "summary",
                 ),
                 (
                     (
@@ -82,6 +84,8 @@ def _list_news(
                         n["project"]["name"],
                         n["author"]["name"],
                         n["created_on"],
+                        n["author"]["id"],
+                        n.get("summary"),
                     )
                     for n in news_list
                 ),

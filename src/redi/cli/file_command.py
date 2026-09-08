@@ -18,7 +18,7 @@ from redi.cli.shared_options import (
     resolve_list_format,
 )
 from redi.i18n import messages
-from redi.output import eprint, print_tsv
+from redi.output import eprint, print_tsv, tsv_ref
 from redi.service import file_service
 from redi.service.attachment_service import LocalFileNotFoundException
 
@@ -69,14 +69,30 @@ def _list_files(project_id: str, fmt: OutputFormat = OutputFormat.PLAIN) -> None
             print(json.dumps(files, ensure_ascii=False))
         case OutputFormat.TSV:
             print_tsv(
-                ("id", "filename", "filesize", "version_id", "version_name"),
+                (
+                    "id",
+                    "filename",
+                    "filesize",
+                    "version_id",
+                    "version_name",
+                    "content_type",
+                    "author_id",
+                    "author_name",
+                    "created_on",
+                    "downloads",
+                    "digest",
+                ),
                 (
                     (
                         f["id"],
                         f["filename"],
                         f.get("filesize"),
-                        (f.get("version") or {}).get("id"),
-                        (f.get("version") or {}).get("name"),
+                        *tsv_ref(f, "version"),
+                        f.get("content_type"),
+                        *tsv_ref(f, "author"),
+                        f.get("created_on"),
+                        f.get("downloads"),
+                        f.get("digest"),
                     )
                     for f in files
                 ),
