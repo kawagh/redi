@@ -24,7 +24,6 @@ from redi.cli.shared_options import (
     add_format_options,
     project_option_parser,
     resolve_list_format,
-    wants_header,
     wants_json,
 )
 from redi.i18n import messages
@@ -58,9 +57,7 @@ def _read_versions(project_id: str) -> list[Version]:
         sys.exit(1)
 
 
-def _list_versions(
-    project_id: str, fmt: str = FORMAT_PLAIN, header: bool = True
-) -> None:
+def _list_versions(project_id: str, fmt: str = FORMAT_PLAIN) -> None:
     """バージョン一覧を標準出力に出す。json では取得した JSON をそのまま出す。"""
     versions = _read_versions(project_id)
     if fmt == FORMAT_JSON:
@@ -73,7 +70,6 @@ def _list_versions(
                 (v["id"], v["name"], v["status"], version_service.version_url(v["id"]))
                 for v in versions
             ),
-            with_header=header,
         )
         return
     for version in versions:
@@ -463,6 +459,4 @@ def handle_version(args: argparse.Namespace) -> None:
         if not project_id:
             eprint(messages.project_id_required)
             sys.exit(1)
-        _list_versions(
-            project_id, fmt=resolve_list_format(args), header=wants_header(args)
-        )
+        _list_versions(project_id, fmt=resolve_list_format(args))

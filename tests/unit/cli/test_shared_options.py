@@ -9,7 +9,6 @@ from redi.cli.shared_options import (
     add_format_options,
     resolve_format,
     resolve_list_format,
-    wants_header,
     wants_json,
 )
 from redi.i18n import messages
@@ -65,21 +64,6 @@ class TestTsvFormat:
         """tsv=False (view 系) のパーサは `--format tsv` を受け付けない"""
         with pytest.raises(SystemExit):
             _parse(["--format", "tsv"])
-
-    def test_header_is_on_by_default(self):
-        """ヘッダー行は既定で付ける"""
-        assert wants_header(_parse(["--format", "tsv"], tsv=True)) is True
-
-    def test_no_header_turns_header_off(self):
-        """`--no-header` でヘッダー行を外せる"""
-        assert (
-            wants_header(_parse(["--format", "tsv", "--no-header"], tsv=True)) is False
-        )
-
-    def test_no_header_is_list_only(self):
-        """`--no-header` は tsv=False (view 系) のパーサには無い"""
-        with pytest.raises(SystemExit):
-            _parse(["--no-header"])
 
     def test_no_short_option(self):
         """短縮形 `-f` は `--firstname` / `--filename` と衝突するので付けない"""

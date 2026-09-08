@@ -17,7 +17,6 @@ from redi.cli.shared_options import (
     pagination_option_parser,
     project_option_parser,
     resolve_list_format,
-    wants_header,
     wants_json,
 )
 from redi.i18n import messages
@@ -56,7 +55,6 @@ def _membership_tsv_row(membership: Membership) -> tuple[object, ...]:
 def _list_memberships(
     project_id: str,
     fmt: str = FORMAT_PLAIN,
-    header: bool = True,
     limit: int | None = None,
     offset: int | None = None,
 ) -> None:
@@ -75,7 +73,6 @@ def _list_memberships(
         print_tsv(
             ("id", "principal_kind", "principal_id", "principal_name", "roles"),
             (_membership_tsv_row(m) for m in memberships),
-            with_header=header,
         )
         return
     for membership in memberships:
@@ -292,7 +289,6 @@ def handle_membership(args: argparse.Namespace) -> None:
         _list_memberships(
             project_id,
             fmt=resolve_list_format(args),
-            header=wants_header(args),
             limit=args.limit,
             offset=args.offset,
         )

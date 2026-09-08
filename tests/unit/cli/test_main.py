@@ -227,8 +227,8 @@ class TestFormatOptionPlacement:
             ["query", "list", "--format", "tsv"],
             ["tracker", "--format", "tsv"],
             ["wiki", "--project_id", "1", "list", "--format", "tsv"],
-            ["group", "list", "--format", "tsv", "--no-header"],
-            ["group", "--no-header", "list", "--format", "tsv"],
+            ["group", "list", "--format", "tsv"],
+            ["group", "--format", "tsv", "list"],
         ],
     )
     def test_list_accepts_tsv(self, parser, argv):

@@ -636,7 +636,6 @@ class Ja(MessagesProto):
         "tsv はヘッダー行 + タブ区切りで、パイプや表計算ソフト向け"
         "（ヘッダー名は英語固定）"
     )
-    arg_help_no_header = "tsv 出力のヘッダー行を省く"
     arg_help_full_json = "JSON形式で全情報を出力（--format json と同じ）"
     arg_help_skip_confirm = "確認プロンプトをスキップ"
     arg_help_open_web = "ブラウザでRedmineのページを開く"

@@ -22,7 +22,6 @@ from redi.cli.shared_options import (
     add_format_options,
     project_option_parser,
     resolve_list_format,
-    wants_header,
     wants_json,
 )
 from redi.i18n import messages
@@ -111,9 +110,7 @@ def add_issue_category_parser(
     )
 
 
-def _list_issue_categories(
-    project_id: str, fmt: str = FORMAT_PLAIN, header: bool = True
-) -> None:
+def _list_issue_categories(project_id: str, fmt: str = FORMAT_PLAIN) -> None:
     """イシューカテゴリ一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
     try:
         categories = issue_category_service.list_issue_categories(project_id)
@@ -135,7 +132,6 @@ def _list_issue_categories(
                 )
                 for c in categories
             ),
-            with_header=header,
         )
         return
     for category in categories:
@@ -284,5 +280,4 @@ def handle_issue_category(args: argparse.Namespace) -> None:
         _list_issue_categories(
             _resolve_project_id(args),
             fmt=resolve_list_format(args),
-            header=wants_header(args),
         )

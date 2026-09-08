@@ -34,16 +34,13 @@ def format_tsv_row(cells: Sequence[object]) -> str:
     return "\t".join(tsv_cell(cell) for cell in cells)
 
 
-def print_tsv(
-    header: Sequence[str], rows: Iterable[Sequence[object]], *, with_header: bool = True
-) -> None:
+def print_tsv(header: Sequence[str], rows: Iterable[Sequence[object]]) -> None:
     """一覧を TSV として標準出力に出す。
 
     ヘッダー名はスクリプトから列名で参照される前提なので、言語設定に
     関わらず英語のまま出す (i18n の対象外)。
     列は末尾に足す分には既存のスクリプトを壊さないが、並べ替えや削除は壊す。
     """
-    if with_header:
-        print(format_tsv_row(header))
+    print(format_tsv_row(header))
     for row in rows:
         print(format_tsv_row(row))

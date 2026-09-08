@@ -47,9 +47,8 @@ def add_format_options(
 
     postfix=True では `--full` も同様に namespace に載せない。
 
-    tsv=True は list 系のパーサ用で、`--format tsv` と、ヘッダー行を省く
-    `--no-header` を受け付ける。短縮形 `-f` は `--firstname` / `--filename` と
-    衝突するので付けない。
+    tsv=True は list 系のパーサ用で、`--format tsv` を受け付ける。
+    短縮形 `-f` は `--firstname` / `--filename` と衝突するので付けない。
     """
     parser.add_argument(
         "--format",
@@ -63,14 +62,6 @@ def add_format_options(
         default=argparse.SUPPRESS if postfix else False,
         help=messages.arg_help_full_json,
     )
-    if tsv:
-        parser.add_argument(
-            "--no-header",
-            dest="no_header",
-            action="store_true",
-            default=argparse.SUPPRESS if postfix else False,
-            help=messages.arg_help_no_header,
-        )
 
 
 def resolve_format(args: argparse.Namespace) -> str:
@@ -90,11 +81,6 @@ def resolve_list_format(args: argparse.Namespace) -> str:
     `--format tsv` を受け付けるパーサから呼ぶ。
     """
     return resolve_format(args)
-
-
-def wants_header(args: argparse.Namespace) -> bool:
-    """tsv 出力にヘッダー行を付けるか (`--no-header` で外す)"""
-    return not getattr(args, "no_header", False)
 
 
 def wants_json(args: argparse.Namespace) -> bool:

@@ -26,7 +26,6 @@ from redi.cli.shared_options import (
     pagination_option_parser,
     project_option_parser,
     resolve_list_format,
-    wants_header,
     wants_json,
 )
 from redi.cli.validator import RequiredValidator
@@ -58,7 +57,6 @@ def _fetch_news(news_id: str) -> News:
 def _list_news(
     project_id: str | None = None,
     fmt: str = FORMAT_PLAIN,
-    header: bool = True,
     limit: int | None = None,
     offset: int | None = None,
 ) -> None:
@@ -81,7 +79,6 @@ def _list_news(
                 )
                 for n in news_list
             ),
-            with_header=header,
         )
         return
     for news in news_list:
@@ -437,7 +434,6 @@ def handle_news(args: argparse.Namespace) -> None:
         _list_news(
             project_id=project_id,
             fmt=resolve_list_format(args),
-            header=wants_header(args),
             limit=args.limit,
             offset=args.offset,
         )

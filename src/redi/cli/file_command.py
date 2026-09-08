@@ -17,7 +17,6 @@ from redi.cli.shared_options import (
     FORMAT_TSV,
     project_option_parser,
     resolve_list_format,
-    wants_header,
 )
 from redi.i18n import messages
 from redi.output import eprint, print_tsv
@@ -56,7 +55,7 @@ def add_file_parser(
     )
 
 
-def _list_files(project_id: str, fmt: str = FORMAT_PLAIN, header: bool = True) -> None:
+def _list_files(project_id: str, fmt: str = FORMAT_PLAIN) -> None:
     """プロジェクトのファイル一覧を標準出力に出す。プロジェクトが無い場合は exit 1。"""
     try:
         files = file_service.list_files(project_id)
@@ -82,7 +81,6 @@ def _list_files(project_id: str, fmt: str = FORMAT_PLAIN, header: bool = True) -
                 )
                 for f in files
             ),
-            with_header=header,
         )
         return
     for f in files:
@@ -135,6 +133,4 @@ def handle_file(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "list" or cmd is None:
-        _list_files(
-            project_id, fmt=resolve_list_format(args), header=wants_header(args)
-        )
+        _list_files(project_id, fmt=resolve_list_format(args))

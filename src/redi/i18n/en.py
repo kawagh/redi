@@ -630,7 +630,6 @@ class En(MessagesProto):
         "tsv: header row + tab-separated columns, for pipes and spreadsheets "
         "(header names are fixed in English)"
     )
-    arg_help_no_header = "Omit the header row of tsv output"
     arg_help_full_json = "Output full JSON (same as --format json)"
     arg_help_skip_confirm = "Skip confirmation prompt"
     arg_help_open_web = "Open the Redmine page in a browser"

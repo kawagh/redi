@@ -67,12 +67,6 @@ class TestPrintTsv:
             "2\tバグOR機能\tfalse\t1\n"
         )
 
-    def test_no_header(self, capsys):
-        """`--no-header` 相当ではヘッダー行を出さない"""
-        print_tsv(("id", "name"), [(1, "a")], with_header=False)
-
-        assert capsys.readouterr().out == "1\ta\n"
-
     def test_header_even_when_empty(self, capsys):
         """0 件でもヘッダー行は出す (列名だけは自己記述できるようにする)"""
         print_tsv(("id", "name"), [])

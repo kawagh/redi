@@ -54,7 +54,6 @@ redi i l                # redi issue list
 | `--profile <name>` | Use another Redmine for this one command. Works at every level |
 | `--format <plain\|tsv\|json>` | Output format. `plain` (default) is the human-readable output, `tsv` is a header row plus tab-separated columns (`list` only), `json` is the raw JSON |
 | `--full` | Alias of `--format json` |
-| `--no-header` | Omit the header row of `tsv` output (`list` only) |
 
 `list` actions also take `--limit` / `--offset` for paging, plus filters that vary per resource.
 
@@ -65,7 +64,7 @@ redi i l                # redi issue list
 ```sh
 redi query list --format tsv
 redi query list --format tsv | column -t -s $'\t'   # aligned, wide characters included
-redi issue list --format tsv --no-header | cut -f1     # ids only
+redi issue list --format tsv | tail -n +2 | cut -f1    # ids only, skipping the header
 ```
 
 - Header names are fixed in English regardless of `language` in your profile, so scripts keep working

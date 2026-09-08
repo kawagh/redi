@@ -15,7 +15,6 @@ from redi.cli.shared_options import (
     SharedOptionParser,
     add_format_options,
     resolve_list_format,
-    wants_header,
     wants_json,
 )
 from redi.cli.user_format import format_user_detail, user_summary
@@ -95,7 +94,6 @@ def _list_users(
     limit: int | None = None,
     offset: int | None = None,
     fmt: str = FORMAT_PLAIN,
-    header: bool = True,
 ) -> None:
     """ユーザー一覧を標準出力に出す。json では取得した JSON をそのまま出す。"""
     try:
@@ -113,7 +111,6 @@ def _list_users(
         print_tsv(
             ("id", "login"),
             ((u["id"], u["login"]) for u in users),
-            with_header=header,
         )
         return
     for user in users:
@@ -368,5 +365,4 @@ def handle_user(args: argparse.Namespace) -> None:
             limit=args.limit,
             offset=args.offset,
             fmt=resolve_list_format(args),
-            header=wants_header(args),
         )

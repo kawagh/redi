@@ -54,7 +54,6 @@ redi i l                # redi issue list
 | `--profile <name>` | そのコマンドだけ別の Redmine を見る。どの階層でも指定できます |
 | `--format <plain\|tsv\|json>` | 出力形式。`plain` (既定) は人が読む整形出力、`tsv` はヘッダー行 + タブ区切り (`list` のみ)、`json` は生の JSON |
 | `--full` | `--format json` の別名 |
-| `--no-header` | `tsv` 出力のヘッダー行を省く (`list` のみ) |
 
 `list` にはさらに `--limit` / `--offset` があり、リソースごとのフィルタも付きます。
 
@@ -65,7 +64,7 @@ redi i l                # redi issue list
 ```sh
 redi query list --format tsv
 redi query list --format tsv | column -t -s $'\t'   # 全角込みで列が揃う
-redi issue list --format tsv --no-header | cut -f1     # id だけ取り出す
+redi issue list --format tsv | tail -n +2 | cut -f1    # ヘッダーを飛ばして id だけ取り出す
 ```
 
 - ヘッダー名はプロファイルの `language` によらず英語固定です (i18n の対象外)。スクリプトが壊れないようにするためです

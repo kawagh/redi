@@ -26,7 +26,6 @@ from redi.cli.shared_options import (
     add_format_options,
     full_option_parser,
     resolve_list_format,
-    wants_header,
     wants_json,
 )
 from redi.i18n import messages
@@ -46,7 +45,7 @@ def _exit_http_error(e: requests.exceptions.HTTPError, message: str) -> NoReturn
     sys.exit(1)
 
 
-def _list_groups(fmt: str = FORMAT_PLAIN, header: bool = True) -> None:
+def _list_groups(fmt: str = FORMAT_PLAIN) -> None:
     """グループ一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
     groups = group_service.list_groups()
     if fmt == FORMAT_JSON:
@@ -56,7 +55,6 @@ def _list_groups(fmt: str = FORMAT_PLAIN, header: bool = True) -> None:
         print_tsv(
             ("id", "name"),
             ((g["id"], g["name"]) for g in groups),
-            with_header=header,
         )
         return
     for group in groups:
@@ -288,4 +286,4 @@ def handle_group(args: argparse.Namespace) -> None:
         _delete_group(args.group_id)
         return
     if cmd == "list" or cmd is None:
-        _list_groups(fmt=resolve_list_format(args), header=wants_header(args))
+        _list_groups(fmt=resolve_list_format(args))

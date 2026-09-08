@@ -25,7 +25,6 @@ from redi.cli.shared_options import (
     add_format_options,
     project_option_parser,
     resolve_list_format,
-    wants_header,
     wants_json,
 )
 from redi.i18n import messages
@@ -63,7 +62,7 @@ def _read_pages(project_id: str) -> list[WikiPage]:
         sys.exit(1)
 
 
-def _list_pages(project_id: str, fmt: str = FORMAT_PLAIN, header: bool = True) -> None:
+def _list_pages(project_id: str, fmt: str = FORMAT_PLAIN) -> None:
     """Wiki ページ一覧をツリー表示する。json では取得した JSON をそのまま出す。
 
     tsv はツリー装飾を持たず、親子関係は parent_title 列で表す。
@@ -85,7 +84,6 @@ def _list_pages(project_id: str, fmt: str = FORMAT_PLAIN, header: bool = True) -
                 )
                 for p, _ in wiki_service.flatten_wiki_tree(pages)
             ),
-            with_header=header,
         )
         return
     for page, tree_prefix in wiki_service.flatten_wiki_tree(pages):
@@ -377,6 +375,4 @@ def handle_wiki(args: argparse.Namespace) -> None:
         else:
             print(messages.canceled_empty_text)
     elif cmd == "list" or cmd is None:
-        _list_pages(
-            project_id, fmt=resolve_list_format(args), header=wants_header(args)
-        )
+        _list_pages(project_id, fmt=resolve_list_format(args))

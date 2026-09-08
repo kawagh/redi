@@ -65,14 +65,6 @@ class TestListOutput:
 
         assert capsys.readouterr().out == "id\tname\n1\tバグ\n2\t機能\n"
 
-    def test_tsv_no_header(self, tracker, capsys):
-        """--no-header でヘッダー行を省ける"""
-        handle_enumeration(
-            tracker, argparse.Namespace(format="tsv", no_header=True, refresh=False)
-        )
-
-        assert capsys.readouterr().out == "1\tバグ\n2\t機能\n"
-
 
 class TestQueryListOutput:
     """query は id と name に加えて公開/非公開と対象プロジェクトを出す"""

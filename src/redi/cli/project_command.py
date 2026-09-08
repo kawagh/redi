@@ -32,7 +32,6 @@ from redi.cli.shared_options import (
     full_option_parser,
     pagination_option_parser,
     resolve_list_format,
-    wants_header,
     wants_json,
 )
 from redi.cli.validator import ProjectIdentifierValidator, RequiredValidator
@@ -43,7 +42,6 @@ from redi.service import project_service, version_service
 
 def _list_projects(
     fmt: str = FORMAT_PLAIN,
-    header: bool = True,
     limit: int | None = None,
     offset: int | None = None,
 ) -> None:
@@ -56,7 +54,6 @@ def _list_projects(
         print_tsv(
             ("id", "name", "identifier"),
             ((p["id"], p["name"], p.get("identifier")) for p in projects),
-            with_header=header,
         )
         return
     for project in projects:
@@ -887,7 +884,6 @@ def handle_project(args: argparse.Namespace) -> None:
     elif cmd == "list" or cmd is None:
         _list_projects(
             fmt=resolve_list_format(args),
-            header=wants_header(args),
             limit=args.limit,
             offset=args.offset,
         )

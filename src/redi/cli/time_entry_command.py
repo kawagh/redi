@@ -27,7 +27,6 @@ from redi.cli.shared_options import (
     SharedOptionParser,
     add_format_options,
     resolve_list_format,
-    wants_header,
     wants_json,
 )
 from redi.cli.validator import DateValidator, HourValidator, is_yyyy_mm_dd
@@ -62,7 +61,6 @@ def _list_time_entries(
     limit: int | None = None,
     offset: int | None = None,
     fmt: str = FORMAT_PLAIN,
-    header: bool = True,
 ) -> None:
     """作業時間の一覧を標準出力に出す。json では取得した JSON をそのまま出す。"""
     entries = time_entry_service.fetch_page(
@@ -105,7 +103,6 @@ def _list_time_entries(
                 )
                 for te in entries
             ),
-            with_header=header,
         )
         return
     issue_subjects = time_entry_service.fetch_issue_subjects(entries)
@@ -578,5 +575,4 @@ def handle_time_entry(args: argparse.Namespace) -> None:
             limit=args.limit,
             offset=args.offset,
             fmt=resolve_list_format(args),
-            header=wants_header(args),
         )

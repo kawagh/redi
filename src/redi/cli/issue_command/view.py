@@ -40,7 +40,6 @@ def list_issues(
     limit: int | None = None,
     offset: int | None = None,
     fmt: str = FORMAT_PLAIN,
-    header: bool = True,
 ) -> None:
     """イシュー一覧を1行ずつ出す。json では取得した JSON をそのまま出す。
 
@@ -75,7 +74,6 @@ def list_issues(
                 (i["id"], i["subject"], issue_service.issue_url(str(i["id"])))
                 for i in issues
             ),
-            with_header=header,
         )
         return
     for issue in issues:

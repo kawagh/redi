@@ -800,7 +800,6 @@ class MessagesProto(Protocol):
     # ---- argparse helps (common) ----
     arg_help_format: str
     arg_help_format_list: str
-    arg_help_no_header: str
     arg_help_full_json: str
     arg_help_skip_confirm: str
     arg_help_open_web: str

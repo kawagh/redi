@@ -11,7 +11,6 @@ from redi.cli.shared_options import (
     add_format_options,
     full_option_parser,
     resolve_list_format,
-    wants_header,
     wants_json,
 )
 from redi.i18n import messages
@@ -37,7 +36,7 @@ CATEGORY_LABELS = MappingProxyType(
 """カテゴリ名の表示ラベル。"""
 
 
-def _print_roles(fmt: str, header: bool = True) -> None:
+def _print_roles(fmt: str) -> None:
     roles = fetch_roles()
     if fmt == FORMAT_JSON:
         print(json.dumps(roles, ensure_ascii=False))
@@ -46,7 +45,6 @@ def _print_roles(fmt: str, header: bool = True) -> None:
         print_tsv(
             ("id", "name"),
             ((r["id"], r["name"]) for r in roles),
-            with_header=header,
         )
         return
     for role in roles:
@@ -116,4 +114,4 @@ def handle_role(args: argparse.Namespace) -> None:
     if cmd == "view":
         _print_role(args.role_id, full=wants_json(args))
     elif cmd == "list" or cmd is None:
-        _print_roles(resolve_list_format(args), header=wants_header(args))
+        _print_roles(resolve_list_format(args))

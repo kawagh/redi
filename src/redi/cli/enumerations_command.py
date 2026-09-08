@@ -18,7 +18,6 @@ from redi.cli.shared_options import (
     FORMAT_TSV,
     add_format_options,
     resolve_list_format,
-    wants_header,
 )
 from redi.i18n import messages
 from redi.output import eprint, print_tsv
@@ -145,7 +144,6 @@ def _print_enumeration(
     items: Iterable[Mapping[str, Any]],
     fmt: str,
     resource: EnumerationResource,
-    header: bool = True,
 ) -> None:
     """一覧専用リソースを 1 行ずつ表示する。
 
@@ -160,7 +158,6 @@ def _print_enumeration(
         print_tsv(
             columns,
             ([item.get(column) for column in columns] for item in items),
-            with_header=header,
         )
         return
     if resource.format_lines is not None:
@@ -239,6 +236,4 @@ def handle_enumeration(resource: EnumerationResource, args: argparse.Namespace) 
     if items is None:
         eprint(resource.unavailable_message)
         sys.exit(1)
-    _print_enumeration(
-        items, resolve_list_format(args), resource, header=wants_header(args)
-    )
+    _print_enumeration(items, resolve_list_format(args), resource)
