@@ -2,6 +2,7 @@ import argparse
 import json
 import sys
 import webbrowser
+from typing import assert_never
 
 import requests
 from prompt_toolkit.key_binding import KeyBindings
@@ -18,9 +19,7 @@ from redi.cli.confirm import confirm_delete
 from redi.cli.interactive import ensure_interactive, exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import (
-    FORMAT_JSON,
-    FORMAT_PLAIN,
-    FORMAT_TSV,
+    OutputFormat,
     add_format_options,
     project_option_parser,
     resolve_list_format,
@@ -57,23 +56,30 @@ def _read_versions(project_id: str) -> list[Version]:
         sys.exit(1)
 
 
-def _list_versions(project_id: str, fmt: str = FORMAT_PLAIN) -> None:
+def _list_versions(project_id: str, fmt: OutputFormat = OutputFormat.PLAIN) -> None:
     """バージョン一覧を標準出力に出す。json では取得した JSON をそのまま出す。"""
     versions = _read_versions(project_id)
-    if fmt == FORMAT_JSON:
-        print(json.dumps(versions, ensure_ascii=False))
-        return
-    if fmt == FORMAT_TSV:
-        print_tsv(
-            ("id", "name", "status", "url"),
-            (
-                (v["id"], v["name"], v["status"], version_service.version_url(v["id"]))
-                for v in versions
-            ),
-        )
-        return
-    for version in versions:
-        print(_version_line(version))
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(versions, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                ("id", "name", "status", "url"),
+                (
+                    (
+                        v["id"],
+                        v["name"],
+                        v["status"],
+                        version_service.version_url(v["id"]),
+                    )
+                    for v in versions
+                ),
+            )
+        case OutputFormat.PLAIN:
+            for version in versions:
+                print(_version_line(version))
+        case _:
+            assert_never(fmt)
 
 
 def _view_version(version_id: str, full: bool = False, web: bool = False) -> None:

@@ -2,12 +2,12 @@ import argparse
 import json
 import sys
 from types import MappingProxyType
+from typing import assert_never
 
 from redi.api.role import fetch_role, fetch_roles
 from redi.cli.alias import resolve_alias
 from redi.cli.shared_options import (
-    FORMAT_JSON,
-    FORMAT_TSV,
+    OutputFormat,
     add_format_options,
     full_option_parser,
     resolve_list_format,
@@ -36,19 +36,21 @@ CATEGORY_LABELS = MappingProxyType(
 """カテゴリ名の表示ラベル。"""
 
 
-def _print_roles(fmt: str) -> None:
+def _print_roles(fmt: OutputFormat) -> None:
     roles = fetch_roles()
-    if fmt == FORMAT_JSON:
-        print(json.dumps(roles, ensure_ascii=False))
-        return
-    if fmt == FORMAT_TSV:
-        print_tsv(
-            ("id", "name"),
-            ((r["id"], r["name"]) for r in roles),
-        )
-        return
-    for role in roles:
-        print(f"{role['id']} {role['name']}")
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(roles, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                ("id", "name"),
+                ((r["id"], r["name"]) for r in roles),
+            )
+        case OutputFormat.PLAIN:
+            for role in roles:
+                print(f"{role['id']} {role['name']}")
+        case _:
+            assert_never(fmt)
 
 
 def _print_role(role_id: str, full: bool) -> None:

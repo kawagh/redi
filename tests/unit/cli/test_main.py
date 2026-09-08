@@ -11,9 +11,7 @@ from redi.api.exceptions import (
 from redi.cli import main as main_module
 from redi.cli.main import build_redi_parser
 from redi.cli.shared_options import (
-    FORMAT_JSON,
-    FORMAT_PLAIN,
-    FORMAT_TSV,
+    OutputFormat,
     resolve_format,
     resolve_list_format,
 )
@@ -186,7 +184,7 @@ class TestFormatOptionPlacement:
         """置き場所によらず json として解釈される"""
         args = parser.parse_args(argv)
 
-        assert resolve_format(args) == FORMAT_JSON, argv
+        assert resolve_format(args) == OutputFormat.JSON, argv
 
     @pytest.mark.parametrize(
         "argv",
@@ -202,13 +200,13 @@ class TestFormatOptionPlacement:
         """未指定なら plain"""
         args = parser.parse_args(argv)
 
-        assert resolve_format(args) == FORMAT_PLAIN, argv
+        assert resolve_format(args) == OutputFormat.PLAIN, argv
 
     def test_full_stays_as_alias(self, parser):
         """既存の `--full` は `--format json` の別名として残る"""
         args = parser.parse_args(["issue", "list", "--full"])
 
-        assert resolve_format(args) == FORMAT_JSON
+        assert resolve_format(args) == OutputFormat.JSON
 
     def test_rejects_unknown_format(self, parser):
         """未対応の形式はエラーにする"""
@@ -235,7 +233,7 @@ class TestFormatOptionPlacement:
         """list 系は置き場所によらず `--format tsv` を受け付ける"""
         args = parser.parse_args(argv)
 
-        assert resolve_list_format(args) == FORMAT_TSV, argv
+        assert resolve_list_format(args) == OutputFormat.TSV, argv
 
     @pytest.mark.parametrize(
         "argv",

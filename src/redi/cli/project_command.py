@@ -7,6 +7,7 @@ import argparse
 import json
 import sys
 import webbrowser
+from typing import assert_never
 
 import requests
 
@@ -25,9 +26,7 @@ from redi.cli.editor import open_editor, shorten_to_oneline
 from redi.cli.interactive import ensure_interactive, exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import (
-    FORMAT_JSON,
-    FORMAT_PLAIN,
-    FORMAT_TSV,
+    OutputFormat,
     add_format_options,
     full_option_parser,
     pagination_option_parser,
@@ -41,23 +40,25 @@ from redi.service import project_service, version_service
 
 
 def _list_projects(
-    fmt: str = FORMAT_PLAIN,
+    fmt: OutputFormat = OutputFormat.PLAIN,
     limit: int | None = None,
     offset: int | None = None,
 ) -> None:
     """プロジェクト一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
     projects = project_service.list_projects(limit=limit, offset=offset)
-    if fmt == FORMAT_JSON:
-        print(json.dumps(projects, ensure_ascii=False))
-        return
-    if fmt == FORMAT_TSV:
-        print_tsv(
-            ("id", "name", "identifier"),
-            ((p["id"], p["name"], p.get("identifier")) for p in projects),
-        )
-        return
-    for project in projects:
-        print(f"{project['id']} {project['name']}")
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(projects, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                ("id", "name", "identifier"),
+                ((p["id"], p["name"], p.get("identifier")) for p in projects),
+            )
+        case OutputFormat.PLAIN:
+            for project in projects:
+                print(f"{project['id']} {project['name']}")
+        case _:
+            assert_never(fmt)
 
 
 def _view_project(

@@ -3,9 +3,7 @@ import argparse
 import pytest
 
 from redi.cli.shared_options import (
-    FORMAT_JSON,
-    FORMAT_PLAIN,
-    FORMAT_TSV,
+    OutputFormat,
     add_format_options,
     resolve_format,
     resolve_list_format,
@@ -25,32 +23,45 @@ class TestResolveFormat:
 
     def test_defaults_to_plain(self):
         """どちらも未指定なら plain"""
-        assert resolve_format(_parse([])) == FORMAT_PLAIN
+        assert resolve_format(_parse([])) == OutputFormat.PLAIN
 
     def test_format_json(self):
         """`--format json` で json になる"""
-        assert resolve_format(_parse(["--format", "json"])) == FORMAT_JSON
+        assert resolve_format(_parse(["--format", "json"])) == OutputFormat.JSON
 
     def test_format_plain(self):
         """`--format plain` で plain になる"""
-        assert resolve_format(_parse(["--format", "plain"])) == FORMAT_PLAIN
+        assert resolve_format(_parse(["--format", "plain"])) == OutputFormat.PLAIN
 
     def test_full_is_alias_of_format_json(self):
         """`--full` は `--format json` の別名として扱う"""
-        assert resolve_format(_parse(["--full"])) == FORMAT_JSON
+        assert resolve_format(_parse(["--full"])) == OutputFormat.JSON
 
     def test_format_wins_over_full(self):
         """両方指定されたら形式を直接示す `--format` を優先する"""
-        assert resolve_format(_parse(["--format", "plain", "--full"])) == FORMAT_PLAIN
+        assert (
+            resolve_format(_parse(["--format", "plain", "--full"]))
+            == OutputFormat.PLAIN
+        )
 
-    def test_rejects_unknown_format(self):
-        """未対応の形式は受け付けない"""
+    def test_returns_enum(self):
+        """戻り値は文字列ではなく OutputFormat"""
+        assert isinstance(resolve_format(_parse(["--format", "json"])), OutputFormat)
+        assert isinstance(resolve_format(_parse([])), OutputFormat)
+
+    def test_rejects_unknown_format(self, capsys):
+        """未対応の形式は受け付けず、選べる形式を案内する"""
         with pytest.raises(SystemExit):
             _parse(["--format", "yaml"])
 
+        err = capsys.readouterr().err
+        assert "choose from" in err
+        assert "plain" in err
+        assert "json" in err
+
     def test_missing_attributes_fall_back_to_plain(self):
         """`--format` も `--full` も持たない namespace でも plain を返す"""
-        assert resolve_format(argparse.Namespace()) == FORMAT_PLAIN
+        assert resolve_format(argparse.Namespace()) == OutputFormat.PLAIN
 
 
 class TestTsvFormat:
@@ -58,7 +69,10 @@ class TestTsvFormat:
 
     def test_list_accepts_tsv(self):
         """tsv=True のパーサは `--format tsv` を受け付ける"""
-        assert resolve_list_format(_parse(["--format", "tsv"], tsv=True)) == FORMAT_TSV
+        assert (
+            resolve_list_format(_parse(["--format", "tsv"], tsv=True))
+            == OutputFormat.TSV
+        )
 
     def test_view_rejects_tsv(self):
         """tsv=False (view 系) のパーサは `--format tsv` を受け付けない"""

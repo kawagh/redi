@@ -6,7 +6,7 @@
 import argparse
 import json
 import sys
-from typing import NoReturn
+from typing import NoReturn, assert_never
 
 import requests
 
@@ -20,9 +20,7 @@ from redi.api.group import (
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.shared_options import (
-    FORMAT_JSON,
-    FORMAT_PLAIN,
-    FORMAT_TSV,
+    OutputFormat,
     add_format_options,
     full_option_parser,
     resolve_list_format,
@@ -45,20 +43,22 @@ def _exit_http_error(e: requests.exceptions.HTTPError, message: str) -> NoReturn
     sys.exit(1)
 
 
-def _list_groups(fmt: str = FORMAT_PLAIN) -> None:
+def _list_groups(fmt: OutputFormat = OutputFormat.PLAIN) -> None:
     """グループ一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
     groups = group_service.list_groups()
-    if fmt == FORMAT_JSON:
-        print(json.dumps(groups, ensure_ascii=False))
-        return
-    if fmt == FORMAT_TSV:
-        print_tsv(
-            ("id", "name"),
-            ((g["id"], g["name"]) for g in groups),
-        )
-        return
-    for group in groups:
-        print(f"{group['id']} {group['name']}")
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(groups, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                ("id", "name"),
+                ((g["id"], g["name"]) for g in groups),
+            )
+        case OutputFormat.PLAIN:
+            for group in groups:
+                print(f"{group['id']} {group['name']}")
+        case _:
+            assert_never(fmt)
 
 
 def _format_group(group: Group) -> str:

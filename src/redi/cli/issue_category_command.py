@@ -7,6 +7,7 @@ sys.exit を担当する。
 import argparse
 import json
 import sys
+from typing import assert_never
 
 import requests
 
@@ -16,9 +17,7 @@ from redi.api.issue_category import IssueCategory, IssueCategoryNotFoundExceptio
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.shared_options import (
-    FORMAT_JSON,
-    FORMAT_PLAIN,
-    FORMAT_TSV,
+    OutputFormat,
     add_format_options,
     project_option_parser,
     resolve_list_format,
@@ -110,34 +109,40 @@ def add_issue_category_parser(
     )
 
 
-def _list_issue_categories(project_id: str, fmt: str = FORMAT_PLAIN) -> None:
+def _list_issue_categories(
+    project_id: str, fmt: OutputFormat = OutputFormat.PLAIN
+) -> None:
     """イシューカテゴリ一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
     try:
         categories = issue_category_service.list_issue_categories(project_id)
     except ProjectNotFoundException:
         eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
-    if fmt == FORMAT_JSON:
-        print(json.dumps(categories, ensure_ascii=False))
-        return
-    if fmt == FORMAT_TSV:
-        print_tsv(
-            ("id", "name", "assigned_to_id", "assigned_to_name"),
-            (
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(categories, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                ("id", "name", "assigned_to_id", "assigned_to_name"),
                 (
-                    c["id"],
-                    c["name"],
-                    (c.get("assigned_to") or {}).get("id"),
-                    (c.get("assigned_to") or {}).get("name"),
+                    (
+                        c["id"],
+                        c["name"],
+                        (c.get("assigned_to") or {}).get("id"),
+                        (c.get("assigned_to") or {}).get("name"),
+                    )
+                    for c in categories
+                ),
+            )
+        case OutputFormat.PLAIN:
+            for category in categories:
+                assigned = category.get("assigned_to")
+                assigned_label = (
+                    f" [{assigned['id']} {assigned['name']}]" if assigned else ""
                 )
-                for c in categories
-            ),
-        )
-        return
-    for category in categories:
-        assigned = category.get("assigned_to")
-        assigned_label = f" [{assigned['id']} {assigned['name']}]" if assigned else ""
-        print(f"{category['id']} {category['name']}{assigned_label}")
+                print(f"{category['id']} {category['name']}{assigned_label}")
+        case _:
+            assert_never(fmt)
 
 
 def _view_issue_category(category_id: str, full: bool = False) -> None:

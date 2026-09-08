@@ -1,6 +1,7 @@
 import argparse
 import json
 import sys
+from typing import assert_never
 
 import requests
 from prompt_toolkit.completion import WordCompleter
@@ -21,9 +22,7 @@ from redi.cli.keybinding import (
 )
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import (
-    FORMAT_JSON,
-    FORMAT_PLAIN,
-    FORMAT_TSV,
+    OutputFormat,
     SharedOptionParser,
     add_format_options,
     resolve_list_format,
@@ -60,7 +59,7 @@ def _list_time_entries(
     to_date: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
-    fmt: str = FORMAT_PLAIN,
+    fmt: OutputFormat = OutputFormat.PLAIN,
 ) -> None:
     """作業時間の一覧を標準出力に出す。json では取得した JSON をそのまま出す。"""
     entries = time_entry_service.fetch_page(
@@ -71,50 +70,52 @@ def _list_time_entries(
         limit=limit,
         offset=offset,
     )["time_entries"]
-    if fmt == FORMAT_JSON:
-        print(json.dumps(entries, ensure_ascii=False))
-        return
-    if fmt == FORMAT_TSV:
-        print_tsv(
-            (
-                "id",
-                "spent_on",
-                "user_id",
-                "user_name",
-                "hours",
-                "activity_name",
-                "issue_id",
-                "project_id",
-                "project_name",
-                "comments",
-            ),
-            (
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(entries, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
                 (
-                    te["id"],
-                    te["spent_on"],
-                    (te.get("user") or {}).get("id"),
-                    (te.get("user") or {}).get("name"),
-                    te["hours"],
-                    (te.get("activity") or {}).get("name"),
-                    (te.get("issue") or {}).get("id"),
-                    (te.get("project") or {}).get("id"),
-                    (te.get("project") or {}).get("name"),
-                    te.get("comments"),
-                )
-                for te in entries
-            ),
-        )
-        return
-    issue_subjects = time_entry_service.fetch_issue_subjects(entries)
-    # ユーザで絞り込んでいる場合は全行に同じ名前が並ぶので出さない
-    for te in entries:
-        print(
-            time_entry_service.format_time_entry_line(
-                te,
-                include_user=user_id is None,
-                issue_subjects=issue_subjects,
+                    "id",
+                    "spent_on",
+                    "user_id",
+                    "user_name",
+                    "hours",
+                    "activity_name",
+                    "issue_id",
+                    "project_id",
+                    "project_name",
+                    "comments",
+                ),
+                (
+                    (
+                        te["id"],
+                        te["spent_on"],
+                        (te.get("user") or {}).get("id"),
+                        (te.get("user") or {}).get("name"),
+                        te["hours"],
+                        (te.get("activity") or {}).get("name"),
+                        (te.get("issue") or {}).get("id"),
+                        (te.get("project") or {}).get("id"),
+                        (te.get("project") or {}).get("name"),
+                        te.get("comments"),
+                    )
+                    for te in entries
+                ),
             )
-        )
+        case OutputFormat.PLAIN:
+            issue_subjects = time_entry_service.fetch_issue_subjects(entries)
+            # ユーザで絞り込んでいる場合は全行に同じ名前が並ぶので出さない
+            for te in entries:
+                print(
+                    time_entry_service.format_time_entry_line(
+                        te,
+                        include_user=user_id is None,
+                        issue_subjects=issue_subjects,
+                    )
+                )
+        case _:
+            assert_never(fmt)
 
 
 def _view_time_entry(time_entry_id: str, full: bool = False) -> None:

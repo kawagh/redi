@@ -1,6 +1,7 @@
 import argparse
 import sys
-from typing import Any
+from enum import StrEnum
+from typing import Any, assert_never
 
 from redi.i18n import messages
 from redi.output import eprint
@@ -27,13 +28,22 @@ class SharedOptionParser(argparse.ArgumentParser):
         return super().add_argument(*args, **kwargs)
 
 
-FORMAT_PLAIN = "plain"
-FORMAT_TSV = "tsv"
-FORMAT_JSON = "json"
+class OutputFormat(StrEnum):
+    """`--format` で選ぶ出力形式
+
+    形式ごとの分岐は `match` で全列挙し `case _: assert_never(fmt)` を置く。
+    形式を足したときに分岐漏れを型チェックで検出するため。
+    """
+
+    PLAIN = "plain"
+    TSV = "tsv"
+    JSON = "json"
+
+
 # view 系が受け付ける形式。tsv は 1 レコード 1 行が前提なので一覧にしか出せない
-OUTPUT_FORMATS = (FORMAT_PLAIN, FORMAT_JSON)
+OUTPUT_FORMATS = (OutputFormat.PLAIN, OutputFormat.JSON)
 # list 系が受け付ける形式
-LIST_OUTPUT_FORMATS = (FORMAT_PLAIN, FORMAT_TSV, FORMAT_JSON)
+LIST_OUTPUT_FORMATS = tuple(OutputFormat)
 
 
 def add_format_options(
@@ -49,6 +59,10 @@ def add_format_options(
 
     tsv=True は list 系のパーサ用で、`--format tsv` を受け付ける。
     短縮形 `-f` は `--firstname` / `--filename` と衝突するので付けない。
+
+    `type=OutputFormat` は付けない。付けると未対応の値のエラーが
+    `invalid OutputFormat value` になり、選べる形式の案内が消えるため。
+    値は `choices` で絞り、Enum への変換は `resolve_format` で行う。
     """
     parser.add_argument(
         "--format",
@@ -64,18 +78,18 @@ def add_format_options(
     )
 
 
-def resolve_format(args: argparse.Namespace) -> str:
+def resolve_format(args: argparse.Namespace) -> OutputFormat:
     """`--format` と `--full` から出力形式を決める
 
     両方指定された場合は、形式を直接示している `--format` を優先する。
     """
     fmt = getattr(args, "format", None)
     if fmt is not None:
-        return fmt
-    return FORMAT_JSON if getattr(args, "full", False) else FORMAT_PLAIN
+        return OutputFormat(fmt)
+    return OutputFormat.JSON if getattr(args, "full", False) else OutputFormat.PLAIN
 
 
-def resolve_list_format(args: argparse.Namespace) -> str:
+def resolve_list_format(args: argparse.Namespace) -> OutputFormat:
     """list 系コマンドの出力形式を決める
 
     `--format tsv` を受け付けるパーサから呼ぶ。
@@ -91,10 +105,16 @@ def wants_json(args: argparse.Namespace) -> bool:
     受け付けない旨を示して exit 1 する。
     """
     fmt = resolve_format(args)
-    if fmt == FORMAT_TSV:
-        eprint(messages.error_format_tsv_list_only)
-        sys.exit(1)
-    return fmt == FORMAT_JSON
+    match fmt:
+        case OutputFormat.TSV:
+            eprint(messages.error_format_tsv_list_only)
+            sys.exit(1)
+        case OutputFormat.JSON:
+            return True
+        case OutputFormat.PLAIN:
+            return False
+        case _:
+            assert_never(fmt)
 
 
 def full_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
