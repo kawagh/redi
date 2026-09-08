@@ -56,18 +56,3 @@ redi i l                # redi issue list
 | `--full` | Alias of `--format json` |
 
 `list` actions also take `--limit` / `--offset` for paging, plus filters that vary per resource.
-
-### TSV output
-
-`--format tsv` is meant for pipes and spreadsheets. `view` actions accept only `plain` / `json`.
-
-```sh
-redi query list --format tsv
-redi query list --format tsv | column -t -s $'\t'   # aligned, wide characters included
-redi issue list --format tsv | tail -n +2 | cut -f1    # ids only, skipping the header
-```
-
-- Header names are fixed in English regardless of `language` in your profile, so scripts keep working
-- Tabs and newlines inside a value are collapsed to a single space, so one record is always one line
-- `null` is an empty cell, booleans are `true` / `false`
-- Columns are only ever appended at the end. Reordering or removing a column counts as a breaking change, so refer to columns by position or by header name with that in mind

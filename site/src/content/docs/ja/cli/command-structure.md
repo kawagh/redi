@@ -56,18 +56,3 @@ redi i l                # redi issue list
 | `--full` | `--format json` の別名 |
 
 `list` にはさらに `--limit` / `--offset` があり、リソースごとのフィルタも付きます。
-
-### TSV 出力
-
-`--format tsv` はパイプや表計算ソフト向けです。`view` は `plain` / `json` のみ受け付けます。
-
-```sh
-redi query list --format tsv
-redi query list --format tsv | column -t -s $'\t'   # 全角込みで列が揃う
-redi issue list --format tsv | tail -n +2 | cut -f1    # ヘッダーを飛ばして id だけ取り出す
-```
-
-- ヘッダー名はプロファイルの `language` によらず英語固定です (i18n の対象外)。スクリプトが壊れないようにするためです
-- 値の中のタブと改行は空白 1 つに潰し、1 レコード 1 行を守ります
-- `null` は空セル、真偽値は `true` / `false` です
-- 列は末尾に足すことしかしません。並べ替えや削除は破壊的変更として扱います
