@@ -59,6 +59,12 @@ class TestListOutput:
             {"id": 2, "name": "機能"},
         ]
 
+    def test_tsv_prints_header_and_id_name(self, tracker, capsys):
+        """--format tsv では英語固定のヘッダー行と id / name のタブ区切りを出す"""
+        handle_enumeration(tracker, argparse.Namespace(format="tsv", refresh=False))
+
+        assert capsys.readouterr().out == "id\tname\n1\tバグ\n2\t機能\n"
+
 
 class TestQueryListOutput:
     """query は id と name に加えて公開/非公開と対象プロジェクトを出す"""
@@ -136,6 +142,22 @@ class TestQueryListOutput:
         handle_enumeration(resource, argparse.Namespace(full=True))
 
         assert json.loads(capsys.readouterr().out) == [query]
+
+    def test_tsv_prints_is_public_and_project_id(self, capsys):
+        """--format tsv では /queries.json の 4 列 (id / name / is_public / project_id) を出す
+
+        null の project_id は空セル、is_public は true / false にする。
+        """
+        resource = self.query_with(
+            {"id": 8, "name": "バグOR機能", "is_public": False, "project_id": 3},
+            {"id": 4, "name": "ウォッチ", "is_public": True, "project_id": None},
+        )
+
+        handle_enumeration(resource, argparse.Namespace(format="tsv"))
+
+        assert capsys.readouterr().out == (
+            "id\tname\tis_public\tproject_id\n8\tバグOR機能\tfalse\t3\n4\tウォッチ\ttrue\t\n"
+        )
 
 
 class TestCustomFieldPermission:

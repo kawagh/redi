@@ -11,9 +11,15 @@ from redi.api.exceptions import (
     print_http_error_body,
 )
 from redi.cli.alias import resolve_alias
-from redi.cli.shared_options import project_option_parser, wants_json
+from redi.cli.shared_options import (
+    FORMAT_JSON,
+    FORMAT_PLAIN,
+    FORMAT_TSV,
+    project_option_parser,
+    resolve_list_format,
+)
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv
 from redi.service import file_service
 from redi.service.attachment_service import LocalFileNotFoundException
 
@@ -49,7 +55,7 @@ def add_file_parser(
     )
 
 
-def _list_files(project_id: str, full: bool = False) -> None:
+def _list_files(project_id: str, fmt: str = FORMAT_PLAIN) -> None:
     """プロジェクトのファイル一覧を標準出力に出す。プロジェクトが無い場合は exit 1。"""
     try:
         files = file_service.list_files(project_id)
@@ -59,8 +65,23 @@ def _list_files(project_id: str, full: bool = False) -> None:
     except ProjectPermissionDeniedException:
         eprint(messages.project_files_permission_denied.format(id=project_id))
         sys.exit(1)
-    if full:
+    if fmt == FORMAT_JSON:
         print(json.dumps(files, ensure_ascii=False))
+        return
+    if fmt == FORMAT_TSV:
+        print_tsv(
+            ("id", "filename", "filesize", "version_id", "version_name"),
+            (
+                (
+                    f["id"],
+                    f["filename"],
+                    f.get("filesize"),
+                    (f.get("version") or {}).get("id"),
+                    (f.get("version") or {}).get("name"),
+                )
+                for f in files
+            ),
+        )
         return
     for f in files:
         version = f.get("version") or {}
@@ -112,4 +133,4 @@ def handle_file(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "list" or cmd is None:
-        _list_files(project_id, full=wants_json(args))
+        _list_files(project_id, fmt=resolve_list_format(args))

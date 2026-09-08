@@ -16,12 +16,16 @@ from redi.api.issue_category import IssueCategory, IssueCategoryNotFoundExceptio
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.shared_options import (
+    FORMAT_JSON,
+    FORMAT_PLAIN,
+    FORMAT_TSV,
     add_format_options,
     project_option_parser,
+    resolve_list_format,
     wants_json,
 )
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv
 from redi.service import issue_category_service
 
 
@@ -106,15 +110,29 @@ def add_issue_category_parser(
     )
 
 
-def _list_issue_categories(project_id: str, full: bool = False) -> None:
-    """イシューカテゴリ一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
+def _list_issue_categories(project_id: str, fmt: str = FORMAT_PLAIN) -> None:
+    """イシューカテゴリ一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
     try:
         categories = issue_category_service.list_issue_categories(project_id)
     except ProjectNotFoundException:
         eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
-    if full:
+    if fmt == FORMAT_JSON:
         print(json.dumps(categories, ensure_ascii=False))
+        return
+    if fmt == FORMAT_TSV:
+        print_tsv(
+            ("id", "name", "assigned_to_id", "assigned_to_name"),
+            (
+                (
+                    c["id"],
+                    c["name"],
+                    (c.get("assigned_to") or {}).get("id"),
+                    (c.get("assigned_to") or {}).get("name"),
+                )
+                for c in categories
+            ),
+        )
         return
     for category in categories:
         assigned = category.get("assigned_to")
@@ -259,4 +277,7 @@ def handle_issue_category(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "list" or cmd is None:
-        _list_issue_categories(_resolve_project_id(args), full=wants_json(args))
+        _list_issue_categories(
+            _resolve_project_id(args),
+            fmt=resolve_list_format(args),
+        )

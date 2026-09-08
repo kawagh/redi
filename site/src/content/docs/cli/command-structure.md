@@ -52,7 +52,7 @@ redi i l                # redi issue list
 | Option | |
 | --- | --- |
 | `--profile <name>` | Use another Redmine for this one command. Works at every level |
-| `--format <plain\|json>` | Output format. `plain` (default) is the human-readable output, `json` is the raw JSON |
+| `--format <plain\|tsv\|json>` | Output format. `plain` (default) is the human-readable output, `tsv` is a header row plus tab-separated columns (`list` only), `json` is the raw JSON |
 | `--full` | Alias of `--format json` |
 
 `list` actions also take `--limit` / `--offset` for paging, plus filters that vary per resource.

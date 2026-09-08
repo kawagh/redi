@@ -9,8 +9,9 @@ import webbrowser
 
 from redi.api.exceptions import ProjectNotFoundException, QueryNotFoundException
 from redi.api.issue import Issue, IssueNotFoundException
+from redi.cli.shared_options import FORMAT_JSON, FORMAT_PLAIN, FORMAT_TSV
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv
 from redi.service import issue_service
 from redi.text_format import issue_meta_rows, render_meta_table
 
@@ -38,9 +39,9 @@ def list_issues(
     query_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
-    full: bool = False,
+    fmt: str = FORMAT_PLAIN,
 ) -> None:
-    """イシュー一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。
+    """イシュー一覧を1行ずつ出す。json では取得した JSON をそのまま出す。
 
     存在しないプロジェクト・カスタムクエリを指定した場合は案内を出して exit 1。
     """
@@ -63,8 +64,17 @@ def list_issues(
     except ProjectNotFoundException:
         eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
-    if full:
+    if fmt == FORMAT_JSON:
         print(json.dumps(issues, ensure_ascii=False))
+        return
+    if fmt == FORMAT_TSV:
+        print_tsv(
+            ("id", "subject", "url"),
+            (
+                (i["id"], i["subject"], issue_service.issue_url(str(i["id"])))
+                for i in issues
+            ),
+        )
         return
     for issue in issues:
         print(

@@ -204,6 +204,7 @@ redi user list --group_id <group_id> # members of the group
 redi user --status locked list # filters can be placed before the subcommand too
 redi user list --limit 10 --offset 10 # `list` returns Redmine's default 25 unless limited
 redi user list --full # output full JSON
+redi user list --format tsv # header row + tab-separated columns (list only; header names are fixed in English)
 
 # others
 redi tracker # list trackers (alias: t)

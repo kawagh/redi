@@ -52,7 +52,7 @@ redi i l                # redi issue list
 | オプション | |
 | --- | --- |
 | `--profile <name>` | そのコマンドだけ別の Redmine を見る。どの階層でも指定できます |
-| `--format <plain\|json>` | 出力形式。`plain` (既定) は人が読む整形出力、`json` は生の JSON |
+| `--format <plain\|tsv\|json>` | 出力形式。`plain` (既定) は人が読む整形出力、`tsv` はヘッダー行 + タブ区切り (`list` のみ)、`json` は生の JSON |
 | `--full` | `--format json` の別名 |
 
 `list` にはさらに `--limit` / `--offset` があり、リソースごとのフィルタも付きます。

@@ -69,11 +69,14 @@ redi issue_status list
 redi issue_priority list
 ```
 
-Add `--full` to any `list` to get JSON instead of the plain listing — use this
-when you need to pick a value programmatically:
+Every `list` takes `--format tsv|json` — use it when you need to pick a value
+programmatically. `tsv` is a header row plus tab-separated columns (header names
+are English regardless of the profile language); `json` is the raw response.
+`view` takes `--format json` only.
 
 ```sh
-redi project list --full
+redi project list --format tsv | tail -n +2 | cut -f1   # ids, skipping the header
+redi project list --format json | jq '.[].name'
 ```
 
 ## Reading issues
@@ -83,20 +86,20 @@ redi issue list                              # default project
 redi issue list --project_id 15              # one project
 redi issue list --status_id 1 --limit 10
 redi issue view 160                          # one issue
-redi issue view 160 --full                   # JSON
+redi issue view 160 --format json
 redi issue view 160 --include watchers       # + watchers (see -h for the list)
 redi search "keyword"                        # cross-resource search
 redi search "keyword" --titles_only --open_issues
 ```
 
-`--full` prints the issue object itself at the top level — there is no `{"issue": ...}`
+`--format json` prints the issue object itself at the top level — there is no `{"issue": ...}`
 wrapper, so use `.attachments`, not `.issue.attachments`. `attachments`, `journals`
 (comments) and `relations` are always included; other associations such as
 `children`, `changesets` or `watchers` need `--include`.
 
 ```sh
-redi issue view 160 --full | jq '.attachments[] | {id, filename}'
-redi issue view 160 --full | jq '.journals[].notes'
+redi issue view 160 --format json | jq '.attachments[] | {id, filename}'
+redi issue view 160 --format json | jq '.journals[].notes'
 ```
 
 ## Creating and updating issues
@@ -141,7 +144,7 @@ Look the IDs up before creating, checking `is_required` and which `trackers`
 the field applies to:
 
 ```sh
-redi custom_field list --full
+redi custom_field list --format json
 ```
 
 Picking a tracker with no required custom fields is often the simpler fix.

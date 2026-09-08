@@ -8,10 +8,18 @@ from redi.api.exceptions import print_http_error_body
 from redi.api.user import User, UserNotFoundException, UserPermissionDeniedException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
-from redi.cli.shared_options import SharedOptionParser, add_format_options, wants_json
+from redi.cli.shared_options import (
+    FORMAT_JSON,
+    FORMAT_PLAIN,
+    FORMAT_TSV,
+    SharedOptionParser,
+    add_format_options,
+    resolve_list_format,
+    wants_json,
+)
 from redi.cli.user_format import format_user_detail, user_summary
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv
 from redi.service import user_service
 
 MAIL_NOTIFICATION_CHOICES = [
@@ -85,9 +93,9 @@ def _list_users(
     group_id: int | None = None,
     limit: int | None = None,
     offset: int | None = None,
-    full: bool = False,
+    fmt: str = FORMAT_PLAIN,
 ) -> None:
-    """ユーザー一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
+    """ユーザー一覧を標準出力に出す。json では取得した JSON をそのまま出す。"""
     try:
         users = user_service.list_users(
             status=status, name=name, group_id=group_id, limit=limit, offset=offset
@@ -96,8 +104,14 @@ def _list_users(
         eprint(messages.user_list_admin_required)
         eprint(messages.user_list_member_hint)
         return
-    if full:
+    if fmt == FORMAT_JSON:
         print(json.dumps(users, ensure_ascii=False))
+        return
+    if fmt == FORMAT_TSV:
+        print_tsv(
+            ("id", "login"),
+            ((u["id"], u["login"]) for u in users),
+        )
         return
     for user in users:
         print(f"{user['id']} {user['login']}")
@@ -196,7 +210,7 @@ def _user_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParse
     parser.add_argument("--group_id", type=int, help=messages.arg_help_user_group_id)
     parser.add_argument("--limit", type=int, help=messages.arg_help_limit)
     parser.add_argument("--offset", type=int, help=messages.arg_help_offset)
-    add_format_options(parser)
+    add_format_options(parser, tsv=True)
     return parser
 
 
@@ -350,5 +364,5 @@ def handle_user(args: argparse.Namespace) -> None:
             group_id=args.group_id,
             limit=args.limit,
             offset=args.offset,
-            full=wants_json(args),
+            fmt=resolve_list_format(args),
         )

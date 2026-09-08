@@ -799,6 +799,7 @@ class MessagesProto(Protocol):
 
     # ---- argparse helps (common) ----
     arg_help_format: str
+    arg_help_format_list: str
     arg_help_full_json: str
     arg_help_skip_confirm: str
     arg_help_open_web: str
@@ -842,6 +843,7 @@ class MessagesProto(Protocol):
     arg_help_issue_filter_priority: str
     arg_help_issue_filter_query: str
     error_query_id_conflicts_filters: str
+    error_format_tsv_list_only: str
     """{options}"""
     arg_help_limit: str
     arg_help_offset: str

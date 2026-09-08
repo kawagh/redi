@@ -19,12 +19,16 @@ from redi.cli.editor import open_editor
 from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.picker import inline_choice
 from redi.cli.shared_options import (
+    FORMAT_JSON,
+    FORMAT_PLAIN,
+    FORMAT_TSV,
     add_format_options,
     project_option_parser,
+    resolve_list_format,
     wants_json,
 )
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv
 from redi.service import wiki_service
 
 
@@ -58,11 +62,29 @@ def _read_pages(project_id: str) -> list[WikiPage]:
         sys.exit(1)
 
 
-def _list_pages(project_id: str, full: bool = False) -> None:
-    """Wiki ページ一覧をツリー表示する。full=True では取得した JSON をそのまま出す。"""
+def _list_pages(project_id: str, fmt: str = FORMAT_PLAIN) -> None:
+    """Wiki ページ一覧をツリー表示する。json では取得した JSON をそのまま出す。
+
+    tsv はツリー装飾を持たず、親子関係は parent_title 列で表す。
+    """
     pages = _read_pages(project_id)
-    if full:
+    if fmt == FORMAT_JSON:
         print(json.dumps(pages, ensure_ascii=False))
+        return
+    if fmt == FORMAT_TSV:
+        print_tsv(
+            ("title", "parent_title", "version", "updated_on", "url"),
+            (
+                (
+                    p["title"],
+                    (p.get("parent") or {}).get("title"),
+                    p.get("version"),
+                    p.get("updated_on"),
+                    wiki_service.page_url(project_id, p["title"]),
+                )
+                for p, _ in wiki_service.flatten_wiki_tree(pages)
+            ),
+        )
         return
     for page, tree_prefix in wiki_service.flatten_wiki_tree(pages):
         title = page["title"]
@@ -353,4 +375,4 @@ def handle_wiki(args: argparse.Namespace) -> None:
         else:
             print(messages.canceled_empty_text)
     elif cmd == "list" or cmd is None:
-        _list_pages(project_id, full=wants_json(args))
+        _list_pages(project_id, fmt=resolve_list_format(args))
