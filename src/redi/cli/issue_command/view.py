@@ -12,7 +12,7 @@ from redi.api.exceptions import ProjectNotFoundException, QueryNotFoundException
 from redi.api.issue import Issue, IssueNotFoundException
 from redi.cli.shared_options import OutputFormat
 from redi.i18n import messages
-from redi.output import eprint, print_tsv
+from redi.output import eprint, print_tsv, tsv_ref
 from redi.service import issue_service
 from redi.text_format import issue_meta_rows, render_meta_table
 
@@ -28,6 +28,35 @@ INVERSE_RELATION = {
     "copied_from": "copied_to",
     "relates": "relates",
 }
+
+
+def _issue_tsv_row(issue: Issue) -> tuple[object, ...]:
+    """イシュー 1 件を tsv の 1 行にする。
+
+    description は複数行・長文なので載せない。custom_fields は可変長なので json に任せる。
+    """
+    return (
+        issue["id"],
+        issue["subject"],
+        issue_service.issue_url(str(issue["id"])),
+        *tsv_ref(issue, "project"),
+        tsv_ref(issue, "tracker")[1],
+        tsv_ref(issue, "status")[1],
+        tsv_ref(issue, "priority")[1],
+        tsv_ref(issue, "author")[1],
+        *tsv_ref(issue, "assigned_to"),
+        tsv_ref(issue, "category")[1],
+        tsv_ref(issue, "fixed_version")[1],
+        issue.get("start_date"),
+        issue.get("due_date"),
+        issue.get("done_ratio"),
+        issue.get("estimated_hours"),
+        issue.get("spent_hours"),
+        issue.get("is_private"),
+        issue.get("created_on"),
+        issue.get("updated_on"),
+        issue.get("closed_on"),
+    )
 
 
 def list_issues(
@@ -70,11 +99,31 @@ def list_issues(
             print(json.dumps(issues, ensure_ascii=False))
         case OutputFormat.TSV:
             print_tsv(
-                ("id", "subject", "url"),
                 (
-                    (i["id"], i["subject"], issue_service.issue_url(str(i["id"])))
-                    for i in issues
+                    "id",
+                    "subject",
+                    "url",
+                    "project_id",
+                    "project_name",
+                    "tracker_name",
+                    "status_name",
+                    "priority_name",
+                    "author_name",
+                    "assigned_to_id",
+                    "assigned_to_name",
+                    "category_name",
+                    "fixed_version_name",
+                    "start_date",
+                    "due_date",
+                    "done_ratio",
+                    "estimated_hours",
+                    "spent_hours",
+                    "is_private",
+                    "created_on",
+                    "updated_on",
+                    "closed_on",
                 ),
+                (_issue_tsv_row(i) for i in issues),
             )
         case OutputFormat.PLAIN:
             for issue in issues:

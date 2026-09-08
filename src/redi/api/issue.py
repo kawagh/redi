@@ -34,6 +34,9 @@ class Issue(TypedDict):
     author: IdName
     # 担当者未割り当て時に存在しない
     assigned_to: NotRequired[IdName]
+    # カテゴリ / 対象バージョン未設定時に存在しない
+    category: NotRequired[IdName]
+    fixed_version: NotRequired[IdName]
     subject: str
     description: str
     # 親チケットがある場合のみ含まれる
