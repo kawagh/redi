@@ -10,7 +10,7 @@ from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor
 from redi.cli.issue_command.create import handle_issue_create
 from redi.cli.issue_command.update import handle_issue_update
-from redi.cli.issue_command.view import list_issues, view_issue
+from redi.cli.issue_command.view import print_issues, view_issue
 from redi.cli.issue_guard import exit_if_issue_not_found, read_issue_or_exit
 from redi.cli.shared_options import resolve_list_format, wants_json
 from redi.i18n import messages
@@ -97,7 +97,7 @@ def handle_issue(args: argparse.Namespace) -> None:
         _delete_issue(args.issue_id)
     elif cmd == "list" or cmd is None:
         _validate_query_id_filters(args)
-        list_issues(
+        print_issues(
             project_id=args.project_id or config.default_project_id,
             fixed_version_id=args.version,
             assigned_to=args.assigned_to,

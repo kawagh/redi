@@ -30,8 +30,8 @@ def format_relation_detail(relation: IssueRelation) -> list[str]:
     """関係性の詳細表示を行のリストに整形する。"""
     lines = [
         f"{relation['id']} #{relation['issue_id']} --[{relation['relation_type']}]--> #{relation['issue_to_id']}",
-        f"  {issue_service.issue_url(str(relation['issue_id']))}",
-        f"  {issue_service.issue_url(str(relation['issue_to_id']))}",
+        f"  {issue_service.issue_url(relation['issue_id'])}",
+        f"  {issue_service.issue_url(relation['issue_to_id'])}",
     ]
     if relation.get("delay") is not None:
         lines.append(f"  delay: {relation['delay']}")
