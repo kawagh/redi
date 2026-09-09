@@ -24,7 +24,7 @@ from redi.cli.shared_options import (
     wants_json,
 )
 from redi.i18n import messages
-from redi.output import eprint, print_tsv
+from redi.output import eprint, print_tsv, tsv_ref
 from redi.service import issue_category_service
 
 
@@ -123,13 +123,20 @@ def _list_issue_categories(
             print(json.dumps(categories, ensure_ascii=False))
         case OutputFormat.TSV:
             print_tsv(
-                ("id", "name", "assigned_to_id", "assigned_to_name"),
+                (
+                    "id",
+                    "name",
+                    "assigned_to_id",
+                    "assigned_to_name",
+                    "project_id",
+                    "project_name",
+                ),
                 (
                     (
                         c["id"],
                         c["name"],
-                        (c.get("assigned_to") or {}).get("id"),
-                        (c.get("assigned_to") or {}).get("name"),
+                        *tsv_ref(c, "assigned_to"),
+                        *tsv_ref(c, "project"),
                     )
                     for c in categories
                 ),

@@ -28,7 +28,8 @@ class Membership(TypedDict):
     """`memberships[]` の要素。
 
     `user` と `group` はどちらか一方のみ存在する。
-    `project` は GET /memberships/{id}.json のときのみ返る。
+    `project` は GET /memberships/{id}.json と GET /projects/{id}/memberships.json の
+    どちらでも返る。
     """
 
     id: int

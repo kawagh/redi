@@ -21,6 +21,7 @@ from redi.cli.issue_command import update as update_module
 from redi.cli.issue_command import view as view_module
 from redi.cli.issue_command.create import IssueCreateArgs, handle_issue_create
 from redi.cli.issue_command.update import IssueUpdateArgs, handle_issue_update
+from redi.cli.shared_options import OutputFormat
 from redi.i18n import messages
 
 CREATED_ISSUE = {"id": 123, "subject": "件名"}
@@ -744,3 +745,60 @@ class TestIssueUpdateRelateChoices:
         (あるいはその逆の) タイプが出る。
         """
         assert set(RELATION_TYPES) == set(view_module.INVERSE_RELATION)
+
+
+LISTED_ISSUE = {
+    "id": 12,
+    "subject": "ログインできない",
+    "description": "複数行\nの説明",
+    "project": {"id": 3, "name": "redi"},
+    "tracker": {"id": 1, "name": "バグ"},
+    "status": {"id": 2, "name": "進行中", "is_closed": False},
+    "priority": {"id": 4, "name": "高め"},
+    "author": {"id": 5, "name": "kawagh"},
+    "category": {"id": 6, "name": "認証"},
+    "fixed_version": {"id": 7, "name": "v1.0"},
+    "start_date": "2026-09-01",
+    "due_date": None,
+    "done_ratio": 30,
+    "is_private": False,
+    "estimated_hours": 2.5,
+    "spent_hours": 1.0,
+    "custom_fields": [{"id": 1, "name": "顧客", "value": "A"}],
+    "created_on": "2026-09-01T00:00:00Z",
+    "updated_on": "2026-09-02T00:00:00Z",
+    "closed_on": None,
+}
+
+
+class TestIssueListTsv:
+    """`issue list --format tsv` は既存の id / subject / url の後ろに API のフィールドを並べる"""
+
+    @pytest.fixture
+    def listed(self, monkeypatch):
+        monkeypatch.setattr(
+            view_module.issue_service, "list_issues", lambda **kwargs: [LISTED_ISSUE]
+        )
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+
+    def test_expands_refs_and_leaves_unassigned_empty(self, listed, capsys):
+        """参照は id / name に展開し、未割り当ての assigned_to は空セルにする
+
+        description と custom_fields は tsv に載せない。
+        """
+        view_module.list_issues(fmt=OutputFormat.TSV)
+
+        header, row = capsys.readouterr().out.splitlines()
+        assert header.split("\t") == [
+            "id", "subject", "url", "project_id", "project_name", "tracker_name",
+            "status_name", "priority_name", "author_name", "assigned_to_id",
+            "assigned_to_name", "category_name", "fixed_version_name", "start_date",
+            "due_date", "done_ratio", "estimated_hours", "spent_hours", "is_private",
+            "created_on", "updated_on", "closed_on",
+        ]  # fmt: skip
+        assert row.split("\t") == [
+            "12", "ログインできない", "http://localhost:3001/issues/12", "3", "redi",
+            "バグ", "進行中", "高め", "kawagh", "", "", "認証", "v1.0", "2026-09-01",
+            "", "30", "2.5", "1.0", "false", "2026-09-01T00:00:00Z",
+            "2026-09-02T00:00:00Z", "",
+        ]  # fmt: skip

@@ -1,6 +1,6 @@
 import re
 import sys
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
 
@@ -44,3 +44,12 @@ def print_tsv(header: Sequence[str], rows: Iterable[Sequence[object]]) -> None:
     print(format_tsv_row(header))
     for row in rows:
         print(format_tsv_row(row))
+
+
+def tsv_ref(item: Mapping[str, Any], key: str) -> tuple[object, object]:
+    """ネストした参照 `key: {id, name}` を `key_id` / `key_name` の 2 セルに展開する。
+
+    参照が無い (担当者未割り当てなど) ときは両方とも None (空セル) にする。
+    """
+    ref = item.get(key) or {}
+    return ref.get("id"), ref.get("name")

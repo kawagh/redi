@@ -11,8 +11,13 @@ from redi.cli.issue_category_command import (
 from redi.service import issue_category_service
 
 CATEGORIES = [
-    {"id": 1, "name": "バグ", "assigned_to": {"id": 5, "name": "担当者"}},
-    {"id": 2, "name": "改善"},
+    {
+        "id": 1,
+        "name": "バグ",
+        "project": {"id": 3, "name": "デモ"},
+        "assigned_to": {"id": 5, "name": "担当者"},
+    },
+    {"id": 2, "name": "改善", "project": {"id": 3, "name": "デモ"}},
 ]
 
 
@@ -83,6 +88,22 @@ class TestIssueCategoryList:
         )
 
         assert json.loads(capsys.readouterr().out) == CATEGORIES
+
+    def test_tsv_prints_project_after_assigned_to(
+        self, stub_issue_category_service, capsys
+    ):
+        """--format tsv では assigned_to の後ろに project_id / project_name を足す"""
+        handle_issue_category(
+            parse_issue_category_args(
+                ["issue_category", "list", "-p", "demo", "--format", "tsv"]
+            )
+        )
+
+        assert capsys.readouterr().out == (
+            "id\tname\tassigned_to_id\tassigned_to_name\tproject_id\tproject_name\n"
+            "1\tバグ\t5\t担当者\t3\tデモ\n"
+            "2\t改善\t\t\t3\tデモ\n"
+        )
 
 
 class TestIssueCategoryView:

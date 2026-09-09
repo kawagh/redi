@@ -64,13 +64,28 @@ def _list_versions(project_id: str, fmt: OutputFormat = OutputFormat.PLAIN) -> N
             print(json.dumps(versions, ensure_ascii=False))
         case OutputFormat.TSV:
             print_tsv(
-                ("id", "name", "status", "url"),
+                (
+                    "id",
+                    "name",
+                    "status",
+                    "url",
+                    "due_date",
+                    "sharing",
+                    "description",
+                    "created_on",
+                    "updated_on",
+                ),
                 (
                     (
                         v["id"],
                         v["name"],
                         v["status"],
                         version_service.version_url(v["id"]),
+                        v.get("due_date"),
+                        v.get("sharing"),
+                        v.get("description"),
+                        v.get("created_on"),
+                        v.get("updated_on"),
                     )
                     for v in versions
                 ),

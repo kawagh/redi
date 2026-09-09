@@ -86,6 +86,9 @@ def _list_time_entries(
                     "project_id",
                     "project_name",
                     "comments",
+                    "activity_id",
+                    "created_on",
+                    "updated_on",
                 ),
                 (
                     (
@@ -99,6 +102,9 @@ def _list_time_entries(
                         (te.get("project") or {}).get("id"),
                         (te.get("project") or {}).get("name"),
                         te.get("comments"),
+                        (te.get("activity") or {}).get("id"),
+                        te.get("created_on"),
+                        te.get("updated_on"),
                     )
                     for te in entries
                 ),

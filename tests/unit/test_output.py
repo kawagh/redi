@@ -2,7 +2,7 @@
 
 import pytest
 
-from redi.output import eprint, print_tsv, tsv_cell
+from redi.output import eprint, print_tsv, tsv_cell, tsv_ref
 
 
 class TestEprint:
@@ -72,3 +72,15 @@ class TestPrintTsv:
         print_tsv(("id", "name"), [])
 
         assert capsys.readouterr().out == "id\tname\n"
+
+
+class TestTsvRef:
+    """tsv_ref() はネストした参照を id / name の 2 セルに展開する"""
+
+    def test_expands_id_and_name(self):
+        """`project: {id, name}` は (id, name) になる"""
+        assert tsv_ref({"project": {"id": 3, "name": "redi"}}, "project") == (3, "redi")
+
+    def test_missing_ref_is_two_empty_cells(self):
+        """参照が無い (担当者未割り当てなど) ときも列数を崩さず 2 つとも None にする"""
+        assert tsv_ref({"id": 1}, "assigned_to") == (None, None)
