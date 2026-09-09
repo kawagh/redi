@@ -52,15 +52,22 @@ def _list_time_entries(
     offset: int | None = None,
     fmt: OutputFormat = OutputFormat.PLAIN,
 ) -> None:
-    """作業時間の一覧を標準出力に出す。json では取得した JSON をそのまま出す。"""
-    entries = time_entry_service.fetch_page(
-        project_id=project_id,
-        user_id=user_id,
-        from_date=from_date,
-        to_date=to_date,
-        limit=limit,
-        offset=offset,
-    )["time_entries"]
+    """作業時間の一覧を標準出力に出す。json では取得した JSON をそのまま出す。
+
+    プロジェクトが存在しない場合は指定した ID を添えて exit 1 する。
+    """
+    try:
+        entries = time_entry_service.fetch_page(
+            project_id=project_id,
+            user_id=user_id,
+            from_date=from_date,
+            to_date=to_date,
+            limit=limit,
+            offset=offset,
+        )["time_entries"]
+    except ProjectNotFoundException as e:
+        eprint(messages.project_not_found.format(id=e.project_id))
+        sys.exit(1)
     match fmt:
         case OutputFormat.JSON:
             print(json.dumps(entries, ensure_ascii=False))
