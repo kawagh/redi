@@ -34,19 +34,26 @@ class TestUpdate:
 class TestList:
     """`user list` の権限不足時のふるまい"""
 
-    def test_permission_denied_is_not_an_error_exit(self, monkeypatch, capsys):
-        """一覧は管理者権限が要るため、権限不足なら理由を出して正常終了する"""
+    def test_permission_denied_exits_with_reason(self, monkeypatch, capsys):
+        """一覧は管理者権限が要るため、権限不足なら理由と代替手段を出して exit 1 する
+
+        一覧が取れていないのに exit 0 だと、スクリプトやエージェントが
+        「ユーザーが 0 人」と「権限が無くて取れなかった」を区別できない。
+        """
 
         def fake_list_users(**kwargs):
             raise UserPermissionDeniedException
 
         monkeypatch.setattr(user_command.user_service, "list_users", fake_list_users)
 
-        user_command._list_users()
+        with pytest.raises(SystemExit) as e:
+            user_command._list_users()
 
-        err = capsys.readouterr().err
-        assert messages.user_list_admin_required in err
-        assert messages.user_list_member_hint in err
+        captured = capsys.readouterr()
+        assert e.value.code == 1
+        assert captured.out == ""
+        assert messages.user_list_admin_required in captured.err
+        assert messages.user_list_member_hint in captured.err
 
 
 class TestListFilterOptions:

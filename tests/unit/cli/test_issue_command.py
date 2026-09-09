@@ -626,6 +626,30 @@ class TestIssueUpdateAddWatcher:
         )
 
 
+class TestIssueUpdateDeleteRelation:
+    """`--delete-relation` が Redmine のエラーで失敗したとき"""
+
+    def test_http_error_exits(self, monkeypatch, capsys):
+        """削除に失敗したら理由を出して exit 1 し、成功メッセージを出さない"""
+        monkeypatch.setattr(
+            update_module.issue_relation_service,
+            "delete_relation",
+            _raise_http_error(403),
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            handle_issue_update(
+                parse_issue_args(
+                    ["issue", "update", "42", "--delete-relation", "--to", "43"]
+                )
+            )
+
+        captured = capsys.readouterr()
+        assert exc_info.value.code == 1
+        assert messages.relation_delete_failed in captured.err
+        assert captured.out == ""
+
+
 class TestIssueUpdateStatusChoices:
     """`issue update` の対話でステータスを選ぶとき
 
