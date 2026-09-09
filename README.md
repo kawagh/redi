@@ -61,7 +61,7 @@ codex plugin add redmine-redi@redi
 
 ## Documentation
 
-https://kawagh.github.io/redi/ (also available in [Japanese](https://kawagh.github.io/redi/ja/))
+https://kawagh.github.io/redi/ (also available in [Japanese(日本語)](https://kawagh.github.io/redi/ja/))
 
 - [Getting Started](https://kawagh.github.io/redi/getting-started/) — install and connect
 - [TUI](https://kawagh.github.io/redi/tui/) — tabs and keys
