@@ -27,6 +27,38 @@ I recommend installation via [uv](https://github.com/astral-sh/uv).
 uv tool install redtile  # name on PyPI is redtile, NOT redi
 ```
 
+## Plugin (Agent Skill + Hook)
+
+`redmine-redi` makes coding agents (Claude Code, Codex) use `redi` for Redmine work.
+It bundles an Agent Skill and a `PreToolUse` hook that denies direct reads of the config file.
+See [Plugin](https://kawagh.github.io/redi/cli/plugin/) for skill-only installation.
+
+### Install
+
+```sh
+# Claude Code
+/plugin marketplace add kawagh/redi
+/plugin install redmine-redi@redi
+
+# Codex
+codex plugin marketplace add kawagh/redi
+codex plugin add redmine-redi@redi
+```
+
+### Update
+
+Refresh the marketplace first, then update the plugin. Claude Code needs a restart to apply.
+
+```sh
+# Claude Code
+/plugin marketplace update redi
+/plugin update redmine-redi@redi
+
+# Codex
+codex plugin marketplace upgrade redi
+codex plugin add redmine-redi@redi
+```
+
 ## Documentation
 
 https://kawagh.github.io/redi/ (also available in [Japanese](https://kawagh.github.io/redi/ja/))
