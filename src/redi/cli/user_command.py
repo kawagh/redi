@@ -1,6 +1,7 @@
 import argparse
 import json
 import sys
+from typing import assert_never
 
 import requests
 
@@ -9,9 +10,7 @@ from redi.api.user import User, UserNotFoundException, UserPermissionDeniedExcep
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
 from redi.cli.shared_options import (
-    FORMAT_JSON,
-    FORMAT_PLAIN,
-    FORMAT_TSV,
+    OutputFormat,
     SharedOptionParser,
     add_format_options,
     resolve_list_format,
@@ -93,7 +92,7 @@ def _list_users(
     group_id: int | None = None,
     limit: int | None = None,
     offset: int | None = None,
-    fmt: str = FORMAT_PLAIN,
+    fmt: OutputFormat = OutputFormat.PLAIN,
 ) -> None:
     """ユーザー一覧を標準出力に出す。json では取得した JSON をそのまま出す。"""
     try:
@@ -104,17 +103,19 @@ def _list_users(
         eprint(messages.user_list_admin_required)
         eprint(messages.user_list_member_hint)
         return
-    if fmt == FORMAT_JSON:
-        print(json.dumps(users, ensure_ascii=False))
-        return
-    if fmt == FORMAT_TSV:
-        print_tsv(
-            ("id", "login"),
-            ((u["id"], u["login"]) for u in users),
-        )
-        return
-    for user in users:
-        print(f"{user['id']} {user['login']}")
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(users, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                ("id", "login"),
+                ((u["id"], u["login"]) for u in users),
+            )
+        case OutputFormat.PLAIN:
+            for user in users:
+                print(f"{user['id']} {user['login']}")
+        case _:
+            assert_never(fmt)
 
 
 def _view_user(user_id: str, full: bool = False) -> None:

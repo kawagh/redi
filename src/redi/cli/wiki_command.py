@@ -2,6 +2,7 @@ import argparse
 import json
 import sys
 import webbrowser
+from typing import assert_never
 
 import requests
 from prompt_toolkit.validation import ValidationError, Validator
@@ -19,9 +20,7 @@ from redi.cli.editor import open_editor
 from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.picker import inline_choice
 from redi.cli.shared_options import (
-    FORMAT_JSON,
-    FORMAT_PLAIN,
-    FORMAT_TSV,
+    OutputFormat,
     add_format_options,
     project_option_parser,
     resolve_list_format,
@@ -62,33 +61,37 @@ def _read_pages(project_id: str) -> list[WikiPage]:
         sys.exit(1)
 
 
-def _list_pages(project_id: str, fmt: str = FORMAT_PLAIN) -> None:
+def _list_pages(project_id: str, fmt: OutputFormat = OutputFormat.PLAIN) -> None:
     """Wiki ページ一覧をツリー表示する。json では取得した JSON をそのまま出す。
 
     tsv はツリー装飾を持たず、親子関係は parent_title 列で表す。
     """
     pages = _read_pages(project_id)
-    if fmt == FORMAT_JSON:
-        print(json.dumps(pages, ensure_ascii=False))
-        return
-    if fmt == FORMAT_TSV:
-        print_tsv(
-            ("title", "parent_title", "version", "updated_on", "url"),
-            (
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(pages, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                ("title", "parent_title", "version", "updated_on", "url"),
                 (
-                    p["title"],
-                    (p.get("parent") or {}).get("title"),
-                    p.get("version"),
-                    p.get("updated_on"),
-                    wiki_service.page_url(project_id, p["title"]),
+                    (
+                        p["title"],
+                        (p.get("parent") or {}).get("title"),
+                        p.get("version"),
+                        p.get("updated_on"),
+                        wiki_service.page_url(project_id, p["title"]),
+                    )
+                    for p, _ in wiki_service.flatten_wiki_tree(pages)
+                ),
+            )
+        case OutputFormat.PLAIN:
+            for page, tree_prefix in wiki_service.flatten_wiki_tree(pages):
+                title = page["title"]
+                print(
+                    f"{tree_prefix}[{title}]({wiki_service.page_url(project_id, title)})"
                 )
-                for p, _ in wiki_service.flatten_wiki_tree(pages)
-            ),
-        )
-        return
-    for page, tree_prefix in wiki_service.flatten_wiki_tree(pages):
-        title = page["title"]
-        print(f"{tree_prefix}[{title}]({wiki_service.page_url(project_id, title)})")
+        case _:
+            assert_never(fmt)
 
 
 def _view_page(

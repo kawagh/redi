@@ -3,7 +3,7 @@ import json
 import sys
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, assert_never
 
 from redi.api.custom_field import fetch_custom_fields
 from redi.api.enumeration import (
@@ -14,8 +14,7 @@ from redi.api.enumeration import (
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.tracker import fetch_trackers
 from redi.cli.shared_options import (
-    FORMAT_JSON,
-    FORMAT_TSV,
+    OutputFormat,
     add_format_options,
     resolve_list_format,
 )
@@ -142,7 +141,7 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
 
 def _print_enumeration(
     items: Iterable[Mapping[str, Any]],
-    fmt: str,
+    fmt: OutputFormat,
     resource: EnumerationResource,
 ) -> None:
     """一覧専用リソースを 1 行ずつ表示する。
@@ -150,22 +149,24 @@ def _print_enumeration(
     plain の既定は `{id} {name}` で、リソースが整形を持つ場合はそちらに任せる。
     """
     items = list(items)
-    if fmt == FORMAT_JSON:
-        print(json.dumps(items, ensure_ascii=False))
-        return
-    if fmt == FORMAT_TSV:
-        columns = resource.tsv_columns
-        print_tsv(
-            columns,
-            ([item.get(column) for column in columns] for item in items),
-        )
-        return
-    if resource.format_lines is not None:
-        lines = resource.format_lines(items)
-    else:
-        lines = [f"{item['id']} {item['name']}" for item in items]
-    for line in lines:
-        print(line)
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(items, ensure_ascii=False))
+        case OutputFormat.TSV:
+            columns = resource.tsv_columns
+            print_tsv(
+                columns,
+                ([item.get(column) for column in columns] for item in items),
+            )
+        case OutputFormat.PLAIN:
+            if resource.format_lines is not None:
+                lines = resource.format_lines(items)
+            else:
+                lines = [f"{item['id']} {item['name']}" for item in items]
+            for line in lines:
+                print(line)
+        case _:
+            assert_never(fmt)
 
 
 def _add_list_subparser(

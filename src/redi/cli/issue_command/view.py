@@ -6,10 +6,11 @@
 import json
 import sys
 import webbrowser
+from typing import assert_never
 
 from redi.api.exceptions import ProjectNotFoundException, QueryNotFoundException
 from redi.api.issue import Issue, IssueNotFoundException
-from redi.cli.shared_options import FORMAT_JSON, FORMAT_PLAIN, FORMAT_TSV
+from redi.cli.shared_options import OutputFormat
 from redi.i18n import messages
 from redi.output import eprint, print_tsv
 from redi.service import issue_service
@@ -39,7 +40,7 @@ def list_issues(
     query_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
-    fmt: str = FORMAT_PLAIN,
+    fmt: OutputFormat = OutputFormat.PLAIN,
 ) -> None:
     """イシュー一覧を1行ずつ出す。json では取得した JSON をそのまま出す。
 
@@ -64,23 +65,25 @@ def list_issues(
     except ProjectNotFoundException:
         eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
-    if fmt == FORMAT_JSON:
-        print(json.dumps(issues, ensure_ascii=False))
-        return
-    if fmt == FORMAT_TSV:
-        print_tsv(
-            ("id", "subject", "url"),
-            (
-                (i["id"], i["subject"], issue_service.issue_url(str(i["id"])))
-                for i in issues
-            ),
-        )
-        return
-    for issue in issues:
-        print(
-            f"{issue['id']} {issue['subject']} "
-            f"{issue_service.issue_url(str(issue['id']))}"
-        )
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(issues, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                ("id", "subject", "url"),
+                (
+                    (i["id"], i["subject"], issue_service.issue_url(str(i["id"])))
+                    for i in issues
+                ),
+            )
+        case OutputFormat.PLAIN:
+            for issue in issues:
+                print(
+                    f"{issue['id']} {issue['subject']} "
+                    f"{issue_service.issue_url(str(issue['id']))}"
+                )
+        case _:
+            assert_never(fmt)
 
 
 def view_issue(

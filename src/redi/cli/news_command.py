@@ -7,6 +7,7 @@ import argparse
 import json
 import sys
 import webbrowser
+from typing import assert_never
 
 import requests
 
@@ -19,9 +20,7 @@ from redi.cli.editor import open_editor, shorten_to_oneline
 from redi.cli.interactive import exit_on_cancel, prompt
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import (
-    FORMAT_JSON,
-    FORMAT_PLAIN,
-    FORMAT_TSV,
+    OutputFormat,
     add_format_options,
     pagination_option_parser,
     project_option_parser,
@@ -56,42 +55,51 @@ def _fetch_news(news_id: str) -> News:
 
 def _list_news(
     project_id: str | None = None,
-    fmt: str = FORMAT_PLAIN,
+    fmt: OutputFormat = OutputFormat.PLAIN,
     limit: int | None = None,
     offset: int | None = None,
 ) -> None:
     """ニュース一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
     news_list = _fetch_news_list(project_id, limit=limit, offset=offset)
-    if fmt == FORMAT_JSON:
-        print(json.dumps(news_list, ensure_ascii=False))
-        return
-    if fmt == FORMAT_TSV:
-        print_tsv(
-            ("id", "title", "project_id", "project_name", "author_name", "created_on"),
-            (
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(news_list, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
                 (
-                    n["id"],
-                    n["title"],
-                    n["project"]["id"],
-                    n["project"]["name"],
-                    n["author"]["name"],
-                    n["created_on"],
-                )
-                for n in news_list
-            ),
-        )
-        return
-    for news in news_list:
-        parts = [str(news["id"]), news["title"]]
-        project = news["project"]["name"]
-        if project:
-            parts.append(f"[{project}]")
-        author = news["author"]["name"]
-        if author:
-            parts.append(f"by {author}")
-        if news["created_on"]:
-            parts.append(news["created_on"])
-        print(" ".join(parts))
+                    "id",
+                    "title",
+                    "project_id",
+                    "project_name",
+                    "author_name",
+                    "created_on",
+                ),
+                (
+                    (
+                        n["id"],
+                        n["title"],
+                        n["project"]["id"],
+                        n["project"]["name"],
+                        n["author"]["name"],
+                        n["created_on"],
+                    )
+                    for n in news_list
+                ),
+            )
+        case OutputFormat.PLAIN:
+            for news in news_list:
+                parts = [str(news["id"]), news["title"]]
+                project = news["project"]["name"]
+                if project:
+                    parts.append(f"[{project}]")
+                author = news["author"]["name"]
+                if author:
+                    parts.append(f"by {author}")
+                if news["created_on"]:
+                    parts.append(news["created_on"])
+                print(" ".join(parts))
+        case _:
+            assert_never(fmt)
 
 
 def _view_news(news_id: str, full: bool = False, web: bool = False) -> None:

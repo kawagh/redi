@@ -1,6 +1,7 @@
 import argparse
 import json
 import sys
+from typing import assert_never
 
 import requests
 
@@ -10,9 +11,7 @@ from redi.api.membership import Membership, MembershipNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.shared_options import (
-    FORMAT_JSON,
-    FORMAT_PLAIN,
-    FORMAT_TSV,
+    OutputFormat,
     add_format_options,
     pagination_option_parser,
     project_option_parser,
@@ -54,7 +53,7 @@ def _membership_tsv_row(membership: Membership) -> tuple[object, ...]:
 
 def _list_memberships(
     project_id: str,
-    fmt: str = FORMAT_PLAIN,
+    fmt: OutputFormat = OutputFormat.PLAIN,
     limit: int | None = None,
     offset: int | None = None,
 ) -> None:
@@ -66,17 +65,19 @@ def _list_memberships(
     except ProjectNotFoundException:
         eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
-    if fmt == FORMAT_JSON:
-        print(json.dumps(memberships, ensure_ascii=False))
-        return
-    if fmt == FORMAT_TSV:
-        print_tsv(
-            ("id", "principal_kind", "principal_id", "principal_name", "roles"),
-            (_membership_tsv_row(m) for m in memberships),
-        )
-        return
-    for membership in memberships:
-        print(_format_membership_line(membership))
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(memberships, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                ("id", "principal_kind", "principal_id", "principal_name", "roles"),
+                (_membership_tsv_row(m) for m in memberships),
+            )
+        case OutputFormat.PLAIN:
+            for membership in memberships:
+                print(_format_membership_line(membership))
+        case _:
+            assert_never(fmt)
 
 
 def _read_membership(membership_id: str) -> Membership:
