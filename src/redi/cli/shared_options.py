@@ -58,7 +58,10 @@ def add_format_options(
     postfix=True では `--full` も同様に namespace に載せない。
 
     tsv=True は list 系のパーサ用で、`--format tsv` を受け付ける。
-    短縮形 `-f` は `--firstname` / `--filename` と衝突するので付けない。
+
+    短縮形 `-f` は `--firstname` / `--filename` の `-f` と文字が重なるが、
+    それらは `--format` を持たない `create` / `update` サブパーサにあり、
+    argparse はサブパーサごとに短縮形を解決するので同居できる。
 
     `type=OutputFormat` は付けない。付けると未対応の値のエラーが
     `invalid OutputFormat value` になり、選べる形式の案内が消えるため。
@@ -66,6 +69,7 @@ def add_format_options(
     """
     parser.add_argument(
         "--format",
+        "-f",
         choices=LIST_OUTPUT_FORMATS if tsv else OUTPUT_FORMATS,
         default=argparse.SUPPRESS,
         help=messages.arg_help_format_list if tsv else messages.arg_help_format,
