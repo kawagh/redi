@@ -1,3 +1,4 @@
+import difflib
 import os
 import sys
 import tomllib
@@ -188,6 +189,25 @@ def profile_has_credentials(profile_name: str, config_path: Path | None = None) 
     return bool(profile.redmine_url) and bool(profile.redmine_api_key)
 
 
+def profile_not_found_message(name: str, path: Path, names: list[str]) -> str:
+    """存在しないプロファイルを指されたときのエラー文を返す。
+
+    設定ファイルのパスだけでは次に打つコマンドが分からないので、そのファイルにある
+    プロファイル名と一覧の出し方を添える。タイプミスが疑われる近い名前があれば
+    候補も示す。
+    """
+    from redi.i18n import messages
+
+    lines = [messages.profile_not_found.format(name=name, path=path)]
+    close = difflib.get_close_matches(name, names, n=3)
+    if close:
+        lines.append(messages.profile_did_you_mean.format(names=", ".join(close)))
+    if names:
+        lines.append(messages.profile_available.format(names=", ".join(names)))
+    lines.append(messages.profile_list_hint)
+    return "\n".join(lines)
+
+
 # 起動時のプロファイル解決。`redi.i18n` が import 時に `language` を読むなど、
 # 設定値は import された時点で確定していることを前提にしている。
 _toml = load_toml()
@@ -197,7 +217,10 @@ if (
     and _profile_explicit
     and not isinstance(_toml.get(_profile_name), dict)
 ):
-    eprint(f"profile '{_profile_name}' not found in {CONFIG_PATH}")
+    # 指定されたプロファイルが無いので、エラー文の言語は default_profile 側から取る
+    apply_profile(_toml.get("default_profile"))
+    _names = [k for k, v in _toml.items() if isinstance(v, dict)]
+    eprint(profile_not_found_message(_profile_name, CONFIG_PATH, _names))
     sys.exit(1)
 apply_profile(_profile_name)
 
@@ -231,7 +254,8 @@ def update_profile(
         sys.exit(1)
     profile_table = doc.get(target_profile) if target_profile in doc else None
     if not isinstance(profile_table, Table):
-        eprint(f"profile '{target_profile}' not found in {path}")
+        names = [k for k, v in doc.items() if isinstance(v, Table)]
+        eprint(profile_not_found_message(target_profile, path, names))
         sys.exit(1)
 
     for key, value in values.to_dict().items():
@@ -289,7 +313,8 @@ def set_default_profile(profile_name: str, config_path: Path | None = None) -> b
         doc = tomlkit.document()
 
     if profile_name not in doc or not isinstance(doc.get(profile_name), dict):
-        eprint(f"profile '{profile_name}' not found in {path}")
+        names = [k for k, v in doc.items() if isinstance(v, Table)]
+        eprint(profile_not_found_message(profile_name, path, names))
         return False
 
     doc["default_profile"] = profile_name
