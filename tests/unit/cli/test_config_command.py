@@ -213,8 +213,8 @@ class TestUpdateFieldOptions:
             config_command._update_field_options(self._field_values, current)
         )
 
-        assert options["url"] == "redmine_url: http://example.com"
-        assert options["editor"] == "editor: vim"
+        assert options["url"] == "redmine_url # http://example.com"
+        assert options["editor"] == "editor # vim"
 
     def test_unset_value_not_shown(self):
         """未設定の項目はラベルだけにする"""

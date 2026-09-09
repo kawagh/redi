@@ -157,7 +157,7 @@ def _update_field_options(
         "text_formatting": current.text_formatting,
     }
     return [
-        (key, f"{label}: {value}" if (value := current_values.get(key)) else label)
+        (key, f"{label} # {value}" if (value := current_values.get(key)) else label)
         for key, label in field_values
     ]
 
