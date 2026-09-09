@@ -37,8 +37,8 @@ See [Plugin](https://kawagh.github.io/redi/cli/plugin/) for skill-only installat
 
 ```sh
 # Claude Code
-/plugin marketplace add kawagh/redi
-/plugin install redmine-redi@redi
+claude plugin marketplace add kawagh/redi
+claude plugin install redmine-redi@redi
 
 # Codex
 codex plugin marketplace add kawagh/redi
@@ -51,8 +51,8 @@ Refresh the marketplace first, then update the plugin. Claude Code needs a resta
 
 ```sh
 # Claude Code
-/plugin marketplace update redi
-/plugin update redmine-redi@redi
+claude plugin marketplace update redi
+claude plugin update redmine-redi@redi
 
 # Codex
 codex plugin marketplace upgrade redi
