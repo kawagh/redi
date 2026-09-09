@@ -425,6 +425,57 @@ class TestViewIssueComments:
         assert "テストコメント" in capsys.readouterr().out
 
 
+class TestIssueViewInclude:
+    """`issue view --include` は有効値だけを受け付ける
+
+    Redmine は未知の include を黙って無視するため、送信前に弾かないと
+    タイポしても rc=0 で正常終了してしまう。`search --type` と同じ扱いにする。
+    """
+
+    def test_rejects_unknown_value(self, capsys):
+        """未知の値があれば送信前に exit 2 し、その値と指定可能な値を案内する"""
+        with pytest.raises(SystemExit) as e:
+            parse_issue_args(["issue", "view", "42", "--include", "journal"])
+
+        assert e.value.code == 2
+        err = capsys.readouterr().err
+        assert "journal" in err
+        assert "allowed_statuses" in err
+
+    def test_rejects_unknown_value_mixed_with_valid(self, capsys):
+        """有効値と混ざっていても未知の値があれば弾く"""
+        with pytest.raises(SystemExit):
+            parse_issue_args(["issue", "view", "42", "--include", "journals,bogus"])
+
+        assert "bogus" in capsys.readouterr().err
+
+    def test_accepts_valid_values(self):
+        """有効値をカンマ区切りで受け付け、前後の空白は取り除く"""
+        args = parse_issue_args(
+            ["issue", "view", "42", "--include", "children, watchers"]
+        )
+
+        assert args.include == ["children", "watchers"]
+
+    def test_passes_include_to_api_with_defaults(self, monkeypatch):
+        """指定した include を既定の relations,attachments,journals に足して取得する"""
+        called = {}
+        monkeypatch.setattr(
+            view_module.issue_service,
+            "read_issue",
+            lambda issue_id, include: called.update(include=include) or VIEWED_ISSUE,
+        )
+
+        view_module.view_issue("42", include=["watchers", "journals"])
+
+        assert called["include"].split(",") == [
+            "relations",
+            "attachments",
+            "journals",
+            "watchers",
+        ]
+
+
 class TestIssueUpdateUnknownIdRejected:
     """`issue update` に存在しない tracker_id / status_id を渡したとき
 

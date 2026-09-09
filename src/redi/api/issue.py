@@ -2,7 +2,7 @@
 # 自分より下で定義される TypedDict を参照しているため、注釈の評価を遅らせる
 from __future__ import annotations
 
-from typing import NotRequired, TypedDict, cast
+from typing import Literal, NotRequired, TypedDict, cast, get_args
 
 from redi.api.exceptions import (
     IssueListNotFoundException,
@@ -12,6 +12,19 @@ from redi.api.exceptions import (
 )
 from redi.api.types import IdName
 from redi.client import client
+
+# https://www.redmine.org/projects/redmine/wiki/Rest_Issues#Showing-an-issue
+IssueInclude = Literal[
+    "children",
+    "attachments",
+    "relations",
+    "changesets",
+    "journals",
+    "watchers",
+    "allowed_statuses",
+]
+# argparse の検証やヘルプに使うため、Literal から実行時の値を導出する
+ISSUE_INCLUDES: tuple[IssueInclude, ...] = get_args(IssueInclude)
 
 
 class IssuesPageResponse(TypedDict):

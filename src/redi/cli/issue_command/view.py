@@ -136,9 +136,15 @@ def list_issues(
 
 
 def view_issue(
-    issue_id: str, include: str = "", full: bool = False, web: bool = False
+    issue_id: str,
+    include: list[str] | None = None,
+    full: bool = False,
+    web: bool = False,
 ) -> None:
-    """イシューの詳細を標準出力に出す。存在しない場合は exit 1。"""
+    """イシューの詳細を標準出力に出す。存在しない場合は exit 1。
+
+    include は argparse (`_parse_issue_includes`) で検証済みの値を受け取る。
+    """
     if web:
         url = issue_service.issue_url(issue_id)
         print(url)
@@ -146,11 +152,9 @@ def view_issue(
         return
     # コメントは既定で表示するため journals も常に取得する
     includes = ["relations", "attachments", "journals"]
-    if include:
-        for name in include.split(","):
-            name = name.strip()
-            if name and name not in includes:
-                includes.append(name)
+    for name in include or []:
+        if name not in includes:
+            includes.append(name)
     try:
         issue = issue_service.read_issue(issue_id, include=",".join(includes))
     except IssueNotFoundException:

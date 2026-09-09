@@ -74,7 +74,7 @@ def handle_issue(args: argparse.Namespace) -> None:
     if cmd == "view":
         view_issue(
             args.issue_id,
-            include=args.include or "",
+            include=args.include or [],
             full=wants_json(args),
             web=args.web,
         )
