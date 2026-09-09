@@ -633,6 +633,62 @@ class TestShowAllProfiles:
         assert "secret-sub" not in out
         assert "redmine_api_key" not in out
 
+    def test_hides_top_level_api_key(self, tmp_path, capsys):
+        """プロファイルの外(トップレベル)に書かれたAPIキーも出力に含まれない"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+            redmine_api_key = "secret-top"
+
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+        """)
+        )
+
+        config.show_all_profiles(config_path=config_path)
+
+        out = capsys.readouterr().out
+        assert "secret-top" not in out
+        assert "redmine_api_key" not in out
+        doc = tomllib.loads(out)
+        assert doc["default_profile"] == "main"
+        assert doc["main"]["redmine_url"] == "https://redmine.example.com/main"
+
+    def test_warns_top_level_api_key(self, tmp_path, capsys):
+        """トップレベルのAPIキーは認証に使われないので、標準エラー出力で置き場所の誤りを知らせる"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            redmine_api_key = "secret-top"
+
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+        """)
+        )
+
+        config.show_all_profiles(config_path=config_path)
+
+        err = capsys.readouterr().err
+        assert "redmine_api_key" in err
+        assert str(config_path) in err
+        assert "secret-top" not in err
+
+    def test_no_warning_when_api_key_is_in_profile(self, tmp_path, capsys):
+        """プロファイル内に書かれたAPIキーは正しい置き場所なので警告しない"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+            redmine_api_key = "secret-main"
+        """)
+        )
+
+        config.show_all_profiles(config_path=config_path)
+
+        assert capsys.readouterr().err == ""
+
     def test_prints_message_when_config_missing(self, tmp_path, capsys):
         """config.tomlが存在しない場合はメッセージを出力する"""
         config_path = tmp_path / "missing.toml"

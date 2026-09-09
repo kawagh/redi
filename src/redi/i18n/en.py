@@ -1039,6 +1039,10 @@ class En(MessagesProto):
     config_profile_source_default = "default"
     config_profile_source_option = "via --profile"
     config_current_profile_comment = "current profile ({source})"
+    config_top_level_api_key_warning = (
+        "warning: redmine_api_key at the top level of {path} is not used for "
+        "authentication. Put it inside a profile ([profile_name] table)"
+    )
 
     # ---- TUI help labels (sections / common) ----
     tui_help_section_navigation = "Navigation"

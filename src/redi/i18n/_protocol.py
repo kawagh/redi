@@ -1167,6 +1167,8 @@ class MessagesProto(Protocol):
     """--profile による一時上書きであることを示すラベル"""
     config_current_profile_comment: str
     """--full 出力で今回使われたプロファイルの見出しに添えるコメント。{source} を埋め込む。"""
+    config_top_level_api_key_warning: str
+    """config.toml のトップレベルに redmine_api_key が書かれているときの警告。{path} を埋め込む。"""
 
     # ---- TUI help labels (sections / common) ----
     tui_help_section_navigation: str

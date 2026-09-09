@@ -377,8 +377,15 @@ def show_all_profiles(config_path: Path | None = None) -> None:
     if not path.exists():
         eprint(f"config file not found: {path}")
         return
+    from redi.i18n import messages
+
     with open(path) as f:
         doc = tomlkit.load(f)
+    # API キーは置き場所によらず出力に含めない。プロファイルの外に書かれたキーは
+    # 認証に使われないので、置き場所の誤りとして知らせる
+    if "redmine_api_key" in doc:
+        del doc["redmine_api_key"]
+        eprint(messages.config_top_level_api_key_warning.format(path=path))
     for key in list(doc.keys()):
         value = doc[key]
         if isinstance(value, Table) and "redmine_api_key" in value:
@@ -386,8 +393,6 @@ def show_all_profiles(config_path: Path | None = None) -> None:
     # default_profile は既定値でしかないので、今回使われたプロファイルの見出しに印を付ける
     current_table = doc.get(current_profile) if current_profile else None
     if isinstance(current_table, Table):
-        from redi.i18n import messages
-
         current_table.comment(
             messages.config_current_profile_comment.format(
                 source=profile_source_label()
