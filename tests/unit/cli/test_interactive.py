@@ -54,23 +54,31 @@ class TestPickerGuard:
 
 
 class TestExitOnCancel:
-    """exit_on_cancel()はキャンセルを標準エラーに通知してexit(1)する"""
+    """exit_on_cancel()はキャンセルを InputCanceledException に変換する
+
+    CLI では main() が標準エラーに通知して exit 1 に落とし、TUI ループは画面に戻す。
+    """
 
     @pytest.mark.parametrize("error", [KeyboardInterrupt, EOFError])
-    def test_exits_on_cancel(self, error, capsys):
-        """Ctrl-C/Ctrl-Dのどちらもexit(1)する"""
-        with pytest.raises(SystemExit) as exc, interactive.exit_on_cancel():
+    def test_raises_on_cancel(self, error):
+        """Ctrl-C/Ctrl-Dのどちらも通知文を持った例外にする"""
+        with (
+            pytest.raises(interactive.InputCanceledException) as exc,
+            interactive.exit_on_cancel(),
+        ):
             raise error
-        assert exc.value.code == 1
-        assert messages.canceled in capsys.readouterr().err
+        assert exc.value.message == messages.canceled
 
     def test_passes_through_without_cancel(self):
         """キャンセルされなければ何もしない"""
         with interactive.exit_on_cancel():
             pass
 
-    def test_uses_given_notice(self, capsys):
+    def test_uses_given_notice(self):
         """notice を渡すと設定の言語ではなくそちらで通知する"""
-        with pytest.raises(SystemExit), interactive.exit_on_cancel("中止しました"):
+        with (
+            pytest.raises(interactive.InputCanceledException) as exc,
+            interactive.exit_on_cancel("中止しました"),
+        ):
             raise KeyboardInterrupt
-        assert "中止しました" in capsys.readouterr().err
+        assert exc.value.message == "中止しました"

@@ -29,7 +29,7 @@ from redi.cli.custom_field_prompt import (
     prompt_custom_field_value,
 )
 from redi.cli.editor import open_editor, save_body_on_failure, shorten_to_oneline
-from redi.cli.interactive import exit_on_cancel, prompt
+from redi.cli.interactive import InputCanceledException, exit_on_cancel, prompt
 from redi.cli.issue_command.custom_fields import parse_custom_fields
 from redi.cli.issue_command.field_prompt import (
     parse_iso_date,
@@ -311,8 +311,7 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
                 messages.prompt_subject, default=subject_default
             ).strip()
         if not args.subject:
-            eprint(messages.canceled_empty_subject)
-            sys.exit(1)
+            raise InputCanceledException(messages.canceled_empty_subject)
         # 必要なカスタムフィールドを対話的に入力
         args.custom_fields, browser_only = _interactive_fill_required_custom_fields(
             project_id=project_id,

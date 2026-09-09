@@ -17,7 +17,7 @@ from redi.api.wiki import (
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor
-from redi.cli.interactive import exit_on_cancel, prompt
+from redi.cli.interactive import InputCanceledException, exit_on_cancel, prompt
 from redi.cli.picker import inline_choice
 from redi.cli.shared_options import (
     OutputFormat,
@@ -313,8 +313,7 @@ def handle_wiki(args: argparse.Namespace) -> None:
                     messages.prompt_page_title, validator=_PageTitleValidator()
                 ).strip()
             if not page_title:
-                eprint(messages.canceled_empty_title)
-                sys.exit(1)
+                raise InputCanceledException(messages.canceled_empty_title)
             if parent_title is None:
                 parent_options = build_wiki_tree_choices(pages)
                 if parent_options:

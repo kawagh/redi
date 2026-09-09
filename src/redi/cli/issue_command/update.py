@@ -31,7 +31,7 @@ from redi.cli.custom_field_prompt import (
     prompt_custom_field_value,
 )
 from redi.cli.editor import open_editor, save_body_on_failure
-from redi.cli.interactive import exit_on_cancel, prompt
+from redi.cli.interactive import InputCanceledException, exit_on_cancel, prompt
 from redi.cli.issue_command.custom_fields import parse_custom_fields
 from redi.cli.issue_command.field_prompt import (
     parse_iso_date,
@@ -160,8 +160,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
             initial_value="description",
         )
     if not selected:
-        eprint(messages.canceled_no_items_selected)
-        sys.exit(1)
+        raise InputCanceledException(messages.canceled_no_items_selected)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
     with exit_on_cancel():
@@ -639,5 +638,4 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
         and not should_create_time_entry
         and not should_update_watchers
     ):
-        eprint(messages.update_canceled_no_changes)
-        sys.exit(1)
+        raise InputCanceledException(messages.update_canceled_no_changes)
