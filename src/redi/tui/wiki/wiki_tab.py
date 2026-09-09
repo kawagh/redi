@@ -12,12 +12,40 @@ from redi.tui.state import (
     TuiPosition,
     TuiResult,
     TuiState,
+    WikiVersionView,
 )
 from redi.tui.tab import TabView, noop, noop_jump
 
 
 def _wiki_project(state: TuiState) -> str | None:
     return state.effective_wiki_project_id()
+
+
+def current_page(state: TuiState) -> WikiPage | None:
+    """カーソル位置のページ。一覧が空なら None。"""
+    pages = state.wiki_tab.pages
+    if not pages:
+        return None
+    return pages[state.wiki_tab.cursor]
+
+
+def viewing_version(state: TuiState) -> WikiVersionView | None:
+    """カーソル位置のページで過去版を表示中ならその内容。最新版なら None。
+
+    `version_view` は別ページへ移っても残り得るので、タイトルが一致するときだけ有効とみなす。
+    """
+    view = state.wiki_tab.version_view
+    page = current_page(state)
+    if view is None or page is None or page.get("title") != view.title:
+        return None
+    return view
+
+
+def _set_cursor(state: TuiState, index: int) -> None:
+    """カーソルを動かす。別ページへ移ったら過去版の表示は最新版に戻す。"""
+    if index != state.wiki_tab.cursor:
+        state.wiki_tab.version_view = None
+    state.wiki_tab.cursor = index
 
 
 def set_pages(state: TuiState, pages: list[WikiPage]) -> None:
@@ -91,18 +119,24 @@ def _render_preview(state: TuiState) -> Renderable:
     page = state.wiki_tab.pages[state.wiki_tab.cursor]
     title = page.get("title", "")
     lines = [title, ""]
+    latest = page.get("version")
+    view = viewing_version(state)
+    if view is not None:
+        # 過去版を開いていることをメタ表でも示し、最新版がいくつかを併記する
+        version_label = messages.tui_wiki_meta_version_of_latest.format(
+            version=view.version, latest=latest or ""
+        )
+    else:
+        version_label = str(latest) if latest else ""
     meta = [
         (messages.meta_parent, (page.get("parent") or {}).get("title", "")),
-        (
-            messages.meta_version,
-            str(page.get("version", "")) if page.get("version") else "",
-        ),
+        (messages.meta_version, version_label),
         (messages.meta_created, page.get("created_on") or ""),
         (messages.meta_updated, page.get("updated_on") or ""),
     ]
     lines.extend(render_meta_table(meta))
 
-    text = state.wiki_tab.texts.get(title)
+    text = view.text if view is not None else state.wiki_tab.texts.get(title)
     lines.append("")
     lines.append("----")
     if text is None:
@@ -113,7 +147,17 @@ def _render_preview(state: TuiState) -> Renderable:
 
 
 def _status_hint(state: TuiState) -> str:
-    return messages.tui_status_hint_wiki
+    hint = messages.tui_status_hint_wiki
+    view = viewing_version(state)
+    if view is None:
+        return hint
+    # 過去版を開いている間は、編集や削除の前に気付けるようステータスバーにも出す
+    page = current_page(state)
+    latest = page.get("version", "") if page is not None else ""
+    label = messages.tui_status_wiki_version_active.format(
+        version=view.version, latest=latest
+    )
+    return f" [{label}]" + hint
 
 
 def _exit_result(
@@ -134,24 +178,24 @@ def _exit_result(
 
 
 def _on_up(state: TuiState) -> None:
-    state.wiki_tab.cursor = max(0, state.wiki_tab.cursor - 1)
+    _set_cursor(state, max(0, state.wiki_tab.cursor - 1))
 
 
 def _on_down(state: TuiState) -> None:
     if state.wiki_tab.pages:
-        state.wiki_tab.cursor = min(
-            len(state.wiki_tab.pages) - 1, state.wiki_tab.cursor + 1
+        _set_cursor(
+            state, min(len(state.wiki_tab.pages) - 1, state.wiki_tab.cursor + 1)
         )
 
 
 def _on_goto_top(state: TuiState) -> None:
     if state.wiki_tab.pages:
-        state.wiki_tab.cursor = 0
+        _set_cursor(state, 0)
 
 
 def _on_goto_bottom(state: TuiState) -> None:
     if state.wiki_tab.pages:
-        state.wiki_tab.cursor = len(state.wiki_tab.pages) - 1
+        _set_cursor(state, len(state.wiki_tab.pages) - 1)
 
 
 def _on_enter(state: TuiState) -> None:
@@ -171,6 +215,10 @@ def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
     if key == "u":
         if not state.wiki_tab.pages:
             return None
+        if viewing_version(state) is not None:
+            # 過去版の本文で更新画面を開くと、古い内容で最新版を上書きしてしまう
+            state.flash_message = messages.tui_wiki_version_readonly
+            return None
         return _exit_result(state, "update")
     return None
 
@@ -189,7 +237,7 @@ def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
     for i in range(n):
         idx = (start + step * i) % n
         if query_lower in targets[idx]:
-            state.wiki_tab.cursor = idx
+            _set_cursor(state, idx)
             return
 
 
@@ -207,6 +255,8 @@ def _on_reload(state: TuiState) -> None:
     state.wiki_tab.pages = []
     state.wiki_tab.labels = []
     state.wiki_tab.texts = {}
+    state.wiki_tab.version_texts = {}
+    state.wiki_tab.version_view = None
     state.wiki_tab.cursor = 0
     _load_wikis(state)
     if prev_title is not None:
@@ -223,8 +273,12 @@ def _on_open_web(state: TuiState) -> None:
     if not project:
         return
     title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
-    if title:
-        webbrowser.open(wiki_service.page_url(project, title))
+    if not title:
+        return
+    # 過去版を開いていれば web でも同じ版を出す
+    view = viewing_version(state)
+    version = view.version if view is not None else None
+    webbrowser.open(wiki_service.page_url(project, title, version=version))
 
 
 _HELP_LINES: list[tuple[str, str]] = [
@@ -248,6 +302,8 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  u", messages.tui_help_wiki_update_page),
     ("  D", messages.tui_help_wiki_delete_page),
     ("  v", messages.tui_help_wiki_open_web),
+    ("  H", messages.tui_help_wiki_versions),
+    ("  <N>H", messages.tui_help_wiki_jump_version),
     ("  R", messages.tui_help_reload),
     (messages.tui_help_section_other, ""),
     ("  ?", messages.tui_help_show_or_close),

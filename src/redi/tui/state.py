@@ -270,6 +270,20 @@ class WikiDeleteModalState:
 
 
 @dataclass
+class WikiVersionView:
+    """H で選んだ過去版の表示状態。
+
+    最新版の表示は `None` で表し、過去版を開いているときだけこれを持つ。
+    対象ページを `title` で持つのは、カーソルが別ページへ移った後に古い版の
+    本文を別ページのものとして出さないため。
+    """
+
+    title: str
+    version: int
+    text: str
+
+
+@dataclass
 class WikiTabState:
     loaded: bool = False
     pages: list[WikiPage] = field(default_factory=list)
@@ -278,6 +292,12 @@ class WikiTabState:
     texts: dict[str, str] = field(default_factory=dict)
     error: str | None = None
     delete_modal: WikiDeleteModalState = field(default_factory=WikiDeleteModalState)
+    # H で開く版選択 modal。描画とキー操作は `tui.choice_modal` の共通部品を使う。
+    version_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
+    # 過去版を表示中ならその内容。None は最新版を表示している。
+    version_view: WikiVersionView | None = None
+    # 過去版の本文キャッシュ。過去版は変わらないので (title, version) で持つ。
+    version_texts: dict[tuple[str, int], str] = field(default_factory=dict)
 
 
 @dataclass

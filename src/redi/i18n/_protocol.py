@@ -798,6 +798,23 @@ class MessagesProto(Protocol):
     tui_wiki_delete_modal_empty: str
     """{expected}"""
     tui_wiki_delete_modal_hint: str
+    tui_wiki_version_modal_title: str
+    tui_wiki_version_modal_hint: str
+    tui_wiki_version_latest_label: str
+    """{version}"""
+    tui_wiki_version_label: str
+    """{version}"""
+    tui_wiki_version_missing: str
+    """{title}, {version}"""
+    tui_wiki_version_load_failed: str
+    """{version}, {error}"""
+    # 過去版を表示中に u / D を押したときの案内
+    tui_wiki_version_readonly: str
+    # ステータスバーとメタ表に出す「過去版を表示中」の印
+    tui_status_wiki_version_active: str
+    """{version}, {latest}"""
+    tui_wiki_meta_version_of_latest: str
+    """{version}, {latest}"""
 
     # ---- argparse helps (root) ----
     arg_help_root_description: str
@@ -1225,6 +1242,8 @@ class MessagesProto(Protocol):
     tui_help_wiki_update_page: str
     tui_help_wiki_delete_page: str
     tui_help_wiki_open_web: str
+    tui_help_wiki_versions: str
+    tui_help_wiki_jump_version: str
 
     # ---- TUI help labels (time entry tab) ----
     tui_help_time_entry_create: str

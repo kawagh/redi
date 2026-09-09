@@ -23,6 +23,7 @@ from redi.tui.time_entry.time_entry_tab import (
     request_delete as time_entry_request_delete,
 )
 from redi.tui.wiki.delete_modal import open_delete_modal as open_wiki_delete_modal
+from redi.tui.wiki.version_modal import open_version_modal, select_version
 
 
 def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
@@ -194,6 +195,19 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
             open_issue_delete_modal(state)
         elif state.tab == "wiki":
             open_wiki_delete_modal(state)
+
+    @kb.add("H", filter=normal_mode)
+    def _(event):
+        # wiki タブの版表示。<N>H は版 N を直接開き、H だけなら版の一覧から選ぶ。
+        number_buffer = state.number_buffer
+        clear_temporary_state(state)
+        if state.tab != "wiki":
+            return
+        if number_buffer:
+            reset_preview_scroll(state)
+            select_version(state, int(number_buffer))
+            return
+        open_version_modal(state)
 
     @kb.add("R", filter=normal_mode)
     def _(event):
