@@ -9,7 +9,8 @@ import webbrowser
 from typing import assert_never
 
 from redi.api.exceptions import ProjectNotFoundException, QueryNotFoundException
-from redi.api.issue import Issue, IssueNotFoundException
+from redi.api.issue import Issue
+from redi.cli.issue_guard import read_issue_or_exit
 from redi.cli.shared_options import OutputFormat
 from redi.i18n import messages
 from redi.output import eprint, print_tsv, tsv_ref
@@ -155,11 +156,7 @@ def view_issue(
     for name in include or []:
         if name not in includes:
             includes.append(name)
-    try:
-        issue = issue_service.read_issue(issue_id, include=",".join(includes))
-    except IssueNotFoundException:
-        eprint(messages.issue_not_found.format(id=issue_id))
-        sys.exit(1)
+    issue = read_issue_or_exit(issue_id, include=",".join(includes))
     if full:
         print(json.dumps(issue, ensure_ascii=False))
         return
