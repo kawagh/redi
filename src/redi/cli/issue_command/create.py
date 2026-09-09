@@ -30,7 +30,10 @@ from redi.cli.custom_field_prompt import (
 )
 from redi.cli.editor import open_editor, save_body_on_failure, shorten_to_oneline
 from redi.cli.interactive import exit_on_cancel, prompt
-from redi.cli.issue_command.custom_fields import parse_custom_fields
+from redi.cli.issue_command.custom_fields import (
+    ensure_known_custom_field_ids,
+    parse_custom_fields,
+)
 from redi.cli.issue_command.field_prompt import (
     parse_iso_date,
     prompt_assignee,
@@ -376,6 +379,11 @@ def _create_issue(args: IssueCreateArgs) -> Issue:
     # 呼び出し側で project_id と subject は解決済み
     assert args.project_id is not None
     assert args.subject is not None
+    custom_fields = (
+        parse_custom_fields(args.custom_fields) if args.custom_fields else None
+    )
+    if custom_fields:
+        ensure_known_custom_field_ids(custom_fields, args.project_id, args.tracker_id)
     try:
         return issue_service.create_issue(
             project_id=args.project_id,
@@ -389,9 +397,7 @@ def _create_issue(args: IssueCreateArgs) -> Issue:
             start_date=args.start_date,
             due_date=args.due_date,
             estimated_hours=args.estimated_hours,
-            custom_fields=parse_custom_fields(args.custom_fields)
-            if args.custom_fields
-            else None,
+            custom_fields=custom_fields,
         )
     except requests.exceptions.HTTPError as e:
         eprint(e)

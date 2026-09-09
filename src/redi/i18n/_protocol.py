@@ -126,6 +126,8 @@ class MessagesProto(Protocol):
     """トラッカーが見つからない。{id}"""
     status_not_found: str
     """ステータスが見つからない。{id}"""
+    custom_field_not_found: str
+    """カスタムフィールドが見つからない。{id}"""
     available_ids: str
     """指定できる id と名前の一覧。{items}"""
     news_not_found: str

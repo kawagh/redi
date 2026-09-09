@@ -75,6 +75,7 @@ class En(MessagesProto):
     category_not_found = "Category not found: {id}"
     tracker_not_found = "Tracker not found: {id}"
     status_not_found = "Status not found: {id}"
+    custom_field_not_found = "Custom field not found: {id}"
     available_ids = "Valid values: {items}"
     news_not_found = "News not found: {id}"
     no_search_results = "No search results found"

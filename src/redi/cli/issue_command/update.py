@@ -36,7 +36,10 @@ from redi.cli.custom_field_prompt import (
 )
 from redi.cli.editor import open_editor, save_body_on_failure
 from redi.cli.interactive import exit_on_cancel, prompt
-from redi.cli.issue_command.custom_fields import parse_custom_fields
+from redi.cli.issue_command.custom_fields import (
+    ensure_known_custom_field_ids,
+    parse_custom_fields,
+)
 from redi.cli.issue_command.field_prompt import (
     parse_iso_date,
     prompt_assignee,
@@ -411,6 +414,28 @@ def _validate_tracker_and_status(args: IssueUpdateArgs) -> None:
         )
 
 
+def _validate_custom_field_ids(args: IssueUpdateArgs) -> None:
+    """対象イシューのプロジェクト/トラッカーで使えないカスタムフィールド id を送る前に弾く。
+
+    Redmine は使えないカスタムフィールド id を 200 で黙って無視するため、
+    そのまま送ると「更新しました」と出たまま値が入らない。
+    移動先 (--project_id) やトラッカー (--tracker_id) を指定していればそちらで判定する。
+    """
+    if not args.custom_fields:
+        return
+    # 呼び出し側で issue_id は解決済み
+    assert args.issue_id is not None
+    project_id = args.project_id
+    tracker_id = args.tracker_id
+    if project_id is None or tracker_id is None:
+        current = _read_issue(args.issue_id)
+        project_id = project_id or str(current["project"]["id"])
+        tracker_id = tracker_id or str(current["tracker"]["id"])
+    ensure_known_custom_field_ids(
+        parse_custom_fields(args.custom_fields), project_id, tracker_id
+    )
+
+
 def _update_issue(args: IssueUpdateArgs, description: str | None) -> None:
     """イシューを更新し、結果を標準出力に出す。HTTP エラーは exit 1。"""
     # 呼び出し側で issue_id は解決済み
@@ -610,6 +635,7 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
     should_create_time_entry = args.hours is not None
     if should_update_issue:
         _validate_tracker_and_status(args)
+        _validate_custom_field_ids(args)
         try:
             _update_issue(args, description)
         except BaseException:

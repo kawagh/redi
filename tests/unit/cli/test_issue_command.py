@@ -16,6 +16,7 @@ from redi.api.issue_relation import RELATION_TYPES
 from redi.cli import editor as editor_module
 from redi.cli.issue_command import add_issue_parser
 from redi.cli.issue_command import create as create_module
+from redi.cli.issue_command import custom_fields as custom_fields_module
 from redi.cli.issue_command import dispatch as dispatch_module
 from redi.cli.issue_command import update as update_module
 from redi.cli.issue_command import view as view_module
@@ -591,6 +592,330 @@ class TestIssueUpdateUnknownIdRejected:
 
         assert choices["tracker_id"] == "1"
         assert choices["status_id"] == "2"
+
+
+def _issue_custom_field(cf_id: int, name: str, trackers: list[dict]) -> dict:
+    """/custom_fields.json が返すイシュー用カスタムフィールドの最小形"""
+    return {
+        "id": cf_id,
+        "name": name,
+        "customized_type": "issue",
+        "is_required": False,
+        "trackers": trackers,
+    }
+
+
+# プロジェクトで有効なカスタムフィールド。3 はプロジェクトで無効、2 はバグトラッカー限定
+PROJECT_CUSTOM_FIELDS = [{"id": 1, "name": "顧客"}, {"id": 2, "name": "バグ限定"}]
+ALL_CUSTOM_FIELDS = [
+    _issue_custom_field(1, "顧客", trackers=[]),
+    _issue_custom_field(2, "バグ限定", trackers=[{"id": 1, "name": "バグ"}]),
+    _issue_custom_field(3, "他プロジェクト", trackers=[]),
+]
+
+
+class TestIssueCreateUnknownCustomFieldIdRejected:
+    """`issue create --custom_fields` に使えないカスタムフィールド id を渡したとき
+
+    Redmine は存在しない id や対象で使えない id を 200 で黙って無視するため、
+    送る前に弾かないと「作成しました」と出たまま値が入らない。
+    """
+
+    @pytest.fixture
+    def custom_field_lists(self, monkeypatch):
+        """プロジェクト/全体の一覧と、呼ばれたら記録する作成をスタブする"""
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+        monkeypatch.setattr(
+            custom_fields_module,
+            "fetch_project_issue_custom_fields",
+            lambda project_id: PROJECT_CUSTOM_FIELDS,
+        )
+        monkeypatch.setattr(
+            custom_fields_module,
+            "fetch_custom_fields",
+            lambda refresh=False: ALL_CUSTOM_FIELDS,
+        )
+        called = {}
+
+        def create_issue(**kwargs):
+            called.update(kwargs)
+            return CREATED_ISSUE
+
+        monkeypatch.setattr(create_module.issue_service, "create_issue", create_issue)
+        return called
+
+    @staticmethod
+    def _create(custom_fields: str, tracker_id: str = "2") -> None:
+        handle_issue_create(
+            parse_issue_args(
+                [
+                    "issue",
+                    "create",
+                    "件名",
+                    "--project_id",
+                    "proj",
+                    "--tracker_id",
+                    tracker_id,
+                    "-d",
+                    "本文",
+                    "--custom_fields",
+                    custom_fields,
+                ]
+            )
+        )
+
+    def test_unknown_custom_field_id_exits(self, custom_field_lists, capsys):
+        """存在しない id は作成を送らず exit 1 する"""
+        with pytest.raises(SystemExit) as exc_info:
+            self._create("9999=x")
+
+        assert exc_info.value.code == 1
+        assert (
+            messages.custom_field_not_found.format(id="9999") in capsys.readouterr().err
+        )
+        assert custom_field_lists == {}
+
+    def test_shows_available_ids(self, custom_field_lists, capsys):
+        """弾くときは指定できる id と名前を示す"""
+        with pytest.raises(SystemExit):
+            self._create("9999=x")
+
+        assert "1:顧客" in capsys.readouterr().err
+
+    def test_id_not_enabled_for_project_exits(self, custom_field_lists, capsys):
+        """存在してもプロジェクトで有効でない id は弾く"""
+        with pytest.raises(SystemExit):
+            self._create("3=x")
+
+        assert messages.custom_field_not_found.format(id="3") in (
+            capsys.readouterr().err
+        )
+        assert custom_field_lists == {}
+
+    def test_id_not_enabled_for_tracker_exits(self, custom_field_lists, capsys):
+        """プロジェクトで有効でもトラッカーで使えない id は弾く"""
+        with pytest.raises(SystemExit):
+            self._create("2=x", tracker_id="2")
+
+        assert messages.custom_field_not_found.format(id="2") in (
+            capsys.readouterr().err
+        )
+        assert custom_field_lists == {}
+
+    def test_lists_every_unknown_id(self, custom_field_lists, capsys):
+        """使えない id が複数あればまとめて示す"""
+        with pytest.raises(SystemExit):
+            self._create("1=a,3=b,9999=c")
+
+        assert messages.custom_field_not_found.format(id="3, 9999") in (
+            capsys.readouterr().err
+        )
+
+    def test_known_ids_are_sent(self, custom_field_lists):
+        """使える id はそのまま作成に渡す"""
+        self._create("1=A,2=B", tracker_id="1")
+
+        assert custom_field_lists["custom_fields"] == [
+            {"id": 1, "value": "A"},
+            {"id": 2, "value": "B"},
+        ]
+
+    def test_non_admin_rejects_by_project_list(
+        self, custom_field_lists, monkeypatch, capsys
+    ):
+        """全体の一覧が取れない (非管理者) ときもプロジェクトの一覧で弾く
+
+        トラッカーでは絞れないので、プロジェクトで有効な id はそのまま通す。
+        """
+        monkeypatch.setattr(
+            custom_fields_module, "fetch_custom_fields", lambda refresh=False: None
+        )
+
+        with pytest.raises(SystemExit):
+            self._create("3=x")
+        assert messages.custom_field_not_found.format(id="3") in (
+            capsys.readouterr().err
+        )
+
+        self._create("2=B", tracker_id="2")
+        assert custom_field_lists["custom_fields"] == [{"id": 2, "value": "B"}]
+
+    def test_id_missing_from_cache_is_rechecked_after_refresh(
+        self, custom_field_lists, monkeypatch
+    ):
+        """キャッシュに無い id は全体の一覧を取り直して再判定する
+
+        Redmine 側で追加された直後の正しい id を弾いてしまわないようにする。
+        """
+        monkeypatch.setattr(
+            custom_fields_module,
+            "fetch_project_issue_custom_fields",
+            lambda project_id: PROJECT_CUSTOM_FIELDS + [{"id": 9, "name": "追加"}],
+        )
+        refresh_args = []
+
+        def fetch_custom_fields(refresh=False):
+            refresh_args.append(refresh)
+            if refresh:
+                return ALL_CUSTOM_FIELDS + [_issue_custom_field(9, "追加", [])]
+            return ALL_CUSTOM_FIELDS
+
+        monkeypatch.setattr(
+            custom_fields_module, "fetch_custom_fields", fetch_custom_fields
+        )
+
+        self._create("9=x")
+
+        assert refresh_args == [False, True]
+        assert custom_field_lists["custom_fields"] == [{"id": 9, "value": "x"}]
+
+    def test_known_id_does_not_refresh(self, custom_field_lists, monkeypatch):
+        """キャッシュにある id では取り直さない(正常系のリクエストを増やさない)"""
+        refresh_args = []
+
+        def fetch_custom_fields(refresh=False):
+            refresh_args.append(refresh)
+            return ALL_CUSTOM_FIELDS
+
+        monkeypatch.setattr(
+            custom_fields_module, "fetch_custom_fields", fetch_custom_fields
+        )
+
+        self._create("1=x")
+
+        assert refresh_args == [False]
+
+    def test_missing_project_exits(self, custom_field_lists, monkeypatch, capsys):
+        """プロジェクトが無ければ検証を続けず、プロジェクトが無い旨で exit 1 する"""
+
+        def raise_not_found(project_id):
+            raise ProjectNotFoundException(project_id)
+
+        monkeypatch.setattr(
+            custom_fields_module, "fetch_project_issue_custom_fields", raise_not_found
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            self._create("1=x")
+
+        assert exc_info.value.code == 1
+        assert messages.project_not_found.format(id="proj") in (capsys.readouterr().err)
+
+
+class TestIssueUpdateUnknownCustomFieldIdRejected:
+    """`issue update --custom_fields` に使えないカスタムフィールド id を渡したとき
+
+    判定は対象イシューのプロジェクト/トラッカーで行い、
+    --project_id / --tracker_id を指定していればそちらで行う。
+    """
+
+    @pytest.fixture
+    def custom_field_lists(self, monkeypatch):
+        """対象イシュー・一覧と、呼ばれたら記録する更新をスタブする"""
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+        monkeypatch.setattr(
+            update_module.issue_service,
+            "read_issue",
+            lambda issue_id, include="": {
+                "id": 42,
+                "project": {"id": 7, "name": "現プロジェクト"},
+                "tracker": {"id": 2, "name": "機能"},
+            },
+        )
+        asked_projects = []
+
+        def fetch_project_issue_custom_fields(project_id):
+            asked_projects.append(project_id)
+            return PROJECT_CUSTOM_FIELDS
+
+        monkeypatch.setattr(
+            custom_fields_module,
+            "fetch_project_issue_custom_fields",
+            fetch_project_issue_custom_fields,
+        )
+        monkeypatch.setattr(
+            custom_fields_module,
+            "fetch_custom_fields",
+            lambda refresh=False: ALL_CUSTOM_FIELDS,
+        )
+        monkeypatch.setattr(
+            update_module,
+            "fetch_trackers",
+            lambda refresh=False: [
+                {"id": 1, "name": "バグ"},
+                {"id": 2, "name": "機能"},
+            ],
+        )
+        called = {}
+        monkeypatch.setattr(
+            update_module.issue_service,
+            "update_issue",
+            lambda **kwargs: called.update(kwargs),
+        )
+        return called, asked_projects
+
+    def test_unknown_custom_field_id_exits(self, custom_field_lists, capsys):
+        """存在しない id は更新を送らず exit 1 する"""
+        called, _ = custom_field_lists
+
+        with pytest.raises(SystemExit) as exc_info:
+            handle_issue_update(
+                parse_issue_args(["issue", "update", "42", "--custom_fields", "9999=x"])
+            )
+
+        assert exc_info.value.code == 1
+        assert (
+            messages.custom_field_not_found.format(id="9999") in capsys.readouterr().err
+        )
+        assert called == {}
+
+    def test_judged_by_current_project_and_tracker(self, custom_field_lists, capsys):
+        """指定が無ければ対象イシューのプロジェクト/トラッカーで判定する"""
+        called, asked_projects = custom_field_lists
+
+        with pytest.raises(SystemExit):
+            handle_issue_update(
+                parse_issue_args(["issue", "update", "42", "--custom_fields", "2=x"])
+            )
+
+        assert asked_projects == ["7"]
+        assert messages.custom_field_not_found.format(id="2") in (
+            capsys.readouterr().err
+        )
+        assert called == {}
+
+    def test_judged_by_given_project_and_tracker(self, custom_field_lists):
+        """--project_id / --tracker_id を指定していればそちらで判定する"""
+        called, asked_projects = custom_field_lists
+
+        handle_issue_update(
+            parse_issue_args(
+                [
+                    "issue",
+                    "update",
+                    "42",
+                    "--project_id",
+                    "dest",
+                    "--tracker_id",
+                    "1",
+                    "--custom_fields",
+                    "2=x",
+                ]
+            )
+        )
+
+        assert asked_projects == ["dest"]
+        assert called["custom_fields"] == [{"id": 2, "value": "x"}]
+
+    def test_known_ids_are_sent(self, custom_field_lists):
+        """使える id はそのまま更新に渡す"""
+        called, _ = custom_field_lists
+
+        handle_issue_update(
+            parse_issue_args(["issue", "update", "42", "--custom_fields", "1=A"])
+        )
+
+        assert called["custom_fields"] == [{"id": 1, "value": "A"}]
 
 
 class TestIssueUpdateAddWatcher:
