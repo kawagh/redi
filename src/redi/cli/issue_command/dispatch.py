@@ -5,13 +5,13 @@ import requests
 
 from redi import config
 from redi.api.exceptions import print_http_error_body
-from redi.api.issue import IssueNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor
 from redi.cli.issue_command.create import handle_issue_create
 from redi.cli.issue_command.update import handle_issue_update
 from redi.cli.issue_command.view import list_issues, view_issue
+from redi.cli.issue_guard import exit_if_issue_not_found, read_issue_or_exit
 from redi.cli.shared_options import resolve_list_format, wants_json
 from redi.i18n import messages
 from redi.output import eprint
@@ -20,21 +20,16 @@ from redi.service import issue_service
 
 def add_issue_note(issue_id: str, notes: str) -> None:
     """イシューにコメントを追加し、結果を標準出力に出す。失敗時は exit 1。"""
-    try:
+    with exit_if_issue_not_found(issue_id):
         url = issue_service.add_note(issue_id, notes)
-    except IssueNotFoundException:
-        eprint(messages.issue_not_found.format(id=issue_id))
-        sys.exit(1)
     print(messages.comment_added.format(url=url))
 
 
 def _delete_issue(issue_id: str) -> None:
     """イシューを削除し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
-        issue_service.delete_issue(issue_id)
-    except IssueNotFoundException:
-        eprint(messages.issue_not_found.format(id=issue_id))
-        sys.exit(1)
+        with exit_if_issue_not_found(issue_id):
+            issue_service.delete_issue(issue_id)
     except requests.exceptions.HTTPError as e:
         eprint(e)
         print_http_error_body(e)
@@ -93,11 +88,7 @@ def handle_issue(args: argparse.Namespace) -> None:
                 print(messages.canceled_empty_comment)
     elif cmd == "delete":
         if not args.yes:
-            try:
-                issue = issue_service.read_issue(args.issue_id)
-            except IssueNotFoundException:
-                eprint(messages.issue_not_found.format(id=args.issue_id))
-                sys.exit(1)
+            issue = read_issue_or_exit(args.issue_id)
             confirm_delete(
                 messages.delete_target_issue.format(
                     id=issue["id"], subject=issue["subject"]

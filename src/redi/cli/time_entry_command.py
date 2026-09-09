@@ -10,11 +10,11 @@ from prompt_toolkit.validation import Validator
 from redi import config
 from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
-from redi.api.issue import Issue, IssueNotFoundException
 from redi.api.time_entry import TimeEntry, TimeEntryNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.interactive import exit_on_cancel, prompt
+from redi.cli.issue_guard import read_issue_or_exit
 from redi.cli.keybinding import (
     date_key_bindings,
     digit_and_period_key_bindings,
@@ -31,16 +31,7 @@ from redi.cli.shared_options import (
 from redi.cli.validator import DateValidator, HourValidator, is_yyyy_mm_dd
 from redi.i18n import messages
 from redi.output import eprint, print_tsv
-from redi.service import issue_service, project_service, time_entry_service
-
-
-def _read_issue(issue_id: str) -> Issue:
-    """作業時間の対象イシューを取得する。存在しない場合は exit 1。"""
-    try:
-        return issue_service.read_issue(issue_id)
-    except IssueNotFoundException:
-        eprint(messages.issue_not_found.format(id=issue_id))
-        sys.exit(1)
+from redi.service import project_service, time_entry_service
 
 
 def _fetch_time_entry_or_exit(time_entry_id: str) -> TimeEntry:
@@ -392,7 +383,7 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
             ).strip()
             if issue_id:
                 args.issue_id = issue_id
-                issue = _read_issue(issue_id)
+                issue = read_issue_or_exit(issue_id)
                 print(
                     messages.issue_label.format(
                         id=issue["id"], subject=issue["subject"]
@@ -515,7 +506,7 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
                 key_bindings=digit_only_key_bindings(),
             ).strip()
             if issue_id:
-                issue = _read_issue(issue_id)
+                issue = read_issue_or_exit(issue_id)
                 print(
                     messages.issue_label.format(
                         id=issue["id"], subject=issue["subject"]

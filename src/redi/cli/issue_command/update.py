@@ -21,11 +21,7 @@ from redi.api.exceptions import (
     ProjectPermissionDeniedException,
     print_http_error_body,
 )
-from redi.api.issue import (
-    Issue,
-    IssueNotFoundException,
-    WatcherNotFoundException,
-)
+from redi.api.issue import WatcherNotFoundException
 from redi.api.issue_relation import RelationNotFoundException
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.tracker import fetch_trackers
@@ -47,6 +43,7 @@ from redi.cli.issue_command.field_prompt import (
     prompt_project,
     prompt_start_date,
 )
+from redi.cli.issue_guard import exit_if_issue_not_found, read_issue_or_exit
 from redi.cli.keybinding import date_key_bindings
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.time_entry_command import create_time_entry
@@ -99,15 +96,6 @@ class IssueUpdateArgs:
         return cls(**{f.name: getattr(args, f.name) for f in fields(cls)})
 
 
-def _read_issue(issue_id: str, include: str = "") -> Issue:
-    """更新対象のイシューを取得する。存在しない場合は exit 1。"""
-    try:
-        return issue_service.read_issue(issue_id, include=include)
-    except IssueNotFoundException:
-        eprint(messages.issue_not_found.format(id=issue_id))
-        sys.exit(1)
-
-
 def _interactive_select_issue_id() -> str:
     issues = issue_service.list_issues(project_id=config.default_project_id)
     if not issues:
@@ -126,7 +114,7 @@ def _interactive_select_issue_id() -> str:
 def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
     # 呼び出し側で issue_id は解決済み
     assert args.issue_id is not None
-    current = _read_issue(args.issue_id, include="allowed_statuses")
+    current = read_issue_or_exit(args.issue_id, include="allowed_statuses")
     field_values: list[tuple[str, str]] = [
         ("project", messages.field_project),
         ("tracker", messages.field_tracker),
@@ -456,10 +444,8 @@ def _update_issue(args: IssueUpdateArgs, description: str | None) -> None:
 def _add_watcher(issue_id: str, user_id: int) -> None:
     """ウォッチャーを追加し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
-        issue_service.add_watcher(issue_id, user_id)
-    except IssueNotFoundException:
-        eprint(messages.issue_not_found.format(id=issue_id))
-        sys.exit(1)
+        with exit_if_issue_not_found(issue_id):
+            issue_service.add_watcher(issue_id, user_id)
     except WatcherNotFoundException:
         eprint(messages.watcher_not_added.format(issue_id=issue_id, user_id=user_id))
         sys.exit(1)
@@ -581,7 +567,7 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
         _interactive_fill_issue_update_args(args)
     description = args.description
     if description is not None and description == "":
-        current = _read_issue(args.issue_id)
+        current = read_issue_or_exit(args.issue_id)
         description = open_editor(
             current.get("description") or "", name="issue_description"
         )
