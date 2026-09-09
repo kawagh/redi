@@ -22,6 +22,23 @@ class TestWikiPageProject:
 
 
 @pytest.mark.e2e
+class TestWikiCreateExisting:
+    """`redi wiki create` は同名ページがあれば上書きしない"""
+
+    def test_second_create_fails_and_keeps_body(self):
+        """2 回目の create は exit 1 で終わり、既存の本文は変わらない"""
+        title = unique_identifier("E2e-wiki-exists")
+        run_redi("wiki", "create", title, "-d", "original body")
+
+        with pytest.raises(subprocess.CalledProcessError) as e:
+            run_redi("wiki", "create", title, "-d", "overwritten body")
+
+        assert e.value.returncode == 1
+        assert title in e.value.stderr
+        assert run_redi("wiki", "view", title).stdout.strip() == "original body"
+
+
+@pytest.mark.e2e
 class TestWikiDelete:
     """`redi wiki delete` は Wiki ページを削除する"""
 

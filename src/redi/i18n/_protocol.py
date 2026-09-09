@@ -102,6 +102,8 @@ class MessagesProto(Protocol):
     """バージョン指定の Wikiページが見つからない。{title}, {version}"""
     wiki_page_does_not_exist: str
     """Wikiページが存在しない"""
+    wiki_page_already_exists: str
+    """同名の Wikiページが既に存在する。{title}"""
     parent_page_not_found: str
     """親ページが見つからない。{title}"""
     file_not_found: str
