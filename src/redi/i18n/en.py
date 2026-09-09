@@ -5,6 +5,10 @@ class En(MessagesProto):
     # ---- profile / config ----
     profile_created = "Created profile '{name}'"
     profile_already_exists = "Profile '{name}' already exists"
+    profile_not_found = "profile '{name}' not found in {path}"
+    profile_did_you_mean = "did you mean: {names}?"
+    profile_available = "available profiles: {names}"
+    profile_list_hint = "(run `redi config --full` to list profiles)"
     default_profile_set = "Set default_profile to {name}"
     default_project_id_set = "Set default_project_id to {value}{suffix}"
     editor_set = "Set editor to {value}{suffix}"
@@ -620,7 +624,8 @@ class En(MessagesProto):
     arg_help_debug = "Enable debug logging"
     arg_help_debug_tui = "Dump TUI screen contents to a YAML log"
     arg_help_profile = (
-        "Profile name to use (overrides default_profile in config.toml temporarily)"
+        "Profile name to use (overrides default_profile in config.toml temporarily; "
+        "list with `redi config --full`)"
     )
     arg_help_refresh = (
         "Fetch without reading the cache (refreshes tracker / custom field choices)"

@@ -899,3 +899,81 @@ class TestProfileHasCredentials:
         assert (
             config.profile_has_credentials("missing", config_path=two_profiles) is False
         )
+
+
+class TestProfileNotFoundMessage:
+    """存在しないプロファイルのエラーは、設定ファイルのパスだけで終わらせず次の一手を示す"""
+
+    def test_lists_available_profiles_and_hint(self, tmp_path):
+        """設定ファイルにあるプロファイル名と `redi config --full` の案内を添える"""
+        message = config.profile_not_found_message(
+            "nosuch", tmp_path / "config.toml", ["main", "sub"]
+        )
+
+        assert "nosuch" in message
+        assert "main, sub" in message
+        assert "redi config --full" in message
+
+    def test_suggests_close_match(self, tmp_path):
+        """タイプミスが疑われる近い名前があれば候補として示す"""
+        message = config.profile_not_found_message(
+            "sandbox-admin", tmp_path / "config.toml", ["sandbox_admin", "other"]
+        )
+
+        lines = message.splitlines()
+        assert any("sandbox_admin" in line and "other" not in line for line in lines)
+
+    def test_omits_suggestion_when_nothing_is_close(self, tmp_path):
+        """近い名前が無ければ候補の行は出さず、一覧と案内だけにする"""
+        message = config.profile_not_found_message(
+            "zzz", tmp_path / "config.toml", ["main", "sub"]
+        )
+
+        assert len(message.splitlines()) == 3
+
+    def test_keeps_hint_when_no_profiles(self, tmp_path):
+        """プロファイルが 1 つも無くても一覧の出し方は案内する"""
+        message = config.profile_not_found_message(
+            "nosuch", tmp_path / "config.toml", []
+        )
+
+        assert "redi config --full" in message
+
+
+class TestProfileNotFoundOutput:
+    """プロファイル指定を伴う操作が存在しない名前を受けたとき、利用可能な名前を標準エラーに出す"""
+
+    @pytest.fixture
+    def config_path(self, tmp_path):
+        path = tmp_path / "config.toml"
+        path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+
+            [sub]
+            redmine_url = "https://redmine.example.com/sub"
+        """)
+        )
+        return path
+
+    def test_update_profile_lists_available_profiles(self, config_path, capsys):
+        """update_profile()は存在しないプロファイルに対して一覧を出して exit 1 する"""
+        with pytest.raises(SystemExit):
+            config.update_profile(
+                config.Profile(redmine_url="v"),
+                profile="missing",
+                config_path=config_path,
+            )
+
+        err = capsys.readouterr().err
+        assert "main, sub" in err
+        assert "redi config --full" in err
+
+    def test_set_default_profile_lists_available_profiles(self, config_path, capsys):
+        """set_default_profile()は存在しないプロファイルに対して一覧を出す"""
+        config.set_default_profile("missing", config_path=config_path)
+
+        err = capsys.readouterr().err
+        assert "main, sub" in err
+        assert "redi config --full" in err
