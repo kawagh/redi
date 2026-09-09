@@ -61,6 +61,9 @@ class En(MessagesProto):
         "Wiki page not found: {title} (version={version})"
     )
     wiki_page_does_not_exist = "Wiki page does not exist"
+    wiki_page_already_exists = (
+        "Wiki page already exists: {title} (use wiki update to modify it)"
+    )
     parent_page_not_found = "Parent page not found: {title}"
     file_not_found = "File not found: {path}"
     attachment_not_found = "Attachment not found: #{id}"

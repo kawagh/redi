@@ -132,9 +132,12 @@ def _create_page(
     parent_title: str | None = None,
     comments: str = "",
 ) -> None:
-    """Wiki ページを作成し、結果を標準出力に出す。親ページが無い場合は exit 1。"""
+    """Wiki ページを作成し、結果を標準出力に出す。
+
+    親ページが無い場合と、同名ページが既にある場合は exit 1。
+    """
     try:
-        result = wiki_service.create_page(
+        wiki_service.create_page(
             project_id,
             page_title,
             text,
@@ -144,11 +147,21 @@ def _create_page(
     except wiki_service.ParentPageNotFoundException as e:
         eprint(messages.parent_page_not_found.format(title=e.title))
         sys.exit(1)
-    url = wiki_service.page_url(project_id, result.title)
-    if result.created:
-        print(messages.wiki_page_created.format(url=url))
-    else:
-        print(messages.wiki_page_updated.format(url=url))
+    except wiki_service.WikiPageAlreadyExistsException as e:
+        eprint(messages.wiki_page_already_exists.format(title=e.title))
+        sys.exit(1)
+    print(
+        messages.wiki_page_created.format(
+            url=wiki_service.page_url(project_id, page_title)
+        )
+    )
+
+
+def _exit_if_page_exists(project_id: str, page_title: str) -> None:
+    """同名の Wiki ページが既にあれば、本文を書かせる前に exit 1 で止める。"""
+    if wiki_service.read_page(project_id, page_title) is not None:
+        eprint(messages.wiki_page_already_exists.format(title=page_title))
+        sys.exit(1)
 
 
 def _update_page(
@@ -276,7 +289,10 @@ def handle_wiki(args: argparse.Namespace) -> None:
     elif cmd == "create":
         page_title = args.page_title
         parent_title = args.parent_title
-        if page_title is None:
+        if page_title is not None:
+            page_title = normalize_title(page_title)
+            _exit_if_page_exists(project_id, page_title)
+        else:
             pages = _read_pages(project_id)
             existing_titles = {normalize_title(p["title"]) for p in pages}
 

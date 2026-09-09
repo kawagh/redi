@@ -120,7 +120,7 @@ redi version update <version_id> --status closed
 redi wiki
 redi wiki -p <project_id>
 redi wiki view <page_title>
-redi wiki create # (interactive)
+redi wiki create # (interactive, fails if the page already exists)
 redi wiki update # (interactive)
 
 # file (alias: f, project files)

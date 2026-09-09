@@ -63,6 +63,7 @@ class Ja(MessagesProto):
         "Wikiページが見つかりません: {title} (version={version})"
     )
     wiki_page_does_not_exist = "Wikiページが存在しません"
+    wiki_page_already_exists = "Wikiページは既に存在します: {title} (更新するには wiki update を使ってください)"
     parent_page_not_found = "親ページが見つかりません: {title}"
     file_not_found = "ファイルが見つかりません: {path}"
     attachment_not_found = "添付ファイルが見つかりません: #{id}"
