@@ -59,3 +59,14 @@ markers = [
   "e2e: E2E test (needs Redmine initialized by script/init-redmine.sh)",
 ]
 addopts = "-m 'not e2e'"
+
+[tool.coverage.run]
+# i18n の定数モジュールはクラス属性への文字列代入だけで構成され、
+# import しただけで全行が実行済みになり常に 100% として集計される。
+# 実効値を見えるようにするため計測から除外する。
+# キーの網羅は tests/unit/i18n/test_i18n.py が担保している。
+omit = [
+  "src/redi/i18n/_protocol.py",
+  "src/redi/i18n/en.py",
+  "src/redi/i18n/ja.py",
+]
