@@ -94,7 +94,7 @@ def _list_users(
     offset: int | None = None,
     fmt: OutputFormat = OutputFormat.PLAIN,
 ) -> None:
-    """ユーザー一覧を標準出力に出す。json では取得した JSON をそのまま出す。"""
+    """ユーザー一覧を標準出力に出す。json では取得した JSON をそのまま出す。権限不足なら exit 1。"""
     try:
         users = user_service.list_users(
             status=status, name=name, group_id=group_id, limit=limit, offset=offset
@@ -102,7 +102,7 @@ def _list_users(
     except UserPermissionDeniedException:
         eprint(messages.user_list_admin_required)
         eprint(messages.user_list_member_hint)
-        return
+        sys.exit(1)
     match fmt:
         case OutputFormat.JSON:
             print(json.dumps(users, ensure_ascii=False))

@@ -509,7 +509,7 @@ def _create_relation(issue_id: str, issue_to_id: str, relation_type: str) -> Non
 
 
 def _delete_relation(issue_id: str, issue_to_id: str) -> None:
-    """イシュー間の関係性を削除し、結果を標準出力に出す。対象が無ければ exit 1。"""
+    """イシュー間の関係性を削除し、結果を標準出力に出す。対象が無いか失敗したら exit 1。"""
     try:
         relation = issue_relation_service.delete_relation(
             issue_id=issue_id,
@@ -530,7 +530,7 @@ def _delete_relation(issue_id: str, issue_to_id: str) -> None:
         eprint(e)
         print_http_error_body(e)
         eprint(messages.relation_delete_failed)
-        return
+        sys.exit(1)
     print(
         messages.relation_deleted.format(
             from_id=relation["issue_id"],
