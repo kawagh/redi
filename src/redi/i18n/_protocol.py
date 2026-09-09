@@ -853,6 +853,9 @@ class MessagesProto(Protocol):
     arg_help_issue_view: str
     arg_help_issue_view_id: str
     arg_help_issue_include: str
+    """{choices}"""
+    error_invalid_issue_include: str
+    """{values} {choices}"""
     arg_help_issue_create: str
     arg_help_issue_subject_arg: str
     arg_help_issue_tracker_id: str
