@@ -202,6 +202,41 @@ class TestFormatOptionPlacement:
 
         assert resolve_format(args) == OutputFormat.PLAIN, argv
 
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["issue", "l", "-f", "tsv"],
+            ["issue", "-f", "tsv", "l"],
+            ["user", "list", "-f", "tsv"],
+            ["attachment", "view", "1", "-f", "json"],
+        ],
+    )
+    def test_short_option(self, parser, argv):
+        """短縮形 `-f` を置き場所によらず `--format` として解釈する"""
+        args = parser.parse_args(argv)
+
+        assert resolve_list_format(args) == OutputFormat(argv[argv.index("-f") + 1])
+
+    @pytest.mark.parametrize(
+        ("argv", "dest", "expected"),
+        [
+            (
+                ["user", "create", "taro", "-f", "Taro", "-l", "Y", "-m", "m"],
+                "firstname",
+                "Taro",
+            ),
+            (["user", "update", "1", "-f", "Taro"], "firstname", "Taro"),
+            (["user", "-f", "json", "update", "1", "-f", "Taro"], "firstname", "Taro"),
+            (["me", "update", "-f", "Taro"], "firstname", "Taro"),
+            (["attachment", "update", "1", "-f", "a.png"], "filename", "a.png"),
+        ],
+    )
+    def test_short_option_of_subcommand_is_kept(self, parser, argv, dest, expected):
+        """`--firstname` / `--filename` の `-f` は `--format` を足しても従来どおり使える"""
+        args = parser.parse_args(argv)
+
+        assert getattr(args, dest) == expected
+
     def test_full_stays_as_alias(self, parser):
         """既存の `--full` は `--format json` の別名として残る"""
         args = parser.parse_args(["issue", "list", "--full"])

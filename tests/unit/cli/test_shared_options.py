@@ -79,10 +79,9 @@ class TestTsvFormat:
         with pytest.raises(SystemExit):
             _parse(["--format", "tsv"])
 
-    def test_no_short_option(self):
-        """短縮形 `-f` は `--firstname` / `--filename` と衝突するので付けない"""
-        with pytest.raises(SystemExit):
-            _parse(["-f", "tsv"], tsv=True)
+    def test_short_option(self):
+        """短縮形 `-f` でも `--format` と同じく形式を選べる"""
+        assert resolve_list_format(_parse(["-f", "tsv"], tsv=True)) == OutputFormat.TSV
 
     def test_wants_json_exits_on_tsv(self, capsys):
         """親パーサ経由で view 系に tsv が流れてきたら、黙って plain にせず exit 1"""
