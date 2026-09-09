@@ -1036,6 +1036,10 @@ class Ja(MessagesProto):
     config_profile_source_default = "既定"
     config_profile_source_option = "--profile 指定"
     config_current_profile_comment = "現在のプロファイル（{source}）"
+    config_top_level_api_key_warning = (
+        "警告: {path} のトップレベルに書かれた redmine_api_key は認証に使われません。"
+        "プロファイル（[profile_name] テーブル）の中に書いてください"
+    )
 
     # ---- TUI help labels (sections / common) ----
     tui_help_section_navigation = "移動"
