@@ -169,11 +169,13 @@ def view_issue(
 def format_issue_detail(issue: Issue) -> list[str]:
     """イシューの詳細表示を行のリストに整形する。
 
-    件名の下にメタ情報テーブルを出し、`----` で区切って説明・コメントを続ける。
+    件名の次の行に自身の URL を出し、その下にメタ情報テーブル、`----` で区切って説明・コメントを続ける。
+    URL は `issue list` / `issue create` と同じく、読んだ内容と一緒にそのまま貼れるようにする。
     TUI の右ペイン(プレビュー)と同じ見た目になるよう `text_format` を共有する。
     """
     lines = []
     lines.append(f"#{issue['id']} {issue['subject']}")
+    lines.append(issue_service.issue_url(str(issue["id"])))
     lines.append("")
     lines.extend(render_meta_table(issue_meta_rows(issue)))
     if issue.get("description"):

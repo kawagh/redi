@@ -369,14 +369,25 @@ VIEWED_ISSUE = cast(
 class TestFormatIssueDetail:
     """`issue view` の整形出力"""
 
-    def test_shows_meta_table(self):
-        """件名の次にメタ情報を `[ラベル] 値` の表で出す (先頭はステータス)"""
+    @pytest.fixture(autouse=True)
+    def redmine_url(self, monkeypatch):
+        """URL の組み立てに使う Redmine の URL を固定する"""
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+
+    def test_shows_issue_url(self):
+        """件名の次の行にイシュー自身の URL を出す (`issue list` / `issue create` と揃える)"""
         lines = view_module.format_issue_detail(VIEWED_ISSUE)
 
         assert lines[0] == "#42 件名"
+        assert lines[1] == "http://localhost:3001/issues/42"
+
+    def test_shows_meta_table(self):
+        """URL の次にメタ情報を `[ラベル] 値` の表で出す (先頭はステータス)"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
         # ラベル列の幅は言語設定で変わるため、ラベルと値を前後から挟んで見る
-        assert lines[2].startswith(f"[{messages.meta_status}")
-        assert lines[2].endswith("] 終了")
+        assert lines[3].startswith(f"[{messages.meta_status}")
+        assert lines[3].endswith("] 終了")
 
     def test_separates_description(self):
         """メタ情報と説明の間は `----` で区切る"""
