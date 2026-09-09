@@ -32,6 +32,7 @@ can hit a different server than you expect.
 
 ```sh
 redi config --full   # default_profile + every profile (URL, default project, language)
+redi me              # who you are on that server: admin or not, and which projects you belong to
 ```
 
 Every command accepts `--profile <name>`:
@@ -85,6 +86,8 @@ redi project list --format json | jq '.[].name'
 redi issue list                              # default project
 redi issue list --project_id 15              # one project
 redi issue list --status_id 1 --limit 10
+redi issue list --assigned_to me             # issues assigned to you ("me" is accepted as a user id)
+redi issue list --format tsv                 # + project, tracker, status, assignee, dates (plain shows only id / subject / url)
 redi issue view 160                          # one issue
 redi issue view 160 --format json
 redi issue view 160 --include watchers       # + watchers (see -h for the list)
