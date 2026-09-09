@@ -140,6 +140,28 @@ def _update_field_values(profile: str) -> list[tuple[str, str]]:
     return field_values
 
 
+def _update_field_options(
+    field_values: list[tuple[str, str]], current: Profile
+) -> list[tuple[str, str]]:
+    """更新項目の選択肢に現在値を添える。
+
+    どの項目を変えるべきか分かるようにする。未設定の項目は値を出さない。
+    API キーは秘匿するため出さない。
+    """
+    current_values: dict[str, str | None] = {
+        "url": current.redmine_url,
+        "project_id": current.default_project_id,
+        "wiki_project_id": current.wiki_project_id,
+        "editor": current.editor,
+        "language": current.language,
+        "text_formatting": current.text_formatting,
+    }
+    return [
+        (key, f"{label} # {value}" if (value := current_values.get(key)) else label)
+        for key, label in field_values
+    ]
+
+
 def _interactive_fill_config_update_args(
     args: argparse.Namespace, profile: str
 ) -> bool:
@@ -150,7 +172,10 @@ def _interactive_fill_config_update_args(
     current = read_profile(profile)
     field_values = _update_field_values(profile)
     with exit_on_cancel():
-        selected = inline_checkbox(messages.prompt_select_update_items, field_values)
+        selected = inline_checkbox(
+            messages.prompt_select_update_items,
+            _update_field_options(field_values, current),
+        )
         if not selected:
             print(messages.canceled_no_items_selected)
             return False
