@@ -53,7 +53,7 @@ class TestPickerGuard:
         assert "更新する項目を選択" in capsys.readouterr().err
 
 
-class TestExitOnCancel:
+class TestRaiseOnCancel:
     """raise_on_cancel()はキャンセルを InputCanceledException に変換する
 
     CLI では main() が標準エラーに通知して exit 1 に落とし、TUI ループは画面に戻す。
