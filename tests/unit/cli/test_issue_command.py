@@ -238,7 +238,7 @@ class TestIssueListNotFound:
         monkeypatch.setattr(view_module.issue_service, "list_issues", _raise)
 
         with pytest.raises(SystemExit) as exc_info:
-            view_module.list_issues(project_id="missing")
+            view_module.print_issues(project_id="missing")
 
         assert exc_info.value.code == 1
         assert (
@@ -258,7 +258,7 @@ class TestIssueListQueryNotFound:
         monkeypatch.setattr(view_module.issue_service, "list_issues", _raise)
 
         with pytest.raises(SystemExit) as exc_info:
-            view_module.list_issues(project_id="demo", query_id="5")
+            view_module.print_issues(project_id="demo", query_id="5")
 
         assert exc_info.value.code == 1
         err = capsys.readouterr().err
@@ -872,7 +872,7 @@ class TestIssueListTsv:
 
         description と custom_fields は tsv に載せない。
         """
-        view_module.list_issues(fmt=OutputFormat.TSV)
+        view_module.print_issues(fmt=OutputFormat.TSV)
 
         header, row = capsys.readouterr().out.splitlines()
         assert header.split("\t") == [

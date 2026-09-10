@@ -366,7 +366,7 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
         return
     print(
         messages.issue_created.format(
-            id=created["id"], url=issue_service.issue_url(str(created["id"]))
+            id=created["id"], url=issue_service.issue_url(created["id"])
         )
     )
 

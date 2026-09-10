@@ -18,7 +18,7 @@ from redi.service.attachment_service import upload_file
 from redi.service.project_service import resolve_project_id
 
 
-def issue_url(issue_id: str, note_number: int | None = None) -> str:
+def issue_url(issue_id: str | int, note_number: int | None = None) -> str:
     """イシューの Web UI 上の URL を組み立てる。"""
     url = f"{config.redmine_url}/issues/{issue_id}"
     if note_number is not None:

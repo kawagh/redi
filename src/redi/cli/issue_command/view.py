@@ -39,7 +39,7 @@ def _issue_tsv_row(issue: Issue) -> tuple[object, ...]:
     return (
         issue["id"],
         issue["subject"],
-        issue_service.issue_url(str(issue["id"])),
+        issue_service.issue_url(issue["id"]),
         *tsv_ref(issue, "project"),
         tsv_ref(issue, "tracker")[1],
         tsv_ref(issue, "status")[1],
@@ -60,7 +60,7 @@ def _issue_tsv_row(issue: Issue) -> tuple[object, ...]:
     )
 
 
-def list_issues(
+def print_issues(
     project_id: str | None = None,
     fixed_version_id: str | None = None,
     assigned_to: str | None = None,
@@ -130,7 +130,7 @@ def list_issues(
             for issue in issues:
                 print(
                     f"{issue['id']} {issue['subject']} "
-                    f"{issue_service.issue_url(str(issue['id']))}"
+                    f"{issue_service.issue_url(issue['id'])}"
                 )
         case _:
             assert_never(fmt)
@@ -172,7 +172,7 @@ def format_issue_detail(issue: Issue) -> list[str]:
     """
     lines = []
     lines.append(f"#{issue['id']} {issue['subject']}")
-    lines.append(issue_service.issue_url(str(issue["id"])))
+    lines.append(issue_service.issue_url(issue["id"]))
     lines.append("")
     lines.extend(render_meta_table(issue_meta_rows(issue)))
     if issue.get("description"):
@@ -207,7 +207,7 @@ def format_issue_detail(issue: Issue) -> list[str]:
             else:
                 # unknown rel_type
                 label = rel_type
-            lines.append(f"  {r['id']} [{label}] {issue_service.issue_url(str(other))}")
+            lines.append(f"  {r['id']} [{label}] {issue_service.issue_url(other)}")
     attachments = issue.get("attachments") or []
     if attachments:
         lines.append("")
