@@ -55,7 +55,7 @@ def prompt(message: str, **kwargs: Any) -> str:
 
 
 @contextmanager
-def exit_on_cancel(notice: str | None = None) -> Iterator[None]:
+def raise_on_cancel(notice: str | None = None) -> Iterator[None]:
     """Ctrl-C / Ctrl-D を掴んで InputCanceledException に変換する。
 
     CLI から使うとエントリポイントで標準エラーに通知して exit 1 になる。

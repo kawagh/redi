@@ -54,7 +54,7 @@ class TestPickerGuard:
 
 
 class TestExitOnCancel:
-    """exit_on_cancel()はキャンセルを InputCanceledException に変換する
+    """raise_on_cancel()はキャンセルを InputCanceledException に変換する
 
     CLI では main() が標準エラーに通知して exit 1 に落とし、TUI ループは画面に戻す。
     """
@@ -64,21 +64,21 @@ class TestExitOnCancel:
         """Ctrl-C/Ctrl-Dのどちらも通知文を持った例外にする"""
         with (
             pytest.raises(interactive.InputCanceledException) as exc,
-            interactive.exit_on_cancel(),
+            interactive.raise_on_cancel(),
         ):
             raise error
         assert exc.value.message == messages.canceled
 
     def test_passes_through_without_cancel(self):
         """キャンセルされなければ何もしない"""
-        with interactive.exit_on_cancel():
+        with interactive.raise_on_cancel():
             pass
 
     def test_uses_given_notice(self):
         """notice を渡すと設定の言語ではなくそちらで通知する"""
         with (
             pytest.raises(interactive.InputCanceledException) as exc,
-            interactive.exit_on_cancel("中止しました"),
+            interactive.raise_on_cancel("中止しました"),
         ):
             raise KeyboardInterrupt
         assert exc.value.message == "中止しました"

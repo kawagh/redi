@@ -13,7 +13,7 @@ from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.time_entry import TimeEntry, TimeEntryNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.interactive import InputCanceledException, exit_on_cancel, prompt
+from redi.cli.interactive import InputCanceledException, prompt, raise_on_cancel
 from redi.cli.issue_guard import read_issue_or_exit
 from redi.cli.keybinding import (
     date_key_bindings,
@@ -372,7 +372,7 @@ def _lacks_required_time_entry_create_args(args: argparse.Namespace) -> bool:
 
 
 def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
-    with exit_on_cancel():
+    with raise_on_cancel():
         if not args.issue_id and not args.project_id:
             default_issue_id = getattr(args, "default_issue_id", None) or ""
             issue_id = prompt(
@@ -452,13 +452,13 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
         ("comments", messages.field_comments),
         ("issue_id", messages.field_issue_id),
     ]
-    with exit_on_cancel():
+    with raise_on_cancel():
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
     if not selected:
         raise InputCanceledException(messages.canceled_no_items_selected)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
-    with exit_on_cancel():
+    with raise_on_cancel():
         if "hours" in selected:
             hours_str = prompt(
                 messages.prompt_hours,

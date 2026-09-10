@@ -39,7 +39,7 @@ This file provides guidance to Agents when working with code in this repository.
 - エラーや失敗の通知は `redi.output` の `eprint` で標準エラー出力に出す
     - 正常な結果は標準出力のまま
 - 対話入力のキャンセルは `redi.cli.interactive` の `InputCanceledException` に揃える
-    - Ctrl-C / Ctrl-D は `exit_on_cancel` で受けてこの例外に変換する
+    - Ctrl-C / Ctrl-D は `raise_on_cancel` で受けてこの例外に変換する
     - 項目未選択や題名が空などユーザーの「やめる」も `sys.exit` せずこの例外を送出する
     - CLI では `redi.cli.main.main` が `eprint` で通知して exit 1 にする
     - TUI から呼んだ経路では TUI ループが受けて元の画面に戻し、ステータスバーに通知する
