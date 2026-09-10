@@ -3,6 +3,7 @@ import argparse
 import pytest
 
 from redi import config
+from redi.api.exceptions import ProjectNotFoundException
 from redi.cli import time_entry_command
 from redi.cli.shared_options import OutputFormat
 from redi.cli.time_entry_command import add_time_entry_parser, handle_time_entry
@@ -216,4 +217,27 @@ class TestTimeEntryListTsv:
             "\tproject_id\tproject_name\tcomments\tactivity_id\tcreated_on\tupdated_on\n"
             "9\t2026-09-01\t5\tkawagh\t1.5\t開発\t12\t3\tredi\t調査\t8"
             "\t2026-09-01T01:00:00Z\t2026-09-01T02:00:00Z\n"
+        )
+
+
+class TestTimeEntryListProjectNotFound:
+    """`time_entry list` は存在しないプロジェクトを指定すると ID 付きのメッセージで exit 1 する"""
+
+    def test_exits_with_project_id(self, monkeypatch, capsys):
+        """create / update と同じく、生の 404 ではなく何が見つからなかったかを出す"""
+
+        def fake_fetch_page(**kwargs):
+            raise ProjectNotFoundException(kwargs["project_id"])
+
+        monkeypatch.setattr(
+            time_entry_command.time_entry_service, "fetch_page", fake_fetch_page
+        )
+
+        with pytest.raises(SystemExit) as e:
+            time_entry_command._list_time_entries(project_id="nosuchproject")
+
+        assert e.value.code == 1
+        assert (
+            messages.project_not_found.format(id="nosuchproject")
+            in capsys.readouterr().err
         )

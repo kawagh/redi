@@ -10,6 +10,8 @@ import requests
 from redi.api import file as file_module
 from redi.api import issue_category as issue_category_module
 from redi.api import membership as membership_module
+from redi.api import search as search_module
+from redi.api import time_entry as time_entry_module
 from redi.api import version as version_module
 from redi.api import wiki as wiki_module
 from redi.api.exceptions import (
@@ -47,6 +49,56 @@ class TestProjectNotFound:
             fetch("nosuch")
 
         assert e.value.project_id == "nosuch"
+
+    @pytest.mark.parametrize(
+        ("module", "fetch"),
+        [
+            (
+                time_entry_module,
+                lambda project_id: time_entry_module.fetch_time_entries_page(
+                    project_id=project_id
+                ),
+            ),
+            (
+                search_module,
+                lambda project_id: search_module.search("redi", project_id=project_id),
+            ),
+        ],
+        ids=["time_entry", "search"],
+    )
+    def test_project_optional_lists_raise_not_found_on_404(
+        self, module, fetch, monkeypatch
+    ):
+        """プロジェクトを省略できる一覧も、指定時の 404 は存在しないプロジェクトとして伝える
+
+        変換が無い間は `time_entry list` と `search` だけ生の 404 が出ていた (github#560)。
+        """
+        monkeypatch.setattr(module.client, "get", lambda *a, **kw: _response(404))
+
+        with pytest.raises(ProjectNotFoundException) as e:
+            fetch("nosuch")
+
+        assert e.value.project_id == "nosuch"
+
+    @pytest.mark.parametrize(
+        ("module", "fetch"),
+        [
+            (
+                time_entry_module,
+                lambda: time_entry_module.fetch_time_entries_page(),
+            ),
+            (search_module, lambda: search_module.search("redi")),
+        ],
+        ids=["time_entry", "search"],
+    )
+    def test_project_optional_lists_leave_404_without_project(
+        self, module, fetch, monkeypatch
+    ):
+        """プロジェクト未指定の 404 はプロジェクト不在ではないので変換しない"""
+        monkeypatch.setattr(module.client, "get", lambda *a, **kw: _response(404))
+
+        with pytest.raises(requests.exceptions.HTTPError):
+            fetch()
 
 
 class TestProjectFilesPermission:
