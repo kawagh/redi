@@ -11,7 +11,7 @@ from prompt_toolkit.validation import Validator
 
 from redi.api.me import MyAccount, fetch_my_account
 from redi.api.project import Project, fetch_projects
-from redi.cli.interactive import exit_on_cancel, prompt
+from redi.cli.interactive import prompt, raise_on_cancel
 from redi.cli.picker import inline_choice
 from redi.cli.validator import UrlValidator
 from redi.client import RedmineClient
@@ -60,7 +60,7 @@ def _select_project_id(
         (str(p["id"]), f"{p['id']} {p['name']}")
         for p in sorted(projects, key=lambda p: p["id"], reverse=True)
     ]
-    with exit_on_cancel(messages.canceled):
+    with raise_on_cancel(messages.canceled):
         return inline_choice(prompt_message, options)
 
 
@@ -69,7 +69,7 @@ def _prompt_credentials(current: Profile, messages: MessagesProto) -> tuple[str,
         lambda text: len(text.strip()) > 0,
         error_message=messages.error_input_required,
     )
-    with exit_on_cancel(messages.canceled):
+    with raise_on_cancel(messages.canceled):
         url = (
             current.redmine_url
             or prompt(messages.prompt_redmine_url, validator=UrlValidator()).strip()
