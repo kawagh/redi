@@ -4,8 +4,6 @@ CLI と TUI で共通の手順をここに置く。HTTP とステータスコー
 `api.attachment` が持つ。
 """
 
-from __future__ import annotations
-
 import os
 from pathlib import Path
 

@@ -6,32 +6,26 @@ from datetime import datetime
 from importlib.metadata import version
 
 import argcomplete
+import requests
 
 from redi import config
-from redi.api.exceptions import RedmineValidationException
+from redi.api.exceptions import (
+    RedmineConnectionException,
+    RedmineValidationException,
+)
 from redi.api.wiki import WikiUpdateConflictException
 from redi.cli.attachment_command import add_attachment_parser, handle_attachment
 from redi.cli.config_command import add_config_parser, handle_config
 from redi.cli.editor import open_editor
 from redi.cli.enumerations_command import (
-    add_custom_field_parser,
-    add_document_category_parser,
-    add_issue_priority_parser,
-    add_issue_status_parser,
-    add_query_parser,
-    add_time_entry_activity_parser,
-    add_tracker_parser,
-    handle_custom_field,
-    handle_document_category,
-    handle_issue_priority,
-    handle_issue_status,
-    handle_query,
-    handle_time_entry_activity,
-    handle_tracker,
+    add_enumeration_parsers,
+    find_enumeration_resource,
+    handle_enumeration,
 )
 from redi.cli.file_command import add_file_parser, handle_file
 from redi.cli.group_command import add_group_parser, handle_group
 from redi.cli.init_command import add_init_parser, handle_init
+from redi.cli.interactive import InputCanceledException
 from redi.cli.issue_category_command import (
     add_issue_category_parser,
     handle_issue_category,
@@ -67,6 +61,7 @@ from redi.cli.wiki_command import add_wiki_parser, handle_wiki
 from redi.client import client
 from redi.config import CONFIG_PATH, check_config, list_profile_names
 from redi.i18n import messages
+from redi.output import eprint
 from redi.tui import TuiState, run_issue_tui
 
 
@@ -79,6 +74,31 @@ def _format_validation_error(e: RedmineValidationException) -> str:
         resource=e.resource,
         action=action_label,
         errors="\n".join(f"- {err}" for err in e.errors),
+    )
+
+
+def _format_connection_error(e: RedmineConnectionException) -> str:
+    """接続できなかった旨を 1 行で組み立てる。
+
+    プロファイルの指定間違いで別インスタンスを指しているケースが多いので、
+    分かるならプロファイル名も添える。
+    """
+    message = messages.connection_unreachable.format(url=e.base_url)
+    if config.current_profile:
+        message += messages.config_profile_suffix.format(name=config.current_profile)
+    return message
+
+
+def _format_unhandled_http_error(e: requests.exceptions.HTTPError) -> str:
+    """変換されずに来た HTTP エラーを 1 行にする。
+
+    リクエスト URL や requests の例外文字列は内部の事情なので出さない。
+    調べたいときは `--debug` のログにリクエストが残る。
+    """
+    if e.response is None:
+        return messages.http_error_unhandled_unknown
+    return messages.http_error_unhandled.format(
+        status=e.response.status_code, reason=e.response.reason
     )
 
 
@@ -130,15 +150,9 @@ def build_redi_parser() -> argparse.ArgumentParser:
     add_me_parser(subparsers, parents)
     add_membership_parser(subparsers, parents)
     add_news_parser(subparsers, parents)
-    add_tracker_parser(subparsers, parents)
-    add_issue_status_parser(subparsers, parents)
-    add_issue_priority_parser(subparsers, parents)
-    add_time_entry_activity_parser(subparsers, parents)
-    add_document_category_parser(subparsers, parents)
+    add_enumeration_parsers(subparsers, parents)
     add_role_parser(subparsers, parents)
     add_group_parser(subparsers, parents)
-    add_query_parser(subparsers, parents)
-    add_custom_field_parser(subparsers, parents)
     add_issue_category_parser(subparsers, parents)
     add_search_parser(subparsers, parents)
     add_attachment_parser(subparsers, parents)
@@ -151,6 +165,32 @@ def build_redi_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    """エントリポイント。redi の例外をここで人向けのメッセージに落とす。
+
+    個々のコマンドで捕まえ損ねてもトレースバックを出さないための最後の受け皿。
+    """
+    try:
+        _run()
+    except InputCanceledException as e:
+        # 対話入力のキャンセルは CLI では異常終了。TUI ループは画面に戻すので中で捕まえている
+        eprint(e.message)
+        sys.exit(1)
+    except RedmineConnectionException as e:
+        eprint(_format_connection_error(e))
+        sys.exit(1)
+    except RedmineValidationException as e:
+        # 入力エラーはどのリソースでも同じ出し方なので、分岐ごとに書かず
+        # ここでまとめて受ける (TUI ループは画面内に出すので中で捕まえている)
+        eprint(_format_validation_error(e))
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        # 個々の api で変換し切れていない経路の保険。ここまで来たら
+        # 原因は特定できないので、状態行だけ出してトレースバックは見せない
+        eprint(_format_unhandled_http_error(e))
+        sys.exit(1)
+
+
+def _run() -> None:
     parser = build_redi_parser()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
@@ -212,13 +252,15 @@ def main() -> None:
                 elif tui_result.action == "comment":
                     if tui_result.issue_id is None:
                         continue
-                    notes = open_editor()
+                    notes = open_editor(name="issue_note")
                     if notes:
                         add_issue_note(tui_result.issue_id, notes)
                 elif tui_result.action == "edit_comment":
                     if tui_result.journal_id is None:
                         continue
-                    new_notes = open_editor(initial_text=tui_result.journal_notes)
+                    new_notes = open_editor(
+                        initial_text=tui_result.journal_notes, name="issue_note"
+                    )
                     if not new_notes:
                         print(messages.tui_comment_edit_canceled_empty)
                     else:
@@ -298,6 +340,10 @@ def main() -> None:
                             comments=None,
                         )
                     )
+            except InputCanceledException as e:
+                # 「やっぱりやめる」は普通にあるので、終了せず同じ絞り込み・
+                # カーソル位置の TUI に戻して通知だけ出す (github#564)
+                tui_state.flash_message = e.message
             except RedmineValidationException as e:
                 tui_state.error_modal = _format_validation_error(e)
             except WikiUpdateConflictException as e:
@@ -306,72 +352,33 @@ def main() -> None:
                 )
 
     if args.command in ("project", "p"):
-        try:
-            handle_project(args)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
+        handle_project(args)
     elif args.command in ("issue", "i"):
-        try:
-            handle_issue(args)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
+        handle_issue(args)
     elif args.command in ("version", "v"):
-        try:
-            handle_version(args)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
+        handle_version(args)
     elif args.command in ("wiki", "w"):
         try:
             handle_wiki(args)
         except WikiUpdateConflictException as e:
-            print(messages.wiki_page_update_conflict.format(title=e.title))
-            sys.exit(1)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
+            eprint(messages.wiki_page_update_conflict.format(title=e.title))
             sys.exit(1)
     elif args.command in ("user", "u"):
         handle_user(args)
     elif args.command == "me":
-        try:
-            handle_me(args)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
+        handle_me(args)
     elif args.command in ("membership", "m"):
-        try:
-            handle_membership(args)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
+        handle_membership(args)
     elif args.command in ("news", "n"):
         handle_news(args)
-    elif args.command in ("tracker", "t"):
-        handle_tracker(args)
-    elif args.command in ("issue_status", "is"):
-        handle_issue_status(args)
-    elif args.command in ("issue_priority", "ip"):
-        handle_issue_priority(args)
-    elif args.command in ("time_entry_activity", "tea"):
-        handle_time_entry_activity(args)
-    elif args.command in ("document_category", "dc"):
-        handle_document_category(args)
+    elif (enumeration := find_enumeration_resource(args.command)) is not None:
+        handle_enumeration(enumeration, args)
     elif args.command in ("role", "r"):
         handle_role(args)
     elif args.command in ("group", "g"):
         handle_group(args)
-    elif args.command in ("query", "q"):
-        handle_query(args)
-    elif args.command in ("custom_field", "cf"):
-        handle_custom_field(args)
     elif args.command in ("issue_category", "ic"):
-        try:
-            handle_issue_category(args)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
+        handle_issue_category(args)
     elif args.command in ("search", "s"):
         handle_search(args)
     elif args.command in ("attachment", "a"):
@@ -379,11 +386,7 @@ def main() -> None:
     elif args.command == "relation":
         handle_relation(args)
     elif args.command in ("time_entry", "te"):
-        try:
-            handle_time_entry(args)
-        except RedmineValidationException as e:
-            print(_format_validation_error(e))
-            sys.exit(1)
+        handle_time_entry(args)
     elif args.command in ("file", "f"):
         handle_file(args)
     elif args.command in ("issue_journal", "ij"):

@@ -22,12 +22,21 @@ services:
       - redmine-dogfooding-files:/usr/src/redmine/files
       - redmine-dogfooding-sqlite:/usr/src/redmine/sqlite
 
-  redmine-for-demo:
+  # デモ用は言語ごとに分ける。ステータス/トラッカー/優先度は Redmine 全体の設定で
+  # プロジェクト単位に名前を変えられないため、1 インスタンスでは英日を両立できない。
+  redmine-for-demo-en:
     profiles:
       - demo
     image: redmine:6.1
     ports:
       - 3002:3000
+
+  redmine-for-demo-ja:
+    profiles:
+      - demo
+    image: redmine:6.1
+    ports:
+      - 3003:3000
 
 volumes:
   redmine-dogfooding-files:

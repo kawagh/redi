@@ -4,8 +4,6 @@ CLI と TUI で共通の手順をここに置く。HTTP とステータスコー
 `api.issue_journal` が持つ。
 """
 
-from __future__ import annotations
-
 from redi.api import issue_journal as issue_journal_api
 
 

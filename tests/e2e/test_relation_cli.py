@@ -79,7 +79,7 @@ class TestRelationView:
 
         view_error = view_error_info.value
         assert view_error.returncode == 1
-        assert f"Relation not found: #{relation_id}" in view_error.stdout, (
+        assert f"Relation not found: #{relation_id}" in view_error.stderr, (
             f"想定外のエラーで view が失敗\n"
             f"stdout:\n{view_error.stdout}\nstderr:\n{view_error.stderr}"
         )
@@ -108,7 +108,7 @@ class TestRelationDelete:
         delete_error = delete_error_info.value
         assert delete_error.returncode == 1
         assert f"No relation found between #{from_id} and #{to_id}" in (
-            delete_error.stdout
+            delete_error.stderr
         ), (
             f"想定外のエラーで delete-relation が失敗\n"
             f"stdout:\n{delete_error.stdout}\nstderr:\n{delete_error.stderr}"

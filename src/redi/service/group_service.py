@@ -3,8 +3,6 @@
 CLI と TUI で共通の手順をここに置く。HTTP とステータスコードの解釈は `api.group` が持つ。
 """
 
-from __future__ import annotations
-
 from redi import config
 from redi.api import group as group_api
 from redi.api.group import Group

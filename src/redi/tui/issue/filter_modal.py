@@ -1,8 +1,8 @@
 """issues タブの f で開くフィルタ modal のレイアウトと描画。
 
-ステータス・担当者・トラッカーを 3 列に並べ、列ごとに独立してスクロールさせる。
-縦に連結すると modal の高さが選択肢数の合計になり、選択肢が多い環境で下部が
-端末外へ溢れてしまうため。
+ステータス・担当者・トラッカー・クエリを 4 列に並べ、列ごとに独立して
+スクロールさせる。縦に連結すると modal の高さが選択肢数の合計になり、
+選択肢が多い環境で下部が端末外へ溢れてしまうため。
 """
 
 from prompt_toolkit.data_structures import Point
@@ -21,6 +21,7 @@ from prompt_toolkit.widgets import Frame
 from redi.i18n import messages
 from redi.tui.choices import (
     build_assignee_choices,
+    build_query_choices,
     build_status_choices,
     build_tracker_choices,
 )
@@ -54,7 +55,7 @@ def _render_filter_section(
 
 
 # 列の並び順。focus の左右移動もこの順に巡回する。
-FILTER_SECTIONS: tuple[FilterField, ...] = ("status", "assignee", "tracker")
+FILTER_SECTIONS: tuple[FilterField, ...] = ("status", "assignee", "tracker", "query")
 
 
 def shift_focus(current: FilterField, step: int) -> FilterField:
@@ -73,6 +74,8 @@ def section_choices(
             return modal.assignee_choices
         case "tracker":
             return modal.tracker_choices
+        case "query":
+            return modal.query_choices
 
 
 def section_cursor(modal: FilterModalState, section: FilterField) -> int:
@@ -83,6 +86,8 @@ def section_cursor(modal: FilterModalState, section: FilterField) -> int:
             return modal.assignee_cursor
         case "tracker":
             return modal.tracker_cursor
+        case "query":
+            return modal.query_cursor
 
 
 def set_section_cursor(
@@ -95,13 +100,15 @@ def set_section_cursor(
             modal.assignee_cursor = cursor
         case "tracker":
             modal.tracker_cursor = cursor
+        case "query":
+            modal.query_cursor = cursor
 
 
 def render_filter_column(state: TuiState, section: FilterField) -> Renderable:
-    """フィルタ modal の 1 列 (status / assignee / tracker) を描画する。
+    """フィルタ modal の 1 列 (status / assignee / tracker / query) を描画する。
 
-    3 列を縦に連結せず列ごとに描くことで、modal の高さが選択肢数の合計ではなく
-    max(status, assignee, tracker) で済み、選択肢が多くても縦に溢れにくくなる。
+    列を縦に連結せず列ごとに描くことで、modal の高さが選択肢数の合計ではなく
+    各列の最大値で済み、選択肢が多くても縦に溢れにくくなる。
     """
     f = state.issue_tab.filter
     modal = state.issue_tab.filter_modal
@@ -109,8 +116,10 @@ def render_filter_column(state: TuiState, section: FilterField) -> Renderable:
         title, active_id = messages.tui_filter_status, f.status_id
     elif section == "assignee":
         title, active_id = messages.tui_filter_assignee, f.assigned_to_id
-    else:
+    elif section == "tracker":
         title, active_id = messages.tui_filter_tracker, f.tracker_id
+    else:
+        title, active_id = messages.tui_filter_query, f.query_id
     return _render_filter_section(
         modal,
         section,
@@ -182,6 +191,8 @@ def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
                                         _filter_column_window(state, "assignee"),
                                         *_column_separator(),
                                         _filter_column_window(state, "tracker"),
+                                        *_column_separator(),
+                                        _filter_column_window(state, "query"),
                                     ]
                                 ),
                                 # ヒントは列のスクロール対象から外して常に見せる
@@ -203,19 +214,20 @@ def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
     )
 
 
-def open_filter_modal(state: TuiState) -> None:
-    """フィルタ modal を開く。選択肢を取り直し、現在の絞り込みにカーソルを合わせる。"""
+def sync_cursors_to_filter(state: TuiState) -> None:
+    """各列のカーソルを、現在適用中の絞り込みの行へ合わせる。
+
+    クエリと status/assignee/tracker は排他なので、片方を選ぶともう片方は
+    `IssueFilter` 側でクリアされる。クリアされた列のカーソルが選択したままの
+    行に残ると `*` の位置とずれて紛らわしいため、適用のたびに合わせ直す。
+    """
     modal = state.issue_tab.filter_modal
     f = state.issue_tab.filter
-    modal.status_choices = build_status_choices()
-    modal.assignee_choices = build_assignee_choices(
-        state.effective_project_id(), state.me_id
-    )
-    modal.tracker_choices = build_tracker_choices()
     actives: list[tuple[FilterField, str | None]] = [
         ("status", f.status_id),
         ("assignee", f.assigned_to_id),
         ("tracker", f.tracker_id),
+        ("query", f.query_id),
     ]
     for section, active_id in actives:
         cursor = 0
@@ -224,5 +236,17 @@ def open_filter_modal(state: TuiState) -> None:
                 cursor = idx
                 break
         set_section_cursor(modal, section, cursor)
+
+
+def open_filter_modal(state: TuiState) -> None:
+    """フィルタ modal を開く。選択肢を取り直し、現在の絞り込みにカーソルを合わせる。"""
+    modal = state.issue_tab.filter_modal
+    modal.status_choices = build_status_choices()
+    modal.assignee_choices = build_assignee_choices(
+        state.effective_project_id(), state.me_id
+    )
+    modal.tracker_choices = build_tracker_choices()
+    modal.query_choices = build_query_choices(state.effective_project_id())
+    sync_cursors_to_filter(state)
     modal.focus = "status"
     modal.show = True

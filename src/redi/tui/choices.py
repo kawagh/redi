@@ -4,6 +4,7 @@ from redi.api.issue_status import fetch_issue_statuses
 from redi.api.membership import fetch_project_users
 from redi.api.tracker import fetch_trackers
 from redi.i18n import messages
+from redi.service.query_service import list_queries_for_project
 
 
 def build_status_choices() -> list[tuple[str | None, str]]:
@@ -25,6 +26,19 @@ def build_tracker_choices() -> list[tuple[str | None, str]]:
     ]
     for t in fetch_trackers():
         choices.append((str(t["id"]), t.get("name", "")))
+    return choices
+
+
+def build_query_choices(project_id: str | None) -> list[tuple[str | None, str]]:
+    """フィルタモーダルのクエリ選択肢。先頭は特殊指定 (未設定)。
+
+    現在のプロジェクトで使えるクエリ (プロジェクト固有 + グローバル) だけを出す。
+    """
+    choices: list[tuple[str | None, str]] = [
+        (None, messages.tui_filter_unspecified),
+    ]
+    for q in list_queries_for_project(project_id):
+        choices.append((str(q["id"]), q.get("name", "")))
     return choices
 
 

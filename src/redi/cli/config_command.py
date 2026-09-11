@@ -2,11 +2,13 @@ import argparse
 import sys
 
 from redi.cli.alias import resolve_alias
-from redi.cli.interactive import prompt
+from redi.cli.interactive import prompt, raise_on_cancel
 from redi.cli.picker import inline_checkbox, inline_choice, inline_choice_with_action
-from redi.cli.validator import RequiredValidator, UrlValidator
+from redi.cli.profile_setup import prompt_connection_profile
+from redi.cli.validator import ProfileNameValidator, RequiredValidator, UrlValidator
 from redi.config import (
     SUPPORTED_LANGUAGES,
+    SUPPORTED_TEXT_FORMATTINGS,
     Profile,
     create_profile,
     get_default_profile,
@@ -17,6 +19,7 @@ from redi.config import (
     update_profile,
 )
 from redi.i18n import messages, select_messages
+from redi.output import eprint
 
 
 def add_config_parser(
@@ -49,6 +52,11 @@ def add_config_parser(
         choices=SUPPORTED_LANGUAGES,
         help=messages.arg_help_config_set_language,
     )
+    c_update_parser.add_argument(
+        "--text_formatting",
+        choices=SUPPORTED_TEXT_FORMATTINGS,
+        help=messages.arg_help_config_set_text_formatting,
+    )
     c_update_parser.add_argument("--api_key", help=messages.arg_help_config_set_api_key)
     c_update_parser.add_argument("--url", help=messages.arg_help_config_set_url)
     c_update_parser.add_argument(
@@ -58,7 +66,9 @@ def add_config_parser(
         "create", aliases=["c"], help=messages.arg_help_config_create, parents=parents
     )
     c_create_parser.add_argument(
-        "profile_name", help=messages.arg_help_config_create_profile_name
+        "profile_name",
+        nargs="?",
+        help=messages.arg_help_config_create_profile_name,
     )
     c_create_parser.add_argument("--url", help=messages.arg_help_config_url)
     c_create_parser.add_argument("--api_key", help=messages.arg_help_config_api_key)
@@ -75,6 +85,11 @@ def add_config_parser(
         help=messages.arg_help_config_language,
     )
     c_create_parser.add_argument(
+        "--text_formatting",
+        choices=SUPPORTED_TEXT_FORMATTINGS,
+        help=messages.arg_help_config_text_formatting,
+    )
+    c_create_parser.add_argument(
         "--set_default",
         action="store_true",
         help=messages.arg_help_config_set_default_flag,
@@ -88,23 +103,20 @@ def _interactive_select_profile(args: argparse.Namespace) -> bool:
     """
     profile_names = list_profile_names()
     if not profile_names:
-        print(messages.no_profiles_available)
+        eprint(messages.no_profiles_available)
         sys.exit(1)
     current_default = get_default_profile()
     options: list[tuple[str, str]] = [
         (name, f"{name} (default)" if name == current_default else name)
         for name in profile_names
     ]
-    try:
+    with raise_on_cancel():
         action, selected = inline_choice_with_action(
             messages.prompt_select_profile,
             options,
             default=current_default,
             action_keys={"u": "update"},
         )
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        sys.exit(1)
     if action == "update":
         return _interactive_fill_config_update_args(args, selected)
     if set_default_profile(selected):
@@ -121,10 +133,33 @@ def _update_field_values(profile: str) -> list[tuple[str, str]]:
         ("wiki_project_id", messages.field_wiki_project_id),
         ("editor", messages.field_editor),
         ("language", messages.field_language),
+        ("text_formatting", messages.field_text_formatting),
     ]
     if profile != get_default_profile():
         field_values.append(("set_default", messages.field_set_default_profile))
     return field_values
+
+
+def _update_field_options(
+    field_values: list[tuple[str, str]], current: Profile
+) -> list[tuple[str, str]]:
+    """更新項目の選択肢に現在値を添える。
+
+    どの項目を変えるべきか分かるようにする。未設定の項目は値を出さない。
+    API キーは秘匿するため出さない。
+    """
+    current_values: dict[str, str | None] = {
+        "url": current.redmine_url,
+        "project_id": current.default_project_id,
+        "wiki_project_id": current.wiki_project_id,
+        "editor": current.editor,
+        "language": current.language,
+        "text_formatting": current.text_formatting,
+    }
+    return [
+        (key, f"{label} # {value}" if (value := current_values.get(key)) else label)
+        for key, label in field_values
+    ]
 
 
 def _interactive_fill_config_update_args(
@@ -132,22 +167,23 @@ def _interactive_fill_config_update_args(
 ) -> bool:
     """更新する項目を選ばせて値を入力し、args に反映する。
 
-    後続の更新フローへ流す場合 True を返す。キャンセル時は False。
+    後続の更新フローへ流す場合 True を返す。項目を選ばなかった場合は False。
     """
     current = read_profile(profile)
     field_values = _update_field_values(profile)
-    try:
-        selected = inline_checkbox(messages.prompt_select_update_items, field_values)
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        return False
-    if not selected:
-        print(messages.canceled_no_items_selected)
-        return False
-    labels = dict(field_values)
-    print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
-    # 後続の更新フローは falsy な値をスキップするため、選択した項目は必須入力とする
-    try:
+    with raise_on_cancel():
+        selected = inline_checkbox(
+            messages.prompt_select_update_items,
+            _update_field_options(field_values, current),
+        )
+        if not selected:
+            print(messages.canceled_no_items_selected)
+            return False
+        labels = dict(field_values)
+        print(
+            messages.update_items.format(items=", ".join(labels[v] for v in selected))
+        )
+        # 後続の更新フローは falsy な値をスキップするため、選択した項目は必須入力とする
         if "url" in selected:
             args.url = prompt(
                 messages.prompt_redmine_url,
@@ -185,36 +221,68 @@ def _interactive_fill_config_update_args(
                 [(v, v) for v in SUPPORTED_LANGUAGES],
                 default=current.language,
             )
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        return False
-    if "set_default" in selected:
-        args.default_profile = profile
+        if "text_formatting" in selected:
+            args.text_formatting = inline_choice(
+                messages.prompt_select_text_formatting,
+                [(v, v) for v in SUPPORTED_TEXT_FORMATTINGS],
+                default=current.text_formatting,
+            )
+        if "set_default" in selected:
+            args.default_profile = profile
     args.profile_name = profile
     return True
+
+
+def _prompt_profile_name() -> str:
+    with raise_on_cancel():
+        return prompt(
+            messages.prompt_profile_name,
+            validator=ProfileNameValidator(list_profile_names()),
+        ).strip()
+
+
+def _confirm_set_default(profile_name: str) -> bool:
+    with raise_on_cancel():
+        selected = inline_choice(
+            messages.prompt_set_default_profile.format(name=profile_name),
+            [("yes", messages.choice_yes), ("no", messages.choice_no)],
+            default="no",
+        )
+    return selected == "yes"
+
+
+def _handle_config_create(args: argparse.Namespace) -> None:
+    profile = Profile(
+        redmine_url=args.url,
+        redmine_api_key=args.api_key,
+        default_project_id=args.project_id,
+        wiki_project_id=args.wiki_project_id,
+        editor=args.editor,
+        language=args.language,
+        text_formatting=args.text_formatting,
+    )
+    profile_name = args.profile_name
+    set_default = args.set_default
+    # プロファイル名と接続情報が揃っていなければ init と同じ手順で対話的に補う
+    if not (profile_name and profile.redmine_url and profile.redmine_api_key):
+        profile_name = profile_name or _prompt_profile_name()
+        profile = profile.merge(prompt_connection_profile(profile, messages))
+        # 最初のプロファイルは create_profile が自動でデフォルトにするため聞かない
+        if not set_default and list_profile_names():
+            set_default = _confirm_set_default(profile_name)
+
+    result = create_profile(profile_name=profile_name, profile=profile)
+    if not result.created:
+        sys.exit(1)
+    print(messages.profile_created.format(name=profile_name))
+    if result.set_as_default or (set_default and set_default_profile(profile_name)):
+        print(messages.default_profile_set.format(name=profile_name))
 
 
 def handle_config(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.config_command)
     if cmd == "create":
-        result = create_profile(
-            profile_name=args.profile_name,
-            profile=Profile(
-                redmine_url=args.url,
-                redmine_api_key=args.api_key,
-                default_project_id=args.project_id,
-                wiki_project_id=args.wiki_project_id,
-                editor=args.editor,
-                language=args.language,
-            ),
-        )
-        if not result.created:
-            sys.exit(1)
-        print(messages.profile_created.format(name=args.profile_name))
-        if result.set_as_default:
-            print(messages.default_profile_set.format(name=args.profile_name))
-        elif args.set_default and set_default_profile(args.profile_name):
-            print(messages.default_profile_set.format(name=args.profile_name))
+        _handle_config_create(args)
         return
     if cmd != "update":
         show_config(full=args.full)
@@ -225,6 +293,7 @@ def handle_config(args: argparse.Namespace) -> None:
         or args.wiki_project_id
         or args.editor
         or args.language
+        or args.text_formatting
         or args.api_key
         or args.url
         or args.default_profile
@@ -245,6 +314,7 @@ def handle_config(args: argparse.Namespace) -> None:
         wiki_project_id=args.wiki_project_id,
         editor=args.editor,
         language=args.language,
+        text_formatting=args.text_formatting,
     )
     if values.to_dict():
         update_profile(values, profile)
@@ -268,6 +338,12 @@ def handle_config(args: argparse.Namespace) -> None:
         print(
             new_lang_messages.language_set.format(
                 value=args.language, suffix=profile_suffix
+            )
+        )
+    if args.text_formatting:
+        print(
+            messages.text_formatting_set.format(
+                value=args.text_formatting, suffix=profile_suffix
             )
         )
     if args.api_key:

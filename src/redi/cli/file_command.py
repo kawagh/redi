@@ -1,14 +1,24 @@
 import argparse
 import json
 import sys
+from typing import assert_never
 
 import requests
 
 from redi import config
-from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
+from redi.api.exceptions import (
+    ProjectNotFoundException,
+    ProjectPermissionDeniedException,
+    print_http_error_body,
+)
 from redi.cli.alias import resolve_alias
-from redi.cli.shared_options import project_option_parser
+from redi.cli.shared_options import (
+    OutputFormat,
+    project_option_parser,
+    resolve_list_format,
+)
 from redi.i18n import messages
+from redi.output import eprint, print_tsv, tsv_ref
 from redi.service import file_service
 from redi.service.attachment_service import LocalFileNotFoundException
 
@@ -44,21 +54,57 @@ def add_file_parser(
     )
 
 
-def _list_files(project_id: str, full: bool = False) -> None:
+def _list_files(project_id: str, fmt: OutputFormat = OutputFormat.PLAIN) -> None:
     """プロジェクトのファイル一覧を標準出力に出す。プロジェクトが無い場合は exit 1。"""
     try:
         files = file_service.list_files(project_id)
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=project_id))
+        eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
-    if full:
-        print(json.dumps(files, ensure_ascii=False))
-        return
-    for f in files:
-        version = f.get("version") or {}
-        version_label = f" [{version.get('name')}]" if version else ""
-        size = f.get("filesize", "")
-        print(f"{f['id']} {f['filename']} ({size}B){version_label}")
+    except ProjectPermissionDeniedException:
+        eprint(messages.project_files_permission_denied.format(id=project_id))
+        sys.exit(1)
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(files, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                (
+                    "id",
+                    "filename",
+                    "filesize",
+                    "version_id",
+                    "version_name",
+                    "content_type",
+                    "author_id",
+                    "author_name",
+                    "created_on",
+                    "downloads",
+                    "digest",
+                ),
+                (
+                    (
+                        f["id"],
+                        f["filename"],
+                        f.get("filesize"),
+                        *tsv_ref(f, "version"),
+                        f.get("content_type"),
+                        *tsv_ref(f, "author"),
+                        f.get("created_on"),
+                        f.get("downloads"),
+                        f.get("digest"),
+                    )
+                    for f in files
+                ),
+            )
+        case OutputFormat.PLAIN:
+            for f in files:
+                version = f.get("version") or {}
+                version_label = f" [{version.get('name')}]" if version else ""
+                size = f.get("filesize", "")
+                print(f"{f['id']} {f['filename']} ({size}B){version_label}")
+        case _:
+            assert_never(fmt)
 
 
 def _create_file(
@@ -76,15 +122,15 @@ def _create_file(
             description=description,
         )
     except LocalFileNotFoundException as e:
-        print(messages.file_not_found.format(path=e.path))
+        eprint(messages.file_not_found.format(path=e.path))
         sys.exit(1)
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=project_id))
+        eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.file_upload_failed)
+        eprint(messages.file_upload_failed)
         sys.exit(1)
     print(messages.file_uploaded.format(filename=filename))
 
@@ -92,7 +138,7 @@ def _create_file(
 def handle_file(args: argparse.Namespace) -> None:
     project_id = args.project_id or config.default_project_id
     if not project_id:
-        print(messages.project_id_required)
+        eprint(messages.project_id_required)
         sys.exit(1)
     cmd = resolve_alias(args.file_command)
     if cmd == "create":
@@ -104,4 +150,4 @@ def handle_file(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "list" or cmd is None:
-        _list_files(project_id, full=args.full)
+        _list_files(project_id, fmt=resolve_list_format(args))

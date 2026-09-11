@@ -16,11 +16,13 @@ from redi.cli.validator import (
     IntValidator,
     MaxLengthValidator,
     MinLengthValidator,
+    ProjectIdentifierValidator,
     RegexpValidator,
     RequiredValidator,
     UrlValidator,
     build_custom_field_validator,
     check_custom_field_constraints,
+    is_yyyy_mm_dd,
 )
 from redi.i18n import messages
 
@@ -52,6 +54,27 @@ class TestRequiredValidator:
             ValidationError, match=re.escape(messages.error_input_required)
         ):
             RequiredValidator().validate(Document(text=text))
+
+
+class TestProjectIdentifierValidator:
+    """ProjectIdentifierValidator()はRedmineが受け付ける識別子だけを通す"""
+
+    @pytest.mark.parametrize(
+        "text", ["alpha", "my-project", "my_project", "redmine6", "a" * 100]
+    )
+    def test_valid_identifier_passes(self, text: str):
+        """英小文字・数字・ハイフン・アンダースコアの100文字以内は通る"""
+        ProjectIdentifierValidator().validate(Document(text=text))
+
+    @pytest.mark.parametrize(
+        "text",
+        ["", "Alpha", "my project", "プロジェクト", "123", "a" * 101],
+        ids=["empty", "uppercase", "space", "non_ascii", "digits_only", "too_long"],
+    )
+    def test_invalid_identifier_rejected(self, text: str):
+        """識別子として使えない入力は送信前に弾く"""
+        with pytest.raises(ValidationError):
+            ProjectIdentifierValidator().validate(Document(text=text))
 
 
 class TestUrlValidator:
@@ -200,6 +223,41 @@ class TestFloatValidator:
             ValidationError, match=re.escape(messages.error_numeric_required)
         ):
             FloatValidator().validate(Document(text=text))
+
+
+class TestIsYyyyMmDd:
+    """is_yyyy_mm_dd()は YYYY-MM-DD 形式かつ実在する日付だけを真とする"""
+
+    @pytest.mark.parametrize(
+        "text", ["2026-04-26", "2026-12-31", "1999-01-01", "2024-02-29"]
+    )
+    def test_existing_date_is_true(self, text: str):
+        """実在する YYYY-MM-DD は真になる (うるう日を含む)"""
+        assert is_yyyy_mm_dd(text) is True
+
+    @pytest.mark.parametrize("text", ["20260426", "2026-W18-1"])
+    def test_other_iso_notation_is_false(self, text: str):
+        """区切りなし・週日付といった他の ISO 8601 表記は偽になる"""
+        assert is_yyyy_mm_dd(text) is False
+
+    @pytest.mark.parametrize(
+        "text", ["2026-13-01", "2026-02-30", "2026-00-10", "2026-02-29"]
+    )
+    def test_calendar_invalid_date_is_false(self, text: str):
+        """形式は合っていてもカレンダー上存在しない日付は偽になる"""
+        assert is_yyyy_mm_dd(text) is False
+
+    @pytest.mark.parametrize(
+        "text", ["", "abc", "2026/04/26", "2026-4-26", "2026-04", "2026-04-26T00:00:00"]
+    )
+    def test_invalid_format_is_false(self, text: str):
+        """空文字や区切り・桁の異なる文字列は偽になる"""
+        assert is_yyyy_mm_dd(text) is False
+
+    @pytest.mark.parametrize("text", [" 2026-04-26", "2026-04-26 "])
+    def test_surrounding_whitespace_is_false(self, text: str):
+        """前後の空白は取り除かないので偽になる (strip は呼び出し側の責務)"""
+        assert is_yyyy_mm_dd(text) is False
 
 
 class TestDateValidator:

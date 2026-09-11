@@ -3,8 +3,6 @@
 CLI と TUI で共通の手順をここに置く。HTTP とステータスコードの解釈は `api.file` が持つ。
 """
 
-from __future__ import annotations
-
 from redi.api import file as file_api
 from redi.api.file import ProjectFile
 from redi.service.attachment_service import upload_file

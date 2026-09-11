@@ -7,16 +7,24 @@ sys.exit を担当する。
 import argparse
 import json
 import sys
+from typing import assert_never
 
 import requests
 
 from redi import config
-from redi.api.exceptions import print_http_error_body
+from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.issue_category import IssueCategory, IssueCategoryNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.shared_options import project_option_parser
+from redi.cli.shared_options import (
+    OutputFormat,
+    add_format_options,
+    project_option_parser,
+    resolve_list_format,
+    wants_json,
+)
 from redi.i18n import messages
+from redi.output import eprint, print_tsv, tsv_ref
 from redi.service import issue_category_service
 
 
@@ -46,9 +54,7 @@ def add_issue_category_parser(
     ic_view_parser.add_argument(
         "category_id", help=messages.arg_help_issue_category_view_id
     )
-    ic_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(ic_view_parser)
 
     ic_create_parser = ic_subparsers.add_parser(
         "create",
@@ -103,16 +109,47 @@ def add_issue_category_parser(
     )
 
 
-def _list_issue_categories(project_id: str, full: bool = False) -> None:
-    """イシューカテゴリ一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
-    categories = issue_category_service.list_issue_categories(project_id)
-    if full:
-        print(json.dumps(categories, ensure_ascii=False))
-        return
-    for category in categories:
-        assigned = category.get("assigned_to")
-        assigned_label = f" [{assigned['id']} {assigned['name']}]" if assigned else ""
-        print(f"{category['id']} {category['name']}{assigned_label}")
+def _list_issue_categories(
+    project_id: str, fmt: OutputFormat = OutputFormat.PLAIN
+) -> None:
+    """イシューカテゴリ一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
+    try:
+        categories = issue_category_service.list_issue_categories(project_id)
+    except ProjectNotFoundException:
+        eprint(messages.project_not_found.format(id=project_id))
+        sys.exit(1)
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(categories, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                (
+                    "id",
+                    "name",
+                    "assigned_to_id",
+                    "assigned_to_name",
+                    "project_id",
+                    "project_name",
+                ),
+                (
+                    (
+                        c["id"],
+                        c["name"],
+                        *tsv_ref(c, "assigned_to"),
+                        *tsv_ref(c, "project"),
+                    )
+                    for c in categories
+                ),
+            )
+        case OutputFormat.PLAIN:
+            for category in categories:
+                assigned = category.get("assigned_to")
+                assigned_label = (
+                    f" [{assigned['id']} {assigned['name']}]" if assigned else ""
+                )
+                print(f"{category['id']} {category['name']}{assigned_label}")
+        case _:
+            assert_never(fmt)
 
 
 def _view_issue_category(category_id: str, full: bool = False) -> None:
@@ -146,7 +183,7 @@ def _read_issue_category(category_id: str) -> IssueCategory:
     try:
         return issue_category_service.read_issue_category(category_id)
     except IssueCategoryNotFoundException:
-        print(messages.category_not_found.format(id=category_id))
+        eprint(messages.category_not_found.format(id=category_id))
         sys.exit(1)
 
 
@@ -161,9 +198,9 @@ def _create_issue_category(
             assigned_to_id=assigned_to_id,
         )
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.category_create_failed)
+        eprint(messages.category_create_failed)
         sys.exit(1)
     print(messages.category_created.format(id=created["id"], name=created["name"]))
 
@@ -182,12 +219,12 @@ def _update_issue_category(
             assigned_to_id=assigned_to_id,
         )
     except IssueCategoryNotFoundException:
-        print(messages.category_not_found.format(id=category_id))
+        eprint(messages.category_not_found.format(id=category_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.category_update_failed)
+        eprint(messages.category_update_failed)
         sys.exit(1)
     print(messages.category_updated.format(id=category_id))
 
@@ -200,12 +237,12 @@ def _delete_issue_category(category_id: str, reassign_to_id: int | None) -> None
             reassign_to_id=reassign_to_id,
         )
     except IssueCategoryNotFoundException:
-        print(messages.category_not_found.format(id=category_id))
+        eprint(messages.category_not_found.format(id=category_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.category_delete_failed)
+        eprint(messages.category_delete_failed)
         sys.exit(1)
     print(messages.category_deleted.format(id=category_id))
 
@@ -214,7 +251,7 @@ def _resolve_project_id(args: argparse.Namespace) -> str:
     """--project_id か default_project_id を解決する。どちらも無ければ exit 1。"""
     project_id = args.project_id or config.default_project_id
     if not project_id:
-        print(messages.project_id_required)
+        eprint(messages.project_id_required)
         sys.exit(1)
     return project_id
 
@@ -222,7 +259,7 @@ def _resolve_project_id(args: argparse.Namespace) -> str:
 def handle_issue_category(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.issue_category_command)
     if cmd == "view":
-        _view_issue_category(args.category_id, full=args.full)
+        _view_issue_category(args.category_id, full=wants_json(args))
         return
     if cmd == "create":
         _create_issue_category(
@@ -252,4 +289,7 @@ def handle_issue_category(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "list" or cmd is None:
-        _list_issue_categories(_resolve_project_id(args), full=args.full)
+        _list_issue_categories(
+            _resolve_project_id(args),
+            fmt=resolve_list_format(args),
+        )

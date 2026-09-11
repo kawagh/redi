@@ -1,9 +1,11 @@
+# carry_over() が自分自身の型 TuiState を返すため、注釈の評価を遅らせる
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Literal
 
 from redi import config
+from redi.api import PAGE_LIMIT_MAX
 from redi.api.issue import Issue
 from redi.api.time_entry import TimeEntry
 from redi.api.wiki import WikiPage
@@ -19,7 +21,7 @@ TuiAction = Literal[
     "switch_profile",
 ]
 TuiTab = Literal["issues", "wiki", "time_entries"]
-FilterField = Literal["status", "assignee", "tracker"]
+FilterField = Literal["status", "assignee", "tracker", "query"]
 
 # prompt_toolkit の FormattedTextControl に渡す `(style, text)` 断片のリスト。
 Renderable = list[tuple[str, str]]
@@ -27,6 +29,27 @@ Renderable = list[tuple[str, str]]
 # 一覧/プレビューの外側にある固定行の合計 (タブバー + 罫線 + ステータスバー)。
 # Layout の HSplit に固定行を増減したらここも更新すること。
 FIXED_ROWS = 3
+
+
+def compute_page_size(rows: int) -> int:
+    """端末の行数から 1 ページの取得件数を求める。
+
+    固定行 (FIXED_ROWS) を除いた行数が一覧に使える行数。最低 1 件は取り、
+    Redmine の limit 上限で頭打ちにする (超えた分は返らず Page 表示と
+    実データがずれるため)。
+    """
+    return max(1, min(rows - FIXED_ROWS, PAGE_LIMIT_MAX))
+
+
+def realign_page(offset: int, cursor: int, page_size: int) -> tuple[int, int]:
+    """カーソル行を保ったまま offset を新しい page_size のページ境界へ揃える。
+
+    `(offset, cursor)` を返す。offset が page_size の倍数になるので、
+    ステータスバーの Page 表示 (offset // page_size) が実データとずれない。
+    """
+    absolute = offset + cursor
+    new_offset = (absolute // page_size) * page_size
+    return new_offset, absolute - new_offset
 
 
 @dataclass
@@ -54,8 +77,13 @@ class TuiResult:
 class IssueFilter:
     """Issue 一覧のサーバーサイドフィルタ条件。
 
-    Redmine API の `status_id` / `assigned_to_id` / `tracker_id` パラメータに渡す値を
-    保持する。`status_id is None` のときは Redmine デフォルト挙動 (open のみ) になる。
+    Redmine API の `status_id` / `assigned_to_id` / `tracker_id` / `query_id`
+    パラメータに渡す値を保持する。`status_id is None` のときは Redmine デフォルト
+    挙動 (open のみ) になる。
+
+    Redmine は `query_id` を渡すとカスタムクエリ側の条件を優先し、同時に渡した
+    status / assignee / tracker を捨てる。捨てられた条件がステータスラインに
+    残ると嘘になるので、`apply` で排他にして片方だけが立つようにする。
     """
 
     status_id: str | None = None
@@ -64,15 +92,57 @@ class IssueFilter:
     assigned_to_label: str = messages.tui_filter_assignee_none
     tracker_id: str | None = None
     tracker_label: str = messages.tui_filter_unspecified
+    query_id: str | None = None
+    query_label: str = messages.tui_filter_unspecified
+
+    def apply(self, field: FilterField, value: str | None, label: str) -> None:
+        """フィルタ modal で選ばれた 1 項目を反映する。
+
+        クエリと status / assignee / tracker は Redmine 側で両立しないため、
+        有効な値 (None でない) を選んだら反対側をクリアする。「(指定なし)」の
+        選択は絞り込みを外す操作なので、反対側には触らない。
+        """
+        match field:
+            case "status":
+                self.status_id, self.status_label = value, label
+            case "assignee":
+                self.assigned_to_id, self.assigned_to_label = value, label
+            case "tracker":
+                self.tracker_id, self.tracker_label = value, label
+            case "query":
+                self.query_id, self.query_label = value, label
+        if value is None:
+            return
+        if field == "query":
+            self.clear_conditions()
+        else:
+            self.clear_query()
+
+    def clear_conditions(self) -> None:
+        """status / assignee / tracker の絞り込みを既定に戻す。"""
+        self.status_id = None
+        self.status_label = messages.tui_filter_status_open_default
+        self.assigned_to_id = None
+        self.assigned_to_label = messages.tui_filter_assignee_none
+        self.tracker_id = None
+        self.tracker_label = messages.tui_filter_unspecified
+
+    def clear_query(self) -> None:
+        """クエリの絞り込みを外す。"""
+        self.query_id = None
+        self.query_label = messages.tui_filter_unspecified
 
     def is_active(self) -> bool:
         return (
             self.status_id is not None
             or self.assigned_to_id is not None
             or self.tracker_id is not None
+            or self.query_id is not None
         )
 
     def short_label(self) -> str:
+        if self.query_id is not None:
+            return f"query={self.query_label}"
         parts = []
         if self.status_id is not None:
             parts.append(f"status={self.status_label}")
@@ -92,16 +162,18 @@ class FilterModalState:
     """
 
     show: bool = False
-    # 現在カーソルがあるセクション (status / assignee / tracker)
+    # 現在カーソルがあるセクション (status / assignee / tracker / query)
     focus: FilterField = "status"
     # 各セクションの選択肢: (Redmine API に渡す値, 表示ラベル) の組
     status_choices: list[tuple[str | None, str]] = field(default_factory=list)
     assignee_choices: list[tuple[str | None, str]] = field(default_factory=list)
     tracker_choices: list[tuple[str | None, str]] = field(default_factory=list)
+    query_choices: list[tuple[str | None, str]] = field(default_factory=list)
     # 各セクション内のカーソル位置
     status_cursor: int = 0
     assignee_cursor: int = 0
     tracker_cursor: int = 0
+    query_cursor: int = 0
 
 
 @dataclass
@@ -130,6 +202,33 @@ class CommentSelectState:
 
 
 @dataclass
+class IssueFind:
+    """F で開く検索の条件。Redmine の検索 API に渡すクエリを保持する。
+
+    `/` のバッファ内検索 (`TuiState.search_query`) とは別物で、こちらは API を叩いて
+    イシュー一覧そのものを置き換える。
+    """
+
+    query: str = ""
+
+    def is_active(self) -> bool:
+        return bool(self.query)
+
+    def short_label(self) -> str:
+        if not self.query:
+            return ""
+        return f"find={self.query}"
+
+
+@dataclass
+class IssueFindModalState:
+    """F で開く検索 modal の表示と入力状態。"""
+
+    show: bool = False
+    input_text: str = ""
+
+
+@dataclass
 class IssueDeleteModalState:
     """D で開く issue 削除確認 modal の状態。"""
 
@@ -149,6 +248,8 @@ class IssueTabState:
     total_count: int = 0
     filter: IssueFilter = field(default_factory=IssueFilter)
     filter_modal: FilterModalState = field(default_factory=FilterModalState)
+    find: IssueFind = field(default_factory=IssueFind)
+    find_modal: IssueFindModalState = field(default_factory=IssueFindModalState)
     comment_select: CommentSelectState = field(default_factory=CommentSelectState)
     delete_modal: IssueDeleteModalState = field(default_factory=IssueDeleteModalState)
 
@@ -257,6 +358,14 @@ class TuiState:
     project_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
     profile_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
 
+    def apply_terminal_rows(self, rows: int) -> bool:
+        """端末の行数から page_size を更新する。値が変わったときだけ True を返す。"""
+        new_size = compute_page_size(rows)
+        if new_size == self.page_size:
+            return False
+        self.page_size = new_size
+        return True
+
     def effective_project_id(self) -> str | None:
         return self.project_id or config.default_project_id
 
@@ -269,6 +378,7 @@ class TuiState:
 
         next_state = TuiState(last_result=result)
         next_state.issue_tab.filter = self.issue_tab.filter
+        next_state.issue_tab.find = self.issue_tab.find
         next_state.time_entry_tab.filter = self.time_entry_tab.filter
         next_state.project_id = self.project_id
         next_state.project_label = self.project_label

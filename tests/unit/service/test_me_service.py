@@ -36,6 +36,24 @@ class TestReadMyAccount:
         assert account == {"id": 1, "login": "admin"}
 
 
+class TestReadMyUser:
+    """read_my_user が取得するユーザー"""
+
+    def test_reads_current_user_with_detail(self, monkeypatch):
+        """メンバーシップ・グループも出せるよう detail 付きで自分自身を取得する"""
+        calls: list[tuple] = []
+
+        def fake_read_user(user_id, detail=False):
+            calls.append((user_id, detail))
+            return {"id": 1, "login": "admin"}
+
+        monkeypatch.setattr(me_service.user_service, "read_user", fake_read_user)
+
+        me_service.read_my_user()
+
+        assert calls == [("current", True)]
+
+
 class TestReadMyUserId:
     """read_my_user_id が返すユーザー id"""
 

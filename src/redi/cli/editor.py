@@ -7,9 +7,16 @@ from redi.cli.interactive import ensure_interactive
 from redi.i18n import messages
 
 
-def open_editor(initial_text: str = "") -> str:
+def open_editor(initial_text: str = "", name: str = "redi") -> str:
+    """エディタを開いて入力されたテキストを返す。
+
+    name は一時ファイル名の接頭辞になる。エディタ上で何を書こうとしているのか
+    (issue の本文かコメントか等) をファイル名から区別できるようにするため。
+    """
     ensure_interactive(messages.prompt_editor_input)
-    with tempfile.NamedTemporaryFile(suffix=".md", mode="w+", delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        prefix=f"{name}_", suffix=".md", mode="w+", delete=False
+    ) as f:
         if initial_text:
             f.write(initial_text)
         tmp_path = f.name

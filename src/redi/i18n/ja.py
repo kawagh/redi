@@ -7,10 +7,15 @@ class Ja(MessagesProto):
     # ---- profile / config ----
     profile_created = "profile '{name}' を作成しました"
     profile_already_exists = "profile '{name}' は既に存在します"
+    profile_not_found = "profile '{name}' は {path} にありません"
+    profile_did_you_mean = "もしかして: {names}"
+    profile_available = "利用可能なプロファイル: {names}"
+    profile_list_hint = "(一覧は `redi config --full` で確認できます)"
     default_profile_set = "default_profileを {name} に設定しました"
     default_project_id_set = "default_project_idを {value} に設定しました{suffix}"
     editor_set = "editorを {value} に設定しました{suffix}"
     language_set = "languageを {value} に設定しました{suffix}"
+    text_formatting_set = "text_formattingを {value} に設定しました{suffix}"
     redmine_api_key_set = "redmine_api_keyを設定しました{suffix}"
     redmine_url_set = "redmine_urlを {value} に設定しました{suffix}"
     wiki_project_id_set = "wiki_project_idを {value} に設定しました{suffix}"
@@ -55,11 +60,14 @@ class Ja(MessagesProto):
     )
     user_not_found = "ユーザーが見つかりません: {id}"
     project_not_found = "プロジェクトが見つかりません: {id}"
+    query_not_found = "カスタムクエリが見つかりません: {id}"
+    query_not_found_hint = "カスタムクエリの一覧は `redi query list` で確認できます"
     wiki_page_not_found = "Wikiページが見つかりません: {title}"
     wiki_page_with_version_not_found = (
         "Wikiページが見つかりません: {title} (version={version})"
     )
     wiki_page_does_not_exist = "Wikiページが存在しません"
+    wiki_page_already_exists = "Wikiページは既に存在します: {title} (更新するには wiki update を使ってください)"
     parent_page_not_found = "親ページが見つかりません: {title}"
     file_not_found = "ファイルが見つかりません: {path}"
     attachment_not_found = "添付ファイルが見つかりません: #{id}"
@@ -71,6 +79,9 @@ class Ja(MessagesProto):
         "グループまたはユーザーが見つかりません: #{group_id} / #{user_id}"
     )
     category_not_found = "カテゴリが見つかりません: {id}"
+    tracker_not_found = "トラッカーが見つかりません: {id}"
+    status_not_found = "ステータスが見つかりません: {id}"
+    available_ids = "指定できる値: {items}"
     news_not_found = "ニュースが見つかりません: {id}"
     no_search_results = "検索結果が見つかりませんでした"
     issue_not_found_simple = "イシューが見つかりません"
@@ -163,6 +174,10 @@ class Ja(MessagesProto):
     issue_update_failed = "イシューの更新に失敗しました"
     issue_delete_failed = "イシューの削除に失敗しました"
     watcher_add_failed = "ウォッチャーの追加に失敗しました"
+    watcher_not_added = (
+        "#{issue_id} にウォッチャー {user_id} を追加できませんでした: "
+        "ユーザーが存在しないか、ウォッチャーにできません"
+    )
     watcher_remove_failed = "ウォッチャーの削除に失敗しました"
     wiki_page_delete_failed = "Wikiページの削除に失敗しました"
     wiki_page_update_conflict = "Wikiページが他のユーザーによって更新されているため更新できませんでした: {title}"
@@ -274,10 +289,13 @@ class Ja(MessagesProto):
     prompt_select_profile = (
         "プロファイルを選択 (Enter: デフォルトに設定 / u: 項目を更新)"
     )
+    prompt_profile_name = "プロファイル名: "
+    prompt_set_default_profile = "profile '{name}' をdefault_profileにしますか?"
     prompt_default_project_id = "default_project_id: "
     prompt_wiki_project_id = "wiki_project_id: "
     prompt_editor = "editor: "
     prompt_select_language = "言語を選択"
+    prompt_select_text_formatting = "Redmine のテキスト書式を選択"
     prompt_start_date = "開始日（YYYY-MM-DD、省略可）: "
     prompt_due_date = "期日（YYYY-MM-DD、省略可）: "
     prompt_estimated_hours = "予定工数（例: 1.5 (h)）: "
@@ -288,6 +306,24 @@ class Ja(MessagesProto):
     prompt_time_comments = "作業時間のコメント: "
     prompt_select_update_items = "更新する項目を選択 (Spaceで選択、Enterで確定)"
     prompt_version_name = "バージョン名: "
+    prompt_project_name = "プロジェクト名: "
+    prompt_project_identifier = "プロジェクト識別子: "
+    prompt_project_homepage = "ホームページURL: "
+    prompt_select_is_public = "公開設定"
+    prompt_select_inherit_members = "メンバーの継承"
+    prompt_select_parent_project = "親プロジェクト"
+    prompt_select_parent_project_none = "（親プロジェクトなし）"
+    prompt_select_default_assignee = "デフォルト担当者"
+    prompt_select_default_assignee_none = "（デフォルト担当者なし）"
+    prompt_select_default_version = "デフォルトバージョン"
+    prompt_select_default_version_none = "（デフォルトバージョンなし）"
+    prompt_select_trackers = "トラッカーを選択 (Spaceで選択、Enterで確定)"
+    prompt_select_enabled_modules = (
+        "有効化するモジュールを選択 (Spaceで選択、Enterで確定)"
+    )
+    prompt_select_issue_custom_fields = (
+        "有効化するカスタムフィールドを選択 (Spaceで選択、Enterで確定)"
+    )
     prompt_description_optional = "説明（省略可）: "
     prompt_wiki_comments = "コメント（省略可）: "
     prompt_due_date_optional = "期日（YYYY-MM-DD、省略可）: "
@@ -302,8 +338,12 @@ class Ja(MessagesProto):
     prompt_required_field = "{name}（必須）"
     prompt_field_value = "{name}: {value}"
     prompt_custom_field_label = "{name}: "
+    choice_yes = "はい"
+    choice_no = "いいえ"
     label_bool_true = "はい"
     label_bool_false = "いいえ"
+    label_project_public = "公開"
+    label_project_private = "非公開"
     prompt_what_next = "次のアクションを選択してください"
     action_submit = "送信する"
     action_fill_optional = "任意項目を入力する"
@@ -324,6 +364,10 @@ class Ja(MessagesProto):
     error_page_title_required = "ページタイトルを入力してください"
     error_page_title_duplicate = "既存のページタイトルと重複しています"
     error_no_matching_project = "該当するプロジェクトがありません"
+    error_project_identifier_format = (
+        "英小文字・数字・ハイフン・アンダースコアの100文字以内で"
+        "入力してください（数字のみは不可）"
+    )
 
     # ---- field labels ----
     field_project = "プロジェクト (project)"
@@ -343,7 +387,17 @@ class Ja(MessagesProto):
     field_estimated_hours = "予定工数 (estimated_hours)"
     field_notes = "コメント (notes)"
     field_time_entry = "作業時間 (time_entry)"
+    field_homepage = "ホームページ (homepage)"
+    field_is_public = "公開設定 (is_public)"
+    field_parent_project = "親プロジェクト (parent)"
+    field_inherit_members = "メンバーの継承 (inherit_members)"
+    field_trackers = "トラッカー (trackers)"
+    field_enabled_modules = "有効モジュール (enabled_module_names)"
+    field_issue_custom_fields = "カスタムフィールド (issue_custom_field_ids)"
     field_version_name = "バージョン名 (name)"
+    field_project_name = "プロジェクト名 (name)"
+    field_default_assignee = "デフォルト担当者 (default_assigned_to_id)"
+    field_default_version = "デフォルトバージョン (default_version_id)"
     field_sharing = "共有設定 (sharing)"
     field_hours = "作業時間 (hours)"
     field_activity = "作業分類 (activity)"
@@ -356,6 +410,7 @@ class Ja(MessagesProto):
     field_wiki_project_id = "Wikiプロジェクト (wiki_project_id)"
     field_editor = "エディタ (editor)"
     field_language = "言語 (language)"
+    field_text_formatting = "テキスト書式 (text_formatting)"
     field_set_default_profile = "デフォルトプロファイルにする (default_profile)"
 
     # ---- sharing options ----
@@ -388,11 +443,23 @@ class Ja(MessagesProto):
     label_issues_visibility = "チケットの表示: {value}"
     label_time_entries_visibility = "作業時間の表示: {value}"
     label_users_visibility = "ユーザーの表示: {value}"
-    label_permissions_header = "権限:"
-    label_name = "名前: {value}"
+    label_permissions_header = "権限: ({count})"
+    permission_category_project = "プロジェクト"
+    permission_category_issue_tracking = "チケットトラッキング"
+    permission_category_time_tracking = "時間管理"
+    permission_category_news = "ニュース"
+    permission_category_documents = "文書"
+    permission_category_files = "ファイル"
+    permission_category_wiki = "Wiki"
+    permission_category_repository = "リポジトリ"
+    permission_category_boards = "フォーラム"
+    permission_category_calendar = "カレンダー"
+    permission_category_gantt = "ガントチャート"
+    permission_category_other = "その他"
     label_mail = "メール: {value}"
     label_admin = "管理者: {value}"
-    label_admin_yes = "  管理者: yes"
+    label_yes = "yes"
+    label_no = "no"
     label_created_on = "作成日時: {value}"
     label_last_login_on = "最終ログイン: {value}"
     label_custom_fields_header = "カスタムフィールド:"
@@ -420,6 +487,7 @@ class Ja(MessagesProto):
     label_due_date_field = "期日: {value}"
     label_sharing_field = "共有: {value}"
     label_parent_project = "親プロジェクト: {id} {name}"
+    label_default_version = "デフォルトバージョン: {id} {name}"
     label_trackers_header = "トラッカー:"
     label_issue_categories_header = "イシューカテゴリ:"
     label_enabled_modules_header = "有効モジュール:"
@@ -447,6 +515,7 @@ class Ja(MessagesProto):
     tui_filter_status = "ステータス"
     tui_filter_assignee = "担当者"
     tui_filter_tracker = "トラッカー"
+    tui_filter_query = "クエリ"
     tui_filter_user = "ユーザー"
     tui_filter_hint = "Tab/h/l:列切替 jk:移動 Enter:適用 c:全クリア Esc/f:閉じる"
     tui_filter_hint_single = "jk:移動 Enter:適用 c:クリア Esc/f:閉じる"
@@ -478,7 +547,10 @@ class Ja(MessagesProto):
         " {page_label}  jk:移動 /:検索 f:フィルタ p:プロジェクト"
         " c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     )
+    tui_status_search_active = "/{query} Esc:解除"
     tui_flash_reloaded = "再読込しました"
+    tui_flash_resize_reload_failed = "リサイズ後の再取得に失敗しました: {error}"
+    tui_flash_find_cleared_by_filter = "検索を解除してフィルタに切り替えました"
     tui_filter_unspecified = "(指定なし)"
     tui_filter_status_open_default = "open (デフォルト)"
     tui_filter_status_all = "全て (open + closed)"
@@ -486,24 +558,24 @@ class Ja(MessagesProto):
     tui_filter_assignee_none = "(指定なし)"
     tui_filter_assignee_me = "自分"
     tui_filter_assignee_unassigned = "未割当"
-    tui_meta_status = "ステータス"
-    tui_meta_priority = "優先度"
-    tui_meta_tracker = "トラッカー"
-    tui_meta_assignee = "担当者"
-    tui_meta_author = "作成者"
-    tui_meta_start_date = "開始日"
-    tui_meta_due_date = "期日"
-    tui_meta_progress = "進捗"
-    tui_meta_estimated_hours = "予定工数"
-    tui_meta_spent_hours = "作業時間"
-    tui_meta_created = "作成"
-    tui_meta_updated = "更新"
-    tui_meta_parent = "親"
-    tui_meta_version = "バージョン"
-    tui_meta_project = "プロジェクト"
-    tui_meta_user = "ユーザー"
-    tui_meta_activity = "作業分類"
-    tui_meta_issue = "イシュー"
+    meta_status = "ステータス"
+    meta_priority = "優先度"
+    meta_tracker = "トラッカー"
+    meta_assignee = "担当者"
+    meta_author = "作成者"
+    meta_start_date = "開始日"
+    meta_due_date = "期日"
+    meta_progress = "進捗"
+    meta_estimated_hours = "予定工数"
+    meta_spent_hours = "作業時間"
+    meta_created = "作成"
+    meta_updated = "更新"
+    meta_parent = "親"
+    meta_version = "バージョン"
+    meta_project = "プロジェクト"
+    meta_user = "ユーザー"
+    meta_activity = "作業分類"
+    meta_issue = "イシュー"
     tui_preview_comments_header = "コメント:"
     tui_comment_select_status_hint = (
         "コメント選択: jk:移動 u:更新 D:削除 Esc/q:キャンセル"
@@ -536,6 +608,9 @@ class Ja(MessagesProto):
     tui_issue_delete_modal_mismatch = "issue_id が一致しません"
     tui_issue_delete_modal_empty = "issue_id を入力してください"
     tui_issue_delete_modal_hint = "Enter:確定 Esc:閉じる"
+    tui_find_modal_title = "イシュー検索 (Esc で閉じる)"
+    tui_find_modal_input_label = "クエリ> "
+    tui_find_modal_hint = "Enter:検索 (空のまま Enter で解除) Esc:閉じる"
     tui_wiki_delete_failed = "Wikiページの削除に失敗しました: {error}"
     tui_wiki_delete_page_missing = "Wikiページが見つかりません: {title}"
     tui_wiki_delete_modal_title = "Wikiページ削除の確認 (Esc で閉じる)"
@@ -555,12 +630,19 @@ class Ja(MessagesProto):
     arg_help_debug = "デバッグログを有効にする"
     arg_help_debug_tui = "TUI のスクリーン内容を YAML 形式でログ出力する"
     arg_help_profile = (
-        "使用するプロファイル名（config.tomlのdefault_profileを一時的に上書き）"
+        "使用するプロファイル名（config.tomlのdefault_profileを一時的に上書き。"
+        "一覧は redi config --full）"
     )
     arg_help_refresh = "キャッシュを読まずに取得し直す（トラッカーやカスタムフィールドの候補を更新する）"
 
     # ---- argparse helps (common) ----
-    arg_help_full_json = "JSON形式で全情報を出力"
+    arg_help_format = "出力形式（既定: plain）"
+    arg_help_format_list = (
+        "出力形式（既定: plain）。"
+        "tsv はヘッダー行 + タブ区切りで、パイプや表計算ソフト向け"
+        "（ヘッダー名は英語固定）"
+    )
+    arg_help_full_json = "JSON形式で全情報を出力（--format json と同じ）"
     arg_help_skip_confirm = "確認プロンプトをスキップ"
     arg_help_open_web = "ブラウザでRedmineのページを開く"
     arg_help_project_id = "プロジェクトID"
@@ -579,13 +661,28 @@ class Ja(MessagesProto):
     arg_help_project_view_id = "プロジェクトID"
     arg_help_project_include = "追加情報（trackers,issue_categories,enabled_modules,time_entry_activities,issue_custom_fields）"
     arg_help_project_create = "プロジェクト作成"
+    arg_help_project_name_arg = "プロジェクト名（省略で対話的に入力）"
     arg_help_project_name = "プロジェクト名"
-    arg_help_project_identifier = "プロジェクト識別子（英数字とハイフン）"
+    arg_help_project_identifier = (
+        "プロジェクト識別子（英数字とハイフン。省略で対話的に入力）"
+    )
     label_project_identifier = "プロジェクト識別子"
     arg_help_description = "説明"
+    arg_help_project_homepage = "ホームページURL"
     arg_help_project_is_public = "公開設定"
     arg_help_parent_id = "親プロジェクトID"
+    arg_help_project_inherit_members = "親プロジェクトのメンバーを継承する"
     arg_help_tracker_ids = "トラッカーID（カンマ区切り。例: 1,2,3）"
+    arg_help_enabled_module_names = (
+        "有効化するモジュール名（カンマ区切り。例: issue_tracking,wiki）"
+    )
+    arg_help_issue_custom_field_ids = (
+        "有効化するイシューのカスタムフィールドID（カンマ区切り。例: 1,2,3）"
+    )
+    arg_help_project_default_assigned_to_id = (
+        "デフォルト担当者のユーザーID（空文字で解除）"
+    )
+    arg_help_project_default_version_id = "デフォルトバージョンID（空文字で解除）"
     arg_help_project_delete = "プロジェクト削除"
     arg_help_project_delete_id = "プロジェクトID"
     arg_help_project_update = "プロジェクト更新"
@@ -603,14 +700,21 @@ class Ja(MessagesProto):
     arg_help_issue_filter_tracker = "トラッカーIDでフィルタリング"
     arg_help_issue_filter_priority = "優先度IDでフィルタリング"
     arg_help_issue_filter_query = (
-        "カスタムクエリIDでフィルタリング（`redi query`で取得可）"
+        "カスタムクエリIDでフィルタリング"
+        "（`redi query`で取得可、--project_id 以外のフィルタと併用不可）"
+    )
+    error_format_tsv_list_only = "--format tsv は list 系コマンドでのみ使えます（plain か json を指定してください）"
+    error_query_id_conflicts_filters = (
+        "--query_id は {options} と併用できません"
+        "（カスタムクエリの条件が優先され {options} は無視されます）"
     )
     arg_help_limit = "取得件数"
     arg_help_offset = "オフセット"
     arg_help_issue_list = "イシュー一覧"
     arg_help_issue_view = "イシュー詳細"
     arg_help_issue_view_id = "イシューID"
-    arg_help_issue_include = "追加情報（children,attachments,relations,changesets,journals,watchers,allowed_statuses）"
+    arg_help_issue_include = "追加情報をカンマ区切りで指定（{choices}）"
+    error_invalid_issue_include = "不明な値です: {values}（指定可能: {choices}）"
     arg_help_issue_create = "イシュー作成"
     arg_help_issue_subject_arg = "イシューの題名（省略で対話的に入力）"
     arg_help_issue_tracker_id = "トラッカーID"
@@ -634,9 +738,7 @@ class Ja(MessagesProto):
     arg_help_issue_done_ratio = "進捗率（0-100）"
     arg_help_issue_estimated_hours = "予定工数（例: 1.5）"
     arg_help_issue_notes = "コメント"
-    arg_help_issue_relate = (
-        "関係性のタイプ（relates, duplicates, blocks, precedes, follows など）"
-    )
+    arg_help_issue_relate = "関係性のタイプ（--to と併用）"
     arg_help_issue_relate_to = "関係先のイシューID"
     arg_help_issue_delete_relation = "関係性を削除（--to と併用）"
     arg_help_issue_attach = "添付ファイルのパス（複数指定可）"
@@ -692,17 +794,21 @@ class Ja(MessagesProto):
     arg_help_config_set_wiki_project_id = "Wiki用プロジェクトIDを設定"
     arg_help_config_set_editor = "エディタを設定"
     arg_help_config_set_language = "言語を設定 (en または ja)"
+    arg_help_config_set_text_formatting = (
+        "Redmine のテキスト書式を設定 (markdown または textile)"
+    )
     arg_help_config_set_api_key = "Redmine APIキーを設定"
     arg_help_config_set_url = "Redmine URLを設定"
     arg_help_config_set_default_profile = "デフォルトプロファイルを設定"
     arg_help_config_create = "プロファイル作成"
-    arg_help_config_create_profile_name = "作成するプロファイル名"
+    arg_help_config_create_profile_name = "作成するプロファイル名（省略時は対話入力）"
     arg_help_config_url = "Redmine URL"
     arg_help_config_api_key = "Redmine APIキー"
     arg_help_config_default_project_id = "デフォルトプロジェクトID"
     arg_help_config_wiki_project_id = "Wiki用プロジェクトID"
     arg_help_config_editor = "エディタ"
     arg_help_config_language = "言語 (en または ja)"
+    arg_help_config_text_formatting = "Redmine のテキスト書式 (markdown または textile)"
     arg_help_config_set_default_flag = "作成したプロファイルをdefault_profileに設定"
 
     # ---- argparse helps (init) ----
@@ -826,11 +932,13 @@ class Ja(MessagesProto):
     arg_help_time_entry_user_id = "ユーザーIDでフィルタリング（'me'も可）"
     arg_help_time_entry_from = "開始日でフィルタリング（YYYY-MM-DD、以降）"
     arg_help_time_entry_to = "終了日でフィルタリング（YYYY-MM-DD、以前）"
+    error_invalid_date_arg = "YYYY-MM-DD 形式の日付ではありません: {value}"
     arg_help_time_entry_list = "作業時間一覧"
     arg_help_time_entry_create = "作業時間登録"
     arg_help_time_entry_hours = "時間（例: 1.5、省略で対話的に入力）"
     arg_help_time_entry_issue_id = "イシューID"
     arg_help_time_entry_activity_id = "作業分類ID"
+    arg_help_time_entry_create_activity_id = "作業分類ID(必須。省略時は対話で選択)"
     arg_help_time_entry_spent_on = "日付（YYYY-MM-DD、省略で今日）"
     arg_help_time_entry_comments = "コメント"
     arg_help_time_entry_view = "作業時間詳細"
@@ -904,6 +1012,10 @@ class Ja(MessagesProto):
     arg_help_document_category_list = "文書カテゴリ一覧"
     arg_help_query_command = arg_help_list_only_subcommands
     arg_help_query_list = "カスタムクエリ一覧"
+    query_list_private = "[非公開]"
+    query_list_all_projects = "(全プロジェクト)"
+    query_list_project = "({name})"
+    query_list_unknown_project = "(プロジェクト{id})"
     arg_help_custom_field_command = arg_help_list_only_subcommands
     arg_help_custom_field_list = "カスタムフィールド一覧"
 
@@ -916,8 +1028,25 @@ class Ja(MessagesProto):
         "(redmine_issue_templates プラグインが必要です)"
     )
 
+    # ---- project files ----
+    project_files_permission_denied = "ファイルを参照できません: {id} (ファイルモジュールが無効か閲覧権限がありません)"
+
+    # ---- unhandled http error ----
+    http_error_unhandled = "Redmine がエラーを返しました: {status} {reason}"
+    http_error_unhandled_unknown = "Redmine がエラーを返しました"
+
+    # ---- connection error ----
+    connection_unreachable = "接続できません: {url}"
+
     # ---- config_command suffix ----
     config_profile_suffix = "（profile: {name}）"
+    config_profile_source_default = "既定"
+    config_profile_source_option = "--profile 指定"
+    config_current_profile_comment = "現在のプロファイル（{source}）"
+    config_top_level_api_key_warning = (
+        "警告: {path} のトップレベルに書かれた redmine_api_key は認証に使われません。"
+        "プロファイル（[profile_name] テーブル）の中に書いてください"
+    )
 
     # ---- TUI help labels (sections / common) ----
     tui_help_section_navigation = "移動"
@@ -935,10 +1064,12 @@ class Ja(MessagesProto):
     tui_help_preview_scroll_half_page = "プレビューを半ページスクロール (上 / 下)"
     tui_help_start_search = "検索開始"
     tui_help_next_prev_match = "次 / 前の検索結果"
-    tui_help_filter_issues = "ステータス/担当者/トラッカーでフィルタ (フローティング)"
-    tui_help_filter_user = "ユーザーでフィルタ (フローティング)"
-    tui_help_switch_project = "プロジェクトを切り替え (フローティング)"
-    tui_help_switch_profile = "プロファイルを切り替え (フローティング)"
+    tui_help_clear_search = "検索を解除 (検索クエリ設定時)"
+    tui_help_filter_issues = "ステータス/担当者/トラッカー/クエリでフィルタ"
+    tui_help_find_issues = "Redmine 全体からイシューを検索 (全ページ対象)"
+    tui_help_filter_user = "ユーザーでフィルタ"
+    tui_help_switch_project = "プロジェクトを切り替え"
+    tui_help_switch_profile = "プロファイルを切り替え"
     tui_help_reload = "現在のタブを再読込"
     tui_help_show_or_close = "このヘルプを表示 / 閉じる"
     tui_help_quit = "終了"

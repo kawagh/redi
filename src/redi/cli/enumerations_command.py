@@ -1,8 +1,9 @@
 import argparse
 import json
 import sys
-from collections.abc import Iterable, Mapping
-from typing import Any
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any, assert_never
 
 from redi.api.custom_field import fetch_custom_fields
 from redi.api.enumeration import (
@@ -11,46 +12,220 @@ from redi.api.enumeration import (
     fetch_time_entry_activities,
 )
 from redi.api.issue_status import fetch_issue_statuses
-from redi.api.query import fetch_queries
 from redi.api.tracker import fetch_trackers
+from redi.cli.shared_options import (
+    OutputFormat,
+    add_format_options,
+    resolve_list_format,
+)
 from redi.i18n import messages
+from redi.output import eprint, print_tsv
+from redi.service import query_service
 
 
-def _print_id_name_list(items: Iterable[Mapping[str, Any]], full: bool) -> None:
-    """一覧専用リソースを `{id} {name}` の 1 行で表示する。"""
+@dataclass(frozen=True)
+class EnumerationResource:
+    """一覧しか持たないリソースの定義。
+
+    parser 登録もハンドラもこの定義 1 件から組み立てるので、
+    オプションを増やすときの変更箇所を 1 箇所に閉じ込められる。
+    """
+
+    name: str
+    alias: str
+    command_help: str
+    list_help: str
+    fetch: Callable[[bool], Sequence[Mapping[str, Any]] | None]
+    # 応答をキャッシュするリソースにだけ --refresh を生やす
+    cached: bool = True
+    # fetch が None を返し得るリソースで、返ったときに表示する理由
+    unavailable_message: str | None = None
+    # `{id} {name}` では情報が落ちるリソースだけ整形を差し替える。
+    # 一覧全体を受けるのは、行を組み立てる前に一括で引きたい情報があるため
+    format_lines: Callable[[Sequence[Mapping[str, Any]]], list[str]] | None = None
+    # tsv の列。応答のキーをそのまま列名にする (`xxx_id` / `xxx_name` は
+    # ネストした参照 `xxx: {id, name}` からも引く)。
+    # 既定は enumerations (priority / activity / document_category) が返す 4 つ
+    tsv_columns: tuple[str, ...] = ("id", "name", "is_default", "active")
+
+
+def _tsv_value(item: Mapping[str, Any], column: str) -> object:
+    """tsv の 1 セル分の値を応答から取る。
+
+    キーがそのまま無ければ、`default_status_id` のような列名を
+    `default_status: {id, name}` の参照として解決する。どちらも無ければ None。
+    """
+    if column in item:
+        return item[column]
+    for suffix in ("_id", "_name"):
+        if column.endswith(suffix):
+            ref = item.get(column.removesuffix(suffix))
+            if isinstance(ref, Mapping):
+                return ref.get(suffix[1:])
+    return None
+
+
+def _format_query_lines(queries: Sequence[Mapping[str, Any]]) -> list[str]:
+    """カスタムクエリを `{id} {name} [非公開] ({プロジェクト})` の 1 行で表示する。
+
+    `/queries.json` はクエリのフィルタ内容を返さないため、素性の手がかりは
+    名前と `is_public` / `project_id` しかない。共通整形はこのうち 2 つを
+    捨ててしまうので、query だけ整形を差し替える。
+
+    どちらも常に返るフィールドなので既定値は置かない (欠けたときに
+    「公開」「全プロジェクト」と偽って表示するより落ちた方がよい)。
+
+    クエリ名には空白が入り得るので、後ろに続く情報は括弧で括って name との
+    境界が読めるようにする。
+    """
+    project_names = query_service.resolve_query_project_names(queries)
+    lines = []
+    for query in queries:
+        parts = [f"{query['id']} {query['name']}"]
+        if not query["is_public"]:
+            parts.append(messages.query_list_private)
+        project_id = query["project_id"]
+        if project_id is None:
+            parts.append(messages.query_list_all_projects)
+        else:
+            project_name = project_names.get(project_id)
+            if project_name is None:
+                parts.append(messages.query_list_unknown_project.format(id=project_id))
+            else:
+                parts.append(messages.query_list_project.format(name=project_name))
+        lines.append(" ".join(parts))
+    return lines
+
+
+ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
+    EnumerationResource(
+        "tracker",
+        "t",
+        messages.arg_help_tracker_command,
+        messages.arg_help_tracker_list,
+        fetch_trackers,
+        tsv_columns=(
+            "id",
+            "name",
+            "default_status_id",
+            "default_status_name",
+            "description",
+        ),
+    ),
+    EnumerationResource(
+        "issue_status",
+        "is",
+        messages.arg_help_issue_status_command,
+        messages.arg_help_issue_status_list,
+        fetch_issue_statuses,
+        tsv_columns=("id", "name", "is_closed", "description"),
+    ),
+    EnumerationResource(
+        "issue_priority",
+        "ip",
+        messages.arg_help_issue_priority_command,
+        messages.arg_help_issue_priority_list,
+        fetch_issue_priorities,
+    ),
+    EnumerationResource(
+        "time_entry_activity",
+        "tea",
+        messages.arg_help_time_entry_activity_command,
+        messages.arg_help_time_entry_activity_list,
+        fetch_time_entry_activities,
+    ),
+    EnumerationResource(
+        "document_category",
+        "dc",
+        messages.arg_help_document_category_command,
+        messages.arg_help_document_category_list,
+        fetch_document_categories,
+    ),
+    EnumerationResource(
+        "query",
+        "q",
+        messages.arg_help_query_command,
+        messages.arg_help_query_list,
+        # list_queries だけ refresh を取らないので合わせる。
+        # --limit を持たないコマンドなので既定件数で打ち切らせない
+        lambda refresh: query_service.list_queries(all_pages=True),
+        cached=False,
+        format_lines=_format_query_lines,
+        # /queries.json が返すのはこの 4 つだけ
+        tsv_columns=("id", "name", "is_public", "project_id"),
+    ),
+    EnumerationResource(
+        "custom_field",
+        "cf",
+        messages.arg_help_custom_field_command,
+        messages.arg_help_custom_field_list,
+        fetch_custom_fields,
+        unavailable_message=messages.custom_field_admin_required,
+        # possible_values / trackers / roles のような可変長の値は json に任せる
+        tsv_columns=(
+            "id",
+            "name",
+            "customized_type",
+            "field_format",
+            "is_required",
+            "is_for_all",
+            "is_filter",
+            "multiple",
+            "visible",
+            "editable",
+            "default_value",
+        ),
+    ),
+)
+
+
+def _print_enumeration(
+    items: Iterable[Mapping[str, Any]],
+    fmt: OutputFormat,
+    resource: EnumerationResource,
+) -> None:
+    """一覧専用リソースを 1 行ずつ表示する。
+
+    plain の既定は `{id} {name}` で、リソースが整形を持つ場合はそちらに任せる。
+    """
     items = list(items)
-    if full:
-        print(json.dumps(items, ensure_ascii=False))
-        return
-    for item in items:
-        print(f"{item['id']} {item['name']}")
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(items, ensure_ascii=False))
+        case OutputFormat.TSV:
+            columns = resource.tsv_columns
+            print_tsv(
+                columns,
+                ([_tsv_value(item, column) for column in columns] for item in items),
+            )
+        case OutputFormat.PLAIN:
+            if resource.format_lines is not None:
+                lines = resource.format_lines(items)
+            else:
+                lines = [f"{item['id']} {item['name']}" for item in items]
+            for line in lines:
+                print(line)
+        case _:
+            assert_never(fmt)
 
 
 def _add_list_subparser(
     parser: argparse.ArgumentParser,
-    dest: str,
-    help_: str,
+    resource: EnumerationResource,
     parents: list[argparse.ArgumentParser],
-    *,
-    cached: bool = False,
 ) -> None:
     """一覧専用リソースに list (alias: l) サブコマンドを追加する
 
     引数無しの呼び出しと同じ挙動になるよう、handle 側では dest を参照しない。
-    cached=True のリソースは応答をキャッシュするので --refresh も受け付ける。
+    cached なリソースは応答をキャッシュするので --refresh も受け付ける。
     """
-    subparsers = parser.add_subparsers(dest=dest)
+    subparsers = parser.add_subparsers(dest=f"{resource.name}_command")
     list_parser = subparsers.add_parser(
-        "list", aliases=["l"], help=help_, parents=parents
+        "list", aliases=["l"], help=resource.list_help, parents=parents
     )
-    list_parser.add_argument(
-        "--full",
-        action="store_true",
-        # 未指定時に親パーサの --full を上書きしないようにする
-        default=argparse.SUPPRESS,
-        help=messages.arg_help_full_json,
-    )
-    if cached:
+    # 未指定時に親パーサの値を上書きしないよう postfix で足す
+    add_format_options(list_parser, postfix=True, tsv=True)
+    if resource.cached:
         _add_refresh_option(list_parser, postfix=True)
 
 
@@ -71,179 +246,35 @@ def _add_refresh_option(
     )
 
 
-def add_tracker_parser(
+def add_enumeration_parsers(
     subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
 ) -> None:
-    tracker_parser = subparsers.add_parser(
-        "tracker",
-        aliases=["t"],
-        help=messages.arg_help_tracker_command,
-        parents=parents,
-    )
-    tracker_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
-    _add_refresh_option(tracker_parser)
-    _add_list_subparser(
-        tracker_parser,
-        "tracker_command",
-        messages.arg_help_tracker_list,
-        parents,
-        cached=True,
-    )
+    """一覧専用リソースのサブコマンドをまとめて登録する。"""
+    for resource in ENUMERATION_RESOURCES:
+        parser = subparsers.add_parser(
+            resource.name,
+            aliases=[resource.alias],
+            help=resource.command_help,
+            parents=parents,
+        )
+        add_format_options(parser, tsv=True)
+        if resource.cached:
+            _add_refresh_option(parser)
+        _add_list_subparser(parser, resource, parents)
 
 
-def handle_tracker(args: argparse.Namespace) -> None:
-    _print_id_name_list(fetch_trackers(refresh=args.refresh), args.full)
+def find_enumeration_resource(command: str) -> EnumerationResource | None:
+    """コマンド名またはエイリアスからリソース定義を引く。"""
+    for resource in ENUMERATION_RESOURCES:
+        if command in (resource.name, resource.alias):
+            return resource
+    return None
 
 
-def add_issue_status_parser(
-    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
-) -> None:
-    issue_status_parser = subparsers.add_parser(
-        "issue_status",
-        aliases=["is"],
-        help=messages.arg_help_issue_status_command,
-        parents=parents,
-    )
-    issue_status_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
-    _add_refresh_option(issue_status_parser)
-    _add_list_subparser(
-        issue_status_parser,
-        "issue_status_command",
-        messages.arg_help_issue_status_list,
-        parents,
-        cached=True,
-    )
-
-
-def handle_issue_status(args: argparse.Namespace) -> None:
-    _print_id_name_list(fetch_issue_statuses(refresh=args.refresh), args.full)
-
-
-def add_issue_priority_parser(
-    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
-) -> None:
-    ip_parser = subparsers.add_parser(
-        "issue_priority",
-        aliases=["ip"],
-        help=messages.arg_help_issue_priority_command,
-        parents=parents,
-    )
-    ip_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
-    _add_refresh_option(ip_parser)
-    _add_list_subparser(
-        ip_parser,
-        "issue_priority_command",
-        messages.arg_help_issue_priority_list,
-        parents,
-        cached=True,
-    )
-
-
-def handle_issue_priority(args: argparse.Namespace) -> None:
-    _print_id_name_list(fetch_issue_priorities(refresh=args.refresh), args.full)
-
-
-def add_time_entry_activity_parser(
-    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
-) -> None:
-    tea_parser = subparsers.add_parser(
-        "time_entry_activity",
-        aliases=["tea"],
-        help=messages.arg_help_time_entry_activity_command,
-        parents=parents,
-    )
-    tea_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
-    _add_refresh_option(tea_parser)
-    _add_list_subparser(
-        tea_parser,
-        "time_entry_activity_command",
-        messages.arg_help_time_entry_activity_list,
-        parents,
-        cached=True,
-    )
-
-
-def handle_time_entry_activity(args: argparse.Namespace) -> None:
-    _print_id_name_list(fetch_time_entry_activities(refresh=args.refresh), args.full)
-
-
-def add_document_category_parser(
-    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
-) -> None:
-    dc_parser = subparsers.add_parser(
-        "document_category",
-        aliases=["dc"],
-        help=messages.arg_help_document_category_command,
-        parents=parents,
-    )
-    dc_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
-    _add_refresh_option(dc_parser)
-    _add_list_subparser(
-        dc_parser,
-        "document_category_command",
-        messages.arg_help_document_category_list,
-        parents,
-        cached=True,
-    )
-
-
-def handle_document_category(args: argparse.Namespace) -> None:
-    _print_id_name_list(fetch_document_categories(refresh=args.refresh), args.full)
-
-
-def add_query_parser(
-    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
-) -> None:
-    query_parser = subparsers.add_parser(
-        "query", aliases=["q"], help=messages.arg_help_query_command, parents=parents
-    )
-    query_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
-    _add_list_subparser(
-        query_parser, "query_command", messages.arg_help_query_list, parents
-    )
-
-
-def handle_query(args: argparse.Namespace) -> None:
-    _print_id_name_list(fetch_queries(), args.full)
-
-
-def add_custom_field_parser(
-    subparsers: argparse._SubParsersAction, parents: list[argparse.ArgumentParser]
-) -> None:
-    cf_parser = subparsers.add_parser(
-        "custom_field",
-        aliases=["cf"],
-        help=messages.arg_help_custom_field_command,
-        parents=parents,
-    )
-    cf_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
-    _add_refresh_option(cf_parser)
-    _add_list_subparser(
-        cf_parser,
-        "custom_field_command",
-        messages.arg_help_custom_field_list,
-        parents,
-        cached=True,
-    )
-
-
-def handle_custom_field(args: argparse.Namespace) -> None:
-    custom_fields = fetch_custom_fields(refresh=args.refresh)
-    if custom_fields is None:
-        print(messages.custom_field_admin_required)
+def handle_enumeration(resource: EnumerationResource, args: argparse.Namespace) -> None:
+    # cached でないリソースには --refresh が無いので既定値で補う
+    items = resource.fetch(getattr(args, "refresh", False))
+    if items is None:
+        eprint(resource.unavailable_message)
         sys.exit(1)
-    _print_id_name_list(custom_fields, args.full)
+    _print_enumeration(items, resolve_list_format(args), resource)

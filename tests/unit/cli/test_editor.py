@@ -2,7 +2,64 @@ import os
 from pathlib import Path
 
 from redi.cli import editor as editor_module
-from redi.cli.editor import save_body_on_failure, save_text_to_tempfile
+from redi.cli.editor import open_editor, save_body_on_failure, save_text_to_tempfile
+
+
+class TestOpenEditor:
+    """open_editor は何を書くのか分かる名前の一時ファイルをエディタで開く"""
+
+    def _spy_on_editor(self, monkeypatch) -> list[str]:
+        """エディタ起動を差し替えて、開かれたファイルのパスを記録する"""
+        opened: list[str] = []
+
+        def fake_run(command, *args, **kwargs):
+            opened.append(command[-1])
+
+        monkeypatch.setattr(editor_module, "ensure_interactive", lambda *a, **k: None)
+        monkeypatch.setattr(editor_module.subprocess, "run", fake_run)
+        return opened
+
+    def test_uses_name_as_filename_prefix(self, monkeypatch):
+        """name を接頭辞にした .md ファイルを開く"""
+        opened = self._spy_on_editor(monkeypatch)
+
+        open_editor(name="issue_description")
+
+        assert len(opened) == 1
+        filename = Path(opened[0]).name
+        assert filename.startswith("issue_description_")
+        assert filename.endswith(".md")
+
+    def test_name_distinguishes_purpose(self, monkeypatch):
+        """用途ごとに別の名前を渡せる"""
+        opened = self._spy_on_editor(monkeypatch)
+
+        open_editor(name="issue_note")
+
+        assert Path(opened[0]).name.startswith("issue_note_")
+
+    def test_initial_text_is_written_to_the_file(self, monkeypatch):
+        """初期テキストを書き込んだ状態でエディタに渡す"""
+        written: list[str] = []
+
+        def fake_run(command, *args, **kwargs):
+            written.append(Path(command[-1]).read_text())
+
+        monkeypatch.setattr(editor_module, "ensure_interactive", lambda *a, **k: None)
+        monkeypatch.setattr(editor_module.subprocess, "run", fake_run)
+
+        result = open_editor(initial_text="編集前の本文", name="issue_description")
+
+        assert written == ["編集前の本文"]
+        assert result == "編集前の本文"
+
+    def test_removes_the_tempfile(self, monkeypatch):
+        """エディタを閉じたあと一時ファイルは残さない"""
+        opened = self._spy_on_editor(monkeypatch)
+
+        open_editor(name="wiki_text")
+
+        assert not Path(opened[0]).exists()
 
 
 class TestSaveTextToTempfile:

@@ -6,6 +6,7 @@ import pytest
 from redi import config
 from redi.api.version import VersionNotFoundException
 from redi.cli import version_command
+from redi.cli.shared_options import OutputFormat
 from redi.cli.version_command import add_version_parser, handle_version
 from redi.i18n import messages
 
@@ -87,7 +88,7 @@ class TestVersionView:
             handle_version(parse_version_args(["version", "view", "404"]))
 
         assert e.value.code == 1
-        assert "404" in capsys.readouterr().out
+        assert "404" in capsys.readouterr().err
 
 
 class TestVersionUpdate:
@@ -141,7 +142,7 @@ class TestVersionUpdate:
             handle_version(parse_version_args(["version", "update", "404", "-n", "v2"]))
 
         assert e.value.code == 1
-        assert "404" in capsys.readouterr().out
+        assert "404" in capsys.readouterr().err
 
 
 class TestVersionDelete:
@@ -161,4 +162,26 @@ class TestVersionDelete:
 
         assert e.value.code == 1
         assert stub_version_service == []
-        assert "404" in capsys.readouterr().out
+        assert "404" in capsys.readouterr().err
+
+
+class TestVersionListTsv:
+    """`version list --format tsv` は id / name / status / url の後ろに期日と共有範囲を並べる"""
+
+    def test_prints_due_date_sharing_and_timestamps(self, monkeypatch, capsys):
+        """due_date / sharing / description / created_on / updated_on を末尾に足す"""
+        monkeypatch.setattr(
+            version_command.version_service,
+            "list_versions",
+            lambda project_id: [VERSION],
+        )
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+
+        version_command._list_versions("demo", fmt=OutputFormat.TSV)
+
+        assert capsys.readouterr().out == (
+            "id\tname\tstatus\turl\tdue_date\tsharing\tdescription"
+            "\tcreated_on\tupdated_on\n"
+            "1\tv1.0\topen\thttp://localhost:3001/versions/1\t2026-12-31\tnone\t説明"
+            "\t2026-08-17T00:00:00Z\t2026-08-17T00:00:00Z\n"
+        )

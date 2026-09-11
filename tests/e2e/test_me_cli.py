@@ -16,13 +16,9 @@ class TestMeView:
         assert account["login"]
         assert "api_key" not in account
 
-    def test_prints_id_and_login(self):
-        """既定では 1 行目に id と login を出す"""
-        account = json.loads(run_redi("me", "--full").stdout)
-
-        first_line = run_redi("me").stdout.splitlines()[0]
-
-        assert first_line == f"{account['id']} {account['login']}"
+    def test_matches_user_view_current(self):
+        """`user view current` と同じ書式・同じ項目で出す"""
+        assert run_redi("me").stdout == run_redi("user", "view", "current").stdout
 
 
 @pytest.mark.e2e

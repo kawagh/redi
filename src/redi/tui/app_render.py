@@ -10,6 +10,7 @@ from prompt_toolkit.utils import get_cwidth
 
 from redi import config
 from redi.i18n import messages
+from redi.tui.conditions import Conditions
 from redi.tui.state import Renderable, TuiState
 from redi.tui.tabs import TABS
 
@@ -117,7 +118,7 @@ def render_error_modal(state: TuiState) -> Renderable:
     return [("fg:ansired", body)]
 
 
-def render_status(state: TuiState) -> Renderable:
+def render_status(state: TuiState, conditions: Conditions) -> Renderable:
     if state.confirm_delete_prompt is not None:
         return [("reverse", f" {state.confirm_delete_prompt} ")]
     if state.flash_message is not None:
@@ -125,6 +126,12 @@ def render_status(state: TuiState) -> Renderable:
     if state.search_mode:
         return [("reverse", f" /{state.search_query}")]
     hint = TABS[state.tab].status_hint(state)
+    if state.search_query and conditions.normal():
+        # 検索は確定後もクエリが残り n/N の挙動を変えるので、フィルタと同じく
+        # 効いていることを画面に出す。Esc が検索解除に効くのは通常モードの間
+        # だけなので、案内もそこに限る
+        label = messages.tui_status_search_active.format(query=state.search_query)
+        hint = f" [{label}]" + hint
     if state.number_buffer:
         hint = f" [{state.number_buffer}]" + hint
     return [("reverse", hint)]

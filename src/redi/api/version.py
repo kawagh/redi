@@ -1,8 +1,9 @@
-from __future__ import annotations
-
 from typing import NotRequired, TypedDict, cast
 
-from redi.api.exceptions import RedmineValidationException
+from redi.api.exceptions import (
+    ProjectNotFoundException,
+    RedmineValidationException,
+)
 from redi.api.types import IdName
 from redi.client import client
 
@@ -74,7 +75,15 @@ def _build_version_body(
 
 
 def fetch_versions(project_id: str) -> list[Version]:
+    """プロジェクトのバージョン一覧を取得する
+
+    Raises:
+        ProjectNotFoundException: 対象プロジェクトが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     response = client.get(f"/projects/{project_id}/versions.json")
+    if response.status_code == 404:
+        raise ProjectNotFoundException(project_id)
     response.raise_for_status()
     return cast("list[Version]", response.json()["versions"])
 

@@ -1,0 +1,54 @@
+# redi init の対話を撮る。
+#   __API_KEY__ は script/record-init-demo.sh が実キーに置き換える。
+#   収録の間だけ config.toml が退避される (同スクリプトが復元する)。
+
+Output "site/public/img/init-en.gif"
+
+Set Shell "bash"
+Set FontSize 16
+Set Width 1200
+Set Height 600
+Set WindowBar Colorful
+Set WindowBarSize 40
+Set Theme "Catppuccin Mocha"
+
+Env LANG en_US.UTF-8
+
+# 画面には redi と表示しつつ、実体はリポジトリ上のコードを実行する
+Hide
+Type "cd __REPO__"
+Enter
+Type "alias redi='uv run redi'"
+Enter
+Type "clear"
+Enter
+Show
+
+Type "redi init"
+Sleep 500ms
+Enter
+
+# 言語を選ぶ
+Sleep 1500ms
+Enter
+
+# Redmine の URL
+Sleep 1s
+Type "http://localhost:3002"
+Sleep 300ms
+Enter
+
+# API キー (入力はマスクされる)。1 文字ずつ打つ意味がないので貼り付ける
+Sleep 1500ms
+Copy "__API_KEY__"
+Paste
+Sleep 300ms
+Enter
+
+# 疎通確認のあとプロジェクトを選ぶ
+Sleep 2500ms
+Enter
+Sleep 1500ms
+Enter
+
+Sleep 3s

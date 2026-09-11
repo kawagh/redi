@@ -3,8 +3,6 @@
 CLI と TUI で共通の手順をここに置く。HTTP とステータスコードの解釈は `api.user` が持つ。
 """
 
-from __future__ import annotations
-
 from redi import config
 from redi.api import user as user_api
 from redi.api.user import User
@@ -36,15 +34,20 @@ def list_users(
     group_id: int | None = None,
     limit: int | None = None,
     offset: int | None = None,
+    all_pages: bool = False,
 ) -> list[User]:
     """ユーザー一覧を取得する。
+
+    既定では Redmine の一覧 API の既定件数で打ち切られる。
+    取りこぼせない用途では all_pages を指定する。
 
     Args:
         status: `USER_STATUS_CHOICES` のいずれか。未指定なら Redmine の既定 (active のみ)
         name: login / firstname / lastname / mail への部分一致
         group_id: 所属グループ
-        limit: 取得件数。offset と共に未指定なら全件
+        limit: 取得件数
         offset: 取得開始位置
+        all_pages: 既定件数で打ち切らず全件取得するか
 
     Raises:
         UserPermissionDeniedException: 管理者権限が無い (HTTP 403)
@@ -56,6 +59,7 @@ def list_users(
         group_id=group_id,
         limit=limit,
         offset=offset,
+        all_pages=all_pages,
     )
     return [pop_apikey(user) for user in users]
 

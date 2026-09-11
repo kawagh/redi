@@ -3,12 +3,12 @@
 CLI と TUI で共通の手順をここに置く。HTTP とステータスコードの解釈は `api.me` が持つ。
 """
 
-from __future__ import annotations
-
 import requests
 
 from redi.api import me as me_api
 from redi.api.me import MyAccount
+from redi.api.user import User
+from redi.service import user_service
 
 
 def read_my_account() -> MyAccount:
@@ -22,6 +22,20 @@ def read_my_account() -> MyAccount:
     account = me_api.fetch_my_account()
     account.pop("api_key", None)
     return account
+
+
+def read_my_user() -> User:
+    """自分のユーザー情報をメンバーシップ・グループ込みで取得する。
+
+    `/my/account.json` はメンバーシップやグループを返さないため、
+    `user view current` と同じ `/users/current.json` から取得する。
+
+    Raises:
+        UserNotFoundException: 自分を参照できない (HTTP 404)
+        UserPermissionDeniedException: 参照する権限が無い (HTTP 403)
+        requests.exceptions.HTTPError: それ以外の HTTP エラー
+    """
+    return user_service.read_user("current", detail=True)
 
 
 def read_my_user_id() -> str | None:

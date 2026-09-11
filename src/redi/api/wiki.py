@@ -1,8 +1,14 @@
+# WikiPage が自分より下で定義される WikiPageParent を参照しているため、
+# 注釈の評価を遅らせる
 from __future__ import annotations
 
 from typing import NotRequired, TypedDict, cast
 
-from redi.api.exceptions import RedmineValidationException, ValidationAction
+from redi.api.exceptions import (
+    ProjectNotFoundException,
+    RedmineValidationException,
+    ValidationAction,
+)
 from redi.api.types import Attachment, IdName
 from redi.client import client
 
@@ -69,7 +75,15 @@ def normalize_title(t: str) -> str:
 
 
 def fetch_wikis(project_id: str) -> list[WikiPage]:
+    """プロジェクトの Wiki ページ一覧を取得する
+
+    Raises:
+        ProjectNotFoundException: 対象プロジェクトが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     response = client.get(f"/projects/{project_id}/wiki/index.json")
+    if response.status_code == 404:
+        raise ProjectNotFoundException(project_id)
     response.raise_for_status()
     return cast("list[WikiPage]", response.json()["wiki_pages"])
 

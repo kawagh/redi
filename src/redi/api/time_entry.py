@@ -1,8 +1,10 @@
+# TimeEntry が自分より下で定義される TimeEntryIssueRef を参照しているため、
+# 注釈の評価を遅らせる
 from __future__ import annotations
 
 from typing import NotRequired, TypedDict, cast
 
-from redi.api.exceptions import RedmineValidationException
+from redi.api.exceptions import ProjectNotFoundException, RedmineValidationException
 from redi.api.types import IdName
 from redi.client import client
 
@@ -93,6 +95,12 @@ def fetch_time_entries_page(
     limit: int | None = None,
     offset: int | None = None,
 ) -> TimeEntriesPageResponse:
+    """作業時間を 1 ページ分取得する。project_id 省略時は全プロジェクトが対象。
+
+    Raises:
+        ProjectNotFoundException: 対象プロジェクトが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     if project_id:
         path = f"/projects/{project_id}/time_entries.json"
     else:
@@ -109,6 +117,8 @@ def fetch_time_entries_page(
     if offset is not None:
         params["offset"] = offset
     response = client.get(path, params=params)
+    if project_id and response.status_code == 404:
+        raise ProjectNotFoundException(project_id)
     response.raise_for_status()
     return cast("TimeEntriesPageResponse", response.json())
 
@@ -149,8 +159,9 @@ def update_time_entry(
                     https://www.redmine.org/projects/redmine/wiki/Rest_TimeEntries
 
     Raises:
+        TimeEntryNotFoundException: 対象の作業時間が存在しない場合（HTTP 404）
         RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した場合
-        requests.exceptions.HTTPError: 422 以外の HTTP エラーが返った場合
+        requests.exceptions.HTTPError: 404 / 422 以外の HTTP エラーが返った場合
     """
     data: dict = {}
     if hours is not None:
@@ -168,6 +179,8 @@ def update_time_entry(
     response = client.put(
         f"/time_entries/{time_entry_id}.json", json={"time_entry": data}
     )
+    if response.status_code == 404:
+        raise TimeEntryNotFoundException(time_entry_id)
     if response.status_code == 422:
         raise RedmineValidationException.from_response("time_entry", "update", response)
     response.raise_for_status()

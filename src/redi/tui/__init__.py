@@ -1,5 +1,5 @@
 from redi.tui.app import run_issue_tui
-from redi.tui.screen_log import dump_rendered_screen
+from redi.tui.hooks.screen_logger import dump_rendered_screen
 from redi.tui.state import (
     IssueTabState,
     Renderable,
