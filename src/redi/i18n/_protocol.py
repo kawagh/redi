@@ -1243,7 +1243,6 @@ class MessagesProto(Protocol):
     tui_help_wiki_delete_page: str
     tui_help_wiki_open_web: str
     tui_help_wiki_versions: str
-    tui_help_wiki_jump_version: str
 
     # ---- TUI help labels (time entry tab) ----
     tui_help_time_entry_create: str

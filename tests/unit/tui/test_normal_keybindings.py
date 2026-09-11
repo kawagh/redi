@@ -97,23 +97,6 @@ class TestWikiVersionKey:
 
         assert state.wiki_tab.version_modal.show is True
 
-    def test_number_prefix_selects_version(self, monkeypatch):
-        """<N>H は modal を開かず版 N を直接表示する"""
-        from redi.tui.keybindings import normal_keybindings as module
-
-        state = self._wiki_state()
-        state.number_buffer = "2"
-        selected: list[int] = []
-        monkeypatch.setattr(
-            module, "select_version", lambda st, version: selected.append(version)
-        )
-
-        _handler(_kb(state), ("H",))(None)
-
-        assert selected == [2]
-        assert state.wiki_tab.version_modal.show is False
-        assert state.number_buffer == ""
-
     def test_does_nothing_on_other_tabs(self):
         """issues タブで H を押しても何も開かない"""
         state = TuiState()

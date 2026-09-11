@@ -124,19 +124,6 @@ class TestSelectVersion:
 
         assert calls == [1]
 
-    def test_out_of_range_keeps_view_and_flashes(self, monkeypatch):
-        """最新より大きい版や 0 は取得せず、flash で知らせて表示を変えない"""
-        state = _state([_page("Home", version=3)])
-        calls = _stub_read_page(monkeypatch, {})
-
-        select_version(state, 4)
-
-        assert calls == []
-        assert state.wiki_tab.version_view is None
-        assert state.flash_message == messages.tui_wiki_version_missing.format(
-            title="Home", version=4
-        )
-
     def test_missing_version_flashes(self, monkeypatch):
         """Redmine に無い版 (404) は flash で知らせる"""
         state = _state([_page("Home", version=3)])

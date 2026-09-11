@@ -1101,7 +1101,6 @@ class Ja(MessagesProto):
     tui_help_wiki_delete_page = "選択ページを削除 (DELETE の入力で確定)"
     tui_help_wiki_open_web = "選択ページを web で開く"
     tui_help_wiki_versions = "選択ページの版を選んで表示"
-    tui_help_wiki_jump_version = "選択ページの版 N を表示"
 
     # ---- TUI help labels (time entry tab) ----
     tui_help_time_entry_create = "時間記録を作成"

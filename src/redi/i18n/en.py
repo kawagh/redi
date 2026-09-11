@@ -1109,7 +1109,6 @@ class En(MessagesProto):
     tui_help_wiki_delete_page = "Delete the selected page (confirm by typing DELETE)"
     tui_help_wiki_open_web = "Open the selected page in web"
     tui_help_wiki_versions = "Choose a version of the selected page to view"
-    tui_help_wiki_jump_version = "View version N of the selected page"
 
     # ---- TUI help labels (time entry tab) ----
     tui_help_time_entry_create = "Create a time entry"

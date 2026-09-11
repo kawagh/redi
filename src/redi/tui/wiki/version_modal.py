@@ -65,8 +65,8 @@ def open_version_modal(state: TuiState) -> bool:
 def select_version(state: TuiState, version: int) -> None:
     """カーソル位置のページの `version` を表示する。
 
-    最新版を選んだら過去版の表示をやめて最新版に戻る。範囲外の版や取得失敗は
-    flash_message に出し、表示は変えない。
+    最新版を選んだら過去版の表示をやめて最新版に戻る。取得失敗は flash_message に
+    出し、表示は変えない。
     """
     page = current_page(state)
     latest = latest_version(state)
@@ -75,11 +75,6 @@ def select_version(state: TuiState, version: int) -> None:
     title = page["title"]
     if version == latest:
         state.wiki_tab.version_view = None
-        return
-    if not 1 <= version <= latest:
-        state.flash_message = messages.tui_wiki_version_missing.format(
-            title=title, version=version
-        )
         return
     text = state.wiki_tab.version_texts.get((title, version))
     if text is None:
