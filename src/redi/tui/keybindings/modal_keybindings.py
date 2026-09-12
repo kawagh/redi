@@ -45,7 +45,9 @@ from redi.tui.issue.issue_tab import clear_find_for_filter, reload_with_filter
 from redi.tui.keybindings.keybinding_actions import reset_preview_scroll
 from redi.tui.profile_modal import request_profile_switch
 from redi.tui.project_modal import apply_project_switch
-from redi.tui.state import IssueFilter, TimeEntryFilter, TuiState
+from redi.tui.state import TuiState
+from redi.tui.state.issue_tab import IssueFilter
+from redi.tui.state.time_entry_tab import TimeEntryFilter
 from redi.tui.time_entry.time_entry_tab import (
     reload_with_filter as time_entry_reload_with_filter,
 )

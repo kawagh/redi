@@ -6,7 +6,8 @@ import requests
 from redi.api.wiki import WikiPage
 from redi.i18n import messages
 from redi.service import wiki_service
-from redi.tui.state import TuiState, WikiVersionView
+from redi.tui.state import TuiState
+from redi.tui.state.wiki_tab import WikiVersionView
 from redi.tui.wiki import version_modal, wiki_tab
 from redi.tui.wiki.delete_modal import open_delete_modal
 from redi.tui.wiki.version_modal import open_version_modal, select_version

@@ -21,13 +21,8 @@ from prompt_toolkit.widgets import Frame
 
 from redi.i18n import messages
 from redi.service import wiki_service
-from redi.tui.state import (
-    Renderable,
-    TuiState,
-    WikiDiffColumn,
-    WikiDiffModalState,
-    WikiDiffView,
-)
+from redi.tui.state import Renderable, TuiState
+from redi.tui.state.wiki_tab import WikiDiffColumn, WikiDiffModalState, WikiDiffView
 from redi.tui.wiki.version_modal import latest_version, version_label
 from redi.tui.wiki.wiki_tab import (
     current_page,

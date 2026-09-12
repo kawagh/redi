@@ -6,15 +6,8 @@ from redi.api.wiki import WikiPage
 from redi.i18n import messages
 from redi.service import wiki_service
 from redi.text_format import highlight_segments, render_meta_table
-from redi.tui.state import (
-    Renderable,
-    TuiAction,
-    TuiPosition,
-    TuiResult,
-    TuiState,
-    WikiDiffView,
-    WikiVersionView,
-)
+from redi.tui.state import Renderable, TuiAction, TuiPosition, TuiResult, TuiState
+from redi.tui.state.wiki_tab import WikiDiffView, WikiVersionView
 from redi.tui.tab import TabView, noop, noop_jump
 
 

@@ -6,7 +6,8 @@ import requests
 from redi.api.issue import Issue
 from redi.tui.issue import issue_tab
 from redi.tui.issue.issue_tab import _page_label, fetch_issues_with_filter
-from redi.tui.state import IssueFilter, IssueFind, TuiState
+from redi.tui.state import TuiState
+from redi.tui.state.issue_tab import IssueFilter, IssueFind
 
 
 def _make_state(

@@ -1,15 +1,15 @@
 from redi.tui.app import run_issue_tui
 from redi.tui.hooks.screen_logger import dump_rendered_screen
 from redi.tui.state import (
-    IssueTabState,
     Renderable,
     TuiAction,
     TuiPosition,
     TuiResult,
     TuiState,
     TuiTab,
-    WikiTabState,
 )
+from redi.tui.state.issue_tab import IssueTabState
+from redi.tui.state.wiki_tab import WikiTabState
 
 __all__ = [
     "IssueTabState",
