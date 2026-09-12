@@ -2,8 +2,12 @@ from types import SimpleNamespace
 
 import pytest
 
+from redi.api.issue import IssueNotFoundException
 from redi.service import issue_relation_service
-from redi.service.issue_relation_service import RelationBetweenNotFoundException
+from redi.service.issue_relation_service import (
+    RelatedIssueNotFoundException,
+    RelationBetweenNotFoundException,
+)
 
 
 @pytest.fixture
@@ -76,3 +80,50 @@ class TestDeleteRelation:
             issue_relation_service.delete_relation("1", "2")
 
         assert stub_issue_relation_api.deleted == []
+
+
+@pytest.fixture
+def stub_create_relation_api(monkeypatch):
+    """関係先イシューの存在を `existing_issue_ids` で決め、POST を `created` に記録する。"""
+
+    state = SimpleNamespace(existing_issue_ids={"2"}, created=[])
+
+    def fake_fetch_issue(issue_id, include=""):
+        if issue_id not in state.existing_issue_ids:
+            raise IssueNotFoundException(issue_id)
+        return {"id": int(issue_id)}
+
+    def fake_create_relation(issue_id, issue_to_id, relation_type="relates"):
+        state.created.append((issue_id, issue_to_id, relation_type))
+        return _relation(20, issue_id=int(issue_id), issue_to_id=int(issue_to_id))
+
+    monkeypatch.setattr(
+        issue_relation_service.issue_api, "fetch_issue", fake_fetch_issue
+    )
+    monkeypatch.setattr(
+        issue_relation_service.issue_relation_api,
+        "create_relation",
+        fake_create_relation,
+    )
+    return state
+
+
+class TestCreateRelation:
+    """create_relation の関係先イシューの存在確認"""
+
+    def test_creates_relation_when_related_issue_exists(self, stub_create_relation_api):
+        """関係先が存在すれば関係性を作成し、作成された関係性を返す"""
+        created = issue_relation_service.create_relation("1", "2", "blocks")
+
+        assert created["id"] == 20
+        assert stub_create_relation_api.created == [("1", "2", "blocks")]
+
+    def test_raises_when_related_issue_not_found(self, stub_create_relation_api):
+        """関係先が存在しなければ例外を送出し、作成は行わない"""
+        # Redmine の 422 は "Related issue cannot be blank" で値を渡していないように
+        # 読めてしまうため、送信前に落として実態に合ったメッセージを出す
+        with pytest.raises(RelatedIssueNotFoundException) as e:
+            issue_relation_service.create_relation("1", "999999")
+
+        assert e.value.issue_to_id == "999999"
+        assert stub_create_relation_api.created == []
