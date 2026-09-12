@@ -3,7 +3,7 @@ from pathlib import Path
 import jsonschema
 import yaml
 
-from redi.tui.screen_log import _append_screen_yaml
+from redi.tui.hooks.screen_logger import _append_screen_yaml
 
 SCHEMA_PATH = Path(__file__).parents[3] / "doc" / "redi-debug-tui.schema.yaml"
 
