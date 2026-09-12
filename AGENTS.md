@@ -47,9 +47,6 @@ This file provides guidance to Agents when working with code in this repository.
 ## TUI 設計方針
 
 - 操作主体は人(非エージェント)
-- 画面に重ねて出す確認・選択・入力の部品は dialog / ダイアログ と呼ぶ
-    - 識別子・ファイル名・i18n キーは `dialog`、日本語の文章では「ダイアログ」
-    - `Float` は prompt_toolkit の型としてのみ使い、部品の呼び名には使わない
 - TUI から入った対話入力 (更新・作成・工数・wiki) をキャンセルしても redi を終了させず、
   同じ絞り込み・カーソル位置の TUI に戻す
 - 削除操作は誤操作の戻しやすさに応じて操作完了までの手間の大小を変える
