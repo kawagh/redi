@@ -9,7 +9,13 @@ from redi.api.exceptions import (
     RedmineValidationException,
 )
 from redi.cli import main as main_module
+from redi.cli.interactive import InputCanceledException
 from redi.cli.main import build_redi_parser
+from redi.cli.shared_options import (
+    OutputFormat,
+    resolve_format,
+    resolve_list_format,
+)
 from redi.i18n import messages
 
 
@@ -148,6 +154,137 @@ class TestListOnlyResourceListSubcommand:
             args = parser.parse_args(argv)
 
             assert args.full is True, argv
+
+
+class TestFormatOptionPlacement:
+    """--format はサブコマンドの前後どちらに置いても受け付けられる"""
+
+    @pytest.fixture
+    def parser(self, monkeypatch) -> argparse.ArgumentParser:
+        monkeypatch.setattr(main_module, "list_profile_names", list)
+        return build_redi_parser()
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["issue", "list", "--format", "json"],
+            ["issue", "--format", "json", "list"],
+            ["issue", "view", "1", "--format", "json"],
+            ["issue", "--format", "json", "view", "1"],
+            ["issue", "create", "--format", "json"],
+            ["project", "list", "--format", "json"],
+            ["project", "--format", "json", "list"],
+            ["tracker", "list", "--format", "json"],
+            ["tracker", "--format", "json", "list"],
+            ["tracker", "--format", "json"],
+            ["wiki", "--project_id", "1", "list", "--format", "json"],
+            ["me", "--format", "json"],
+        ],
+    )
+    def test_json_is_resolved_on_either_side(self, parser, argv):
+        """置き場所によらず json として解釈される"""
+        args = parser.parse_args(argv)
+
+        assert resolve_format(args) == OutputFormat.JSON, argv
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["issue", "list"],
+            ["issue", "view", "1"],
+            ["project", "list"],
+            ["tracker", "list"],
+            ["me"],
+        ],
+    )
+    def test_defaults_to_plain(self, parser, argv):
+        """未指定なら plain"""
+        args = parser.parse_args(argv)
+
+        assert resolve_format(args) == OutputFormat.PLAIN, argv
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["issue", "l", "-f", "tsv"],
+            ["issue", "-f", "tsv", "l"],
+            ["user", "list", "-f", "tsv"],
+            ["attachment", "view", "1", "-f", "json"],
+        ],
+    )
+    def test_short_option(self, parser, argv):
+        """短縮形 `-f` を置き場所によらず `--format` として解釈する"""
+        args = parser.parse_args(argv)
+
+        assert resolve_list_format(args) == OutputFormat(argv[argv.index("-f") + 1])
+
+    @pytest.mark.parametrize(
+        ("argv", "dest", "expected"),
+        [
+            (
+                ["user", "create", "taro", "-f", "Taro", "-l", "Y", "-m", "m"],
+                "firstname",
+                "Taro",
+            ),
+            (["user", "update", "1", "-f", "Taro"], "firstname", "Taro"),
+            (["user", "-f", "json", "update", "1", "-f", "Taro"], "firstname", "Taro"),
+            (["me", "update", "-f", "Taro"], "firstname", "Taro"),
+            (["attachment", "update", "1", "-f", "a.png"], "filename", "a.png"),
+        ],
+    )
+    def test_short_option_of_subcommand_is_kept(self, parser, argv, dest, expected):
+        """`--firstname` / `--filename` の `-f` は `--format` を足しても従来どおり使える"""
+        args = parser.parse_args(argv)
+
+        assert getattr(args, dest) == expected
+
+    def test_full_stays_as_alias(self, parser):
+        """既存の `--full` は `--format json` の別名として残る"""
+        args = parser.parse_args(["issue", "list", "--full"])
+
+        assert resolve_format(args) == OutputFormat.JSON
+
+    def test_rejects_unknown_format(self, parser):
+        """未対応の形式はエラーにする"""
+        with pytest.raises(SystemExit):
+            parser.parse_args(["issue", "list", "--format", "yaml"])
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["issue", "list", "--format", "tsv"],
+            ["issue", "--format", "tsv", "list"],
+            ["issue", "--format", "tsv"],
+            ["project", "list", "--format", "tsv"],
+            ["user", "list", "--format", "tsv"],
+            ["time_entry", "list", "--format", "tsv"],
+            ["query", "list", "--format", "tsv"],
+            ["tracker", "--format", "tsv"],
+            ["wiki", "--project_id", "1", "list", "--format", "tsv"],
+            ["group", "list", "--format", "tsv"],
+            ["group", "--format", "tsv", "list"],
+        ],
+    )
+    def test_list_accepts_tsv(self, parser, argv):
+        """list 系は置き場所によらず `--format tsv` を受け付ける"""
+        args = parser.parse_args(argv)
+
+        assert resolve_list_format(args) == OutputFormat.TSV, argv
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["issue", "view", "1", "--format", "tsv"],
+            ["project", "view", "1", "--format", "tsv"],
+            ["issue", "create", "--format", "tsv"],
+            ["me", "--format", "tsv"],
+            ["search", "keyword", "--format", "tsv"],
+        ],
+    )
+    def test_view_rejects_tsv(self, parser, argv):
+        """view 系は `--format tsv` を受け付けない"""
+        with pytest.raises(SystemExit):
+            parser.parse_args(argv)
 
 
 class TestSharedOptionPlacement:
@@ -396,6 +533,84 @@ class TestTuiProfileSwitchLoop:
         assert run_tui_calls[1].flash_message == (
             messages.tui_flash_profile_switched.format(name="sub")
         )
+
+
+class TestTuiInteractiveCancelReturnsToTui:
+    """TUI から入った対話入力をキャンセルしても redi は終了せず TUI に戻る (github#564)
+
+    u で更新に入り項目を選ばず確定したときや Ctrl-C したとき、同じ絞り込み・
+    プロジェクトのまま TUI を再表示し、ステータスバーに通知を出す。
+    """
+
+    @pytest.fixture
+    def run_tui_calls(self, monkeypatch) -> list:
+        """run_issue_tui に渡された TuiState を順に記録する"""
+        from redi.tui.state import IssueFilter, TuiResult, TuiState
+
+        monkeypatch.setattr("sys.argv", ["redi", "--tui"])
+        monkeypatch.setattr(main_module, "list_profile_names", list)
+        monkeypatch.setattr(main_module, "check_config", lambda: None)
+
+        calls: list[TuiState] = []
+        results = [
+            TuiResult(action="update", tab="issues", issue_id="7"),
+            None,
+        ]
+
+        def fake_run_issue_tui(state, debug_log_path=None):
+            calls.append(copy.deepcopy(state))
+            state.project_id = "42"
+            state.issue_tab.filter = IssueFilter(status_id="*", status_label="all")
+            return results.pop(0)
+
+        monkeypatch.setattr(main_module, "run_issue_tui", fake_run_issue_tui)
+        return calls
+
+    def test_returns_to_tui_with_flash(self, run_tui_calls, monkeypatch):
+        """キャンセルすると exit せず、通知文を flash にして TUI を再表示する"""
+
+        def _cancel(issue_id):
+            raise InputCanceledException(messages.canceled_no_items_selected)
+
+        monkeypatch.setattr(main_module, "update_issue_interactively", _cancel)
+
+        main_module.main()
+
+        assert len(run_tui_calls) == 2
+        assert run_tui_calls[1].flash_message == messages.canceled_no_items_selected
+
+    def test_keeps_filter_and_project(self, run_tui_calls, monkeypatch):
+        """絞り込みとプロジェクトはキャンセル前のまま引き継ぐ"""
+
+        def _cancel(issue_id):
+            raise InputCanceledException(messages.canceled)
+
+        monkeypatch.setattr(main_module, "update_issue_interactively", _cancel)
+
+        main_module.main()
+
+        assert run_tui_calls[1].project_id == "42"
+        assert run_tui_calls[1].issue_tab.filter.status_id == "*"
+
+
+class TestInputCanceledIsExitOne:
+    """CLI では対話入力のキャンセルを標準エラーに通知して exit 1 にする"""
+
+    def test_prints_message_and_exits(self, monkeypatch, capsys):
+        """通知文だけを標準エラーに出し、トレースバックは見せない"""
+
+        def _raise():
+            raise InputCanceledException(messages.canceled_no_items_selected)
+
+        monkeypatch.setattr(main_module, "_run", _raise)
+
+        with pytest.raises(SystemExit) as e:
+            main_module.main()
+
+        captured = capsys.readouterr()
+        assert e.value.code == 1
+        assert captured.err.strip() == messages.canceled_no_items_selected
+        assert captured.out == ""
 
 
 class TestConnectionErrorIsNotATraceback:

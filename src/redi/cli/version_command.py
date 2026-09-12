@@ -2,6 +2,7 @@ import argparse
 import json
 import sys
 import webbrowser
+from typing import assert_never
 
 import requests
 from prompt_toolkit.key_binding import KeyBindings
@@ -15,11 +16,17 @@ from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.version import Version, VersionNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.interactive import ensure_interactive, exit_on_cancel, prompt
+from redi.cli.interactive import ensure_interactive, prompt, raise_on_cancel
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.shared_options import add_full_argument, project_option_parser
+from redi.cli.shared_options import (
+    OutputFormat,
+    add_format_options,
+    project_option_parser,
+    resolve_list_format,
+    wants_json,
+)
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv
 from redi.service import version_service
 
 
@@ -49,14 +56,45 @@ def _read_versions(project_id: str) -> list[Version]:
         sys.exit(1)
 
 
-def _list_versions(project_id: str, full: bool = False) -> None:
-    """バージョン一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
+def _list_versions(project_id: str, fmt: OutputFormat = OutputFormat.PLAIN) -> None:
+    """バージョン一覧を標準出力に出す。json では取得した JSON をそのまま出す。"""
     versions = _read_versions(project_id)
-    if full:
-        print(json.dumps(versions, ensure_ascii=False))
-        return
-    for version in versions:
-        print(_version_line(version))
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(versions, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                (
+                    "id",
+                    "name",
+                    "status",
+                    "url",
+                    "due_date",
+                    "sharing",
+                    "description",
+                    "created_on",
+                    "updated_on",
+                ),
+                (
+                    (
+                        v["id"],
+                        v["name"],
+                        v["status"],
+                        version_service.version_url(v["id"]),
+                        v.get("due_date"),
+                        v.get("sharing"),
+                        v.get("description"),
+                        v.get("created_on"),
+                        v.get("updated_on"),
+                    )
+                    for v in versions
+                ),
+            )
+        case OutputFormat.PLAIN:
+            for version in versions:
+                print(_version_line(version))
+        case _:
+            assert_never(fmt)
 
 
 def _view_version(version_id: str, full: bool = False, web: bool = False) -> None:
@@ -198,7 +236,7 @@ def add_version_parser(
         "view", aliases=["v"], help=messages.arg_help_version_view, parents=parents
     )
     v_view_parser.add_argument("version_id", help=messages.arg_help_version_view_id)
-    add_full_argument(v_view_parser, postfix=True)
+    add_format_options(v_view_parser, postfix=True)
     v_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
@@ -266,7 +304,7 @@ def _interactive_select_version_id(project_id: str) -> str:
         (str(v["id"]), f"{v['id']} {v['name']} ({v['status']})") for v in versions
     ]
     labels = dict(options)
-    with exit_on_cancel():
+    with raise_on_cancel():
         selected = inline_choice(messages.prompt_select_version_to_update, options)
     print(messages.update_target_version.format(label=labels[selected]))
     return selected
@@ -281,14 +319,14 @@ def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:
         ("description", messages.field_description),
         ("sharing", messages.field_sharing),
     ]
-    with exit_on_cancel():
+    with raise_on_cancel():
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
     if not selected:
         eprint(messages.canceled_no_items_selected)
         sys.exit(1)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
-    with exit_on_cancel():
+    with raise_on_cancel():
         if "name" in selected:
             args.name = prompt(
                 messages.prompt_version_name, default=current.get("name") or ""
@@ -341,7 +379,7 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
         lambda text: len(text.strip()) > 0,
         error_message=messages.error_input_required,
     )
-    with exit_on_cancel():
+    with raise_on_cancel():
         name = prompt(
             messages.prompt_version_name, validator=non_empty_validator
         ).strip()
@@ -366,7 +404,7 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
         event.app.key_processor.feed(KeyPress(Keys.Down))
 
     ensure_interactive(messages.prompt_select_sharing)
-    with exit_on_cancel():
+    with raise_on_cancel():
         sharing_input = choice(
             messages.prompt_select_sharing,
             options=sharing_options,
@@ -387,7 +425,7 @@ def _interactive_create_version(project_id: str, args: argparse.Namespace) -> No
 def handle_version(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.version_command)
     if cmd == "view":
-        _view_version(args.version_id, full=args.full, web=args.web)
+        _view_version(args.version_id, full=wants_json(args), web=args.web)
     elif cmd == "create":
         project_id = args.project_id or config.default_project_id
         if not project_id:
@@ -442,4 +480,4 @@ def handle_version(args: argparse.Namespace) -> None:
         if not project_id:
             eprint(messages.project_id_required)
             sys.exit(1)
-        _list_versions(project_id, full=args.full)
+        _list_versions(project_id, fmt=resolve_list_format(args))

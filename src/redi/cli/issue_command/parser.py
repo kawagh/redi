@@ -1,14 +1,32 @@
 import argparse
+from typing import cast
 
+from redi.api.issue import ISSUE_INCLUDES, IssueInclude
 from redi.api.issue_relation import RELATION_TYPES
-from redi.cli.shared_options import SharedOptionParser, add_full_argument
+from redi.cli.shared_options import SharedOptionParser, add_format_options
 from redi.i18n import messages
+
+
+def _parse_issue_includes(value: str) -> list[IssueInclude]:
+    """カンマ区切りの --include を検証してリストに変換する。
+
+    Redmine は未知の include を黙って無視するため、送信前に弾く。
+    """
+    names = [n.strip() for n in value.split(",") if n.strip()]
+    unknown = [n for n in names if n not in ISSUE_INCLUDES]
+    if unknown:
+        raise argparse.ArgumentTypeError(
+            messages.error_invalid_issue_include.format(
+                values=",".join(unknown), choices=",".join(ISSUE_INCLUDES)
+            )
+        )
+    return cast(list[IssueInclude], names)
 
 
 def _issue_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParser:
     """issue の一覧フィルタと出力形式のオプション"""
     parser = SharedOptionParser(postfix=postfix)
-    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    add_format_options(parser, tsv=True)
     parser.add_argument(
         "--project_id", "-p", help=messages.arg_help_issue_filter_project
     )
@@ -63,9 +81,10 @@ def add_issue_parser(
     i_view_parser.add_argument("issue_id", help=messages.arg_help_issue_view_id)
     i_view_parser.add_argument(
         "--include",
-        help=messages.arg_help_issue_include,
+        type=_parse_issue_includes,
+        help=messages.arg_help_issue_include.format(choices=",".join(ISSUE_INCLUDES)),
     )
-    add_full_argument(i_view_parser, postfix=True)
+    add_format_options(i_view_parser, postfix=True)
     i_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
@@ -112,7 +131,7 @@ def add_issue_parser(
         "--custom_fields",
         help=messages.arg_help_custom_fields,
     )
-    add_full_argument(i_create_parser, postfix=True)
+    add_format_options(i_create_parser, postfix=True)
     i_update_parser = i_subparsers.add_parser(
         "update", aliases=["u"], help=messages.arg_help_issue_update, parents=parents
     )

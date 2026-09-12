@@ -1,6 +1,7 @@
 import argparse
 import json
 import sys
+from typing import assert_never
 
 import requests
 
@@ -10,12 +11,15 @@ from redi.api.membership import Membership, MembershipNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.shared_options import (
-    add_full_argument,
+    OutputFormat,
+    add_format_options,
     pagination_option_parser,
     project_option_parser,
+    resolve_list_format,
+    wants_json,
 )
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv, tsv_ref
 from redi.service import membership_service
 
 
@@ -33,13 +37,28 @@ def _format_membership_line(membership: Membership) -> str:
     return f"{membership['id']} [{principal_kind}] {principal_str} - {role_str}"
 
 
+def _membership_tsv_row(membership: Membership) -> tuple[object, ...]:
+    """メンバーシップ 1 件を tsv の 1 行にする。roles は `,` 区切りで 1 列にまとめる。"""
+    principal = membership.get("user") or membership.get("group") or {}
+    principal_kind = "user" if "user" in membership else "group"
+    roles = membership.get("roles") or []
+    return (
+        membership["id"],
+        principal_kind,
+        principal.get("id"),
+        principal.get("name"),
+        ",".join(r.get("name", "") for r in roles),
+        *tsv_ref(membership, "project"),
+    )
+
+
 def _list_memberships(
     project_id: str,
-    full: bool = False,
+    fmt: OutputFormat = OutputFormat.PLAIN,
     limit: int | None = None,
     offset: int | None = None,
 ) -> None:
-    """メンバーシップ一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
+    """メンバーシップ一覧を標準出力に出す。json では取得した JSON をそのまま出す。"""
     try:
         memberships = membership_service.list_memberships(
             project_id, limit=limit, offset=offset
@@ -47,11 +66,27 @@ def _list_memberships(
     except ProjectNotFoundException:
         eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
-    if full:
-        print(json.dumps(memberships, ensure_ascii=False))
-        return
-    for membership in memberships:
-        print(_format_membership_line(membership))
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(memberships, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                (
+                    "id",
+                    "principal_kind",
+                    "principal_id",
+                    "principal_name",
+                    "roles",
+                    "project_id",
+                    "project_name",
+                ),
+                (_membership_tsv_row(m) for m in memberships),
+            )
+        case OutputFormat.PLAIN:
+            for membership in memberships:
+                print(_format_membership_line(membership))
+        case _:
+            assert_never(fmt)
 
 
 def _read_membership(membership_id: str) -> Membership:
@@ -157,7 +192,7 @@ def add_membership_parser(
     m_view_parser.add_argument(
         "membership_id", help=messages.arg_help_membership_view_id
     )
-    add_full_argument(m_view_parser, postfix=True)
+    add_format_options(m_view_parser, postfix=True)
 
     m_create_parser = m_subparsers.add_parser(
         "create",
@@ -214,7 +249,7 @@ def add_membership_parser(
 def handle_membership(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.membership_command)
     if cmd == "view":
-        _view_membership(args.membership_id, full=args.full)
+        _view_membership(args.membership_id, full=wants_json(args))
         return
     if cmd == "create":
         project_id = args.project_id or config.default_project_id
@@ -262,5 +297,8 @@ def handle_membership(args: argparse.Namespace) -> None:
             eprint(messages.project_id_required)
             sys.exit(1)
         _list_memberships(
-            project_id, full=args.full, limit=args.limit, offset=args.offset
+            project_id,
+            fmt=resolve_list_format(args),
+            limit=args.limit,
+            offset=args.offset,
         )

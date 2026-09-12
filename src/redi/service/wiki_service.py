@@ -4,7 +4,6 @@ CLI と TUI で共通の手順をここに置く。HTTP とステータスコー
 """
 
 from collections import defaultdict
-from dataclasses import dataclass
 
 from redi import config
 from redi.api.wiki import (
@@ -25,16 +24,16 @@ class ParentPageNotFoundException(Exception):
         self.title = title
 
 
-@dataclass(frozen=True)
-class WikiCreateResult:
-    """`create_page` の結果。
+class WikiPageAlreadyExistsException(Exception):
+    """作成しようとしたタイトルのページが既に存在するときに送出する例外。
 
-    Redmine の Wiki 作成は更新と同じ PUT なので、既存タイトルを指定すると更新になる。
-    呼び出し元が結果を出し分けられるよう `created` で区別する。
+    Redmine の Wiki 作成は更新と同じ PUT なので、既存タイトルをそのまま送ると
+    既存ページを上書きしてしまう。誤更新を防ぐため PUT の前に止める。
     """
 
-    title: str
-    created: bool
+    def __init__(self, title: str) -> None:
+        super().__init__(title)
+        self.title = title
 
 
 def page_url(project_id: str, page_title: str, version: int | None = None) -> str:
@@ -71,19 +70,22 @@ def create_page(
     text: str,
     parent_title: str | None = None,
     comments: str = "",
-) -> WikiCreateResult:
+) -> None:
     """Wiki ページを作成する。
 
     親ページ指定時はその存在を、作成前に対象タイトルの既存有無を確認する。
+    既存タイトルには PUT せず例外にし、既存ページを上書きしない。
 
     Raises:
         ParentPageNotFoundException: `parent_title` のページが存在しない
+        WikiPageAlreadyExistsException: `page_title` のページが既に存在する
         RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
     if parent_title and fetch_wiki(project_id, parent_title) is None:
         raise ParentPageNotFoundException(parent_title)
-    exists = fetch_wiki(project_id, page_title) is not None
+    if fetch_wiki(project_id, page_title) is not None:
+        raise WikiPageAlreadyExistsException(page_title)
     create_wiki_page(
         project_id,
         page_title,
@@ -91,7 +93,6 @@ def create_page(
         parent_title=parent_title,
         comments=comments,
     )
-    return WikiCreateResult(title=page_title, created=not exists)
 
 
 def update_page(

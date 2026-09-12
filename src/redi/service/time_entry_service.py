@@ -56,7 +56,11 @@ def fetch_page(
     limit: int | None = None,
     offset: int | None = None,
 ) -> TimeEntriesPageResponse:
-    """条件に合う作業時間を総件数付きの 1 ページとして取得する。"""
+    """条件に合う作業時間を総件数付きの 1 ページとして取得する。
+
+    Raises:
+        ProjectNotFoundException: 対象プロジェクトが存在しない (HTTP 404)
+    """
     return time_entry_api.fetch_time_entries_page(
         project_id=project_id,
         user_id=user_id,

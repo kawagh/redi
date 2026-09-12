@@ -2,6 +2,7 @@ import argparse
 
 import pytest
 
+from redi.api.exceptions import ProjectNotFoundException
 from redi.cli import search_command
 from redi.i18n import messages
 
@@ -56,6 +57,27 @@ class TestSearchOutput:
         search_command.handle_search(_search_args())
 
         assert capsys.readouterr().out == messages.no_search_results + "\n"
+
+
+class TestSearchProjectNotFound:
+    """存在しないプロジェクトを指定すると ID 付きのメッセージで exit 1 する"""
+
+    def test_exits_with_project_id(self, monkeypatch, capsys):
+        """生の 404 ではなく、何が見つからなかったか分かるメッセージを出す"""
+
+        def fake_search(**kwargs):
+            raise ProjectNotFoundException(kwargs["project_id"])
+
+        monkeypatch.setattr(search_command, "search", fake_search)
+
+        with pytest.raises(SystemExit) as e:
+            search_command.handle_search(_search_args(project_id="nosuchproject"))
+
+        assert e.value.code == 1
+        assert (
+            messages.project_not_found.format(id="nosuchproject")
+            in capsys.readouterr().err
+        )
 
 
 class TestValidateScope:

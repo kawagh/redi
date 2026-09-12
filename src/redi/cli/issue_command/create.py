@@ -29,7 +29,7 @@ from redi.cli.custom_field_prompt import (
     prompt_custom_field_value,
 )
 from redi.cli.editor import open_editor, save_body_on_failure, shorten_to_oneline
-from redi.cli.interactive import exit_on_cancel, prompt
+from redi.cli.interactive import InputCanceledException, prompt, raise_on_cancel
 from redi.cli.issue_command.custom_fields import parse_custom_fields
 from redi.cli.issue_command.field_prompt import (
     parse_iso_date,
@@ -41,6 +41,7 @@ from redi.cli.issue_command.field_prompt import (
     prompt_start_date,
 )
 from redi.cli.picker import inline_checkbox, inline_choice
+from redi.cli.shared_options import wants_json
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import issue_service, project_service
@@ -71,7 +72,10 @@ class IssueCreateArgs:
     @classmethod
     def from_namespace(cls, args: argparse.Namespace) -> Self:
         # dest 名がずれていたら AttributeError で気付けるよう getattr は防御しない
-        return cls(**{f.name: getattr(args, f.name) for f in fields(cls)})
+        values = {f.name: getattr(args, f.name) for f in fields(cls)}
+        # --format と --full を出力形式に正規化してから持ち回る
+        values["full"] = wants_json(args)
+        return cls(**values)
 
 
 def _build_create_issue_url(args: IssueCreateArgs) -> str:
@@ -139,7 +143,7 @@ def _interactive_fill_required_custom_fields(
     for cf in required:
         if cf["id"] in existing_ids:
             continue
-        with exit_on_cancel():
+        with raise_on_cancel():
             value = prompt_custom_field_value(cf, project_id)
         if value is SKIP_UNSUPPORTED_FIELD:
             browser_only = True
@@ -190,7 +194,7 @@ def _interactive_fill_optional_create_fields(args: IssueCreateArgs) -> None:
         ]
         for cf in optional_cfs:
             field_options.append((f"cf_{cf['id']}", cf["name"]))
-    with exit_on_cancel():
+    with raise_on_cancel():
         selected = inline_checkbox(
             messages.prompt_select_create_optional_items,
             field_options,
@@ -198,7 +202,7 @@ def _interactive_fill_optional_create_fields(args: IssueCreateArgs) -> None:
     if not selected:
         return
     added_cfs: list[str] = []
-    with exit_on_cancel():
+    with raise_on_cancel():
         if "assigned_to" in selected:
             args.assigned_to_id = prompt_assignee(project_id)
         if "fixed_version" in selected:
@@ -247,7 +251,7 @@ def _interactive_select_issue_template(
         (str(t["id"]), t["title"]) for t in templates
     ]
     template_map = {str(t["id"]): t for t in templates}
-    with exit_on_cancel():
+    with raise_on_cancel():
         selected = inline_choice(messages.prompt_select_template, options)
     if not selected:
         return None
@@ -291,7 +295,7 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
                 (str(t["id"]), t["name"]) for t in trackers
             ]
             labels = dict(tracker_options)
-            with exit_on_cancel():
+            with raise_on_cancel():
                 args.tracker_id = inline_choice(
                     messages.prompt_select_tracker, tracker_options
                 )
@@ -302,13 +306,12 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
         if template is not None:
             subject_default = template["issue_title"]
             template_description = template["description"]
-        with exit_on_cancel():
+        with raise_on_cancel():
             args.subject = prompt(
                 messages.prompt_subject, default=subject_default
             ).strip()
         if not args.subject:
-            eprint(messages.canceled_empty_subject)
-            sys.exit(1)
+            raise InputCanceledException(messages.canceled_empty_subject)
         # 必要なカスタムフィールドを対話的に入力
         args.custom_fields, browser_only = _interactive_fill_required_custom_fields(
             project_id=project_id,
@@ -341,7 +344,7 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
                     ("optional", messages.action_fill_optional),
                 ]
             )
-            with exit_on_cancel():
+            with raise_on_cancel():
                 action = inline_choice(messages.prompt_what_next, action_options)
             if action == "optional":
                 _interactive_fill_optional_create_fields(args)
@@ -362,7 +365,7 @@ def _run_issue_create(args: IssueCreateArgs) -> None:
         return
     print(
         messages.issue_created.format(
-            id=created["id"], url=issue_service.issue_url(str(created["id"]))
+            id=created["id"], url=issue_service.issue_url(created["id"])
         )
     )
 

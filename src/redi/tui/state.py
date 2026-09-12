@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from redi import config
+from redi.api import PAGE_LIMIT_MAX
 from redi.api.issue import Issue
 from redi.api.time_entry import TimeEntry
 from redi.api.wiki import WikiPage
@@ -28,6 +29,27 @@ Renderable = list[tuple[str, str]]
 # 一覧/プレビューの外側にある固定行の合計 (タブバー + 罫線 + ステータスバー)。
 # Layout の HSplit に固定行を増減したらここも更新すること。
 FIXED_ROWS = 3
+
+
+def compute_page_size(rows: int) -> int:
+    """端末の行数から 1 ページの取得件数を求める。
+
+    固定行 (FIXED_ROWS) を除いた行数が一覧に使える行数。最低 1 件は取り、
+    Redmine の limit 上限で頭打ちにする (超えた分は返らず Page 表示と
+    実データがずれるため)。
+    """
+    return max(1, min(rows - FIXED_ROWS, PAGE_LIMIT_MAX))
+
+
+def realign_page(offset: int, cursor: int, page_size: int) -> tuple[int, int]:
+    """カーソル行を保ったまま offset を新しい page_size のページ境界へ揃える。
+
+    `(offset, cursor)` を返す。offset が page_size の倍数になるので、
+    ステータスバーの Page 表示 (offset // page_size) が実データとずれない。
+    """
+    absolute = offset + cursor
+    new_offset = (absolute // page_size) * page_size
+    return new_offset, absolute - new_offset
 
 
 @dataclass
@@ -335,6 +357,14 @@ class TuiState:
     project_label: str = ""
     project_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
     profile_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
+
+    def apply_terminal_rows(self, rows: int) -> bool:
+        """端末の行数から page_size を更新する。値が変わったときだけ True を返す。"""
+        new_size = compute_page_size(rows)
+        if new_size == self.page_size:
+            return False
+        self.page_size = new_size
+        return True
 
     def effective_project_id(self) -> str | None:
         return self.project_id or config.default_project_id

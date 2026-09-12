@@ -3,7 +3,7 @@ import json
 import sys
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, assert_never
 
 from redi.api.custom_field import fetch_custom_fields
 from redi.api.enumeration import (
@@ -13,8 +13,13 @@ from redi.api.enumeration import (
 )
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.tracker import fetch_trackers
+from redi.cli.shared_options import (
+    OutputFormat,
+    add_format_options,
+    resolve_list_format,
+)
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv
 from redi.service import query_service
 
 
@@ -38,6 +43,26 @@ class EnumerationResource:
     # `{id} {name}` では情報が落ちるリソースだけ整形を差し替える。
     # 一覧全体を受けるのは、行を組み立てる前に一括で引きたい情報があるため
     format_lines: Callable[[Sequence[Mapping[str, Any]]], list[str]] | None = None
+    # tsv の列。応答のキーをそのまま列名にする (`xxx_id` / `xxx_name` は
+    # ネストした参照 `xxx: {id, name}` からも引く)。
+    # 既定は enumerations (priority / activity / document_category) が返す 4 つ
+    tsv_columns: tuple[str, ...] = ("id", "name", "is_default", "active")
+
+
+def _tsv_value(item: Mapping[str, Any], column: str) -> object:
+    """tsv の 1 セル分の値を応答から取る。
+
+    キーがそのまま無ければ、`default_status_id` のような列名を
+    `default_status: {id, name}` の参照として解決する。どちらも無ければ None。
+    """
+    if column in item:
+        return item[column]
+    for suffix in ("_id", "_name"):
+        if column.endswith(suffix):
+            ref = item.get(column.removesuffix(suffix))
+            if isinstance(ref, Mapping):
+                return ref.get(suffix[1:])
+    return None
 
 
 def _format_query_lines(queries: Sequence[Mapping[str, Any]]) -> list[str]:
@@ -79,6 +104,13 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
         messages.arg_help_tracker_command,
         messages.arg_help_tracker_list,
         fetch_trackers,
+        tsv_columns=(
+            "id",
+            "name",
+            "default_status_id",
+            "default_status_name",
+            "description",
+        ),
     ),
     EnumerationResource(
         "issue_status",
@@ -86,6 +118,7 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
         messages.arg_help_issue_status_command,
         messages.arg_help_issue_status_list,
         fetch_issue_statuses,
+        tsv_columns=("id", "name", "is_closed", "description"),
     ),
     EnumerationResource(
         "issue_priority",
@@ -118,6 +151,8 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
         lambda refresh: query_service.list_queries(all_pages=True),
         cached=False,
         format_lines=_format_query_lines,
+        # /queries.json が返すのはこの 4 つだけ
+        tsv_columns=("id", "name", "is_public", "project_id"),
     ),
     EnumerationResource(
         "custom_field",
@@ -126,27 +161,52 @@ ENUMERATION_RESOURCES: tuple[EnumerationResource, ...] = (
         messages.arg_help_custom_field_list,
         fetch_custom_fields,
         unavailable_message=messages.custom_field_admin_required,
+        # possible_values / trackers / roles のような可変長の値は json に任せる
+        tsv_columns=(
+            "id",
+            "name",
+            "customized_type",
+            "field_format",
+            "is_required",
+            "is_for_all",
+            "is_filter",
+            "multiple",
+            "visible",
+            "editable",
+            "default_value",
+        ),
     ),
 )
 
 
 def _print_enumeration(
-    items: Iterable[Mapping[str, Any]], full: bool, resource: EnumerationResource
+    items: Iterable[Mapping[str, Any]],
+    fmt: OutputFormat,
+    resource: EnumerationResource,
 ) -> None:
     """一覧専用リソースを 1 行ずつ表示する。
 
-    既定は `{id} {name}` で、リソースが整形を持つ場合はそちらに任せる。
+    plain の既定は `{id} {name}` で、リソースが整形を持つ場合はそちらに任せる。
     """
     items = list(items)
-    if full:
-        print(json.dumps(items, ensure_ascii=False))
-        return
-    if resource.format_lines is not None:
-        lines = resource.format_lines(items)
-    else:
-        lines = [f"{item['id']} {item['name']}" for item in items]
-    for line in lines:
-        print(line)
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(items, ensure_ascii=False))
+        case OutputFormat.TSV:
+            columns = resource.tsv_columns
+            print_tsv(
+                columns,
+                ([_tsv_value(item, column) for column in columns] for item in items),
+            )
+        case OutputFormat.PLAIN:
+            if resource.format_lines is not None:
+                lines = resource.format_lines(items)
+            else:
+                lines = [f"{item['id']} {item['name']}" for item in items]
+            for line in lines:
+                print(line)
+        case _:
+            assert_never(fmt)
 
 
 def _add_list_subparser(
@@ -163,13 +223,8 @@ def _add_list_subparser(
     list_parser = subparsers.add_parser(
         "list", aliases=["l"], help=resource.list_help, parents=parents
     )
-    list_parser.add_argument(
-        "--full",
-        action="store_true",
-        # 未指定時に親パーサの --full を上書きしないようにする
-        default=argparse.SUPPRESS,
-        help=messages.arg_help_full_json,
-    )
+    # 未指定時に親パーサの値を上書きしないよう postfix で足す
+    add_format_options(list_parser, postfix=True, tsv=True)
     if resource.cached:
         _add_refresh_option(list_parser, postfix=True)
 
@@ -202,9 +257,7 @@ def add_enumeration_parsers(
             help=resource.command_help,
             parents=parents,
         )
-        parser.add_argument(
-            "--full", action="store_true", help=messages.arg_help_full_json
-        )
+        add_format_options(parser, tsv=True)
         if resource.cached:
             _add_refresh_option(parser)
         _add_list_subparser(parser, resource, parents)
@@ -224,4 +277,4 @@ def handle_enumeration(resource: EnumerationResource, args: argparse.Namespace) 
     if items is None:
         eprint(resource.unavailable_message)
         sys.exit(1)
-    _print_enumeration(items, args.full, resource)
+    _print_enumeration(items, resolve_list_format(args), resource)

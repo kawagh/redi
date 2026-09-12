@@ -5,6 +5,7 @@ import pytest
 from redi.api.membership import Membership, MembershipNotFoundException
 from redi.cli import membership_command
 from redi.cli.membership_command import _format_membership_line, handle_membership
+from redi.cli.shared_options import OutputFormat
 
 
 class TestFormatMembershipLine:
@@ -83,3 +84,30 @@ class TestViewMissingMembership:
 
         assert e.value.code == 1
         assert "404" in capsys.readouterr().err
+
+
+class TestMembershipListTsv:
+    """`membership list --format tsv` は roles の後ろに project_id / project_name を並べる"""
+
+    def test_prints_project(self, monkeypatch, capsys):
+        """一覧の各要素が持つ project を id / name に展開する"""
+        monkeypatch.setattr(
+            membership_command.membership_service,
+            "list_memberships",
+            lambda project_id, **kwargs: [
+                {
+                    "id": 7,
+                    "project": {"id": 3, "name": "redi"},
+                    "user": {"id": 5, "name": "Sandbox Developer"},
+                    "roles": [{"id": 3, "name": "開発者"}],
+                }
+            ],
+        )
+
+        membership_command._list_memberships("redi", fmt=OutputFormat.TSV)
+
+        assert capsys.readouterr().out == (
+            "id\tprincipal_kind\tprincipal_id\tprincipal_name\troles"
+            "\tproject_id\tproject_name\n"
+            "7\tuser\t5\tSandbox Developer\t開発者\t3\tredi\n"
+        )

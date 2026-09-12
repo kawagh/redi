@@ -38,12 +38,17 @@ This file provides guidance to Agents when working with code in this repository.
     - `inline_choice` / `inline_checkbox` / `open_editor` は内部で `ensure_interactive` を呼んでいる
 - エラーや失敗の通知は `redi.output` の `eprint` で標準エラー出力に出す
     - 正常な結果は標準出力のまま
-- 対話入力のキャンセル (Ctrl-C / Ctrl-D) は `redi.cli.interactive` の `exit_on_cancel` で受け、
-  異常終了として `eprint` で通知して exit 1 する
+- 対話入力のキャンセルは `redi.cli.interactive` の `InputCanceledException` に揃える
+    - Ctrl-C / Ctrl-D は `raise_on_cancel` で受けてこの例外に変換する
+    - 項目未選択や題名が空などユーザーの「やめる」も `sys.exit` せずこの例外を送出する
+    - CLI では `redi.cli.main.main` が `eprint` で通知して exit 1 にする
+    - TUI から呼んだ経路では TUI ループが受けて元の画面に戻し、ステータスバーに通知する
 
 ## TUI 設計方針
 
 - 操作主体は人(非エージェント)
+- TUI から入った対話入力 (更新・作成・工数・wiki) をキャンセルしても redi を終了させず、
+  同じ絞り込み・カーソル位置の TUI に戻す
 - 削除操作は誤操作の戻しやすさに応じて操作完了までの手間の大小を変える
     - issue: modal を開き issue_id を打ち直させる(issueに付随する添付ファイルやコメントが削除されるので重く見ている)
     - wiki: modal を開き `DELETE` と打たせる(数値idが無く、タイトルは日本語もあり打ち直させられないため確認語にしている)

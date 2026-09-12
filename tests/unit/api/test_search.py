@@ -4,6 +4,8 @@ from redi.api import search as search_module
 
 
 class FakeResponse:
+    status_code = 200
+
     def raise_for_status(self) -> None:
         pass
 
