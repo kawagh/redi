@@ -22,6 +22,7 @@ TuiAction = Literal[
 ]
 TuiTab = Literal["issues", "wiki", "time_entries"]
 FilterField = Literal["status", "assignee", "tracker", "query"]
+WikiDiffColumn = Literal["from", "to"]
 
 # prompt_toolkit の FormattedTextControl に渡す `(style, text)` 断片のリスト。
 Renderable = list[tuple[str, str]]
@@ -291,12 +292,27 @@ class WikiDiffView:
 
     閲覧中の版 (`WikiVersionView`) とは独立に持ち、最新版を見ながらでも差分を出せる。
     本文は `WikiTabState.texts` / `version_texts` のキャッシュから引く。
-    `from_version < to_version` になるよう選択時に並べ替える。
+    向きは modal で選んだまま (比較前 → 比較後) で、並べ替えない。
     """
 
     title: str
     from_version: int
     to_version: int
+
+
+@dataclass
+class WikiDiffModalState:
+    """d で開く、比較前と比較後の版を 2 列で選ぶ modal の状態。
+
+    フィルタ modal と同じく列ごとにカーソルを持ち、Tab で列を移る。
+    `versions` は最新が先頭で、両列とも同じ並びを出す。
+    """
+
+    show: bool = False
+    focus: WikiDiffColumn = "from"
+    versions: list[int] = field(default_factory=list)
+    from_cursor: int = 0
+    to_cursor: int = 0
 
 
 @dataclass
@@ -314,8 +330,8 @@ class WikiTabState:
     version_view: WikiVersionView | None = None
     # 過去版の本文キャッシュ。過去版は変わらないので (title, version) で持つ。
     version_texts: dict[tuple[str, int], str] = field(default_factory=dict)
-    # d で開く比較相手の版を選ぶ modal。
-    diff_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
+    # d で開く、比較前と比較後の版を選ぶ modal。
+    diff_modal: WikiDiffModalState = field(default_factory=WikiDiffModalState)
     # 差分を表示中ならその 2 版。None なら本文を表示している。
     diff_view: WikiDiffView | None = None
 

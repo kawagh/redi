@@ -23,7 +23,7 @@ from redi.tui.time_entry.time_entry_tab import (
     request_delete as time_entry_request_delete,
 )
 from redi.tui.wiki.delete_modal import open_delete_modal as open_wiki_delete_modal
-from redi.tui.wiki.diff_modal import toggle_diff as toggle_wiki_diff
+from redi.tui.wiki.diff_modal import open_diff_modal as open_wiki_diff_modal
 from redi.tui.wiki.version_modal import open_version_modal
 
 
@@ -207,8 +207,7 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     def _(event):
         clear_temporary_state(state)
         if state.tab == "wiki":
-            reset_preview_scroll(state)
-            toggle_wiki_diff(state)
+            open_wiki_diff_modal(state)
 
     @kb.add("R", filter=normal_mode)
     def _(event):

@@ -203,7 +203,7 @@ def _cached_text(state: TuiState, title: str, version: int) -> str | None:
 
 
 def _render_diff(state: TuiState, view: WikiDiffView, header: list[str]) -> Renderable:
-    """選んだ 2 版の差分を出す。本文は選択時にキャッシュへ載せてあるので取りに行かない。"""
+    """選んだ 2 版の差分を比較前 → 比較後の向きで出す。本文は選択時にキャッシュへ載せてある。"""
     result: Renderable = [("", "\n".join(header) + "\n")]
     old = _cached_text(state, view.title, view.from_version)
     new = _cached_text(state, view.title, view.to_version)

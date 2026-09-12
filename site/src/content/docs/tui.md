@@ -39,9 +39,10 @@ press `Enter`** — until then the right pane shows only the metadata.
 shown, the status bar and the metadata say so, and `u` / `D` are disabled until you return
 to the latest version.
 
-`d` asks which version to compare with the one shown (the latest when no old version is open)
-and puts the unified diff in the right pane. The cursor starts on the previous version, so
-`d` then `Enter` shows what the last edit changed. Press `d` again to go back to the text.
+`d` opens a two-column dialog to pick the "from" and "to" versions, like the issue filter.
+"From" starts on the version you are viewing (the previous one when viewing the latest) and
+"to" on the latest, so `d` then `Enter` shows what changed up to the latest version. The
+unified diff replaces the text in the right pane; press `d` then `c` to go back to the text.
 `v` opens the diff page in Redmine while the diff is shown.
 
 ## Search

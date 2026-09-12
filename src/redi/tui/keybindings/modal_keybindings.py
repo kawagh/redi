@@ -61,7 +61,21 @@ from redi.tui.wiki.delete_modal import (
 from redi.tui.wiki.delete_modal import (
     input_char as wiki_delete_input_char,
 )
-from redi.tui.wiki.diff_modal import select_diff_target as wiki_select_diff_target
+from redi.tui.wiki.diff_modal import (
+    apply_diff as wiki_apply_diff,
+)
+from redi.tui.wiki.diff_modal import (
+    clear_diff as wiki_clear_diff,
+)
+from redi.tui.wiki.diff_modal import (
+    column_cursor as wiki_diff_column_cursor,
+)
+from redi.tui.wiki.diff_modal import (
+    set_column_cursor as wiki_diff_set_column_cursor,
+)
+from redi.tui.wiki.diff_modal import (
+    shift_focus as wiki_diff_shift_focus,
+)
 from redi.tui.wiki.version_modal import select_version as wiki_select_version
 
 
@@ -117,18 +131,67 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         _on_wiki_version_selected,
     )
 
-    def _on_wiki_diff_selected(event, value: str, _label: str) -> None:
-        reset_preview_scroll(state)
-        wiki_select_diff_target(state, int(value))
-        state.wiki_tab.diff_modal.show = False
+    @kb.add("tab", filter=show_wiki_diff_modal)
+    @kb.add("l", filter=show_wiki_diff_modal)
+    @kb.add("right", filter=show_wiki_diff_modal)
+    def _wiki_diff_modal_focus_next(event):
+        modal = state.wiki_tab.diff_modal
+        modal.focus = wiki_diff_shift_focus(modal.focus, 1)
 
-    register_choice_keys(
-        kb,
-        lambda: state.wiki_tab.diff_modal,
-        show_wiki_diff_modal,
-        "d",
-        _on_wiki_diff_selected,
-    )
+    @kb.add("s-tab", filter=show_wiki_diff_modal)
+    @kb.add("h", filter=show_wiki_diff_modal)
+    @kb.add("left", filter=show_wiki_diff_modal)
+    def _wiki_diff_modal_focus_prev(event):
+        modal = state.wiki_tab.diff_modal
+        modal.focus = wiki_diff_shift_focus(modal.focus, -1)
+
+    @kb.add("j", filter=show_wiki_diff_modal)
+    @kb.add("down", filter=show_wiki_diff_modal)
+    @kb.add("c-n", filter=show_wiki_diff_modal)
+    def _wiki_diff_modal_cursor_down(event):
+        modal = state.wiki_tab.diff_modal
+        wiki_diff_set_column_cursor(
+            modal,
+            modal.focus,
+            min(
+                len(modal.versions) - 1, wiki_diff_column_cursor(modal, modal.focus) + 1
+            ),
+        )
+
+    @kb.add("k", filter=show_wiki_diff_modal)
+    @kb.add("up", filter=show_wiki_diff_modal)
+    @kb.add("c-p", filter=show_wiki_diff_modal)
+    def _wiki_diff_modal_cursor_up(event):
+        modal = state.wiki_tab.diff_modal
+        wiki_diff_set_column_cursor(
+            modal, modal.focus, max(0, wiki_diff_column_cursor(modal, modal.focus) - 1)
+        )
+
+    @kb.add("g", "g", filter=show_wiki_diff_modal)
+    def _wiki_diff_modal_cursor_top(event):
+        modal = state.wiki_tab.diff_modal
+        wiki_diff_set_column_cursor(modal, modal.focus, 0)
+
+    @kb.add("G", filter=show_wiki_diff_modal)
+    def _wiki_diff_modal_cursor_bottom(event):
+        modal = state.wiki_tab.diff_modal
+        wiki_diff_set_column_cursor(modal, modal.focus, max(0, len(modal.versions) - 1))
+
+    @kb.add("enter", filter=show_wiki_diff_modal)
+    def _wiki_diff_modal_apply(event):
+        if wiki_apply_diff(state):
+            reset_preview_scroll(state)
+
+    @kb.add("c", filter=show_wiki_diff_modal)
+    def _wiki_diff_modal_clear(event):
+        wiki_clear_diff(state)
+        reset_preview_scroll(state)
+
+    @kb.add("escape", filter=show_wiki_diff_modal)
+    @kb.add("d", filter=show_wiki_diff_modal)
+    @kb.add("q", filter=show_wiki_diff_modal)
+    def _wiki_diff_modal_close(event):
+        state.wiki_tab.diff_modal.show = False
 
     @kb.add("tab", filter=show_filter_modal)
     @kb.add("l", filter=show_filter_modal)

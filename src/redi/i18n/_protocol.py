@@ -815,11 +815,15 @@ class MessagesProto(Protocol):
     """{version}, {latest}"""
     tui_wiki_meta_version_of_latest: str
     """{version}, {latest}"""
-    # d で開く比較相手の版を選ぶ modal
+    # d で開く、比較前と比較後の版を 2 列で選ぶ modal
     tui_wiki_diff_modal_title: str
     tui_wiki_diff_modal_hint: str
+    tui_wiki_diff_from: str
+    tui_wiki_diff_to: str
     # 版が 1 つしか無く比較相手が無いときの案内
     tui_wiki_diff_no_other_versions: str
+    # 比較前と比較後に同じ版を選んだときの案内
+    tui_wiki_diff_same_version: str
     # 2 版の差分を右ペインに出しているときの印
     tui_status_wiki_diff_active: str
     """{from_version}, {to_version}"""
