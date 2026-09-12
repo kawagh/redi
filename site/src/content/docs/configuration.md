@@ -55,7 +55,8 @@ anything permanently.
 
 ```sh
 redi issue list --profile work
-redi config --full            # default_profile and every profile
+redi config list              # default_profile and every profile
+redi config view              # the profile in use
 ```
 
 ## Creating and editing

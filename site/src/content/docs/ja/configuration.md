@@ -54,7 +54,8 @@ text_formatting = "textile"   # このプロファイルに限り最上位の値
 
 ```sh
 redi issue list --profile work
-redi config --full            # default_profile と全プロファイル
+redi config list              # default_profile と全プロファイル
+redi config view              # 使用中のプロファイル
 ```
 
 ## 作成と編集

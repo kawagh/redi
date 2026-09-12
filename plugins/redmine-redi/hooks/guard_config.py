@@ -2,7 +2,7 @@
 """~/.config/redi/config.toml への直接アクセスを PreToolUse で拒否する hook。
 
 config.toml は API キーを含むため、読まれると会話ログに鍵が残る。
-`redi config` / `redi config --full` を使えば鍵を出さずに設定値を確認できるので、
+`redi config view` / `redi config list` を使えば鍵を出さずに設定値を確認できるので、
 その経路へ切り替えさせる。
 
 Claude Code / Codex の双方から同じスクリプトを呼ぶ。stdin に届く `tool_name` は
@@ -20,7 +20,7 @@ CONFIG_DIR_PATTERN = re.compile(r"\.config[/\\]redi", re.IGNORECASE)
 DENY_REASON = (
     "Reading ~/.config/redi/config.toml is blocked: it contains Redmine API keys, "
     "and they would end up in the conversation log. "
-    "Run `redi config` (or `redi config --full` for every profile) instead — "
+    "Run `redi config view` (or `redi config list` for every profile) instead — "
     "it prints the profile settings without the keys."
 )
 

@@ -90,7 +90,8 @@ redi init # interactive: select language, then Redmine URL / API key / projects
 redi --tui
 
 # config (alias: c)
-redi config
+redi config # list profiles (same as `redi config list`)
+redi config view # show the profile in use
 redi config create # interactive: profile name / Redmine URL / API key / projects
 redi config create <profile_name> --url <url> --api_key <key> # create new profile
 redi config create <profile_name> --url <url> --api_key <key> --set_default
