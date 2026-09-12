@@ -1,4 +1,4 @@
-"""通常モード (modal を開いていない一覧操作中) のキーバインド。"""
+"""通常モード (ダイアログを開いていない一覧操作中) のキーバインド。"""
 
 from prompt_toolkit.key_binding import KeyBindings
 

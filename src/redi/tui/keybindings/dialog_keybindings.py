@@ -1,4 +1,4 @@
-"""modal 表示中のキーバインド。"""
+"""ダイアログ表示中のキーバインド。"""
 
 from string import ascii_uppercase
 

@@ -815,7 +815,7 @@ class MessagesProto(Protocol):
     """{version}, {latest}"""
     tui_wiki_meta_version_of_latest: str
     """{version}, {latest}"""
-    # d で開く、比較前と比較後の版を 2 列で選ぶ modal
+    # d で開く、比較前と比較後の版を 2 列で選ぶダイアログ
     tui_wiki_diff_dialog_title: str
     tui_wiki_diff_dialog_hint: str
     tui_wiki_diff_from: str

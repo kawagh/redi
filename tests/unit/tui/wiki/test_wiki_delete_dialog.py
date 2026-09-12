@@ -38,7 +38,7 @@ def _titles(state: TuiState) -> list[str]:
 
 
 class TestOpenDeleteDialog:
-    """open_delete_modal() は対象ページを modal 状態に書き込む"""
+    """open_delete_dialog() は対象ページをダイアログ状態に書き込む"""
 
     def test_opens_with_target_title(self):
         """カーソル位置のページタイトルを target_title に保持する"""
@@ -61,7 +61,7 @@ class TestOpenDeleteDialog:
         assert state.wiki_tab.delete_dialog.notice is None
 
     def test_returns_false_when_empty(self):
-        """ページが無いときは modal を開かず False"""
+        """ページが無いときはダイアログを開かず False"""
         state = _state([])
 
         assert open_delete_dialog(state) is False
@@ -167,7 +167,7 @@ class TestConfirmDelete:
         return state
 
     def test_deletes_when_input_matches(self, deleted):
-        """確認語と一致すれば削除を要求し、一覧から取り除いて modal を閉じる"""
+        """確認語と一致すれば削除を要求し、一覧から取り除いてダイアログを閉じる"""
         state = self._opened(CONFIRM_WORD)
 
         confirm_delete(state)
@@ -196,7 +196,7 @@ class TestConfirmDelete:
         ids=["page_missing", "api_failure"],
     )
     def test_flashes_reason_on_failure(self, monkeypatch, error, expected_in_flash):
-        """削除に失敗したら一覧を変えず、modal を閉じて理由を flash_message に出す"""
+        """削除に失敗したら一覧を変えず、ダイアログを閉じて理由を flash_message に出す"""
         state = self._opened(CONFIRM_WORD)
 
         def fake_delete_page(project_id: str, page_title: str) -> None:

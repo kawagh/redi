@@ -48,7 +48,7 @@ def _wiki_project(monkeypatch):
 
 
 class TestOpenVersionDialog:
-    """open_version_modal() は 1..最新 の版を最新から順に並べる"""
+    """open_version_dialog() は 1..最新 の版を最新から順に並べる"""
 
     def test_lists_versions_latest_first(self):
         """最新版が先頭で、最新版には (latest) の印が付く"""
@@ -84,7 +84,7 @@ class TestOpenVersionDialog:
         assert state.wiki_tab.version_dialog.cursor == 2
 
     def test_returns_false_when_empty(self):
-        """ページが無いときは modal を開かず False"""
+        """ページが無いときはダイアログを開かず False"""
         state = _state([])
 
         assert open_version_dialog(state) is False
@@ -215,7 +215,7 @@ class TestReadOnlyWhileViewingOldVersion:
         assert result.action == "update"
 
     def test_delete_dialog_is_blocked(self):
-        """D を押しても削除確認 modal を開かず、flash で最新版に戻るよう促す"""
+        """D を押しても削除確認ダイアログを開かず、flash で最新版に戻るよう促す"""
         state = _state([_page("Home", version=3)])
         state.wiki_tab.version_view = WikiVersionView("Home", 1, "old", latest=3)
 
@@ -283,7 +283,7 @@ class TestIndication:
 
 
 class TestVersionDialogModule:
-    """version_modal は wiki タブの最新版番号を一覧の version から取る"""
+    """version_dialog は wiki タブの最新版番号を一覧の version から取る"""
 
     def test_latest_version_none_without_version(self):
         """一覧に version が無ければ最新版は不明 (None)"""

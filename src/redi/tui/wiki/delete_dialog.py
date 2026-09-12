@@ -1,4 +1,4 @@
-"""wiki タブの D で開く削除確認 modal のレイアウト・描画と、開く/閉じる/確定する操作。
+"""wiki タブの D で開く削除確認ダイアログのレイアウト・描画と、開く/閉じる/確定する操作。
 
 wiki は issue_id にあたる数値 id を持たないため、確認語 (`DELETE`) を打たせて確定する。
 HTTP は `service.wiki_service` に任せ、ここでは入力の検証と状態の更新だけを行う。
@@ -54,7 +54,7 @@ def render_delete_dialog(state: TuiState) -> Renderable:
 
 
 def build_delete_dialog(state: TuiState, show: FilterOrBool) -> Float:
-    """削除確認 modal の Float を組み立てる。"""
+    """削除確認ダイアログの Float を組み立てる。"""
     return Float(
         content=ConditionalContainer(
             content=VSplit(
@@ -80,7 +80,7 @@ def build_delete_dialog(state: TuiState, show: FilterOrBool) -> Float:
 
 
 def open_delete_dialog(state: TuiState) -> bool:
-    """カーソル位置の wiki ページを対象に削除確認 modal を開く。対象がなければ False。
+    """カーソル位置の wiki ページを対象に削除確認ダイアログを開く。対象がなければ False。
 
     過去版を表示中は開かない。削除はページ全体に及ぶので、見ている版と消える内容が
     食い違ったまま確定させないため、最新版に戻してから行わせる。
@@ -101,7 +101,7 @@ def open_delete_dialog(state: TuiState) -> bool:
 
 
 def close_delete_dialog(state: TuiState) -> None:
-    """削除確認 modal を閉じて入力をクリアする。"""
+    """削除確認ダイアログを閉じて入力をクリアする。"""
     dialog = state.wiki_tab.delete_dialog
     dialog.show = False
     dialog.input_text = ""
@@ -139,11 +139,11 @@ def apply_deleted(state: TuiState, page_title: str) -> None:
 
 
 def confirm_delete(state: TuiState) -> None:
-    """modal で入力された確認語が一致したら対象ページを削除する。
+    """ダイアログで入力された確認語が一致したら対象ページを削除する。
 
-    一致しない場合は modal.notice に理由を出して再入力させる。
-    削除成功時は modal を閉じ、ローカルの一覧から対象ページを取り除く。
-    削除失敗時は modal を閉じて flash_message にエラーを出す。
+    一致しない場合はダイアログ.notice に理由を出して再入力させる。
+    削除成功時はダイアログを閉じ、ローカルの一覧から対象ページを取り除く。
+    削除失敗時はダイアログを閉じて flash_message にエラーを出す。
     """
     dialog = state.wiki_tab.delete_dialog
     notice = validate_input(dialog)

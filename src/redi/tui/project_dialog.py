@@ -1,4 +1,4 @@
-"""p で開くプロジェクト切替 modal の描画と、開く/切り替える操作。"""
+"""p で開くプロジェクト切替ダイアログの描画と、開く/切り替える操作。"""
 
 import requests
 from prompt_toolkit.filters import FilterOrBool
@@ -24,7 +24,7 @@ def build_project_dialog(state: TuiState, show: FilterOrBool) -> Float:
 
 
 def open_project_dialog(state: TuiState) -> None:
-    """プロジェクト切替モーダルを開く。一覧取得に失敗したら error modal に流す。"""
+    """プロジェクト切替ダイアログを開く。一覧取得に失敗したら エラーダイアログに流す。"""
     dialog = state.project_dialog
     try:
         projects = sort_projects_by_id_desc(list_projects(all_pages=True))

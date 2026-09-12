@@ -1,6 +1,6 @@
-"""wiki タブの d で開く、比較前と比較後の版を選ぶ modal と、選んだ 2 版の差分を表示する操作。
+"""wiki タブの d で開く、比較前と比較後の版を選ぶダイアログと、選んだ 2 版の差分を表示する操作。
 
-フィルタ modal と同じ 2 列構成で、左が比較前・右が比較後。開いたときは比較前に表示中の版、
+フィルタダイアログと同じ 2 列構成で、左が比較前・右が比較後。開いたときは比較前に表示中の版、
 比較後に最新版を置くので、Enter だけで「表示中の版から最新版までの差分」になる。
 Redmine の REST API には差分を返すエンドポイントが無いので、本文は
 `wiki_tab.load_version_text` で取り、差分は `service.wiki_service.diff_texts` で手元で作る。
@@ -56,7 +56,7 @@ def shift_focus(current: WikiDiffColumn, step: int) -> WikiDiffColumn:
 def render_diff_column(state: TuiState, column: WikiDiffColumn) -> Renderable:
     """比較前 / 比較後の 1 列を描画する。
 
-    フィルタ modal と同じく、カーソル行を出すのは focus のある列だけ。
+    フィルタダイアログと同じく、カーソル行を出すのは focus のある列だけ。
     `*` は適用中の差分の版で、focus の無い列でも残る。
     """
     dialog = state.wiki_tab.diff_dialog
@@ -111,7 +111,7 @@ def _diff_column_window(state: TuiState, column: WikiDiffColumn) -> Window:
 
 
 def build_diff_dialog(state: TuiState, show: FilterOrBool) -> Float:
-    """比較前 / 比較後の 2 列を並べた modal の Float。構成はフィルタ modal に合わせる。"""
+    """比較前 / 比較後の 2 列を並べたダイアログの Float。構成はフィルタダイアログに合わせる。"""
     return Float(
         content=ConditionalContainer(
             content=VSplit(
@@ -157,7 +157,7 @@ def shown_version(state: TuiState) -> int | None:
 
 
 def open_diff_dialog(state: TuiState) -> bool:
-    """比較する版を選ぶ modal を開く。版が 1 つしか無ければ flash で知らせて開かない。
+    """比較する版を選ぶダイアログを開く。版が 1 つしか無ければ flash で知らせて開かない。
 
     比較前は表示中の版、比較後は最新版に置く。最新版を表示中は比較前を 1 つ前の版にし、
     Enter だけで直前の編集の差分になるようにする。差分を出していればその 2 版に合わせる。
@@ -189,7 +189,7 @@ def open_diff_dialog(state: TuiState) -> bool:
 def apply_diff(state: TuiState) -> bool:
     """両列のカーソルにある版の差分を右ペインに出す。
 
-    フィルタ modal と同じく適用しても modal は閉じず、組を変えて押し直せる。閉じるのは
+    フィルタダイアログと同じく適用してもダイアログは閉じず、組を変えて押し直せる。閉じるのは
     Esc / d。本文はここで取り (キャッシュにも載る)、取得に失敗したら表示は変えない
     (flash は取得側が出す)。同じ版どうしは弾かず、差分無しとして出す。
     """
@@ -217,5 +217,5 @@ def apply_diff(state: TuiState) -> bool:
 
 
 def clear_diff(state: TuiState) -> None:
-    """差分表示をやめて本文に戻す。modal はフィルタの c と同じく開いたまま。"""
+    """差分表示をやめて本文に戻す。ダイアログはフィルタの c と同じく開いたまま。"""
     state.wiki_tab.diff_view = None

@@ -19,7 +19,7 @@ def captured_offsets(monkeypatch) -> list[int]:
 
 
 class TestOpenFindDialog:
-    """open_find_modal は打ち直しを省くために直前のクエリを引き継ぐ"""
+    """open_find_dialog は打ち直しを省くために直前のクエリを引き継ぐ"""
 
     def test_initializes_input_with_current_query(self):
         """検索中に開くと入力欄が現在のクエリで埋まっている"""
@@ -82,7 +82,7 @@ class TestConfirmFind:
         assert state.issue_tab.find.is_active() is False
 
     def test_closes_dialog_after_confirm(self, captured_offsets):
-        """確定したら modal を閉じて入力をクリアする"""
+        """確定したらダイアログを閉じて入力をクリアする"""
         state = TuiState()
         find_dialog.open_find_dialog(state)
         find_dialog.input_char(state, "x")
@@ -94,7 +94,7 @@ class TestConfirmFind:
 
 
 class TestCloseFindDialog:
-    """close_find_modal は検索条件を変えずに modal だけ閉じる"""
+    """close_find_dialog は検索条件を変えずにダイアログだけ閉じる"""
 
     def test_keeps_current_query(self):
         """Esc で閉じても実行中の検索は解除されない"""

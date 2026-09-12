@@ -1,4 +1,4 @@
-"""issues タブの D で開く削除確認 modal のレイアウト・描画と、開く/閉じる/確定する操作。
+"""issues タブの D で開く削除確認ダイアログのレイアウト・描画と、開く/閉じる/確定する操作。
 
 issue は数値 id を持つため、対象の issue_id を打ち直させて確定する。
 HTTP は `service.issue_service` に任せ、ここでは入力の検証と状態の更新だけを行う。
@@ -54,7 +54,7 @@ def render_delete_dialog(state: TuiState) -> Renderable:
 
 
 def build_delete_dialog(state: TuiState, show: FilterOrBool) -> Float:
-    """削除確認 modal の Float を組み立てる。"""
+    """削除確認ダイアログの Float を組み立てる。"""
     return Float(
         content=ConditionalContainer(
             content=VSplit(
@@ -80,7 +80,7 @@ def build_delete_dialog(state: TuiState, show: FilterOrBool) -> Float:
 
 
 def open_delete_dialog(state: TuiState) -> bool:
-    """カーソル位置の issue を対象に削除確認 modal を開く。対象がなければ False。"""
+    """カーソル位置の issue を対象に削除確認ダイアログを開く。対象がなければ False。"""
     issues = state.issue_tab.issues
     if not issues:
         return False
@@ -98,7 +98,7 @@ def open_delete_dialog(state: TuiState) -> bool:
 
 
 def close_delete_dialog(state: TuiState) -> None:
-    """削除確認 modal を閉じて入力をクリアする。"""
+    """削除確認ダイアログを閉じて入力をクリアする。"""
     dialog = state.issue_tab.delete_dialog
     dialog.show = False
     dialog.input_text = ""
@@ -131,11 +131,11 @@ def apply_deleted(state: TuiState, issue_id: int) -> None:
 
 
 def confirm_delete(state: TuiState) -> None:
-    """modal で入力された issue_id が modal を開いた対象と一致したら削除する。
+    """ダイアログで入力された issue_id がダイアログを開いた対象と一致したら削除する。
 
-    入力が空の場合と一致しない場合は modal.notice に理由を出して再入力させる。
-    削除成功時は modal を閉じ、ローカルの issue 一覧から該当行を取り除く。
-    削除失敗時は modal を閉じて flash_message にエラーを出す。
+    入力が空の場合と一致しない場合はダイアログ.notice に理由を出して再入力させる。
+    削除成功時はダイアログを閉じ、ローカルの issue 一覧から該当行を取り除く。
+    削除失敗時はダイアログを閉じて flash_message にエラーを出す。
     """
     dialog = state.issue_tab.delete_dialog
     notice = validate_input(dialog)

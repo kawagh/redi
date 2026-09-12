@@ -1,4 +1,4 @@
-"""一覧から1つ選ぶ modal の共通部品。
+"""一覧から1つ選ぶダイアログの共通部品。
 
 p のプロジェクト切替と P のプロファイル切替は、選択肢の作り方と決定時の処理だけが
 違って描画とキー操作は同じなので、ここに寄せる。
@@ -29,7 +29,7 @@ def render_choice_list(dialog: ChoiceDialogState) -> Renderable:
     """選択肢を描画する。
 
     ヒントは別 Window に置くのでここには含めない。1 行目から選択肢が並ぶため、
-    カーソル行はそのまま `modal.cursor` になる。
+    カーソル行はそのまま `ダイアログ.cursor` になる。
     """
     parts: Renderable = []
     for i, (value, label) in enumerate(dialog.choices):
@@ -45,14 +45,14 @@ def render_choice_list(dialog: ChoiceDialogState) -> Renderable:
 def build_choice_dialog(
     get_dialog: GetDialog, title: str, hint: str, show: FilterOrBool
 ) -> Float:
-    """選択肢 modal の Float を組み立てる。
+    """選択肢ダイアログの Float を組み立てる。
 
     選択肢が端末高を超えることがあるため、`get_cursor_position` を渡してカーソル行が
     画面内に収まるようスクロールさせる。ヒントは選択肢とは別の Window に置き、
     スクロールしても常に見せる。
 
     Frame を VSplit で挟んで左右に幅1の空白パディングを置く理由は
-    `run_issue_tui` の help_float 手前のコメントを参照。
+    `run_issue_tui` の help_dialog 手前のコメントを参照。
     """
     return Float(
         content=ConditionalContainer(
@@ -97,9 +97,9 @@ def register_choice_keys(
     close_key: str,
     on_enter: Callable[..., None],
 ) -> None:
-    """選択肢 modal の移動・決定・閉じるキーを登録する。
+    """選択肢ダイアログの移動・決定・閉じるキーを登録する。
 
-    `close_key` は modal を開いたキー自身 (トグルで閉じられるようにする)。
+    `close_key` はダイアログを開いたキー自身 (トグルで閉じられるようにする)。
 
     候補は環境が増えるほど伸びるので、一覧側の normal mode と同じ `gg` / `G` で
     先頭・末尾へ飛べるようにする。

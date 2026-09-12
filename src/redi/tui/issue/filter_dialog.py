@@ -1,7 +1,7 @@
-"""issues タブの f で開くフィルタ modal のレイアウトと描画。
+"""issues タブの f で開くフィルタダイアログのレイアウトと描画。
 
 ステータス・担当者・トラッカー・クエリを 4 列に並べ、列ごとに独立して
-スクロールさせる。縦に連結すると modal の高さが選択肢数の合計になり、
+スクロールさせる。縦に連結するとダイアログの高さが選択肢数の合計になり、
 選択肢が多い環境で下部が端末外へ溢れてしまうため。
 """
 
@@ -101,9 +101,9 @@ def set_section_cursor(
 
 
 def render_filter_column(state: TuiState, section: FilterField) -> Renderable:
-    """フィルタ modal の 1 列 (status / assignee / tracker / query) を描画する。
+    """フィルタダイアログの 1 列 (status / assignee / tracker / query) を描画する。
 
-    列を縦に連結せず列ごとに描くことで、modal の高さが選択肢数の合計ではなく
+    列を縦に連結せず列ごとに描くことで、ダイアログの高さが選択肢数の合計ではなく
     各列の最大値で済み、選択肢が多くても縦に溢れにくくなる。
     """
     f = state.issue_tab.filter
@@ -136,7 +136,7 @@ def filter_column_cursor_y(dialog: FilterDialogState, section: FilterField) -> i
 
 
 def _filter_column_window(state: TuiState, section: FilterField) -> Window:
-    """フィルタ modal の 1 列を載せる Window。
+    """フィルタダイアログの 1 列を載せる Window。
 
     選択肢が端末高を超えると Float が高さを端末内へ切り詰め、Window にはその
     切り詰め後の高さが渡る。`get_cursor_position` を与えておくと Window が
@@ -167,10 +167,10 @@ def _column_separator() -> list[Window]:
 
 
 def build_filter_dialog(state: TuiState, show: FilterOrBool) -> Float:
-    """フィルタ modal の Float を組み立てる。
+    """フィルタダイアログの Float を組み立てる。
 
     Frame を VSplit で挟んで左右に幅1の空白パディングを置く理由は
-    `run_issue_tui` の help_float 手前のコメントを参照。
+    `run_issue_tui` の help_dialog 手前のコメントを参照。
     """
     return Float(
         content=ConditionalContainer(
@@ -235,7 +235,7 @@ def sync_cursors_to_filter(state: TuiState) -> None:
 
 
 def open_filter_dialog(state: TuiState) -> None:
-    """フィルタ modal を開く。選択肢を取り直し、現在の絞り込みにカーソルを合わせる。"""
+    """フィルタダイアログを開く。選択肢を取り直し、現在の絞り込みにカーソルを合わせる。"""
     dialog = state.issue_tab.filter_dialog
     dialog.status_choices = build_status_choices()
     dialog.assignee_choices = build_assignee_choices(

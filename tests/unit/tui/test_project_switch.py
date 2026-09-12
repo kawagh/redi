@@ -55,7 +55,7 @@ def _fake_tab(on_activate: Callable[[TuiState], None]) -> TabView:
 
 
 class TestOpenProjectDialog:
-    """open_project_modal() は選択肢を構築し現在プロジェクトへカーソルを合わせる"""
+    """open_project_dialog() は選択肢を構築し現在プロジェクトへカーソルを合わせる"""
 
     def test_cursor_on_switched_project(self, monkeypatch):
         """切替済みならそのプロジェクトの位置にカーソルが乗り active_value が入る"""
@@ -103,7 +103,7 @@ class TestOpenProjectDialog:
         assert state.project_dialog.active_value is None
 
     def test_request_error_goes_to_error_dialog(self, monkeypatch):
-        """取得失敗時は error modal に流し、モーダルは開かない"""
+        """取得失敗時は エラーダイアログに流し、ダイアログは開かない"""
 
         def boom(**kwargs) -> list[Project]:
             raise requests.exceptions.RequestException("down")

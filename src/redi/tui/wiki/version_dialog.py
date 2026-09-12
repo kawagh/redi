@@ -1,4 +1,4 @@
-"""wiki タブの h で開く版選択 modal と、選んだ版を表示する操作。
+"""wiki タブの h で開く版選択ダイアログと、選んだ版を表示する操作。
 
 Redmine の REST API には wiki の版一覧を返すエンドポイントが無い。最新版の番号は
 一覧 (`/wiki/index.json`) の `version` で分かるので、1..最新 を並べて選ばせる。
@@ -36,7 +36,7 @@ def latest_version(page: WikiPage | None) -> int | None:
 
 
 def version_label(version: int, latest: int) -> str:
-    """版の表示ラベル。最新版には (最新) を添える。差分 modal の列でも使う。"""
+    """版の表示ラベル。最新版には (最新) を添える。差分ダイアログの列でも使う。"""
     if version == latest:
         return messages.tui_wiki_version_latest_label.format(version=version)
     return messages.tui_wiki_version_label.format(version=version)

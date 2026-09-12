@@ -27,7 +27,7 @@ class _FakeTask:
 
 
 class _Harness:
-    """ResizeWatcher とその周辺 (端末行数・modal 状態・予約) をまとめて操作する。"""
+    """ResizeWatcher とその周辺 (端末行数・ダイアログ状態・予約) をまとめて操作する。"""
 
     def __init__(self, state: TuiState, rows: int = 30, ready: bool = True):
         self.state = state
@@ -145,10 +145,10 @@ class TestDebounce:
 
 
 class TestDialogSuspendsRefetch:
-    """modal 表示中は再取得を保留する"""
+    """ダイアログ表示中は再取得を保留する"""
 
     def test_no_refetch_while_dialog_is_open(self):
-        """modal 中は page_size だけ更新し、一覧の取り直しは予約しない
+        """ダイアログ中は page_size だけ更新し、一覧の取り直しは予約しない
 
         y/N の削除確認中に一覧が入れ替わると、確定時に別の行を消してしまうため。
         """
@@ -163,10 +163,10 @@ class TestDialogSuspendsRefetch:
         assert harness.tasks == []
 
     def test_dialog_opened_during_wait_skips_reload(self, monkeypatch):
-        """予約後の待機中に modal が開いたら発火時に取り直さない
+        """予約後の待機中にダイアログが開いたら発火時に取り直さない
 
         予約時のガードだけでは 0.3 秒の待機中に開いた y/N 確認をすり抜け、
-        確定時に別の行を消してしまう。タブは stale のまま残り、modal を
+        確定時に別の行を消してしまう。タブは stale のまま残り、ダイアログを
         閉じた後の描画で予約し直す。
         """
         called = []
@@ -189,7 +189,7 @@ class TestDialogSuspendsRefetch:
         assert len(harness.tasks) == scheduled + 1
 
     def test_refetches_after_dialog_closes(self):
-        """modal を閉じた後の再描画で取り直しを予約する"""
+        """ダイアログを閉じた後の再描画で取り直しを予約する"""
         harness = _Harness(_state(), rows=30)
         harness.render()
         harness.ready = False

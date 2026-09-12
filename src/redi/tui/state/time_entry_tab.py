@@ -28,7 +28,7 @@ class TimeEntryFilter:
 
 @dataclass
 class TimeEntryFilterDialogState:
-    """time_entry タブの filter modal の表示・選択肢キャッシュ・カーソル状態。"""
+    """time_entry タブの フィルタダイアログの表示・選択肢キャッシュ・カーソル状態。"""
 
     show: bool = False
     user_choices: list[tuple[str | None, str]] = field(default_factory=list)

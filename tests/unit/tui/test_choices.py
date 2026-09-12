@@ -3,7 +3,7 @@ from redi.tui import choices as choices_module
 
 
 class TestBuildUserChoices:
-    """build_user_choices() は time_entry フィルタモーダルのユーザー選択肢を組み立てる"""
+    """build_user_choices() は time_entry フィルタダイアログのユーザー選択肢を組み立てる"""
 
     def test_returns_specials_only_when_project_id_is_none(self):
         """project_id が None のとき (指定なし) + (自分) のみ返す"""
@@ -48,7 +48,7 @@ class TestBuildUserChoices:
 
 
 class TestBuildAssigneeChoices:
-    """build_assignee_choices() は issue フィルタモーダルの担当者選択肢を組み立てる"""
+    """build_assignee_choices() は issue フィルタダイアログの担当者選択肢を組み立てる"""
 
     def test_returns_specials_only_when_project_id_is_none(self):
         """project_id が None のとき (指定なし) + (自分) + (未割当) のみ返す"""
@@ -93,7 +93,7 @@ class TestBuildAssigneeChoices:
 
 
 class TestBuildTrackerChoices:
-    """build_tracker_choices() は issue フィルタモーダルのトラッカー選択肢を組み立てる"""
+    """build_tracker_choices() は issue フィルタダイアログのトラッカー選択肢を組み立てる"""
 
     def test_first_choice_is_unspecified(self, monkeypatch):
         """先頭は絞り込み無しを表す特殊指定 (None) で、以降に tracker が取得順に並ぶ"""
@@ -110,7 +110,7 @@ class TestBuildTrackerChoices:
 
 
 class TestBuildQueryChoices:
-    """build_query_choices() はフィルタモーダルのクエリ選択肢を組み立てる"""
+    """build_query_choices() はフィルタダイアログのクエリ選択肢を組み立てる"""
 
     def test_lists_queries_after_unspecified(self, monkeypatch):
         """先頭に (指定なし) を置き、クエリは API に渡せる文字列 id と名前で並ぶ"""

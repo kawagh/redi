@@ -1,4 +1,4 @@
-"""フィルタ modal の選択肢を組み立てる。"""
+"""フィルタダイアログの選択肢を組み立てる。"""
 
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.membership import fetch_project_users
@@ -8,7 +8,7 @@ from redi.service.query_service import list_queries_for_project
 
 
 def build_status_choices() -> list[tuple[str | None, str]]:
-    """フィルタモーダルのステータス選択肢。先頭の3つは Redmine の特殊指定。"""
+    """フィルタダイアログのステータス選択肢。先頭の3つは Redmine の特殊指定。"""
     choices: list[tuple[str | None, str]] = [
         (None, messages.tui_filter_status_open_default),
         ("*", messages.tui_filter_status_all),
@@ -20,7 +20,7 @@ def build_status_choices() -> list[tuple[str | None, str]]:
 
 
 def build_tracker_choices() -> list[tuple[str | None, str]]:
-    """フィルタモーダルのトラッカー選択肢。先頭は特殊指定 (未設定)。"""
+    """フィルタダイアログのトラッカー選択肢。先頭は特殊指定 (未設定)。"""
     choices: list[tuple[str | None, str]] = [
         (None, messages.tui_filter_unspecified),
     ]
@@ -30,7 +30,7 @@ def build_tracker_choices() -> list[tuple[str | None, str]]:
 
 
 def build_query_choices(project_id: str | None) -> list[tuple[str | None, str]]:
-    """フィルタモーダルのクエリ選択肢。先頭は特殊指定 (未設定)。
+    """フィルタダイアログのクエリ選択肢。先頭は特殊指定 (未設定)。
 
     現在のプロジェクトで使えるクエリ (プロジェクト固有 + グローバル) だけを出す。
     """
@@ -45,7 +45,7 @@ def build_query_choices(project_id: str | None) -> list[tuple[str | None, str]]:
 def build_assignee_choices(
     project_id: str | None, me_id: str | None = None
 ) -> list[tuple[str | None, str]]:
-    """フィルタモーダルの担当者選択肢。先頭は特殊指定 (未設定/me/未割当)。
+    """フィルタダイアログの担当者選択肢。先頭は特殊指定 (未設定/me/未割当)。
 
     `me_id` が指定されていれば、`fetch_project_users` の結果から自身を除外して
     「自分」項目との重複表示を避ける。
@@ -67,7 +67,7 @@ def build_assignee_choices(
 def build_user_choices(
     project_id: str | None, me_id: str | None = None
 ) -> list[tuple[str | None, str]]:
-    """time_entry フィルタモーダルのユーザー選択肢。先頭は特殊指定 (未設定/自分)。
+    """time_entry フィルタダイアログのユーザー選択肢。先頭は特殊指定 (未設定/自分)。
 
     `me_id` が指定されていれば、`fetch_project_users` の結果から自身を除外して
     「自分」項目との重複表示を避ける。

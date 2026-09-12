@@ -1,4 +1,4 @@
-"""P で開くプロファイル切替 modal を開く/切り替える操作。"""
+"""P で開くプロファイル切替ダイアログを開く/切り替える操作。"""
 
 from prompt_toolkit.filters import FilterOrBool
 from prompt_toolkit.layout.containers import Float
@@ -20,7 +20,7 @@ def build_profile_dialog(state: TuiState, show: FilterOrBool) -> Float:
 
 
 def open_profile_dialog(state: TuiState) -> None:
-    """プロファイル切替モーダルを開く。プロファイルが無ければ error modal に流す。"""
+    """プロファイル切替ダイアログを開く。プロファイルが無ければ エラーダイアログに流す。"""
     dialog = state.profile_dialog
     profile_names = list_profile_names()
     if not profile_names:

@@ -9,7 +9,7 @@ PROFILES = ["main", "sub", "broken"]
 
 
 class TestOpenProfileDialog:
-    """open_profile_modal() は選択肢を構築し現在プロファイルへカーソルを合わせる"""
+    """open_profile_dialog() は選択肢を構築し現在プロファイルへカーソルを合わせる"""
 
     def test_cursor_on_current_profile(self, monkeypatch):
         """現在のプロファイルの位置にカーソルが乗り active_value が入る"""
@@ -36,7 +36,7 @@ class TestOpenProfileDialog:
         assert state.profile_dialog.active_value is None
 
     def test_no_profiles_goes_to_error_dialog(self, monkeypatch):
-        """プロファイルが1つも無ければ error modal に流し、モーダルは開かない"""
+        """プロファイルが1つも無ければ エラーダイアログに流し、ダイアログは開かない"""
         monkeypatch.setattr(profile_dialog, "list_profile_names", list)
         state = TuiState()
 
@@ -69,7 +69,7 @@ class TestRequestProfileSwitch:
         assert state.profile_dialog.show is False
 
     def test_same_profile_does_nothing(self, monkeypatch):
-        """現在と同じプロファイルを選んだ場合は再起動せずモーダルを閉じるだけ"""
+        """現在と同じプロファイルを選んだ場合は再起動せずダイアログを閉じるだけ"""
         monkeypatch.setattr(config, "current_profile", "main")
         state = TuiState()
         state.profile_dialog.show = True
@@ -81,7 +81,7 @@ class TestRequestProfileSwitch:
         assert state.error_dialog is None
 
     def test_profile_without_credentials_goes_to_error_dialog(self, monkeypatch):
-        """接続情報が欠けたプロファイルは切り替えずに error modal を出す"""
+        """接続情報が欠けたプロファイルは切り替えずに エラーダイアログを出す"""
         monkeypatch.setattr(config, "current_profile", "main")
         monkeypatch.setattr(
             profile_dialog, "profile_has_credentials", lambda name: False

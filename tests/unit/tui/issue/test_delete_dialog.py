@@ -27,7 +27,7 @@ def deleted(monkeypatch) -> list[str]:
 
 
 def _open(state: TuiState, ids: list[int], *, cursor: int, input_text: str) -> None:
-    """id が ids の issue 一覧を用意し、cursor 行を対象に modal を開いて入力する。"""
+    """id が ids の issue 一覧を用意し、cursor 行を対象にダイアログを開いて入力する。"""
     state.issue_tab.issues = cast(
         list[Issue], [{"id": i, "subject": f"subject{i}"} for i in ids]
     )
@@ -38,7 +38,7 @@ def _open(state: TuiState, ids: list[int], *, cursor: int, input_text: str) -> N
 
 
 class TestOpenDeleteDialog:
-    """open_delete_modal() は対象 issue 情報をモーダル状態に書き込む"""
+    """open_delete_dialog() は対象 issue 情報をダイアログ状態に書き込む"""
 
     def test_opens_with_target_id_and_subject(self):
         """カーソル位置の issue を target_id/target_subject に保持する"""
@@ -61,7 +61,7 @@ class TestOpenDeleteDialog:
         assert state.issue_tab.delete_dialog.notice is None
 
     def test_returns_false_when_empty(self):
-        """issues が空のときは modal を開かず False"""
+        """issues が空のときはダイアログを開かず False"""
         state = TuiState()
         assert open_delete_dialog(state) is False
         assert state.issue_tab.delete_dialog.show is False
@@ -99,7 +99,7 @@ class TestValidateInput:
 
 
 class TestConfirmDelete:
-    """confirm_delete() は modal の入力 id が対象と一致したら削除する"""
+    """confirm_delete() はダイアログの入力 id が対象と一致したら削除する"""
 
     def test_removes_entry_when_id_matches(self, deleted):
         """入力が target_id と一致すれば削除を要求し pop / total_count -1"""
@@ -161,7 +161,7 @@ class TestConfirmDelete:
         ids=["issue_missing", "api_failure"],
     )
     def test_flashes_reason_on_failure(self, monkeypatch, error, expected_in_flash):
-        """削除に失敗したら一覧を変えず、modal を閉じて理由を flash_message に出す"""
+        """削除に失敗したら一覧を変えず、ダイアログを閉じて理由を flash_message に出す"""
         state = TuiState()
         _open(state, [1], cursor=0, input_text="1")
 

@@ -1,4 +1,4 @@
-"""issue タブの F で開く検索 modal のレイアウト・描画と、開く/閉じる/確定する操作。
+"""issue タブの F で開く検索ダイアログのレイアウト・描画と、開く/閉じる/確定する操作。
 
 `/` のバッファ内検索と違い、Redmine の検索 API を叩いてイシュー一覧そのものを
 置き換える。HTTP は `service.search_service` に任せ、ここでは入力と状態だけを扱う。
@@ -37,7 +37,7 @@ def render_find_dialog(state: TuiState) -> Renderable:
 
 
 def build_find_dialog(state: TuiState, show: FilterOrBool) -> Float:
-    """検索 modal の Float を組み立てる。"""
+    """検索ダイアログの Float を組み立てる。"""
     return Float(
         content=ConditionalContainer(
             content=VSplit(
@@ -62,14 +62,14 @@ def build_find_dialog(state: TuiState, show: FilterOrBool) -> Float:
 
 
 def open_find_dialog(state: TuiState) -> None:
-    """検索 modal を開く。直前のクエリで初期化して打ち直しを省く。"""
+    """検索ダイアログを開く。直前のクエリで初期化して打ち直しを省く。"""
     dialog = state.issue_tab.find_dialog
     dialog.show = True
     dialog.input_text = state.issue_tab.find.query
 
 
 def close_find_dialog(state: TuiState) -> None:
-    """検索 modal を閉じて入力をクリアする。"""
+    """検索ダイアログを閉じて入力をクリアする。"""
     dialog = state.issue_tab.find_dialog
     dialog.show = False
     dialog.input_text = ""

@@ -46,10 +46,10 @@ class TestEscapeClearsSearch:
 
 
 class TestFindKey:
-    """F は issue タブでだけ検索 modal を開く"""
+    """F は issue タブでだけ検索ダイアログを開く"""
 
     def test_opens_find_dialog_on_issue_tab(self):
-        """issues タブで F を押すと検索 modal が開く"""
+        """issues タブで F を押すと検索ダイアログが開く"""
         state = TuiState()
         state.tab = "issues"
 
@@ -58,7 +58,7 @@ class TestFindKey:
         assert state.issue_tab.find_dialog.show is True
 
     def test_does_nothing_on_other_tabs(self):
-        """wiki タブには検索がないので F を押しても modal は開かない"""
+        """wiki タブには検索がないので F を押してもダイアログは開かない"""
         state = TuiState()
         state.tab = "wiki"
 
@@ -67,7 +67,7 @@ class TestFindKey:
         assert state.issue_tab.find_dialog.show is False
 
     def test_find_dialog_disables_normal_keys(self):
-        """検索 modal 表示中は通常モードのキーが効かない"""
+        """検索ダイアログ表示中は通常モードのキーが効かない"""
         state = TuiState()
         state.tab = "issues"
         state.issue_tab.find_dialog.show = True
@@ -91,7 +91,7 @@ class TestWikiVersionKey:
         return state
 
     def test_opens_version_dialog(self):
-        """wiki タブで h を押すと版選択 modal が開く"""
+        """wiki タブで h を押すと版選択ダイアログが開く"""
         state = self._wiki_state()
 
         _handler(_kb(state), ("h",))(None)
@@ -99,7 +99,7 @@ class TestWikiVersionKey:
         assert state.wiki_tab.version_dialog.show is True
 
     def test_d_opens_diff_dialog(self):
-        """wiki タブで d を押すと比較する版を選ぶ modal が開く"""
+        """wiki タブで d を押すと比較する版を選ぶダイアログが開く"""
         state = self._wiki_state()
 
         _handler(_kb(state), ("d",))(None)
@@ -107,7 +107,7 @@ class TestWikiVersionKey:
         assert state.wiki_tab.diff_dialog.show is True
 
     def test_does_nothing_on_other_tabs(self):
-        """issues タブで h を押しても版選択 modal は開かない (ページ送りのまま)"""
+        """issues タブで h を押しても版選択ダイアログは開かない (ページ送りのまま)"""
         state = TuiState()
         state.tab = "issues"
 
@@ -116,7 +116,7 @@ class TestWikiVersionKey:
         assert state.wiki_tab.version_dialog.show is False
 
     def test_version_dialog_disables_normal_keys(self):
-        """版選択 modal 表示中は通常モードのキーが効かない"""
+        """版選択ダイアログ表示中は通常モードのキーが効かない"""
         state = self._wiki_state()
         state.wiki_tab.version_dialog.show = True
 

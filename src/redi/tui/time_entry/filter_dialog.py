@@ -1,4 +1,4 @@
-"""time_entries タブの f で開くフィルタ modal のレイアウトと描画。"""
+"""time_entries タブの f で開くフィルタダイアログのレイアウトと描画。"""
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import FilterOrBool
@@ -44,14 +44,14 @@ def filter_column_cursor_y(dialog: TimeEntryFilterDialogState) -> int:
 
 
 def build_filter_dialog(state: TuiState, show: FilterOrBool) -> Float:
-    """time_entries タブのフィルタ modal の Float を組み立てる。
+    """time_entries タブのフィルタダイアログの Float を組み立てる。
 
     プロジェクトのユーザーが多いと選択肢が端末高を超えるため、列に
     `get_cursor_position` を渡してカーソル行が画面内に収まるようスクロール
     させる。ヒントは列とは別の Window に置き、スクロールしても常に見せる。
 
     Frame を VSplit で挟んで左右に幅1の空白パディングを置く理由は
-    `run_issue_tui` の help_float 手前のコメントを参照。
+    `run_issue_tui` の help_dialog 手前のコメントを参照。
     """
     return Float(
         content=ConditionalContainer(
@@ -96,7 +96,7 @@ def build_filter_dialog(state: TuiState, show: FilterOrBool) -> Float:
 
 
 def open_filter_dialog(state: TuiState) -> None:
-    """フィルタ modal を開く。選択肢を取り直し、現在の絞り込みにカーソルを合わせる。"""
+    """フィルタダイアログを開く。選択肢を取り直し、現在の絞り込みにカーソルを合わせる。"""
     dialog = state.time_entry_tab.filter_dialog
     dialog.user_choices = build_user_choices(state.effective_project_id(), state.me_id)
     dialog.user_cursor = 0

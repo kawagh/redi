@@ -58,7 +58,7 @@ def _column_text(state: TuiState, column: WikiDiffColumn) -> str:
 
 
 class TestDiffDialog:
-    """d で開く modal は比較前と比較後を 2 列で選び、開いた時点で妥当な組が入っている"""
+    """d で開くダイアログは比較前と比較後を 2 列で選び、開いた時点で妥当な組が入っている"""
 
     def test_from_is_previous_and_to_is_latest_when_viewing_latest(self):
         """最新版を見ながらの d は 比較前=1 つ前の版、比較後=最新版 から始まる"""
@@ -96,7 +96,7 @@ class TestDiffDialog:
         assert dialog.versions[dialog.cursors["to"]] == 2
 
     def test_single_version_flashes(self):
-        """版が 1 つしか無ければ modal を開かず flash で知らせる"""
+        """版が 1 つしか無ければダイアログを開かず flash で知らせる"""
         state = _state([_page("Home", version=1)])
 
         assert open_diff_dialog(state) is False
@@ -162,7 +162,7 @@ class TestDiffDialogCursor:
 
 
 class TestDiff:
-    """modal で選んだ 2 版の差分を右ペインで見られる"""
+    """ダイアログで選んだ 2 版の差分を右ペインで見られる"""
 
     def _rendered(self, state: TuiState) -> str:
         return "".join(text for _, text in WIKI_TAB.render_preview(state))
@@ -190,7 +190,7 @@ class TestDiff:
         return state
 
     def test_apply_shows_diff_and_keeps_dialog(self):
-        """Enter で両列の版の差分を出す。フィルタと同じく modal は開いたまま"""
+        """Enter で両列の版の差分を出す。フィルタと同じくダイアログは開いたまま"""
         state = self._state_with_texts()
         self._open_with(state, 2, 3)
 
@@ -265,7 +265,7 @@ class TestDiff:
         assert styles["-b"] == "fg:ansired"
 
     def test_clear_returns_to_text(self):
-        """c で差分をやめて本文に戻る。modal は開いたまま"""
+        """c で差分をやめて本文に戻る。ダイアログは開いたまま"""
         state = self._applied(2, 3)
 
         clear_diff(state)

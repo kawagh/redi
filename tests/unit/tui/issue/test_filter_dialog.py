@@ -1,4 +1,4 @@
-"""issues タブの f で開くフィルタ modal の単体テスト。"""
+"""issues タブの f で開くフィルタダイアログの単体テスト。"""
 
 import pytest
 from prompt_toolkit.key_binding import KeyBindings
@@ -53,7 +53,7 @@ class TestShiftFocus:
 
 
 class TestOpenFilterDialog:
-    """open_filter_modal() は選択肢を取り直して現在の絞り込みにカーソルを合わせる"""
+    """open_filter_dialog() は選択肢を取り直して現在の絞り込みにカーソルを合わせる"""
 
     @pytest.mark.parametrize(
         ("issue_filter", "section", "expected_cursor"),
@@ -86,7 +86,7 @@ def _handler(kb: KeyBindings, keys: tuple):
 
 
 class TestFilterDialogKeys:
-    """フィルタ modal のキー操作で tracker を絞り込める"""
+    """フィルタダイアログのキー操作で tracker を絞り込める"""
 
     def _kb(self, state: TuiState, monkeypatch) -> KeyBindings:
         monkeypatch.setattr(

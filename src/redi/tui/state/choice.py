@@ -1,4 +1,4 @@
-"""一覧から 1 つ選ぶ modal の状態。
+"""一覧から 1 つ選ぶダイアログの状態。
 
 wiki タブ (版一覧) と TuiState (プロジェクト / プロファイル切替) の両方が使うので、
 __init__ に置くと wiki.py との間で循環 import になる。単独のモジュールに置き、
@@ -10,9 +10,9 @@ from dataclasses import dataclass, field
 
 @dataclass
 class ChoiceDialogState:
-    """一覧から1つ選ぶ modal (p のプロジェクト切替 / P のプロファイル切替) の状態。
+    """一覧から1つ選ぶダイアログ (p のプロジェクト切替 / P のプロファイル切替) の状態。
 
-    描画とキーバインドは `tui.choice_modal` が共通で持つ。
+    描画とキーバインドは `tui.choice_dialog` が共通で持つ。
     """
 
     show: bool = False

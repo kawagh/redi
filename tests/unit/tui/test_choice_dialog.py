@@ -1,4 +1,4 @@
-"""プロジェクト切替 / プロファイル切替が共有する選択肢 modal の単体テスト。"""
+"""プロジェクト切替 / プロファイル切替が共有する選択肢ダイアログの単体テスト。"""
 
 from prompt_toolkit.key_binding import KeyBindings
 
@@ -39,7 +39,7 @@ def _handler(kb: KeyBindings, keys: tuple):
 
 
 class TestChoiceDialogKeys:
-    """選択肢 modal は先頭 / 末尾へ一手で飛べる"""
+    """選択肢ダイアログは先頭 / 末尾へ一手で飛べる"""
 
     def _setup(self, labels: list[str]) -> tuple[KeyBindings, ChoiceDialogState]:
         dialog = ChoiceDialogState(
