@@ -17,6 +17,7 @@ from redi.tui.state import (
     TuiPosition,
     TuiResult,
     TuiState,
+    realign_page,
 )
 from redi.tui.tab import TabView, noop
 
@@ -339,6 +340,23 @@ def _on_reload(state: TuiState) -> None:
         state.issue_tab.cursor = 0
 
 
+def _on_resize(state: TuiState) -> None:
+    """新しい page_size でページを取り直す。選択していた issue は選ばれたまま保つ。
+
+    offset を新しい page_size のページ境界へ揃えるので、リサイズ後も
+    ステータスバーの Page 表示と実データが一致する。通信エラーは呼び出し元
+    (ResizeWatcher) に投げ、失敗時は一覧を書き換えない。
+    """
+    offset, cursor = realign_page(
+        state.issue_tab.offset, state.issue_tab.cursor, state.page_size
+    )
+    page = fetch_issues_with_filter(state, offset)
+    state.issue_tab.offset = offset
+    state.issue_tab.issues = page["issues"]
+    state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
+    state.issue_tab.cursor = min(cursor, max(0, len(state.issue_tab.issues) - 1))
+
+
 def _on_page_forward(state: TuiState) -> None:
     next_offset = state.issue_tab.offset + state.page_size
     page = fetch_issues_with_filter(state, next_offset)
@@ -453,6 +471,7 @@ ISSUE_TAB = TabView(
     on_open_web_by_id=_on_open_web_by_id,
     on_activate=noop,
     on_reload=_on_reload,
+    on_resize=_on_resize,
     on_action_key=_on_action_key,
     on_search=_on_search,
     get_cursor_y=lambda state: state.issue_tab.cursor,

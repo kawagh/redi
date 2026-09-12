@@ -7,10 +7,15 @@ class Ja(MessagesProto):
     # ---- profile / config ----
     profile_created = "profile '{name}' を作成しました"
     profile_already_exists = "profile '{name}' は既に存在します"
+    profile_not_found = "profile '{name}' は {path} にありません"
+    profile_did_you_mean = "もしかして: {names}"
+    profile_available = "利用可能なプロファイル: {names}"
+    profile_list_hint = "(一覧は `redi config --full` で確認できます)"
     default_profile_set = "default_profileを {name} に設定しました"
     default_project_id_set = "default_project_idを {value} に設定しました{suffix}"
     editor_set = "editorを {value} に設定しました{suffix}"
     language_set = "languageを {value} に設定しました{suffix}"
+    text_formatting_set = "text_formattingを {value} に設定しました{suffix}"
     redmine_api_key_set = "redmine_api_keyを設定しました{suffix}"
     redmine_url_set = "redmine_urlを {value} に設定しました{suffix}"
     wiki_project_id_set = "wiki_project_idを {value} に設定しました{suffix}"
@@ -62,6 +67,7 @@ class Ja(MessagesProto):
         "Wikiページが見つかりません: {title} (version={version})"
     )
     wiki_page_does_not_exist = "Wikiページが存在しません"
+    wiki_page_already_exists = "Wikiページは既に存在します: {title} (更新するには wiki update を使ってください)"
     parent_page_not_found = "親ページが見つかりません: {title}"
     file_not_found = "ファイルが見つかりません: {path}"
     attachment_not_found = "添付ファイルが見つかりません: #{id}"
@@ -289,6 +295,7 @@ class Ja(MessagesProto):
     prompt_wiki_project_id = "wiki_project_id: "
     prompt_editor = "editor: "
     prompt_select_language = "言語を選択"
+    prompt_select_text_formatting = "Redmine のテキスト書式を選択"
     prompt_start_date = "開始日（YYYY-MM-DD、省略可）: "
     prompt_due_date = "期日（YYYY-MM-DD、省略可）: "
     prompt_estimated_hours = "予定工数（例: 1.5 (h)）: "
@@ -403,6 +410,7 @@ class Ja(MessagesProto):
     field_wiki_project_id = "Wikiプロジェクト (wiki_project_id)"
     field_editor = "エディタ (editor)"
     field_language = "言語 (language)"
+    field_text_formatting = "テキスト書式 (text_formatting)"
     field_set_default_profile = "デフォルトプロファイルにする (default_profile)"
 
     # ---- sharing options ----
@@ -542,6 +550,7 @@ class Ja(MessagesProto):
     )
     tui_status_search_active = "/{query} Esc:解除"
     tui_flash_reloaded = "再読込しました"
+    tui_flash_resize_reload_failed = "リサイズ後の再取得に失敗しました: {error}"
     tui_flash_find_cleared_by_filter = "検索を解除してフィルタに切り替えました"
     tui_filter_unspecified = "(指定なし)"
     tui_filter_status_open_default = "open (デフォルト)"
@@ -622,12 +631,19 @@ class Ja(MessagesProto):
     arg_help_debug = "デバッグログを有効にする"
     arg_help_debug_tui = "TUI のスクリーン内容を YAML 形式でログ出力する"
     arg_help_profile = (
-        "使用するプロファイル名（config.tomlのdefault_profileを一時的に上書き）"
+        "使用するプロファイル名（config.tomlのdefault_profileを一時的に上書き。"
+        "一覧は redi config --full）"
     )
     arg_help_refresh = "キャッシュを読まずに取得し直す（トラッカーやカスタムフィールドの候補を更新する）"
 
     # ---- argparse helps (common) ----
-    arg_help_full_json = "JSON形式で全情報を出力"
+    arg_help_format = "出力形式（既定: plain）"
+    arg_help_format_list = (
+        "出力形式（既定: plain）。"
+        "tsv はヘッダー行 + タブ区切りで、パイプや表計算ソフト向け"
+        "（ヘッダー名は英語固定）"
+    )
+    arg_help_full_json = "JSON形式で全情報を出力（--format json と同じ）"
     arg_help_skip_confirm = "確認プロンプトをスキップ"
     arg_help_open_web = "ブラウザでRedmineのページを開く"
     arg_help_project_id = "プロジェクトID"
@@ -688,6 +704,7 @@ class Ja(MessagesProto):
         "カスタムクエリIDでフィルタリング"
         "（`redi query`で取得可、--project_id 以外のフィルタと併用不可）"
     )
+    error_format_tsv_list_only = "--format tsv は list 系コマンドでのみ使えます（plain か json を指定してください）"
     error_query_id_conflicts_filters = (
         "--query_id は {options} と併用できません"
         "（カスタムクエリの条件が優先され {options} は無視されます）"
@@ -697,7 +714,8 @@ class Ja(MessagesProto):
     arg_help_issue_list = "イシュー一覧"
     arg_help_issue_view = "イシュー詳細"
     arg_help_issue_view_id = "イシューID"
-    arg_help_issue_include = "追加情報（children,attachments,relations,changesets,journals,watchers,allowed_statuses）"
+    arg_help_issue_include = "追加情報をカンマ区切りで指定（{choices}）"
+    error_invalid_issue_include = "不明な値です: {values}（指定可能: {choices}）"
     arg_help_issue_create = "イシュー作成"
     arg_help_issue_subject_arg = "イシューの題名（省略で対話的に入力）"
     arg_help_issue_tracker_id = "トラッカーID"
@@ -777,6 +795,9 @@ class Ja(MessagesProto):
     arg_help_config_set_wiki_project_id = "Wiki用プロジェクトIDを設定"
     arg_help_config_set_editor = "エディタを設定"
     arg_help_config_set_language = "言語を設定 (en または ja)"
+    arg_help_config_set_text_formatting = (
+        "Redmine のテキスト書式を設定 (markdown または textile)"
+    )
     arg_help_config_set_api_key = "Redmine APIキーを設定"
     arg_help_config_set_url = "Redmine URLを設定"
     arg_help_config_set_default_profile = "デフォルトプロファイルを設定"
@@ -788,6 +809,7 @@ class Ja(MessagesProto):
     arg_help_config_wiki_project_id = "Wiki用プロジェクトID"
     arg_help_config_editor = "エディタ"
     arg_help_config_language = "言語 (en または ja)"
+    arg_help_config_text_formatting = "Redmine のテキスト書式 (markdown または textile)"
     arg_help_config_set_default_flag = "作成したプロファイルをdefault_profileに設定"
 
     # ---- argparse helps (init) ----
@@ -1022,6 +1044,10 @@ class Ja(MessagesProto):
     config_profile_source_default = "既定"
     config_profile_source_option = "--profile 指定"
     config_current_profile_comment = "現在のプロファイル（{source}）"
+    config_top_level_api_key_warning = (
+        "警告: {path} のトップレベルに書かれた redmine_api_key は認証に使われません。"
+        "プロファイル（[profile_name] テーブル）の中に書いてください"
+    )
 
     # ---- TUI help labels (sections / common) ----
     tui_help_section_navigation = "移動"

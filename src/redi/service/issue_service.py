@@ -18,7 +18,7 @@ from redi.service.attachment_service import upload_file
 from redi.service.project_service import resolve_project_id
 
 
-def issue_url(issue_id: str, note_number: int | None = None) -> str:
+def issue_url(issue_id: str | int, note_number: int | None = None) -> str:
     """イシューの Web UI 上の URL を組み立てる。"""
     url = f"{config.redmine_url}/issues/{issue_id}"
     if note_number is not None:
@@ -43,20 +43,28 @@ def list_issues_page(
     判断できるよう `total_count` / `offset` / `limit` を落とさずに返す。
 
     Raises:
+        QueryNotFoundException: 指定したカスタムクエリが存在しない (HTTP 404)
         ProjectNotFoundException: 指定したプロジェクトが存在しない (HTTP 404)
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
-    return issue_api.fetch_issues_page(
-        project_id=project_id,
-        fixed_version_id=fixed_version_id,
-        assigned_to=assigned_to,
-        status_id=status_id,
-        tracker_id=tracker_id,
-        priority_id=priority_id,
-        query_id=query_id,
-        limit=limit,
-        offset=offset,
-    )
+    try:
+        return issue_api.fetch_issues_page(
+            project_id=project_id,
+            fixed_version_id=fixed_version_id,
+            assigned_to=assigned_to,
+            status_id=status_id,
+            tracker_id=tracker_id,
+            priority_id=priority_id,
+            query_id=query_id,
+            limit=limit,
+            offset=offset,
+        )
+    except IssueListNotFoundException as e:
+        # project_id と query_id を同時に指定した 404 は api 層では切り分けられない。
+        # クエリが実在するならプロジェクト側、しないならクエリ側が原因と決める
+        if _query_exists(e.query_id):
+            raise ProjectNotFoundException(e.project_id) from None
+        raise QueryNotFoundException(e.query_id) from None
 
 
 def list_issues(
@@ -77,24 +85,17 @@ def list_issues(
         ProjectNotFoundException: 指定したプロジェクトが存在しない (HTTP 404)
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
-    try:
-        return issue_api.fetch_issues(
-            project_id=project_id,
-            fixed_version_id=fixed_version_id,
-            assigned_to=assigned_to,
-            status_id=status_id,
-            tracker_id=tracker_id,
-            priority_id=priority_id,
-            query_id=query_id,
-            limit=limit,
-            offset=offset,
-        )
-    except IssueListNotFoundException as e:
-        # project_id と query_id を同時に指定した 404 は api 層では切り分けられない。
-        # クエリが実在するならプロジェクト側、しないならクエリ側が原因と決める
-        if _query_exists(e.query_id):
-            raise ProjectNotFoundException(e.project_id) from None
-        raise QueryNotFoundException(e.query_id) from None
+    return list_issues_page(
+        project_id=project_id,
+        fixed_version_id=fixed_version_id,
+        assigned_to=assigned_to,
+        status_id=status_id,
+        tracker_id=tracker_id,
+        priority_id=priority_id,
+        query_id=query_id,
+        limit=limit,
+        offset=offset,
+    )["issues"]
 
 
 def _query_exists(query_id: str) -> bool:

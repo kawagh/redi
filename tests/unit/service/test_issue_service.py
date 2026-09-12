@@ -101,10 +101,12 @@ class TestListIssuesNotFound:
     def stub_not_found(self, monkeypatch):
         """イシュー取得を必ず IssueListNotFoundException にする"""
 
-        def fake_fetch_issues(**kwargs):
+        def fake_fetch_issues_page(**kwargs):
             raise IssueListNotFoundException("demo", "5")
 
-        monkeypatch.setattr(issue_service.issue_api, "fetch_issues", fake_fetch_issues)
+        monkeypatch.setattr(
+            issue_service.issue_api, "fetch_issues_page", fake_fetch_issues_page
+        )
 
     def test_raises_query_not_found_when_query_is_missing(
         self, stub_not_found, monkeypatch

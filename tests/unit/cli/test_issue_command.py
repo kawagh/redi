@@ -21,6 +21,7 @@ from redi.cli.issue_command import update as update_module
 from redi.cli.issue_command import view as view_module
 from redi.cli.issue_command.create import IssueCreateArgs, handle_issue_create
 from redi.cli.issue_command.update import IssueUpdateArgs, handle_issue_update
+from redi.cli.shared_options import OutputFormat
 from redi.i18n import messages
 
 CREATED_ISSUE = {"id": 123, "subject": "件名"}
@@ -247,7 +248,7 @@ class TestIssueListNotFound:
         monkeypatch.setattr(view_module.issue_service, "list_issues_page", _raise)
 
         with pytest.raises(SystemExit) as exc_info:
-            view_module.list_issues(project_id="missing")
+            view_module.print_issues(project_id="missing")
 
         assert exc_info.value.code == 1
         assert (
@@ -267,7 +268,7 @@ class TestIssueListQueryNotFound:
         monkeypatch.setattr(view_module.issue_service, "list_issues_page", _raise)
 
         with pytest.raises(SystemExit) as exc_info:
-            view_module.list_issues(project_id="demo", query_id="5")
+            view_module.print_issues(project_id="demo", query_id="5")
 
         assert exc_info.value.code == 1
         err = capsys.readouterr().err
@@ -351,7 +352,7 @@ class TestIssueListTruncation:
         issues = [{"id": i, "subject": f"件名{i}"} for i in range(1, 26)]
         self._stub(monkeypatch, _page(issues, total_count=74))
 
-        view_module.list_issues()
+        view_module.print_issues()
 
         captured = capsys.readouterr()
         assert captured.out.count("\n") == 25
@@ -367,7 +368,7 @@ class TestIssueListTruncation:
         issues = [{"id": 1, "subject": "件名"}]
         self._stub(monkeypatch, _page(issues))
 
-        view_module.list_issues()
+        view_module.print_issues()
 
         assert capsys.readouterr().err == ""
 
@@ -376,7 +377,7 @@ class TestIssueListTruncation:
         issues = [{"id": i, "subject": f"件名{i}"} for i in range(26, 31)]
         self._stub(monkeypatch, _page(issues, total_count=74, offset=25))
 
-        view_module.list_issues(offset=25, limit=5)
+        view_module.print_issues(offset=25, limit=5)
 
         assert (
             messages.issue_list_truncated.format(start=26, end=30, total=74)
@@ -388,7 +389,7 @@ class TestIssueListTruncation:
         issues = [{"id": 1, "subject": "件名"}]
         self._stub(monkeypatch, _page(issues, total_count=74))
 
-        view_module.list_issues(full=True)
+        view_module.print_issues(fmt=OutputFormat.JSON)
 
         printed = json.loads(capsys.readouterr().out)
         assert printed["total_count"] == 74
@@ -414,9 +415,26 @@ VIEWED_ISSUE = cast(
         "updated_on": "2026-04-02T00:00:00Z",
         "journals": [
             {
+                "id": 238,
                 "user": {"name": "コメントした人"},
                 "created_on": "2026-04-29T02:26:43Z",
                 "notes": "テストコメント",
+            }
+        ],
+        "relations": [
+            {
+                "id": 13,
+                "issue_id": 42,
+                "issue_to_id": 162,
+                "relation_type": "blocks",
+                "delay": None,
+            }
+        ],
+        "attachments": [
+            {
+                "id": 40,
+                "filename": "sample.txt",
+                "content_url": "http://localhost:3001/attachments/download/40/sample.txt",
             }
         ],
     },
@@ -426,20 +444,53 @@ VIEWED_ISSUE = cast(
 class TestFormatIssueDetail:
     """`issue view` の整形出力"""
 
-    def test_shows_meta_table(self):
-        """件名の次にメタ情報を `[ラベル] 値` の表で出す (先頭はステータス)"""
+    @pytest.fixture(autouse=True)
+    def redmine_url(self, monkeypatch):
+        """URL の組み立てに使う Redmine の URL を固定する"""
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+
+    def test_shows_issue_url(self):
+        """件名の次の行にイシュー自身の URL を出す (`issue list` / `issue create` と揃える)"""
         lines = view_module.format_issue_detail(VIEWED_ISSUE)
 
         assert lines[0] == "#42 件名"
+        assert lines[1] == "http://localhost:3001/issues/42"
+
+    def test_shows_meta_table(self):
+        """URL の次にメタ情報を `[ラベル] 値` の表で出す (先頭はステータス)"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
         # ラベル列の幅は言語設定で変わるため、ラベルと値を前後から挟んで見る
-        assert lines[2].startswith(f"[{messages.meta_status}")
-        assert lines[2].endswith("] 終了")
+        assert lines[3].startswith(f"[{messages.meta_status}")
+        assert lines[3].endswith("] 終了")
 
     def test_separates_description(self):
         """メタ情報と説明の間は `----` で区切る"""
         lines = view_module.format_issue_detail(VIEWED_ISSUE)
 
         assert lines[lines.index("本文") - 1] == "----"
+
+    def test_shows_journal_id(self):
+        """コメントの行頭に journal_id を出す (`issue_journal update/delete` に渡せる)"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
+        assert "  238 [2026-04-29T02:26:43Z] コメントした人" in lines
+
+    def test_shows_relation_id(self):
+        """関係性の行頭に relation_id を出す (`relation view` に渡せる)"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
+        relation_line = lines[lines.index(messages.label_relations_header) + 1]
+        assert relation_line.startswith("  13 [")
+        assert "162" in relation_line
+
+    def test_shows_attachment_id(self):
+        """添付ファイルの行頭に attachment_id を出す (`attachment view` などに渡せる)"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
+        assert lines[lines.index(messages.label_attachments_header) + 1].startswith(
+            "  40 sample.txt "
+        )
 
 
 class TestViewIssueComments:
@@ -458,6 +509,57 @@ class TestViewIssueComments:
 
         assert "journals" in called["include"].split(",")
         assert "テストコメント" in capsys.readouterr().out
+
+
+class TestIssueViewInclude:
+    """`issue view --include` は有効値だけを受け付ける
+
+    Redmine は未知の include を黙って無視するため、送信前に弾かないと
+    タイポしても rc=0 で正常終了してしまう。`search --type` と同じ扱いにする。
+    """
+
+    def test_rejects_unknown_value(self, capsys):
+        """未知の値があれば送信前に exit 2 し、その値と指定可能な値を案内する"""
+        with pytest.raises(SystemExit) as e:
+            parse_issue_args(["issue", "view", "42", "--include", "journal"])
+
+        assert e.value.code == 2
+        err = capsys.readouterr().err
+        assert "journal" in err
+        assert "allowed_statuses" in err
+
+    def test_rejects_unknown_value_mixed_with_valid(self, capsys):
+        """有効値と混ざっていても未知の値があれば弾く"""
+        with pytest.raises(SystemExit):
+            parse_issue_args(["issue", "view", "42", "--include", "journals,bogus"])
+
+        assert "bogus" in capsys.readouterr().err
+
+    def test_accepts_valid_values(self):
+        """有効値をカンマ区切りで受け付け、前後の空白は取り除く"""
+        args = parse_issue_args(
+            ["issue", "view", "42", "--include", "children, watchers"]
+        )
+
+        assert args.include == ["children", "watchers"]
+
+    def test_passes_include_to_api_with_defaults(self, monkeypatch):
+        """指定した include を既定の relations,attachments,journals に足して取得する"""
+        called = {}
+        monkeypatch.setattr(
+            view_module.issue_service,
+            "read_issue",
+            lambda issue_id, include: called.update(include=include) or VIEWED_ISSUE,
+        )
+
+        view_module.view_issue("42", include=["watchers", "journals"])
+
+        assert called["include"].split(",") == [
+            "relations",
+            "attachments",
+            "journals",
+            "watchers",
+        ]
 
 
 class TestIssueUpdateUnknownIdRejected:
@@ -608,6 +710,30 @@ class TestIssueUpdateAddWatcher:
         assert messages.watcher_added.format(issue_id="42", user_id=999) not in (
             captured.out
         )
+
+
+class TestIssueUpdateDeleteRelation:
+    """`--delete-relation` が Redmine のエラーで失敗したとき"""
+
+    def test_http_error_exits(self, monkeypatch, capsys):
+        """削除に失敗したら理由を出して exit 1 し、成功メッセージを出さない"""
+        monkeypatch.setattr(
+            update_module.issue_relation_service,
+            "delete_relation",
+            _raise_http_error(403),
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            handle_issue_update(
+                parse_issue_args(
+                    ["issue", "update", "42", "--delete-relation", "--to", "43"]
+                )
+            )
+
+        captured = capsys.readouterr()
+        assert exc_info.value.code == 1
+        assert messages.relation_delete_failed in captured.err
+        assert captured.out == ""
 
 
 class TestIssueUpdateStatusChoices:
@@ -780,3 +906,62 @@ class TestIssueUpdateRelateChoices:
         (あるいはその逆の) タイプが出る。
         """
         assert set(RELATION_TYPES) == set(view_module.INVERSE_RELATION)
+
+
+LISTED_ISSUE = {
+    "id": 12,
+    "subject": "ログインできない",
+    "description": "複数行\nの説明",
+    "project": {"id": 3, "name": "redi"},
+    "tracker": {"id": 1, "name": "バグ"},
+    "status": {"id": 2, "name": "進行中", "is_closed": False},
+    "priority": {"id": 4, "name": "高め"},
+    "author": {"id": 5, "name": "kawagh"},
+    "category": {"id": 6, "name": "認証"},
+    "fixed_version": {"id": 7, "name": "v1.0"},
+    "start_date": "2026-09-01",
+    "due_date": None,
+    "done_ratio": 30,
+    "is_private": False,
+    "estimated_hours": 2.5,
+    "spent_hours": 1.0,
+    "custom_fields": [{"id": 1, "name": "顧客", "value": "A"}],
+    "created_on": "2026-09-01T00:00:00Z",
+    "updated_on": "2026-09-02T00:00:00Z",
+    "closed_on": None,
+}
+
+
+class TestIssueListTsv:
+    """`issue list --format tsv` は既存の id / subject / url の後ろに API のフィールドを並べる"""
+
+    @pytest.fixture
+    def listed(self, monkeypatch):
+        monkeypatch.setattr(
+            view_module.issue_service,
+            "list_issues_page",
+            lambda **kwargs: _page([LISTED_ISSUE]),
+        )
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+
+    def test_expands_refs_and_leaves_unassigned_empty(self, listed, capsys):
+        """参照は id / name に展開し、未割り当ての assigned_to は空セルにする
+
+        description と custom_fields は tsv に載せない。
+        """
+        view_module.print_issues(fmt=OutputFormat.TSV)
+
+        header, row = capsys.readouterr().out.splitlines()
+        assert header.split("\t") == [
+            "id", "subject", "url", "project_id", "project_name", "tracker_name",
+            "status_name", "priority_name", "author_name", "assigned_to_id",
+            "assigned_to_name", "category_name", "fixed_version_name", "start_date",
+            "due_date", "done_ratio", "estimated_hours", "spent_hours", "is_private",
+            "created_on", "updated_on", "closed_on",
+        ]  # fmt: skip
+        assert row.split("\t") == [
+            "12", "ログインできない", "http://localhost:3001/issues/12", "3", "redi",
+            "バグ", "進行中", "高め", "kawagh", "", "", "認証", "v1.0", "2026-09-01",
+            "", "30", "2.5", "1.0", "false", "2026-09-01T00:00:00Z",
+            "2026-09-02T00:00:00Z", "",
+        ]  # fmt: skip

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import NotRequired, TypedDict, cast
 
-from redi.api.exceptions import RedmineValidationException
+from redi.api.exceptions import ProjectNotFoundException, RedmineValidationException
 from redi.api.types import IdName
 from redi.client import client
 
@@ -95,6 +95,12 @@ def fetch_time_entries_page(
     limit: int | None = None,
     offset: int | None = None,
 ) -> TimeEntriesPageResponse:
+    """作業時間を 1 ページ分取得する。project_id 省略時は全プロジェクトが対象。
+
+    Raises:
+        ProjectNotFoundException: 対象プロジェクトが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     if project_id:
         path = f"/projects/{project_id}/time_entries.json"
     else:
@@ -111,6 +117,8 @@ def fetch_time_entries_page(
     if offset is not None:
         params["offset"] = offset
     response = client.get(path, params=params)
+    if project_id and response.status_code == 404:
+        raise ProjectNotFoundException(project_id)
     response.raise_for_status()
     return cast("TimeEntriesPageResponse", response.json())
 

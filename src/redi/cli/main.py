@@ -25,6 +25,7 @@ from redi.cli.enumerations_command import (
 from redi.cli.file_command import add_file_parser, handle_file
 from redi.cli.group_command import add_group_parser, handle_group
 from redi.cli.init_command import add_init_parser, handle_init
+from redi.cli.interactive import InputCanceledException
 from redi.cli.issue_category_command import (
     add_issue_category_parser,
     handle_issue_category,
@@ -170,6 +171,10 @@ def main() -> None:
     """
     try:
         _run()
+    except InputCanceledException as e:
+        # 対話入力のキャンセルは CLI では異常終了。TUI ループは画面に戻すので中で捕まえている
+        eprint(e.message)
+        sys.exit(1)
     except RedmineConnectionException as e:
         eprint(_format_connection_error(e))
         sys.exit(1)
@@ -335,6 +340,10 @@ def _run() -> None:
                             comments=None,
                         )
                     )
+            except InputCanceledException as e:
+                # 「やっぱりやめる」は普通にあるので、終了せず同じ絞り込み・
+                # カーソル位置の TUI に戻して通知だけ出す (github#564)
+                tui_state.flash_message = e.message
             except RedmineValidationException as e:
                 tui_state.error_modal = _format_validation_error(e)
             except WikiUpdateConflictException as e:

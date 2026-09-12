@@ -3,6 +3,7 @@ import json
 import sys
 from typing import cast
 
+from redi.api.exceptions import ProjectNotFoundException
 from redi.api.search import (
     SEARCH_ATTACHMENTS,
     SEARCH_SCOPES,
@@ -11,6 +12,7 @@ from redi.api.search import (
     SearchType,
     search,
 )
+from redi.cli.shared_options import add_format_options, wants_json
 from redi.i18n import messages
 from redi.output import eprint
 
@@ -85,26 +87,28 @@ def add_search_parser(
         type=_parse_search_types,
         help=messages.arg_help_search_type.format(choices=",".join(SEARCH_TYPES)),
     )
-    search_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(search_parser)
 
 
 def handle_search(args: argparse.Namespace) -> None:
     _validate_scope(args.scope, args.project_id)
-    data = search(
-        query=args.query,
-        limit=args.limit,
-        offset=args.offset,
-        project_id=args.project_id,
-        scope=args.scope,
-        all_words=args.all_words,
-        titles_only=args.titles_only,
-        open_issues=args.open_issues,
-        attachments=args.attachments,
-        types=args.type,
-    )
-    if args.full:
+    try:
+        data = search(
+            query=args.query,
+            limit=args.limit,
+            offset=args.offset,
+            project_id=args.project_id,
+            scope=args.scope,
+            all_words=args.all_words,
+            titles_only=args.titles_only,
+            open_issues=args.open_issues,
+            attachments=args.attachments,
+            types=args.type,
+        )
+    except ProjectNotFoundException as e:
+        eprint(messages.project_not_found.format(id=e.project_id))
+        sys.exit(1)
+    if wants_json(args):
         print(json.dumps(data, ensure_ascii=False))
         return
     results = data.get("results", [])

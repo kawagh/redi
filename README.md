@@ -16,7 +16,8 @@ redi --tui               # launch the TUI
 redi issue               # or list issues
 ```
 
-See [Setup](#setup) for profile / environment variable details and [Usage (examples)](#usage-examples) for the full command reference.
+`redi init` verifies the credentials and writes a profile to `~/.config/redi/config.toml`.
+See [Usage (examples)](#usage-examples) for the full command reference.
 
 ## Install
 
@@ -26,85 +27,47 @@ I recommend installation via [uv](https://github.com/astral-sh/uv).
 uv tool install redtile  # name on PyPI is redtile, NOT redi
 ```
 
-## Setup
+## Plugin (Agent Skill + Hook)
 
-### Config
+`redmine-redi` makes coding agents (Claude Code, Codex) use `redi` for Redmine work.
+It bundles an Agent Skill and a `PreToolUse` hook that denies direct reads of the config file.
+See [Plugin](https://kawagh.github.io/redi/cli/plugin/) for skill-only installation.
 
-To use redi, you need to set the Redmine URL and API key in one of the ways below.
-
-#### redi init (interactive, recommended for first time)
-
-```sh
-redi init
-```
-
-`redi init` first asks which language to use (`en` / `ja`), and the rest of the setup is shown in the selected language.
-You can change it later with `redi config update --language <en|ja>`.
-
-Then, profile will be created in `~/.config/redi/config.toml` like below format.
-You can also create profile by `redi config create`, and update profile by `redi config update` (and also by manual edit).
-`redi config create` walks you through the same steps as `redi init` when the profile name, URL or API key is missing, so it works even after profiles exist.
-
-```toml
-default_profile = "default"
-
-["default"]
-redmine_url = "https://redmine.example.com"
-redmine_api_key = "<your_api_key>"
-default_project_id = "1"
-wiki_project_id = "2"
-editor = "nvim"
-language = "en"  # "en" (default) or "ja"
-
-["sub"]
-redmine_url = "https://redmine.example.com"
-redmine_api_key = "<your_api_key>"
-default_project_id = "2"
-wiki_project_id = "3"
-editor = "code"
-```
-
-#### environment variable
-
-```sh
-export REDMINE_URL=https://redmine.example.com
-export REDMINE_API_KEY=<your_api_key>
-```
-
-
-### Shell completion
-
-```sh
-uv tool install argcomplete
-echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
-```
-
-### Agent skill
-
-`redmine-redi` is a skill that lets coding agents (Claude Code, Codex) know to
-reach for `redi` when a task involves Redmine.
-
-Install it globally (user scope) so that it is available in every project.
-`curl` needs no extra tooling:
+### Install
 
 ```sh
 # Claude Code
-mkdir -p ~/.claude/skills/redmine-redi && \
-  curl -sL https://raw.githubusercontent.com/kawagh/redi/main/skills/redmine-redi/SKILL.md \
-    -o ~/.claude/skills/redmine-redi/SKILL.md
+claude plugin marketplace add kawagh/redi
+claude plugin install redmine-redi@redi
 
 # Codex
-mkdir -p ~/.agents/skills/redmine-redi && \
-  curl -sL https://raw.githubusercontent.com/kawagh/redi/main/skills/redmine-redi/SKILL.md \
-    -o ~/.agents/skills/redmine-redi/SKILL.md
+codex plugin marketplace add kawagh/redi
+codex plugin add redmine-redi@redi
 ```
 
-Or with a skill manager:
+### Update
+
+Refresh the marketplace first, then update the plugin. Claude Code needs a restart to apply.
 
 ```sh
-npx skills add kawagh/redi --skill redmine-redi -g
-gh skill install kawagh/redi redmine-redi --scope user  # requires gh v2.90+ and a GitHub account
+# Claude Code
+claude plugin marketplace update redi
+claude plugin update redmine-redi@redi
+
+# Codex
+codex plugin marketplace upgrade redi
+codex plugin add redmine-redi@redi
 ```
+
+## Documentation
+
+https://kawagh.github.io/redi/ (also available in [Japanese(日本語)](https://kawagh.github.io/redi/ja/))
+
+- [Getting Started](https://kawagh.github.io/redi/getting-started/) — install and connect
+- [TUI](https://kawagh.github.io/redi/tui/) — tabs and keys
+- [Command Structure](https://kawagh.github.io/redi/cli/command-structure/) — the rule every command follows
+- [Plugin (Agent Skill + Hook)](https://kawagh.github.io/redi/cli/plugin/) — let coding agents reach for redi
+- [Configuration](https://kawagh.github.io/redi/configuration/) — config.toml, environment variables, shell completion
 
 ## Usage (examples)
 
@@ -135,6 +98,7 @@ redi config update # interactive: Enter to switch profile, u to update fields of
 redi config update --default_profile <profile_name> # switch profile
 redi config update <profile_name> --editor nvim # update profile
 redi config update --language ja # switch language ("en" or "ja")
+redi config update --text_formatting textile # text formatting of the Redmine server ("markdown" or "textile")
 redi --profile <profile_name> issue # temporarily switch profile for this command
 
 # project (alias: p)
@@ -190,7 +154,7 @@ redi version update <version_id> --status closed
 redi wiki
 redi wiki -p <project_id>
 redi wiki view <page_title>
-redi wiki create # (interactive)
+redi wiki create # (interactive, fails if the page already exists)
 redi wiki update # (interactive)
 
 # file (alias: f, project files)
@@ -274,6 +238,8 @@ redi user list --group_id <group_id> # members of the group
 redi user --status locked list # filters can be placed before the subcommand too
 redi user list --limit 10 --offset 10 # `list` returns Redmine's default 25 unless limited
 redi user list --full # output full JSON
+redi user list --format tsv # header row + tab-separated columns (list only; header names are fixed in English)
+redi user list -f tsv # -f is short for --format
 
 # others
 redi tracker # list trackers (alias: t)

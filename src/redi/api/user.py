@@ -1,5 +1,6 @@
 from typing import NotRequired, TypedDict, cast
 
+from redi.api import PAGE_LIMIT_MAX
 from redi.api.types import IdName
 from redi.client import client
 
@@ -25,6 +26,8 @@ class User(TypedDict):
     firstname: str
     lastname: str
     created_on: str
+    # 1=有効, 2=登録済, 3=ロック中。管理者で取得したときのみ返る
+    status: NotRequired[int]
     mail: NotRequired[str]
     admin: NotRequired[bool]
     last_login_on: NotRequired[str]
@@ -38,8 +41,8 @@ class User(TypedDict):
 # GET /users.json の status パラメータ。Redmine が定める数値との対応。
 USER_STATUS: dict[str, int] = {"active": 1, "registered": 2, "locked": 3}
 
-# 一覧を1回のリクエストで取る件数 (Redmine の上限は 100)
-USERS_PAGE_LIMIT = 100
+# 一覧を1回のリクエストで取る件数
+USERS_PAGE_LIMIT = PAGE_LIMIT_MAX
 
 
 class UserNotFoundException(Exception):

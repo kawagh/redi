@@ -2,12 +2,13 @@ import argparse
 import sys
 
 from redi.cli.alias import resolve_alias
-from redi.cli.interactive import exit_on_cancel, prompt
+from redi.cli.interactive import prompt, raise_on_cancel
 from redi.cli.picker import inline_checkbox, inline_choice, inline_choice_with_action
 from redi.cli.profile_setup import prompt_connection_profile
 from redi.cli.validator import ProfileNameValidator, RequiredValidator, UrlValidator
 from redi.config import (
     SUPPORTED_LANGUAGES,
+    SUPPORTED_TEXT_FORMATTINGS,
     Profile,
     create_profile,
     get_default_profile,
@@ -51,6 +52,11 @@ def add_config_parser(
         choices=SUPPORTED_LANGUAGES,
         help=messages.arg_help_config_set_language,
     )
+    c_update_parser.add_argument(
+        "--text_formatting",
+        choices=SUPPORTED_TEXT_FORMATTINGS,
+        help=messages.arg_help_config_set_text_formatting,
+    )
     c_update_parser.add_argument("--api_key", help=messages.arg_help_config_set_api_key)
     c_update_parser.add_argument("--url", help=messages.arg_help_config_set_url)
     c_update_parser.add_argument(
@@ -79,6 +85,11 @@ def add_config_parser(
         help=messages.arg_help_config_language,
     )
     c_create_parser.add_argument(
+        "--text_formatting",
+        choices=SUPPORTED_TEXT_FORMATTINGS,
+        help=messages.arg_help_config_text_formatting,
+    )
+    c_create_parser.add_argument(
         "--set_default",
         action="store_true",
         help=messages.arg_help_config_set_default_flag,
@@ -99,7 +110,7 @@ def _interactive_select_profile(args: argparse.Namespace) -> bool:
         (name, f"{name} (default)" if name == current_default else name)
         for name in profile_names
     ]
-    with exit_on_cancel():
+    with raise_on_cancel():
         action, selected = inline_choice_with_action(
             messages.prompt_select_profile,
             options,
@@ -122,10 +133,33 @@ def _update_field_values(profile: str) -> list[tuple[str, str]]:
         ("wiki_project_id", messages.field_wiki_project_id),
         ("editor", messages.field_editor),
         ("language", messages.field_language),
+        ("text_formatting", messages.field_text_formatting),
     ]
     if profile != get_default_profile():
         field_values.append(("set_default", messages.field_set_default_profile))
     return field_values
+
+
+def _update_field_options(
+    field_values: list[tuple[str, str]], current: Profile
+) -> list[tuple[str, str]]:
+    """更新項目の選択肢に現在値を添える。
+
+    どの項目を変えるべきか分かるようにする。未設定の項目は値を出さない。
+    API キーは秘匿するため出さない。
+    """
+    current_values: dict[str, str | None] = {
+        "url": current.redmine_url,
+        "project_id": current.default_project_id,
+        "wiki_project_id": current.wiki_project_id,
+        "editor": current.editor,
+        "language": current.language,
+        "text_formatting": current.text_formatting,
+    }
+    return [
+        (key, f"{label} # {value}" if (value := current_values.get(key)) else label)
+        for key, label in field_values
+    ]
 
 
 def _interactive_fill_config_update_args(
@@ -137,8 +171,11 @@ def _interactive_fill_config_update_args(
     """
     current = read_profile(profile)
     field_values = _update_field_values(profile)
-    with exit_on_cancel():
-        selected = inline_checkbox(messages.prompt_select_update_items, field_values)
+    with raise_on_cancel():
+        selected = inline_checkbox(
+            messages.prompt_select_update_items,
+            _update_field_options(field_values, current),
+        )
         if not selected:
             print(messages.canceled_no_items_selected)
             return False
@@ -184,6 +221,12 @@ def _interactive_fill_config_update_args(
                 [(v, v) for v in SUPPORTED_LANGUAGES],
                 default=current.language,
             )
+        if "text_formatting" in selected:
+            args.text_formatting = inline_choice(
+                messages.prompt_select_text_formatting,
+                [(v, v) for v in SUPPORTED_TEXT_FORMATTINGS],
+                default=current.text_formatting,
+            )
         if "set_default" in selected:
             args.default_profile = profile
     args.profile_name = profile
@@ -191,7 +234,7 @@ def _interactive_fill_config_update_args(
 
 
 def _prompt_profile_name() -> str:
-    with exit_on_cancel():
+    with raise_on_cancel():
         return prompt(
             messages.prompt_profile_name,
             validator=ProfileNameValidator(list_profile_names()),
@@ -199,7 +242,7 @@ def _prompt_profile_name() -> str:
 
 
 def _confirm_set_default(profile_name: str) -> bool:
-    with exit_on_cancel():
+    with raise_on_cancel():
         selected = inline_choice(
             messages.prompt_set_default_profile.format(name=profile_name),
             [("yes", messages.choice_yes), ("no", messages.choice_no)],
@@ -216,6 +259,7 @@ def _handle_config_create(args: argparse.Namespace) -> None:
         wiki_project_id=args.wiki_project_id,
         editor=args.editor,
         language=args.language,
+        text_formatting=args.text_formatting,
     )
     profile_name = args.profile_name
     set_default = args.set_default
@@ -249,6 +293,7 @@ def handle_config(args: argparse.Namespace) -> None:
         or args.wiki_project_id
         or args.editor
         or args.language
+        or args.text_formatting
         or args.api_key
         or args.url
         or args.default_profile
@@ -269,6 +314,7 @@ def handle_config(args: argparse.Namespace) -> None:
         wiki_project_id=args.wiki_project_id,
         editor=args.editor,
         language=args.language,
+        text_formatting=args.text_formatting,
     )
     if values.to_dict():
         update_profile(values, profile)
@@ -292,6 +338,12 @@ def handle_config(args: argparse.Namespace) -> None:
         print(
             new_lang_messages.language_set.format(
                 value=args.language, suffix=profile_suffix
+            )
+        )
+    if args.text_formatting:
+        print(
+            messages.text_formatting_set.format(
+                value=args.text_formatting, suffix=profile_suffix
             )
         )
     if args.api_key:
