@@ -631,7 +631,7 @@ class En(MessagesProto):
     tui_wiki_meta_version_of_latest = "{version} (latest: {latest})"
     tui_wiki_diff_modal_title = "Compare versions (Esc/d to close)"
     tui_wiki_diff_modal_hint = (
-        "Tab/h/l:column jk:move Enter:show diff c:back to text Esc/d:close"
+        "Tab/h/l:column jk:move Enter:apply c:back to text Esc/d:close"
     )
     tui_wiki_diff_from = "From"
     tui_wiki_diff_to = "To"

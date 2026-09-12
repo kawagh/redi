@@ -42,8 +42,9 @@ to the latest version.
 `d` opens a two-column dialog to pick the "from" and "to" versions, like the issue filter.
 "From" starts on the version you are viewing (the previous one when viewing the latest) and
 "to" on the latest, so `d` then `Enter` shows what changed up to the latest version. The
-unified diff replaces the text in the right pane; press `d` then `c` to go back to the text.
-`v` opens the diff page in Redmine while the diff is shown.
+unified diff replaces the text in the right pane. Like the filter, the dialog stays open after
+`Enter` so you can change the pair and apply again; `Esc` closes it, and `c` goes back to the
+text. `v` opens the diff page in Redmine while the diff is shown.
 
 ## Search
 

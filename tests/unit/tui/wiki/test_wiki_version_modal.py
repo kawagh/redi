@@ -388,15 +388,15 @@ class TestDiff:
         modal.from_cursor = modal.versions.index(from_version)
         modal.to_cursor = modal.versions.index(to_version)
 
-    def test_apply_shows_diff_and_closes_modal(self):
-        """Enter で両列の版の差分を出し、modal を閉じる"""
+    def test_apply_shows_diff_and_keeps_modal(self):
+        """Enter で両列の版の差分を出す。フィルタと同じく modal は開いたまま"""
         state = self._state_with_texts()
         self._open_with(state, 2, 3)
 
         assert apply_diff(state) is True
         rendered = self._rendered(state)
 
-        assert state.wiki_tab.diff_modal.show is False
+        assert state.wiki_tab.diff_modal.show is True
         assert state.wiki_tab.diff_view == WikiDiffView("Home", 2, 3)
         assert "--- v2" in rendered
         assert "+++ v3" in rendered
@@ -478,16 +478,15 @@ class TestDiff:
         assert messages.tui_wiki_diff_no_changes in self._rendered(state)
 
     def test_clear_returns_to_text(self):
-        """c で差分をやめて本文に戻り、modal も閉じる"""
+        """c で差分をやめて本文に戻る。modal は開いたまま"""
         state = self._state_with_texts()
         self._open_with(state, 2, 3)
         apply_diff(state)
-        open_diff_modal(state)
 
         clear_diff(state)
 
         assert state.wiki_tab.diff_view is None
-        assert state.wiki_tab.diff_modal.show is False
+        assert state.wiki_tab.diff_modal.show is True
         assert "a\nB\nc" in self._rendered(state)
 
     def test_status_hint_shows_diff(self):

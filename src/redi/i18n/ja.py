@@ -637,7 +637,7 @@ class Ja(MessagesProto):
     tui_wiki_meta_version_of_latest = "{version} (最新: {latest})"
     tui_wiki_diff_modal_title = "版を比較 (Esc/d で閉じる)"
     tui_wiki_diff_modal_hint = (
-        "Tab/h/l:列切替 jk:移動 Enter:差分表示 c:本文に戻る Esc/d:閉じる"
+        "Tab/h/l:列切替 jk:移動 Enter:適用 c:本文に戻る Esc/d:閉じる"
     )
     tui_wiki_diff_from = "比較前"
     tui_wiki_diff_to = "比較後"

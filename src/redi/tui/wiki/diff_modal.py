@@ -198,9 +198,10 @@ def open_diff_modal(state: TuiState) -> bool:
 
 
 def apply_diff(state: TuiState) -> bool:
-    """両列のカーソルにある版の差分を表示し、modal を閉じる。
+    """両列のカーソルにある版の差分を右ペインに出す。
 
-    同じ版どうしなら flash で知らせて modal は開いたまま。本文はここでキャッシュに載せ、
+    フィルタ modal と同じく適用しても modal は閉じず、組を変えて押し直せる。閉じるのは
+    Esc / d。同じ版どうしなら flash で知らせる。本文はここでキャッシュに載せ、
     取得に失敗したら表示は変えない (flash は取得側が出す)。
     """
     modal = state.wiki_tab.diff_modal
@@ -221,11 +222,9 @@ def apply_diff(state: TuiState) -> bool:
     state.wiki_tab.diff_view = WikiDiffView(
         title=title, from_version=from_version, to_version=to_version
     )
-    modal.show = False
     return True
 
 
 def clear_diff(state: TuiState) -> None:
-    """差分表示をやめて本文に戻し、modal を閉じる。"""
+    """差分表示をやめて本文に戻す。modal はフィルタの c と同じく開いたまま。"""
     state.wiki_tab.diff_view = None
-    state.wiki_tab.diff_modal.show = False
