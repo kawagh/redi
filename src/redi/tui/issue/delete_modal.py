@@ -19,7 +19,7 @@ from redi.api.issue import IssueNotFoundException
 from redi.i18n import messages
 from redi.service import issue_service
 from redi.tui.state import Renderable, TuiState
-from redi.tui.state.issue import IssueDeleteModalState
+from redi.tui.state.issue_tab import IssueDeleteModalState
 
 
 def render_delete_modal(state: TuiState) -> Renderable:

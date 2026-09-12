@@ -7,9 +7,9 @@ from typing import Literal
 from redi import config
 from redi.api import PAGE_LIMIT_MAX
 from redi.tui.state.choice import ChoiceModalState
-from redi.tui.state.issue import IssueTabState
-from redi.tui.state.time_entry import TimeEntryTabState
-from redi.tui.state.wiki import WikiTabState
+from redi.tui.state.issue_tab import IssueTabState
+from redi.tui.state.time_entry_tab import TimeEntryTabState
+from redi.tui.state.wiki_tab import WikiTabState
 
 TuiAction = Literal[
     "update",

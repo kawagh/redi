@@ -18,7 +18,7 @@ from redi.tui.state import (
     TuiState,
     realign_page,
 )
-from redi.tui.state.issue import CommentSelectState
+from redi.tui.state.issue_tab import CommentSelectState
 from redi.tui.tab import TabView, noop
 
 

@@ -12,7 +12,7 @@ from redi.api.wiki import WikiPage
 from redi.i18n import messages
 from redi.tui.choice_modal import build_choice_float
 from redi.tui.state import TuiState
-from redi.tui.state.wiki import WikiVersionView
+from redi.tui.state.wiki_tab import WikiVersionView
 from redi.tui.wiki.wiki_tab import current_page, load_version_text, viewing_version
 
 

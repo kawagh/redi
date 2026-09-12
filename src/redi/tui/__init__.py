@@ -8,8 +8,8 @@ from redi.tui.state import (
     TuiState,
     TuiTab,
 )
-from redi.tui.state.issue import IssueTabState
-from redi.tui.state.wiki import WikiTabState
+from redi.tui.state.issue_tab import IssueTabState
+from redi.tui.state.wiki_tab import WikiTabState
 
 __all__ = [
     "IssueTabState",

@@ -13,7 +13,7 @@ from redi.tui.conditions import build_conditions
 from redi.tui.issue import issue_tab
 from redi.tui.keybindings import modal_keybindings
 from redi.tui.state import TuiState
-from redi.tui.state.issue import IssueFilter, IssueFind
+from redi.tui.state.issue_tab import IssueFilter, IssueFind
 
 
 def _handler(kb: KeyBindings, keys: tuple):

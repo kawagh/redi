@@ -1,4 +1,4 @@
-from redi.tui.state.issue import IssueFilter
+from redi.tui.state.issue_tab import IssueFilter
 
 
 class TestIssueFilter:

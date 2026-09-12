@@ -26,7 +26,7 @@ from redi.tui.choices import (
     build_tracker_choices,
 )
 from redi.tui.state import Renderable, TuiState
-from redi.tui.state.issue import FilterField, FilterModalState
+from redi.tui.state.issue_tab import FilterField, FilterModalState
 
 
 def _render_filter_section(

@@ -7,8 +7,8 @@ from redi.tui.state import (
     compute_page_size,
     realign_page,
 )
-from redi.tui.state.issue import IssueFilter, IssueFind
-from redi.tui.state.time_entry import TimeEntryFilter
+from redi.tui.state.issue_tab import IssueFilter, IssueFind
+from redi.tui.state.time_entry_tab import TimeEntryFilter
 
 
 class TestEffectiveProjectId:

@@ -13,7 +13,7 @@ from redi.tui.issue.filter_modal import (
 )
 from redi.tui.keybindings import modal_keybindings
 from redi.tui.state import TuiState
-from redi.tui.state.issue import IssueFilter
+from redi.tui.state.issue_tab import IssueFilter
 
 STATUS_CHOICES = [(None, "open (default)"), ("closed", "closed only")]
 ASSIGNEE_CHOICES = [(None, "(unspecified)"), ("me", "me")]

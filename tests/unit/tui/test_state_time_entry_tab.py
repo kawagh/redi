@@ -1,5 +1,5 @@
 from redi.i18n import messages
-from redi.tui.state.time_entry import TimeEntryFilter
+from redi.tui.state.time_entry_tab import TimeEntryFilter
 
 
 class TestTimeEntryFilter:

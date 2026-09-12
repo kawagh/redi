@@ -16,7 +16,7 @@ from prompt_toolkit.widgets import Frame
 from redi.i18n import messages
 from redi.tui.choices import build_user_choices
 from redi.tui.state import Renderable, TuiState
-from redi.tui.state.time_entry import TimeEntryFilterModalState
+from redi.tui.state.time_entry_tab import TimeEntryFilterModalState
 
 
 def render_filter_column(state: TuiState) -> Renderable:

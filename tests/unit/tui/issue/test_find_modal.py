@@ -2,7 +2,7 @@ import pytest
 
 from redi.tui.issue import find_modal, issue_tab
 from redi.tui.state import TuiState
-from redi.tui.state.issue import IssueFind
+from redi.tui.state.issue_tab import IssueFind
 
 
 @pytest.fixture
