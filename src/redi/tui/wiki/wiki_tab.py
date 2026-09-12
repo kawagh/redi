@@ -399,7 +399,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  u", messages.tui_help_wiki_update_page),
     ("  D", messages.tui_help_wiki_delete_page),
     ("  v", messages.tui_help_wiki_open_web),
-    ("  H", messages.tui_help_wiki_versions),
+    ("  h", messages.tui_help_wiki_versions),
     ("  d", messages.tui_help_wiki_toggle_diff),
     ("  R", messages.tui_help_reload),
     (messages.tui_help_section_other, ""),

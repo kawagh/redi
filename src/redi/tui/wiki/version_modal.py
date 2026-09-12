@@ -1,4 +1,4 @@
-"""wiki タブの H で開く版選択 modal と、選んだ版を表示する操作。
+"""wiki タブの h で開く版選択 modal と、選んだ版を表示する操作。
 
 Redmine の REST API には wiki の版一覧を返すエンドポイントが無い。最新版の番号は
 一覧 (`/wiki/index.json`) の `version` で分かるので、1..最新 を並べて選ばせる。

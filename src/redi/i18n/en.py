@@ -542,7 +542,7 @@ class En(MessagesProto):
     tui_status_hint_issues = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
     tui_status_hint_wiki = (
         " jk:move /:search p:project c:create u:update D:delete"
-        " H:versions d:diff v:web ?:help q:quit "
+        " h:versions d:diff v:web ?:help q:quit "
     )
     tui_status_hint_time_entries = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
     tui_status_search_active = "/{query} Esc:clear"
@@ -618,14 +618,14 @@ class En(MessagesProto):
     tui_wiki_delete_modal_mismatch = 'Input does not match "{expected}"'
     tui_wiki_delete_modal_empty = 'Enter "{expected}"'
     tui_wiki_delete_modal_hint = "Enter:confirm Esc:close"
-    tui_wiki_version_modal_title = "Wiki page versions (Esc/H to close)"
-    tui_wiki_version_modal_hint = "jk:move gg/G:top/bottom Enter:view Esc/H:close"
+    tui_wiki_version_modal_title = "Wiki page versions (Esc/h to close)"
+    tui_wiki_version_modal_hint = "jk:move gg/G:top/bottom Enter:view Esc/h:close"
     tui_wiki_version_latest_label = "v{version} (latest)"
     tui_wiki_version_label = "v{version}"
     tui_wiki_version_missing = "Version {version} of {title} not found"
     tui_wiki_version_load_failed = "Failed to fetch version {version}: {error}"
     tui_wiki_version_readonly = (
-        "Viewing an old version. Return to the latest (H) to update or delete"
+        "Viewing an old version. Return to the latest (h) to update or delete"
     )
     tui_status_wiki_version_active = "v{version} (latest v{latest})"
     tui_wiki_meta_version_of_latest = "{version} (latest: {latest})"

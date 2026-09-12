@@ -542,7 +542,7 @@ class Ja(MessagesProto):
     )
     tui_status_hint_wiki = (
         " jk:移動 /:検索 p:プロジェクト c:作成 u:更新 D:削除"
-        " H:版 d:差分 v:web ?:ヘルプ q:終了 "
+        " h:版 d:差分 v:web ?:ヘルプ q:終了 "
     )
     tui_status_hint_time_entries = (
         " {page_label}  jk:移動 /:検索 f:フィルタ p:プロジェクト"
@@ -624,14 +624,14 @@ class Ja(MessagesProto):
     tui_wiki_delete_modal_mismatch = '"{expected}" と一致しません'
     tui_wiki_delete_modal_empty = '"{expected}" を入力してください'
     tui_wiki_delete_modal_hint = "Enter:確定 Esc:閉じる"
-    tui_wiki_version_modal_title = "Wikiページの版 (Esc/H で閉じる)"
-    tui_wiki_version_modal_hint = "jk:移動 gg/G:先頭/末尾 Enter:表示 Esc/H:閉じる"
+    tui_wiki_version_modal_title = "Wikiページの版 (Esc/h で閉じる)"
+    tui_wiki_version_modal_hint = "jk:移動 gg/G:先頭/末尾 Enter:表示 Esc/h:閉じる"
     tui_wiki_version_latest_label = "v{version} (最新)"
     tui_wiki_version_label = "v{version}"
     tui_wiki_version_missing = "{title} の版 {version} が見つかりません"
     tui_wiki_version_load_failed = "版 {version} の取得に失敗しました: {error}"
     tui_wiki_version_readonly = (
-        "過去版を表示中です。更新・削除は最新版に戻して (H) から行ってください"
+        "過去版を表示中です。更新・削除は最新版に戻して (h) から行ってください"
     )
     tui_status_wiki_version_active = "v{version} (最新 v{latest})"
     tui_wiki_meta_version_of_latest = "{version} (最新: {latest})"

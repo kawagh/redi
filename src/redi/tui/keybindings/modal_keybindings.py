@@ -127,7 +127,7 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         kb,
         lambda: state.wiki_tab.version_modal,
         show_wiki_version_modal,
-        "H",
+        "h",
         _on_wiki_version_selected,
     )
 

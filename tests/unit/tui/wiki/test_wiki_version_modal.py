@@ -545,7 +545,7 @@ class TestDiff:
         assert viewing_diff(state) is None
 
     def test_selecting_version_closes_diff(self):
-        """H で版を選び直すと差分表示は閉じる"""
+        """h で版を選び直すと差分表示は閉じる"""
         state = self._state_with_texts()
         self._open_with(state, 2, 3)
         apply_diff(state)

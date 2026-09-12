@@ -102,9 +102,18 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         TABS[state.tab].on_page_forward(state)
 
     @kb.add("left", filter=normal_mode)
-    @kb.add("h", filter=normal_mode)
     def _(event):
         clear_temporary_state(state)
+        reset_preview_scroll(state)
+        TABS[state.tab].on_page_backward(state)
+
+    @kb.add("h", filter=normal_mode)
+    def _(event):
+        # wiki タブはページ送りが無いので、h を版一覧 (history) に充てる
+        clear_temporary_state(state)
+        if state.tab == "wiki":
+            open_version_modal(state)
+            return
         reset_preview_scroll(state)
         TABS[state.tab].on_page_backward(state)
 
@@ -196,12 +205,6 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
             open_issue_delete_modal(state)
         elif state.tab == "wiki":
             open_wiki_delete_modal(state)
-
-    @kb.add("H", filter=normal_mode)
-    def _(event):
-        clear_temporary_state(state)
-        if state.tab == "wiki":
-            open_version_modal(state)
 
     @kb.add("d", filter=normal_mode)
     def _(event):
