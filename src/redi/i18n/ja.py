@@ -540,7 +540,10 @@ class Ja(MessagesProto):
         " {page_label}  jk:移動 /:検索 f:フィルタ p:プロジェクト"
         " c:作成 u:更新 v:web ?:ヘルプ q:終了 "
     )
-    tui_status_hint_wiki = " jk:移動 /:検索 p:プロジェクト c:作成 u:更新 D:削除 H:版 v:web ?:ヘルプ q:終了 "
+    tui_status_hint_wiki = (
+        " jk:移動 /:検索 p:プロジェクト c:作成 u:更新 D:削除"
+        " H:版 d:差分 v:web ?:ヘルプ q:終了 "
+    )
     tui_status_hint_time_entries = (
         " {page_label}  jk:移動 /:検索 f:フィルタ p:プロジェクト"
         " c:作成 u:更新 v:web ?:ヘルプ q:終了 "
@@ -632,6 +635,9 @@ class Ja(MessagesProto):
     )
     tui_status_wiki_version_active = "v{version} (最新 v{latest})"
     tui_wiki_meta_version_of_latest = "{version} (最新: {latest})"
+    tui_status_wiki_diff_active = "差分 v{version} -> v{latest}"
+    tui_wiki_diff_no_changes = "版の間に差分はありません"
+    tui_wiki_diff_requires_version = "差分を見るには過去版を開いて (H) ください"
 
     # ---- argparse helps (root) ----
     arg_help_root_description = "Redmine CLI"
@@ -1101,6 +1107,7 @@ class Ja(MessagesProto):
     tui_help_wiki_delete_page = "選択ページを削除 (DELETE の入力で確定)"
     tui_help_wiki_open_web = "選択ページを web で開く"
     tui_help_wiki_versions = "選択ページの版を選んで表示"
+    tui_help_wiki_toggle_diff = "表示中の版と最新版の差分を切り替え"
 
     # ---- TUI help labels (time entry tab) ----
     tui_help_time_entry_create = "時間記録を作成"

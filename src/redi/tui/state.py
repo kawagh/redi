@@ -277,12 +277,14 @@ class WikiVersionView:
     対象ページを `title` で持つのは、カーソルが別ページへ移った後に古い版の
     本文を別ページのものとして出さないため。`latest` は選んだ時点の最新版番号。
     描画とステータスバーはこれを使い、ページ一覧を引き直さない。
+    `show_diff` は右ペインを本文ではなく最新版との差分にしているかどうか。
     """
 
     title: str
     version: int
     text: str
     latest: int
+    show_diff: bool = False
 
 
 @dataclass

@@ -136,14 +136,46 @@ def _render_preview(state: TuiState) -> Renderable:
     ]
     lines.extend(render_meta_table(meta))
 
-    text = view.text if view is not None else state.wiki_tab.texts.get(title)
     lines.append("")
     lines.append("----")
+    if view is not None and view.show_diff:
+        return _render_diff(state, view, lines)
+    text = view.text if view is not None else state.wiki_tab.texts.get(title)
     if text is None:
         lines.append(messages.tui_wiki_press_enter_to_load)
     else:
         lines.extend(text.splitlines())
     return [("", "\n".join(lines))]
+
+
+def _render_diff(
+    state: TuiState, view: WikiVersionView, header: list[str]
+) -> Renderable:
+    """表示中の過去版と最新版の差分を出す。最新版の本文が未取得なら d で取りに行く。"""
+    latest_text = state.wiki_tab.texts.get(view.title)
+    result: Renderable = [("", "\n".join(header) + "\n")]
+    if latest_text is None:
+        result.append(("", messages.tui_wiki_press_enter_to_load))
+        return result
+    diff = wiki_service.diff_texts(view.text, latest_text, view.version, view.latest)
+    if not diff:
+        result.append(("", messages.tui_wiki_diff_no_changes))
+        return result
+    for line in diff.splitlines():
+        result.append((_diff_line_style(line), line + "\n"))
+    return result
+
+
+def _diff_line_style(line: str) -> str:
+    if line.startswith(("+++", "---")):
+        return "bold"
+    if line.startswith("+"):
+        return "fg:ansigreen"
+    if line.startswith("-"):
+        return "fg:ansired"
+    if line.startswith("@@"):
+        return "fg:ansicyan"
+    return ""
 
 
 def _status_hint(state: TuiState) -> str:
@@ -152,9 +184,14 @@ def _status_hint(state: TuiState) -> str:
     if view is None:
         return hint
     # 過去版を開いている間は、編集や削除の前に気付けるようステータスバーにも出す
-    label = messages.tui_status_wiki_version_active.format(
-        version=view.version, latest=view.latest
-    )
+    if view.show_diff:
+        label = messages.tui_status_wiki_diff_active.format(
+            version=view.version, latest=view.latest
+        )
+    else:
+        label = messages.tui_status_wiki_version_active.format(
+            version=view.version, latest=view.latest
+        )
     return f" [{label}]" + hint
 
 
@@ -219,7 +256,23 @@ def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
             state.flash_message = messages.tui_wiki_version_readonly
             return None
         return _exit_result(state, "update")
+    if key == "d":
+        toggle_diff(state)
     return None
+
+
+def toggle_diff(state: TuiState) -> None:
+    """過去版を表示中なら、右ペインを本文と最新版との差分で切り替える。
+
+    最新版の本文が未取得なら Enter と同じ経路で取りに行く。最新版を表示中は何もしない。
+    """
+    view = viewing_version(state)
+    if view is None:
+        state.flash_message = messages.tui_wiki_diff_requires_version
+        return
+    if not view.show_diff:
+        _load_wiki_text(state, view.title)
+    view.show_diff = not view.show_diff
 
 
 def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
@@ -274,8 +327,13 @@ def _on_open_web(state: TuiState) -> None:
     title = page.get("title")
     if not title:
         return
-    # 過去版を開いていれば web でも同じ版を出す
+    # 過去版を開いていれば web でも同じ版を出す。差分表示中は diff 画面を出す
     view = viewing_version(state)
+    if view is not None and view.show_diff:
+        webbrowser.open(
+            wiki_service.diff_url(project, title, view.version, view.latest)
+        )
+        return
     version = view.version if view is not None else None
     webbrowser.open(wiki_service.page_url(project, title, version=version))
 
@@ -302,6 +360,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  D", messages.tui_help_wiki_delete_page),
     ("  v", messages.tui_help_wiki_open_web),
     ("  H", messages.tui_help_wiki_versions),
+    ("  d", messages.tui_help_wiki_toggle_diff),
     ("  R", messages.tui_help_reload),
     (messages.tui_help_section_other, ""),
     ("  ?", messages.tui_help_show_or_close),

@@ -3,6 +3,7 @@
 CLI と TUI で共通の手順をここに置く。HTTP とステータスコードの解釈は `api.wiki` が持つ。
 """
 
+import difflib
 from collections import defaultdict
 
 from redi import config
@@ -42,6 +43,32 @@ def page_url(project_id: str, page_title: str, version: int | None = None) -> st
     if version is not None:
         url = f"{url}/{version}"
     return url
+
+
+def diff_url(
+    project_id: str, page_title: str, from_version: int, to_version: int
+) -> str:
+    """Wiki ページの 2 版を比較する Web UI の URL を組み立てる。"""
+    return (
+        f"{page_url(project_id, page_title)}/diff"
+        f"?version={to_version}&version_from={from_version}"
+    )
+
+
+def diff_texts(old_text: str, new_text: str, from_version: int, to_version: int) -> str:
+    """2 版の本文の unified diff を返す。差分が無ければ空文字。
+
+    Redmine の REST API には差分を返すエンドポイントが無いので、本文を取って手元で作る。
+    ヘッダは `--- v3` / `+++ v7` のように版番号だけを出す。
+    """
+    lines = difflib.unified_diff(
+        old_text.splitlines(),
+        new_text.splitlines(),
+        fromfile=f"v{from_version}",
+        tofile=f"v{to_version}",
+        lineterm="",
+    )
+    return "\n".join(lines)
 
 
 def list_pages(project_id: str) -> list[WikiPage]:

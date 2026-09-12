@@ -81,3 +81,36 @@ class TestPageUrl:
             wiki_service.page_url("demo", "Page", version=3)
             == "http://localhost:3001/projects/demo/wiki/Page/3"
         )
+
+
+class TestDiffUrl:
+    """diff_url が組み立てる URL"""
+
+    @pytest.fixture(autouse=True)
+    def redmine_url(self, monkeypatch):
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+
+    def test_from_and_to(self):
+        """Redmine の差分画面の URL (version=to, version_from=from) になる"""
+        assert (
+            wiki_service.diff_url("demo", "Page", 3, 7)
+            == "http://localhost:3001/projects/demo/wiki/Page/diff?version=7&version_from=3"
+        )
+
+
+class TestDiffTexts:
+    """diff_texts は 2 版の本文の unified diff を返す"""
+
+    def test_unified_diff_with_version_headers(self):
+        """ヘッダは版番号 (--- v3 / +++ v7) で、変更行に + / - が付く"""
+        diff = wiki_service.diff_texts("a\nb\nc", "a\nB\nc", 3, 7)
+
+        lines = diff.splitlines()
+        assert lines[0] == "--- v3"
+        assert lines[1] == "+++ v7"
+        assert "-b" in lines
+        assert "+B" in lines
+
+    def test_no_changes_is_empty(self):
+        """本文が同じなら空文字"""
+        assert wiki_service.diff_texts("same", "same", 1, 2) == ""

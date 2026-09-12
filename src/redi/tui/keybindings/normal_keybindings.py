@@ -144,7 +144,7 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
             if target_id is not None:
                 TABS[state.tab].on_open_web_by_id(state, target_id)
 
-    for action_key in ("u", "c", "t"):
+    for action_key in ("u", "c", "t", "d"):
 
         @kb.add(action_key, filter=normal_mode)
         def _(event, action_key=action_key):
