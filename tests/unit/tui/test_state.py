@@ -3,13 +3,13 @@ from redi.api import PAGE_LIMIT_MAX
 from redi.i18n import messages
 from redi.tui.state import (
     FIXED_ROWS,
-    TimeEntryFilter,
     TuiResult,
     TuiState,
     compute_page_size,
     realign_page,
 )
 from redi.tui.state.issue import IssueFilter, IssueFind
+from redi.tui.state.time_entry import TimeEntryFilter
 
 
 class TestIssueFilter:

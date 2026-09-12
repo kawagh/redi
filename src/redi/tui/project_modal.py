@@ -8,7 +8,8 @@ from redi.i18n import messages
 from redi.service.project_service import list_projects, sort_projects_by_id_desc
 from redi.tui.choice_modal import build_choice_float
 from redi.tui.issue.issue_tab import reload_with_filter
-from redi.tui.state import TimeEntryFilter, TimeEntryTabState, TuiState
+from redi.tui.state import TuiState
+from redi.tui.state.time_entry import TimeEntryFilter, TimeEntryTabState
 from redi.tui.state.wiki import WikiTabState
 from redi.tui.tabs import TABS
 

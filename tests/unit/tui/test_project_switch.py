@@ -12,8 +12,9 @@ from redi.api.time_entry import TimeEntry
 from redi.i18n import messages
 from redi.tui import app_render, project_modal
 from redi.tui.issue import issue_tab
-from redi.tui.state import TimeEntryFilter, TuiState
+from redi.tui.state import TuiState
 from redi.tui.state.issue import IssueFilter
+from redi.tui.state.time_entry import TimeEntryFilter
 from redi.tui.tab import TabView, noop, noop_jump
 from redi.tui.tabs import TABS
 from redi.tui.time_entry import time_entry_tab
