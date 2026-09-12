@@ -55,6 +55,11 @@ def _render_list(state: TuiState) -> Renderable:
     return result
 
 
+# 選択中コメントの見出し行に付ける style。右ペインのスクロール位置を決めるとき、
+# 描画結果からこの style の要素を探して選択行の位置とする。
+_COMMENT_FOCUS_STYLE = "reverse"
+
+
 def _notes_journals(issue: Issue) -> list[tuple[int, Journal]]:
     journals = issue.get("journals") or []
     return [
@@ -99,7 +104,7 @@ def _render_preview(state: TuiState) -> Renderable:
             if edit.active:
                 prefix = "> " if j_idx == focus_idx else "  "
                 mark = "*" if j_idx in editable_set else " "
-                style = "reverse" if j_idx == focus_idx else ""
+                style = _COMMENT_FOCUS_STYLE if j_idx == focus_idx else ""
                 parts.append((style, f"{prefix}{mark} {header_text}\n"))
             else:
                 parts.append(("", f"{header_text}\n"))
@@ -137,6 +142,31 @@ def editable_journal_indexes(issue: Issue, me_id: str | None) -> list[int]:
     return my_note_indexes
 
 
+def _focused_preview_line(state: TuiState) -> int | None:
+    """右ペインの描画結果のうち、選択中コメントの見出しが何行目かを返す。"""
+    line = 0
+    for style, text in _render_preview(state):
+        if style == _COMMENT_FOCUS_STYLE:
+            return line
+        line += text.count("\n")
+    return None
+
+
+def sync_preview_scroll(state: TuiState) -> None:
+    """選択中コメントが右ペインに映るよう `preview_scroll` を合わせる。
+
+    説明が長いイシューでは選択行が必ず画面外になるため、選択モードに入った時と
+    カーソル移動時に呼ぶ。表示範囲の外にある時だけ、その行が先頭に来るまで
+    スクロールする (範囲内なら手動スクロールの位置をそのまま残す)。
+    """
+    line = _focused_preview_line(state)
+    if line is None:
+        return
+    height = max(1, state.page_size)
+    if not (state.preview_scroll <= line < state.preview_scroll + height):
+        state.preview_scroll = line
+
+
 def enter_comment_select_mode(state: TuiState):
     if not state.issue_tab.issues:
         return
@@ -148,18 +178,21 @@ def enter_comment_select_mode(state: TuiState):
     edit.editable_indexes = indexes
     edit.cursor = len(indexes) - 1
     edit.active = True
+    sync_preview_scroll(state)
 
 
 def comment_select_cursor_up(state: TuiState) -> None:
     edit = state.issue_tab.comment_select
     if edit.active and edit.editable_indexes:
         edit.cursor = max(0, edit.cursor - 1)
+        sync_preview_scroll(state)
 
 
 def comment_select_cursor_down(state: TuiState) -> None:
     edit = state.issue_tab.comment_select
     if edit.active and edit.editable_indexes:
         edit.cursor = min(len(edit.editable_indexes) - 1, edit.cursor + 1)
+        sync_preview_scroll(state)
 
 
 def exit_comment_select_mode(state: TuiState) -> None:

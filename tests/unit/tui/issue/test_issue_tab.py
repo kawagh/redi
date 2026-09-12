@@ -4,6 +4,7 @@ import pytest
 import requests
 
 from redi.api.issue import Issue
+from redi.tui.app_render import render_preview_current
 from redi.tui.issue import issue_tab
 from redi.tui.issue.issue_tab import _page_label, fetch_issues_with_filter
 from redi.tui.state import IssueFilter, IssueFind, TuiState
@@ -101,6 +102,77 @@ class TestFetchIssuesWithFilter:
         fetch_issues_with_filter(state, 0)
 
         assert captured["query_id"] == "7"
+
+
+def _make_comment_state(
+    *, description_lines: int, comment_count: int, page_size: int
+) -> TuiState:
+    journals = [
+        {
+            "id": 100 + i,
+            "notes": f"note {i}",
+            "user": {"id": 7, "name": "me"},
+            "created_on": f"2026-08-2{i}T00:00:00Z",
+        }
+        for i in range(comment_count)
+    ]
+    issue = cast(
+        Issue,
+        {
+            "id": 1,
+            "subject": "subject",
+            "description": "\n".join(f"line {i}" for i in range(description_lines)),
+            "journals": journals,
+        },
+    )
+    state = TuiState()
+    state.page_size = page_size
+    state.me_id = "7"
+    state.issue_tab.issues = [issue]
+    return state
+
+
+def _focused_line_in_view(state: TuiState) -> int | None:
+    """右ペインの表示内容 (スクロール適用後) で、選択行が上から何行目かを返す。"""
+    line = 0
+    for style, text in render_preview_current(state):
+        if style == "reverse":
+            return line
+        line += text.count("\n")
+    return None
+
+
+class TestCommentSelectPreviewScroll:
+    """コメント選択モードでは選択中コメントが右ペインに映る"""
+
+    def test_scrolls_into_view_on_enter(self):
+        """説明が長いイシューでも、選択モードに入った時点で選択行が表示範囲に入る"""
+        state = _make_comment_state(description_lines=50, comment_count=2, page_size=10)
+
+        issue_tab.enter_comment_select_mode(state)
+
+        line = _focused_line_in_view(state)
+        assert line is not None
+        assert 0 <= line < state.page_size
+
+    def test_scrolls_into_view_on_cursor_move(self):
+        """カーソルを上に動かしても選択行が表示範囲に入り続ける"""
+        state = _make_comment_state(description_lines=50, comment_count=5, page_size=10)
+        issue_tab.enter_comment_select_mode(state)
+
+        issue_tab.comment_select_cursor_up(state)
+
+        line = _focused_line_in_view(state)
+        assert line is not None
+        assert 0 <= line < state.page_size
+
+    def test_keeps_scroll_when_already_visible(self):
+        """選択行が既に見えているならスクロール位置は動かさない"""
+        state = _make_comment_state(description_lines=2, comment_count=1, page_size=40)
+
+        issue_tab.enter_comment_select_mode(state)
+
+        assert state.preview_scroll == 0
 
 
 class TestFetchIssuesWhileSearching:
