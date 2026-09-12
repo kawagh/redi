@@ -326,7 +326,7 @@ def add_time_entry_parser(
     te_view_parser.add_argument(
         "time_entry_id", help=messages.arg_help_time_entry_view_id
     )
-    add_format_options(te_view_parser)
+    add_format_options(te_view_parser, postfix=True)
     te_update_parser = te_subparsers.add_parser(
         "update",
         aliases=["u"],

@@ -236,7 +236,7 @@ def add_version_parser(
         "view", aliases=["v"], help=messages.arg_help_version_view, parents=parents
     )
     v_view_parser.add_argument("version_id", help=messages.arg_help_version_view_id)
-    add_format_options(v_view_parser)
+    add_format_options(v_view_parser, postfix=True)
     v_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )

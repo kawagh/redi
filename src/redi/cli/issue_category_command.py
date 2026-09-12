@@ -54,7 +54,7 @@ def add_issue_category_parser(
     ic_view_parser.add_argument(
         "category_id", help=messages.arg_help_issue_category_view_id
     )
-    add_format_options(ic_view_parser)
+    add_format_options(ic_view_parser, postfix=True)
 
     ic_create_parser = ic_subparsers.add_parser(
         "create",
