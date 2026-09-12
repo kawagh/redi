@@ -28,7 +28,7 @@ from redi.tui.state import (
     WikiDiffModalState,
     WikiDiffView,
 )
-from redi.tui.wiki.version_modal import latest_version
+from redi.tui.wiki.version_modal import latest_version, version_label
 from redi.tui.wiki.wiki_tab import (
     current_page,
     load_version_text,
@@ -58,12 +58,6 @@ def shift_focus(current: WikiDiffColumn, step: int) -> WikiDiffColumn:
     return COLUMNS[(idx + step) % len(COLUMNS)]
 
 
-def _version_label(version: int, latest: int) -> str:
-    if version == latest:
-        return messages.tui_wiki_version_latest_label.format(version=version)
-    return messages.tui_wiki_version_label.format(version=version)
-
-
 def render_diff_column(state: TuiState, column: WikiDiffColumn) -> Renderable:
     """比較前 / 比較後の 1 列を描画する。
 
@@ -89,7 +83,7 @@ def render_diff_column(state: TuiState, column: WikiDiffColumn) -> Renderable:
         parts.append(
             (
                 line_style,
-                f" {cursor_mark} {active_mark} {_version_label(version, latest)}\n",
+                f" {cursor_mark} {active_mark} {version_label(version, latest)}\n",
             )
         )
     return parts

@@ -34,6 +34,13 @@ def latest_version(page: WikiPage | None) -> int | None:
     return int(version)
 
 
+def version_label(version: int, latest: int) -> str:
+    """版の表示ラベル。最新版には (最新) を添える。差分 modal の列でも使う。"""
+    if version == latest:
+        return messages.tui_wiki_version_latest_label.format(version=version)
+    return messages.tui_wiki_version_label.format(version=version)
+
+
 def open_version_modal(state: TuiState) -> bool:
     """カーソル位置のページの版一覧 (最新が先頭) を出す。対象がなければ False。
 
@@ -43,15 +50,7 @@ def open_version_modal(state: TuiState) -> bool:
     if latest is None:
         return False
     modal = state.wiki_tab.version_modal
-    modal.choices = [
-        (
-            str(v),
-            messages.tui_wiki_version_latest_label.format(version=v)
-            if v == latest
-            else messages.tui_wiki_version_label.format(version=v),
-        )
-        for v in range(latest, 0, -1)
-    ]
+    modal.choices = [(str(v), version_label(v, latest)) for v in range(latest, 0, -1)]
     view = viewing_version(state)
     current = view.version if view is not None else latest
     modal.active_value = str(current)
