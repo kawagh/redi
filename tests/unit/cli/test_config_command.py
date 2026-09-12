@@ -4,7 +4,9 @@ from typing import ClassVar
 import pytest
 
 from redi import config
-from redi.cli import config_command
+from redi.cli import config_command, confirm
+from redi.cli.interactive import InputCanceledException
+from redi.i18n import messages
 
 
 def _create_args(**overrides) -> argparse.Namespace:
@@ -143,6 +145,118 @@ class TestConfigCreate:
             config_command.handle_config(args)
 
         assert e.value.code == 1
+
+
+def _delete_args(**overrides) -> argparse.Namespace:
+    values = {"config_command": "delete", "profile_name": None, "yes": False}
+    values.update(overrides)
+    return argparse.Namespace(**values)
+
+
+class TestConfigDelete:
+    """`config delete` は確認を挟んでプロファイルを消す"""
+
+    @pytest.fixture
+    def deleted(self, monkeypatch):
+        """delete_profile に渡されたプロファイル名を記録する"""
+        calls: list[str] = []
+
+        def fake_delete_profile(profile_name):
+            calls.append(profile_name)
+            return config.DeleteProfileResult(deleted=True, default_removed=False)
+
+        monkeypatch.setattr(config_command, "delete_profile", fake_delete_profile)
+        return calls
+
+    def test_confirms_before_delete(self, deleted, monkeypatch, capsys):
+        """引数のプロファイル名を示して yes/No で確認してから消す"""
+        monkeypatch.setattr(confirm, "prompt", lambda *_, **__: "yes")
+        monkeypatch.setattr(
+            config_command,
+            "inline_choice",
+            lambda *_, **__: pytest.fail("対話選択に入らない想定"),
+        )
+
+        config_command.handle_config(_delete_args(profile_name="sub"))
+
+        assert deleted == ["sub"]
+        out = capsys.readouterr().out
+        assert "sub" in out
+
+    def test_cancel_keeps_profile(self, deleted, monkeypatch):
+        """確認で No ならキャンセルとして通知し、消さない"""
+        monkeypatch.setattr(confirm, "prompt", lambda *_, **__: "")
+
+        with pytest.raises(InputCanceledException):
+            config_command.handle_config(_delete_args(profile_name="sub"))
+
+        assert deleted == []
+
+    def test_yes_skips_confirm(self, deleted, monkeypatch):
+        """--yes なら確認を挟まずに消す (非 TTY 向け)"""
+        monkeypatch.setattr(
+            confirm, "prompt", lambda *_, **__: pytest.fail("確認しない想定")
+        )
+
+        config_command.handle_config(_delete_args(profile_name="sub", yes=True))
+
+        assert deleted == ["sub"]
+
+    def test_prompts_profile_when_omitted(self, deleted, monkeypatch):
+        """プロファイル名を省略したら一覧から選ばせ、default_profile には印を付ける"""
+        monkeypatch.setattr(
+            config_command, "list_profile_names", lambda: ["main", "sub"]
+        )
+        monkeypatch.setattr(config_command, "get_default_profile", lambda: "main")
+        shown: dict = {}
+
+        def fake_inline_choice(message, options, **_):
+            shown["options"] = options
+            return "sub"
+
+        monkeypatch.setattr(config_command, "inline_choice", fake_inline_choice)
+
+        config_command.handle_config(_delete_args(yes=True))
+
+        assert deleted == ["sub"]
+        assert shown["options"] == [("main", "main (default)"), ("sub", "sub")]
+
+    def test_exits_when_no_profiles(self, deleted, monkeypatch, capsys):
+        """プロファイルが 1 つも無ければ選ばせずに exit 1 する"""
+        monkeypatch.setattr(config_command, "list_profile_names", list)
+
+        with pytest.raises(SystemExit) as e:
+            config_command.handle_config(_delete_args(yes=True))
+
+        assert e.value.code == 1
+        assert deleted == []
+
+    def test_exits_when_not_deleted(self, monkeypatch):
+        """消せなかったら exit 1 する"""
+        monkeypatch.setattr(
+            config_command,
+            "delete_profile",
+            lambda _: config.DeleteProfileResult(deleted=False, default_removed=False),
+        )
+
+        with pytest.raises(SystemExit) as e:
+            config_command.handle_config(_delete_args(profile_name="main", yes=True))
+
+        assert e.value.code == 1
+
+    def test_notifies_default_removed(self, monkeypatch, capsys):
+        """最後のプロファイルと一緒に default_profile も消したことを知らせる"""
+        monkeypatch.setattr(
+            config_command,
+            "delete_profile",
+            lambda _: config.DeleteProfileResult(deleted=True, default_removed=True),
+        )
+
+        config_command.handle_config(_delete_args(profile_name="main", yes=True))
+
+        out = capsys.readouterr().out
+        assert messages.profile_deleted.format(name="main") in out
+        assert messages.default_profile_removed in out
 
 
 class TestUpdateFieldValues:

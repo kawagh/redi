@@ -12,6 +12,13 @@ class Ja(MessagesProto):
     profile_available = "利用可能なプロファイル: {names}"
     profile_list_hint = "(一覧は `redi config --full` で確認できます)"
     default_profile_set = "default_profileを {name} に設定しました"
+    profile_deleted = "profile '{name}' を削除しました"
+    default_profile_removed = "default_profile も削除しました。プロファイルを作るには redi init を実行してください"
+    profile_is_default_cannot_delete = (
+        "profile '{name}' は default_profile に設定されているため削除できません。"
+        "先に default_profile を切り替えてください: "
+        "`redi config update --default_profile <{names}>`"
+    )
     default_project_id_set = "default_project_idを {value} に設定しました{suffix}"
     editor_set = "editorを {value} に設定しました{suffix}"
     language_set = "languageを {value} に設定しました{suffix}"
@@ -289,6 +296,7 @@ class Ja(MessagesProto):
     prompt_select_profile = (
         "プロファイルを選択 (Enter: デフォルトに設定 / u: 項目を更新)"
     )
+    prompt_select_profile_to_delete = "削除するプロファイルを選択"
     prompt_profile_name = "プロファイル名: "
     prompt_set_default_profile = "profile '{name}' をdefault_profileにしますか?"
     prompt_default_project_id = "default_project_id: "
@@ -437,6 +445,7 @@ class Ja(MessagesProto):
     delete_target_news = "削除するニュース: {id} {title}"
     delete_target_group = "削除するグループ: {id} {name}"
     delete_target_time_entry = "削除する作業時間: {id} {hours}h {activity} ({spent_on})"
+    delete_target_profile = "削除するプロファイル: {name}"
 
     # ---- detail labels ----
     label_assignable = "割り当て可能: {value}"
@@ -807,7 +816,7 @@ class Ja(MessagesProto):
     arg_help_wiki_update_title = "Wikiページタイトル（省略で対話的に選択）"
 
     # ---- argparse helps (config) ----
-    arg_help_config_command = "設定表示/更新/プロファイル作成"
+    arg_help_config_command = "設定表示/更新/プロファイル作成・削除"
     arg_help_config_update = "設定更新"
     arg_help_config_profile_name_optional = (
         "更新対象のプロファイル名（省略時はdefault_profile）"
@@ -832,6 +841,8 @@ class Ja(MessagesProto):
     arg_help_config_language = "言語 (en または ja)"
     arg_help_config_text_formatting = "Redmine のテキスト書式 (markdown または textile)"
     arg_help_config_set_default_flag = "作成したプロファイルをdefault_profileに設定"
+    arg_help_config_delete = "プロファイル削除"
+    arg_help_config_delete_profile_name = "削除するプロファイル名（省略時は対話入力）"
 
     # ---- argparse helps (init) ----
     arg_help_init_command = (

@@ -2,6 +2,7 @@ import argparse
 import sys
 
 from redi.cli.alias import resolve_alias
+from redi.cli.confirm import confirm_delete
 from redi.cli.interactive import prompt, raise_on_cancel
 from redi.cli.picker import inline_checkbox, inline_choice, inline_choice_with_action
 from redi.cli.profile_setup import prompt_connection_profile
@@ -11,6 +12,7 @@ from redi.config import (
     SUPPORTED_TEXT_FORMATTINGS,
     Profile,
     create_profile,
+    delete_profile,
     get_default_profile,
     list_profile_names,
     read_profile,
@@ -93,6 +95,17 @@ def add_config_parser(
         "--set_default",
         action="store_true",
         help=messages.arg_help_config_set_default_flag,
+    )
+    c_delete_parser = c_subparsers.add_parser(
+        "delete", aliases=["d"], help=messages.arg_help_config_delete, parents=parents
+    )
+    c_delete_parser.add_argument(
+        "profile_name",
+        nargs="?",
+        help=messages.arg_help_config_delete_profile_name,
+    )
+    c_delete_parser.add_argument(
+        "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
 
 
@@ -279,10 +292,40 @@ def _handle_config_create(args: argparse.Namespace) -> None:
         print(messages.default_profile_set.format(name=profile_name))
 
 
+def _select_profile_to_delete() -> str:
+    """削除するプロファイルを選ばせる。default_profile には印を付けて選びにくくする。"""
+    profile_names = list_profile_names()
+    if not profile_names:
+        eprint(messages.no_profiles_available)
+        sys.exit(1)
+    current_default = get_default_profile()
+    options: list[tuple[str, str]] = [
+        (name, f"{name} (default)" if name == current_default else name)
+        for name in profile_names
+    ]
+    with raise_on_cancel():
+        return inline_choice(messages.prompt_select_profile_to_delete, options)
+
+
+def _handle_config_delete(args: argparse.Namespace) -> None:
+    profile_name = args.profile_name or _select_profile_to_delete()
+    if not args.yes:
+        confirm_delete(messages.delete_target_profile.format(name=profile_name))
+    result = delete_profile(profile_name)
+    if not result.deleted:
+        sys.exit(1)
+    print(messages.profile_deleted.format(name=profile_name))
+    if result.default_removed:
+        print(messages.default_profile_removed)
+
+
 def handle_config(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.config_command)
     if cmd == "create":
         _handle_config_create(args)
+        return
+    if cmd == "delete":
+        _handle_config_delete(args)
         return
     if cmd != "update":
         show_config(full=args.full)
