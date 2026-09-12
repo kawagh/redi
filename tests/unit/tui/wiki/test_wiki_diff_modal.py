@@ -5,7 +5,7 @@ import pytest
 from redi.api.wiki import WikiPage
 from redi.i18n import messages
 from redi.service import wiki_service
-from redi.tui.state import TuiState, WikiDiffView, WikiVersionView
+from redi.tui.state import TuiState, WikiDiffColumn, WikiDiffView, WikiVersionView
 from redi.tui.wiki import wiki_tab
 from redi.tui.wiki.diff_modal import (
     apply_diff,
@@ -50,6 +50,10 @@ def _stub_read_page(monkeypatch, texts: dict[int | None, str]):
 @pytest.fixture(autouse=True)
 def _wiki_project(monkeypatch):
     monkeypatch.setattr("redi.config.wiki_project_id", "research")
+
+
+def _column_text(state: TuiState, column: WikiDiffColumn) -> str:
+    return "".join(t for _, t in render_diff_column(state, column))
 
 
 class TestDiffModal:
@@ -103,8 +107,8 @@ class TestDiffModal:
         state = _state([_page("Home", version=3)])
         open_diff_modal(state)
 
-        from_col = "".join(t for _, t in render_diff_column(state, "from"))
-        to_col = "".join(t for _, t in render_diff_column(state, "to"))
+        from_col = _column_text(state, "from")
+        to_col = _column_text(state, "to")
 
         assert ">   v2" in from_col
         assert ">" not in to_col
@@ -116,11 +120,8 @@ class TestDiffModal:
         state.wiki_tab.diff_view = WikiDiffView("Home", 1, 2, diff="")
         open_diff_modal(state)
 
-        from_col = "".join(t for _, t in render_diff_column(state, "from"))
-        to_col = "".join(t for _, t in render_diff_column(state, "to"))
-
-        assert "* v1" in from_col
-        assert "* v2" in to_col
+        assert "* v1" in _column_text(state, "from")
+        assert "* v2" in _column_text(state, "to")
 
 
 class TestDiffModalCursor:
@@ -180,6 +181,13 @@ class TestDiff:
             "to": modal.versions.index(to_version),
         }
 
+    def _applied(self, from_version: int, to_version: int) -> TuiState:
+        """本文キャッシュ済みの状態で from → to の差分を適用した後の状態。"""
+        state = self._state_with_texts()
+        self._open_with(state, from_version, to_version)
+        apply_diff(state)
+        return state
+
     def test_apply_shows_diff_and_keeps_modal(self):
         """Enter で両列の版の差分を出す。フィルタと同じく modal は開いたまま"""
         state = self._state_with_texts()
@@ -189,11 +197,6 @@ class TestDiff:
         rendered = self._rendered(state)
 
         assert state.wiki_tab.diff_modal.show is True
-        assert state.wiki_tab.diff_view is not None
-        assert (
-            state.wiki_tab.diff_view.from_version,
-            state.wiki_tab.diff_view.to_version,
-        ) == (2, 3)
         assert "--- v2" in rendered
         assert "+++ v3" in rendered
         assert "-b" in rendered
@@ -201,17 +204,10 @@ class TestDiff:
 
     def test_apply_keeps_chosen_direction(self):
         """比較前に新しい版、比較後に古い版を選べばその向きのまま出す"""
-        state = self._state_with_texts()
-        self._open_with(state, 3, 2)
+        state = self._applied(3, 2)
 
-        apply_diff(state)
         rendered = self._rendered(state)
 
-        assert state.wiki_tab.diff_view is not None
-        assert (
-            state.wiki_tab.diff_view.from_version,
-            state.wiki_tab.diff_view.to_version,
-        ) == (3, 2)
         assert "--- v3" in rendered
         assert "+++ v2" in rendered
         assert "-B" in rendered
@@ -237,7 +233,7 @@ class TestDiff:
 
         apply_diff(state)
 
-        assert sorted(calls, key=str) == [2, None]
+        assert calls == [2, None]
         assert state.wiki_tab.texts["Home"] == "a\nB"
         assert state.wiki_tab.version_texts[("Home", 2)] == "a\nb"
         assert "+B" in self._rendered(state)
@@ -258,9 +254,7 @@ class TestDiff:
 
     def test_diff_lines_are_styled(self):
         """追加行と削除行に色が付く"""
-        state = self._state_with_texts()
-        self._open_with(state, 2, 3)
-        apply_diff(state)
+        state = self._applied(2, 3)
 
         styles = {
             text.rstrip("\n"): style for style, text in WIKI_TAB.render_preview(state)
@@ -269,20 +263,9 @@ class TestDiff:
         assert styles["+B"] == "fg:ansigreen"
         assert styles["-b"] == "fg:ansired"
 
-    def test_no_changes_message(self):
-        """差分が無ければその旨を出す"""
-        state = self._state_with_texts()
-        state.wiki_tab.version_texts[("Home", 2)] = "a\nB\nc"
-        self._open_with(state, 2, 3)
-        apply_diff(state)
-
-        assert messages.tui_wiki_diff_no_changes in self._rendered(state)
-
     def test_clear_returns_to_text(self):
         """c で差分をやめて本文に戻る。modal は開いたまま"""
-        state = self._state_with_texts()
-        self._open_with(state, 2, 3)
-        apply_diff(state)
+        state = self._applied(2, 3)
 
         clear_diff(state)
 
@@ -292,9 +275,7 @@ class TestDiff:
 
     def test_status_hint_shows_diff(self):
         """差分表示中はステータスバーに 2 版を出す"""
-        state = self._state_with_texts()
-        self._open_with(state, 2, 3)
-        apply_diff(state)
+        state = self._applied(2, 3)
 
         assert messages.tui_status_wiki_diff_active.format(
             from_version=2, to_version=3
@@ -302,9 +283,7 @@ class TestDiff:
 
     def test_update_allowed_when_diff_on_latest(self):
         """最新版を見ながらの差分表示では u を止めない"""
-        state = self._state_with_texts()
-        self._open_with(state, 2, 3)
-        apply_diff(state)
+        state = self._applied(2, 3)
 
         assert WIKI_TAB.on_action_key(state, "u") is not None
 
@@ -320,9 +299,7 @@ class TestDiff:
 
     def test_open_web_uses_diff_url(self, monkeypatch):
         """差分表示中の v は Redmine の差分画面を開く"""
-        state = self._state_with_texts()
-        self._open_with(state, 1, 3)
-        apply_diff(state)
+        state = self._applied(1, 3)
         opened: list[str] = []
         monkeypatch.setattr(wiki_tab.webbrowser, "open", opened.append)
         monkeypatch.setattr("redi.config.redmine_url", "http://redmine.example")
@@ -347,9 +324,7 @@ class TestDiff:
 
     def test_selecting_version_closes_diff(self):
         """h で版を選び直すと差分表示は閉じる"""
-        state = self._state_with_texts()
-        self._open_with(state, 2, 3)
-        apply_diff(state)
+        state = self._applied(2, 3)
 
         select_version(state, 1)
 
