@@ -7,14 +7,20 @@ from prompt_toolkit.key_binding import KeyBindings
 from redi.service import me_service
 from redi.tui.app_layout import build_layout
 from redi.tui.conditions import build_conditions
+from redi.tui.hooks.resize_watcher import attach_resize_watcher
+from redi.tui.hooks.screen_logger import attach_screen_log
 from redi.tui.issue.issue_tab import fetch_issues_with_filter, load_journals
 from redi.tui.keybindings import (
     modal_keybindings,
     normal_keybindings,
     submode_keybindings,
 )
-from redi.tui.screen_log import attach_screen_log
-from redi.tui.state import FIXED_ROWS, TuiPosition, TuiResult, TuiState
+from redi.tui.state import (
+    TuiPosition,
+    TuiResult,
+    TuiState,
+    compute_page_size,
+)
 from redi.tui.tabs import TABS
 
 
@@ -28,7 +34,7 @@ def _restore_session(state: TuiState) -> None:
     if last:
         state.tab = last.tab
     position = last.position if last else TuiPosition()
-    state.page_size = max(1, shutil.get_terminal_size().lines - FIXED_ROWS)
+    state.page_size = compute_page_size(shutil.get_terminal_size().lines)
     initial_offset = position.offset if state.tab == "issues" else 0
     initial_page = fetch_issues_with_filter(state, initial_offset)
     state.issue_tab.offset = initial_offset
@@ -88,6 +94,8 @@ def run_issue_tui(
         key_bindings=kb,
         full_screen=True,
     )
+
+    attach_resize_watcher(app, state, conditions)
 
     if debug_log_path is not None:
         attach_screen_log(app, debug_log_path)

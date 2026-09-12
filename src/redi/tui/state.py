@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from redi import config
+from redi.api import PAGE_LIMIT_MAX
 from redi.api.issue import Issue
 from redi.api.time_entry import TimeEntry
 from redi.api.wiki import WikiPage
@@ -28,6 +29,27 @@ Renderable = list[tuple[str, str]]
 # 一覧/プレビューの外側にある固定行の合計 (タブバー + 罫線 + ステータスバー)。
 # Layout の HSplit に固定行を増減したらここも更新すること。
 FIXED_ROWS = 3
+
+
+def compute_page_size(rows: int) -> int:
+    """端末の行数から 1 ページの取得件数を求める。
+
+    固定行 (FIXED_ROWS) を除いた行数が一覧に使える行数。最低 1 件は取り、
+    Redmine の limit 上限で頭打ちにする (超えた分は返らず Page 表示と
+    実データがずれるため)。
+    """
+    return max(1, min(rows - FIXED_ROWS, PAGE_LIMIT_MAX))
+
+
+def realign_page(offset: int, cursor: int, page_size: int) -> tuple[int, int]:
+    """カーソル行を保ったまま offset を新しい page_size のページ境界へ揃える。
+
+    `(offset, cursor)` を返す。offset が page_size の倍数になるので、
+    ステータスバーの Page 表示 (offset // page_size) が実データとずれない。
+    """
+    absolute = offset + cursor
+    new_offset = (absolute // page_size) * page_size
+    return new_offset, absolute - new_offset
 
 
 @dataclass
@@ -180,6 +202,33 @@ class CommentSelectState:
 
 
 @dataclass
+class IssueFind:
+    """F で開く検索の条件。Redmine の検索 API に渡すクエリを保持する。
+
+    `/` のバッファ内検索 (`TuiState.search_query`) とは別物で、こちらは API を叩いて
+    イシュー一覧そのものを置き換える。
+    """
+
+    query: str = ""
+
+    def is_active(self) -> bool:
+        return bool(self.query)
+
+    def short_label(self) -> str:
+        if not self.query:
+            return ""
+        return f"find={self.query}"
+
+
+@dataclass
+class IssueFindModalState:
+    """F で開く検索 modal の表示と入力状態。"""
+
+    show: bool = False
+    input_text: str = ""
+
+
+@dataclass
 class IssueDeleteModalState:
     """D で開く issue 削除確認 modal の状態。"""
 
@@ -199,6 +248,8 @@ class IssueTabState:
     total_count: int = 0
     filter: IssueFilter = field(default_factory=IssueFilter)
     filter_modal: FilterModalState = field(default_factory=FilterModalState)
+    find: IssueFind = field(default_factory=IssueFind)
+    find_modal: IssueFindModalState = field(default_factory=IssueFindModalState)
     comment_select: CommentSelectState = field(default_factory=CommentSelectState)
     delete_modal: IssueDeleteModalState = field(default_factory=IssueDeleteModalState)
 
@@ -307,6 +358,14 @@ class TuiState:
     project_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
     profile_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
 
+    def apply_terminal_rows(self, rows: int) -> bool:
+        """端末の行数から page_size を更新する。値が変わったときだけ True を返す。"""
+        new_size = compute_page_size(rows)
+        if new_size == self.page_size:
+            return False
+        self.page_size = new_size
+        return True
+
     def effective_project_id(self) -> str | None:
         return self.project_id or config.default_project_id
 
@@ -319,6 +378,7 @@ class TuiState:
 
         next_state = TuiState(last_result=result)
         next_state.issue_tab.filter = self.issue_tab.filter
+        next_state.issue_tab.find = self.issue_tab.find
         next_state.time_entry_tab.filter = self.time_entry_tab.filter
         next_state.project_id = self.project_id
         next_state.project_label = self.project_label

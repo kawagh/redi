@@ -1,3 +1,4 @@
+import pytest
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
 
@@ -41,3 +42,34 @@ class TestEscapeClearsSearch:
         _handler(_kb(state), (Keys.Escape,))(None)
 
         assert state.issue_tab.filter.tracker_id == "2"
+
+
+class TestFindKey:
+    """F は issue タブでだけ検索 modal を開く"""
+
+    def test_opens_find_modal_on_issue_tab(self):
+        """issues タブで F を押すと検索 modal が開く"""
+        state = TuiState()
+        state.tab = "issues"
+
+        _handler(_kb(state), ("F",))(None)
+
+        assert state.issue_tab.find_modal.show is True
+
+    def test_does_nothing_on_other_tabs(self):
+        """wiki タブには検索がないので F を押しても modal は開かない"""
+        state = TuiState()
+        state.tab = "wiki"
+
+        _handler(_kb(state), ("F",))(None)
+
+        assert state.issue_tab.find_modal.show is False
+
+    def test_find_modal_disables_normal_keys(self):
+        """検索 modal 表示中は通常モードのキーが効かない"""
+        state = TuiState()
+        state.tab = "issues"
+        state.issue_tab.find_modal.show = True
+
+        with pytest.raises(AssertionError):
+            _handler(_kb(state), ("F",))

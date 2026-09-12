@@ -13,7 +13,22 @@ def _response(payload: dict) -> requests.Response:
 
 
 class TestFetchQueries:
-    """fetch_queries は Redmine のページングを辿って全件返す"""
+    """fetch_queries は all_pages を指定したときだけページングを辿って全件返す"""
+
+    def test_default_sends_no_paging_params(self, monkeypatch):
+        """既定ではページングを足さず、Redmine の既定件数に任せて1回だけ呼ぶ"""
+        calls: list[dict] = []
+
+        def fake_get(_path, params=None):
+            calls.append(params or {})
+            return _response({"queries": [{"id": 1}], "total_count": 150})
+
+        monkeypatch.setattr(query_module.client, "get", fake_get)
+
+        queries = query_module.fetch_queries()
+
+        assert calls == [{}]
+        assert [q["id"] for q in queries] == [1]
 
     def test_follows_pagination_until_total_count(self, monkeypatch):
         """total_count に届くまで offset を進めて全件集める"""
@@ -35,7 +50,7 @@ class TestFetchQueries:
 
         monkeypatch.setattr(query_module.client, "get", fake_get)
 
-        queries = query_module.fetch_queries()
+        queries = query_module.fetch_queries(all_pages=True)
 
         assert [q["id"] for q in queries] == list(range(1, 151))
         assert [c["offset"] for c in calls] == [0, 100]

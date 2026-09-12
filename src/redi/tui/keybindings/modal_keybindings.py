@@ -25,7 +25,23 @@ from redi.tui.issue.filter_modal import (
     shift_focus,
     sync_cursors_to_filter,
 )
-from redi.tui.issue.issue_tab import reload_with_filter
+from redi.tui.issue.find_modal import (
+    backspace as find_backspace,
+)
+from redi.tui.issue.find_modal import (
+    clear_input as find_clear_input,
+)
+from redi.tui.issue.find_modal import (
+    close_find_modal,
+    confirm_find,
+)
+from redi.tui.issue.find_modal import (
+    delete_word as find_delete_word,
+)
+from redi.tui.issue.find_modal import (
+    input_char as find_input_char,
+)
+from redi.tui.issue.issue_tab import clear_find_for_filter, reload_with_filter
 from redi.tui.keybindings.keybinding_actions import reset_preview_scroll
 from redi.tui.profile_modal import request_profile_switch
 from redi.tui.project_modal import apply_project_switch
@@ -55,6 +71,7 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     show_project_modal = conditions.project_modal
     show_issue_delete_modal = conditions.issue_delete_modal
     show_wiki_delete_modal = conditions.wiki_delete_modal
+    show_find_modal = conditions.issue_find_modal
     show_profile_modal = conditions.profile_modal
 
     @kb.add("<any>", filter=show_help_modal)
@@ -129,6 +146,7 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         state.issue_tab.filter.apply(modal.focus, api_val, label)
         sync_cursors_to_filter(state)
         reset_preview_scroll(state)
+        clear_find_for_filter(state)
         reload_with_filter(state)
 
     @kb.add("c", filter=show_filter_modal)
@@ -140,6 +158,7 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         modal.tracker_cursor = 0
         modal.query_cursor = 0
         reset_preview_scroll(state)
+        clear_find_for_filter(state)
         reload_with_filter(state)
 
     @kb.add("escape", filter=show_filter_modal)
@@ -208,6 +227,34 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         @kb.add(digit, filter=show_issue_delete_modal)
         def _(event):
             issue_delete_input_digit(state, event.data)
+
+    @kb.add("enter", filter=show_find_modal)
+    def _(event):
+        confirm_find(state)
+
+    @kb.add("escape", filter=show_find_modal)
+    @kb.add("c-c", filter=show_find_modal)
+    def _(event):
+        close_find_modal(state)
+
+    @kb.add("backspace", filter=show_find_modal)
+    def _(event):
+        find_backspace(state)
+
+    @kb.add("c-w", filter=show_find_modal)
+    def _(event):
+        find_delete_word(state)
+
+    @kb.add("c-u", filter=show_find_modal)
+    def _(event):
+        find_clear_input(state)
+
+    # 検索クエリは自由入力なので、印字できる1文字はそのまま受け付ける
+    @kb.add("<any>", filter=show_find_modal)
+    def _(event):
+        data = event.data
+        if data and len(data) == 1 and data.isprintable():
+            find_input_char(state, data)
 
     @kb.add("enter", filter=show_wiki_delete_modal)
     def _(event):

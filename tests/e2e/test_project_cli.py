@@ -3,7 +3,7 @@ import subprocess
 
 import pytest
 
-from tests.e2e.utils import run_redi, unique_identifier
+from tests.e2e.utils import assert_paginates, run_redi, unique_identifier
 
 
 @pytest.mark.e2e
@@ -19,6 +19,14 @@ class TestProjectList:
 
         result = run_redi("project", "list")
         assert identifier in result.stdout
+
+    def test_slices_list_with_limit_and_offset(self):
+        """作成済みの reditest と合わせて3件以上にしてから絞り込む"""
+        for _ in range(2):
+            name = unique_identifier("e2e-page-project")
+            run_redi("project", "create", name, name)
+
+        assert_paginates("project", "list")
 
 
 @pytest.mark.e2e

@@ -1,6 +1,7 @@
 import argparse
 import json
 import sys
+from typing import assert_never
 
 import requests
 from prompt_toolkit.completion import WordCompleter
@@ -9,31 +10,28 @@ from prompt_toolkit.validation import Validator
 from redi import config
 from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
-from redi.api.issue import Issue, IssueNotFoundException
 from redi.api.time_entry import TimeEntry, TimeEntryNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.interactive import prompt
+from redi.cli.interactive import InputCanceledException, prompt, raise_on_cancel
+from redi.cli.issue_guard import read_issue_or_exit
 from redi.cli.keybinding import (
     date_key_bindings,
     digit_and_period_key_bindings,
     digit_only_key_bindings,
 )
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.shared_options import SharedOptionParser
+from redi.cli.shared_options import (
+    OutputFormat,
+    SharedOptionParser,
+    add_format_options,
+    resolve_list_format,
+    wants_json,
+)
 from redi.cli.validator import DateValidator, HourValidator, is_yyyy_mm_dd
 from redi.i18n import messages
-from redi.output import eprint
-from redi.service import issue_service, project_service, time_entry_service
-
-
-def _read_issue(issue_id: str) -> Issue:
-    """作業時間の対象イシューを取得する。存在しない場合は exit 1。"""
-    try:
-        return issue_service.read_issue(issue_id)
-    except IssueNotFoundException:
-        eprint(messages.issue_not_found.format(id=issue_id))
-        sys.exit(1)
+from redi.output import eprint, print_tsv
+from redi.service import project_service, time_entry_service
 
 
 def _fetch_time_entry_or_exit(time_entry_id: str) -> TimeEntry:
@@ -52,30 +50,76 @@ def _list_time_entries(
     to_date: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
-    full: bool = False,
+    fmt: OutputFormat = OutputFormat.PLAIN,
 ) -> None:
-    """作業時間の一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
-    entries = time_entry_service.fetch_page(
-        project_id=project_id,
-        user_id=user_id,
-        from_date=from_date,
-        to_date=to_date,
-        limit=limit,
-        offset=offset,
-    )["time_entries"]
-    if full:
-        print(json.dumps(entries, ensure_ascii=False))
-        return
-    issue_subjects = time_entry_service.fetch_issue_subjects(entries)
-    # ユーザで絞り込んでいる場合は全行に同じ名前が並ぶので出さない
-    for te in entries:
-        print(
-            time_entry_service.format_time_entry_line(
-                te,
-                include_user=user_id is None,
-                issue_subjects=issue_subjects,
+    """作業時間の一覧を標準出力に出す。json では取得した JSON をそのまま出す。
+
+    プロジェクトが存在しない場合は指定した ID を添えて exit 1 する。
+    """
+    try:
+        entries = time_entry_service.fetch_page(
+            project_id=project_id,
+            user_id=user_id,
+            from_date=from_date,
+            to_date=to_date,
+            limit=limit,
+            offset=offset,
+        )["time_entries"]
+    except ProjectNotFoundException as e:
+        eprint(messages.project_not_found.format(id=e.project_id))
+        sys.exit(1)
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(entries, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                (
+                    "id",
+                    "spent_on",
+                    "user_id",
+                    "user_name",
+                    "hours",
+                    "activity_name",
+                    "issue_id",
+                    "project_id",
+                    "project_name",
+                    "comments",
+                    "activity_id",
+                    "created_on",
+                    "updated_on",
+                ),
+                (
+                    (
+                        te["id"],
+                        te["spent_on"],
+                        (te.get("user") or {}).get("id"),
+                        (te.get("user") or {}).get("name"),
+                        te["hours"],
+                        (te.get("activity") or {}).get("name"),
+                        (te.get("issue") or {}).get("id"),
+                        (te.get("project") or {}).get("id"),
+                        (te.get("project") or {}).get("name"),
+                        te.get("comments"),
+                        (te.get("activity") or {}).get("id"),
+                        te.get("created_on"),
+                        te.get("updated_on"),
+                    )
+                    for te in entries
+                ),
             )
-        )
+        case OutputFormat.PLAIN:
+            issue_subjects = time_entry_service.fetch_issue_subjects(entries)
+            # ユーザで絞り込んでいる場合は全行に同じ名前が並ぶので出さない
+            for te in entries:
+                print(
+                    time_entry_service.format_time_entry_line(
+                        te,
+                        include_user=user_id is None,
+                        issue_subjects=issue_subjects,
+                    )
+                )
+        case _:
+            assert_never(fmt)
 
 
 def _view_time_entry(time_entry_id: str, full: bool = False) -> None:
@@ -159,8 +203,7 @@ def _update_time_entry(
         or comments is not None
     )
     if not has_changes:
-        eprint(messages.update_canceled_no_changes)
-        sys.exit(1)
+        raise InputCanceledException(messages.update_canceled_no_changes)
     try:
         time_entry_service.update_time_entry(
             time_entry_id,
@@ -233,7 +276,7 @@ def _time_entry_list_option_parser(*, postfix: bool = False) -> argparse.Argumen
     )
     parser.add_argument("--limit", "-l", type=int, help=messages.arg_help_limit)
     parser.add_argument("--offset", "-o", type=int, help=messages.arg_help_offset)
-    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    add_format_options(parser, tsv=True)
     return parser
 
 
@@ -283,9 +326,7 @@ def add_time_entry_parser(
     te_view_parser.add_argument(
         "time_entry_id", help=messages.arg_help_time_entry_view_id
     )
-    te_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(te_view_parser)
     te_update_parser = te_subparsers.add_parser(
         "update",
         aliases=["u"],
@@ -338,7 +379,7 @@ def _lacks_required_time_entry_create_args(args: argparse.Namespace) -> bool:
 
 
 def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
-    try:
+    with raise_on_cancel():
         if not args.issue_id and not args.project_id:
             default_issue_id = getattr(args, "default_issue_id", None) or ""
             issue_id = prompt(
@@ -348,14 +389,14 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
             ).strip()
             if issue_id:
                 args.issue_id = issue_id
-                issue = _read_issue(issue_id)
+                issue = read_issue_or_exit(issue_id)
                 print(
                     messages.issue_label.format(
                         id=issue["id"], subject=issue["subject"]
                     )
                 )
             else:
-                projects = project_service.list_projects()
+                projects = project_service.list_projects(all_pages=True)
                 valid_values: set[str] = set()
                 for p in projects:
                     valid_values.add(str(p["id"]))
@@ -407,9 +448,6 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
             )
         if not args.comments:
             args.comments = prompt(messages.prompt_comment).strip() or None
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
 
 
 def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
@@ -421,17 +459,13 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
         ("comments", messages.field_comments),
         ("issue_id", messages.field_issue_id),
     ]
-    try:
+    with raise_on_cancel():
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if not selected:
-        eprint(messages.canceled_no_items_selected)
-        sys.exit(1)
+        raise InputCanceledException(messages.canceled_no_items_selected)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
-    try:
+    with raise_on_cancel():
         if "hours" in selected:
             hours_str = prompt(
                 messages.prompt_hours,
@@ -477,16 +511,13 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
                 key_bindings=digit_only_key_bindings(),
             ).strip()
             if issue_id:
-                issue = _read_issue(issue_id)
+                issue = read_issue_or_exit(issue_id)
                 print(
                     messages.issue_label.format(
                         id=issue["id"], subject=issue["subject"]
                     )
                 )
                 args.issue_id = issue_id
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
 
 
 def handle_time_entry(args: argparse.Namespace) -> None:
@@ -504,7 +535,7 @@ def handle_time_entry(args: argparse.Namespace) -> None:
             comments=args.comments,
         )
     elif cmd == "view":
-        _view_time_entry(args.time_entry_id, full=args.full)
+        _view_time_entry(args.time_entry_id, full=wants_json(args))
     elif cmd == "update":
         if (
             args.hours is None
@@ -546,5 +577,5 @@ def handle_time_entry(args: argparse.Namespace) -> None:
             to_date=args.to_date,
             limit=args.limit,
             offset=args.offset,
-            full=args.full,
+            fmt=resolve_list_format(args),
         )

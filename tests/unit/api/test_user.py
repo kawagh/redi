@@ -36,11 +36,17 @@ def captured_params(monkeypatch) -> list[dict]:
 
 
 class TestFetchUsersPaging:
-    """fetch_users は limit / offset 未指定なら、既定の件数で打ち切らず全件返す"""
+    """fetch_users は all_pages を指定したときだけ、既定の件数で打ち切らず全件返す"""
+
+    def test_default_sends_no_paging_params(self, captured_params):
+        """既定ではページングを足さず、Redmine の既定件数に任せて1回だけ呼ぶ"""
+        user_module.fetch_users()
+
+        assert captured_params == [{}]
 
     def test_sends_paging_params(self, captured_params):
-        """絞り込み条件を足さずページングだけを指定し、既定の件数で切られないようにする"""
-        user_module.fetch_users()
+        """all_pages では既定の件数で切られないようページングを指定する"""
+        user_module.fetch_users(all_pages=True)
 
         assert captured_params == [{"limit": USERS_PAGE_LIMIT, "offset": 0}]
 
@@ -58,14 +64,14 @@ class TestFetchUsersPaging:
 
         monkeypatch.setattr(user_module.client, "get", fake_get)
 
-        users = user_module.fetch_users()
+        users = user_module.fetch_users(all_pages=True)
 
         assert offsets == [0, USERS_PAGE_LIMIT]
         assert len(users) == 150
 
 
 class TestFetchUsersExplicitPaging:
-    """limit / offset を指定したときは、その1ページだけを返す"""
+    """limit / offset はそのまま Redmine に渡す"""
 
     @pytest.mark.parametrize(
         ("kwargs", "expected"),

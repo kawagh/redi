@@ -3,6 +3,22 @@ from typing import TypedDict, cast
 from redi.api.exceptions import RedmineValidationException
 from redi.client import client
 
+RELATION_TYPES = (
+    "relates",
+    "duplicates",
+    "duplicated",
+    "blocks",
+    "blocked",
+    "precedes",
+    "follows",
+    "copied_to",
+    "copied_from",
+)
+"""Redmine が受け付ける関係性タイプ。
+
+Redmine 側で固定の集合なので、不正な値は API を叩く前にクライアントで弾ける。
+"""
+
 
 class IssueRelation(TypedDict):
     """redmine IssueRelation"""

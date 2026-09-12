@@ -30,7 +30,7 @@ def open_project_modal(state: TuiState) -> None:
     """プロジェクト切替モーダルを開く。一覧取得に失敗したら error modal に流す。"""
     modal = state.project_modal
     try:
-        projects = sort_projects_by_id_desc(list_projects())
+        projects = sort_projects_by_id_desc(list_projects(all_pages=True))
     except requests.exceptions.RequestException as e:
         state.error_modal = messages.tui_project_load_failed.format(error=e)
         return

@@ -6,6 +6,7 @@ from redi.api.user import UserNotFoundException, UserPermissionDeniedException
 from redi.cli import main as main_module
 from redi.cli import user_command
 from redi.cli.main import build_redi_parser
+from redi.cli.shared_options import OutputFormat
 from redi.i18n import messages
 
 
@@ -33,19 +34,26 @@ class TestUpdate:
 class TestList:
     """`user list` の権限不足時のふるまい"""
 
-    def test_permission_denied_is_not_an_error_exit(self, monkeypatch, capsys):
-        """一覧は管理者権限が要るため、権限不足なら理由を出して正常終了する"""
+    def test_permission_denied_exits_with_reason(self, monkeypatch, capsys):
+        """一覧は管理者権限が要るため、権限不足なら理由と代替手段を出して exit 1 する
+
+        一覧が取れていないのに exit 0 だと、スクリプトやエージェントが
+        「ユーザーが 0 人」と「権限が無くて取れなかった」を区別できない。
+        """
 
         def fake_list_users(**kwargs):
             raise UserPermissionDeniedException
 
         monkeypatch.setattr(user_command.user_service, "list_users", fake_list_users)
 
-        user_command._list_users()
+        with pytest.raises(SystemExit) as e:
+            user_command._list_users()
 
-        err = capsys.readouterr().err
-        assert messages.user_list_admin_required in err
-        assert messages.user_list_member_hint in err
+        captured = capsys.readouterr()
+        assert e.value.code == 1
+        assert captured.out == ""
+        assert messages.user_list_admin_required in captured.err
+        assert messages.user_list_member_hint in captured.err
 
 
 class TestListFilterOptions:
@@ -154,3 +162,36 @@ class TestView:
 
         assert e.value.code == 1
         assert expected in capsys.readouterr().err
+
+
+class TestListTsv:
+    """`user list --format tsv` は id / login の後ろに名前と権限・状態を並べる"""
+
+    def test_admin_only_fields_are_empty_when_absent(self, monkeypatch, capsys):
+        """mail / admin / last_login_on は管理者でないと返らないので、無ければ空セルにする"""
+        monkeypatch.setattr(
+            user_command.user_service,
+            "list_users",
+            lambda **kwargs: [
+                {
+                    "id": 1,
+                    "login": "admin",
+                    "firstname": "Redmine",
+                    "lastname": "Admin",
+                    "mail": "admin@example.com",
+                    "admin": True,
+                    "status": 1,
+                    "last_login_on": "2026-09-01T00:00:00Z",
+                },
+                {"id": 5, "login": "dev", "firstname": "Sandbox", "lastname": "Dev"},
+            ],
+        )
+
+        user_command._list_users(fmt=OutputFormat.TSV)
+
+        assert capsys.readouterr().out == (
+            "id\tlogin\tfirstname\tlastname\tmail\tadmin\tstatus\tlast_login_on\n"
+            "1\tadmin\tRedmine\tAdmin\tadmin@example.com\ttrue\t1"
+            "\t2026-09-01T00:00:00Z\n"
+            "5\tdev\tSandbox\tDev\t\t\t\t\n"
+        )

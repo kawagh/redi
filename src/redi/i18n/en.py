@@ -5,10 +5,15 @@ class En(MessagesProto):
     # ---- profile / config ----
     profile_created = "Created profile '{name}'"
     profile_already_exists = "Profile '{name}' already exists"
+    profile_not_found = "profile '{name}' not found in {path}"
+    profile_did_you_mean = "did you mean: {names}?"
+    profile_available = "available profiles: {names}"
+    profile_list_hint = "(run `redi config --full` to list profiles)"
     default_profile_set = "Set default_profile to {name}"
     default_project_id_set = "Set default_project_id to {value}{suffix}"
     editor_set = "Set editor to {value}{suffix}"
     language_set = "Set language to {value}{suffix}"
+    text_formatting_set = "Set text_formatting to {value}{suffix}"
     redmine_api_key_set = "Set redmine_api_key{suffix}"
     redmine_url_set = "Set redmine_url to {value}{suffix}"
     wiki_project_id_set = "Set wiki_project_id to {value}{suffix}"
@@ -60,6 +65,9 @@ class En(MessagesProto):
         "Wiki page not found: {title} (version={version})"
     )
     wiki_page_does_not_exist = "Wiki page does not exist"
+    wiki_page_already_exists = (
+        "Wiki page already exists: {title} (use wiki update to modify it)"
+    )
     parent_page_not_found = "Parent page not found: {title}"
     file_not_found = "File not found: {path}"
     attachment_not_found = "Attachment not found: #{id}"
@@ -164,6 +172,10 @@ class En(MessagesProto):
     issue_update_failed = "Failed to update issue"
     issue_delete_failed = "Failed to delete issue"
     watcher_add_failed = "Failed to add watcher"
+    watcher_not_added = (
+        "Could not add watcher {user_id} to #{issue_id}: "
+        "the user does not exist or cannot be a watcher"
+    )
     watcher_remove_failed = "Failed to remove watcher"
     wiki_page_delete_failed = "Failed to delete wiki page"
     wiki_page_update_conflict = (
@@ -282,6 +294,7 @@ class En(MessagesProto):
     prompt_wiki_project_id = "wiki_project_id: "
     prompt_editor = "editor: "
     prompt_select_language = "Select language"
+    prompt_select_text_formatting = "Select text formatting of the Redmine server"
     prompt_start_date = "Start date (YYYY-MM-DD, optional): "
     prompt_due_date = "Due date (YYYY-MM-DD, optional): "
     prompt_estimated_hours = "Estimated hours (e.g. 1.5 (h)): "
@@ -396,6 +409,7 @@ class En(MessagesProto):
     field_wiki_project_id = "wiki_project_id"
     field_editor = "editor"
     field_language = "language"
+    field_text_formatting = "text formatting (text_formatting)"
     field_set_default_profile = "set as default_profile"
 
     # ---- sharing options ----
@@ -532,6 +546,8 @@ class En(MessagesProto):
     tui_status_hint_time_entries = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
     tui_status_search_active = "/{query} Esc:clear"
     tui_flash_reloaded = "Reloaded"
+    tui_flash_resize_reload_failed = "Failed to refetch after resize: {error}"
+    tui_flash_find_cleared_by_filter = "Cleared the search and switched to filters"
     tui_filter_unspecified = "(unspecified)"
     tui_filter_status_open_default = "open (default)"
     tui_filter_status_all = "all (open + closed)"
@@ -585,6 +601,9 @@ class En(MessagesProto):
     tui_issue_delete_modal_mismatch = "issue_id does not match"
     tui_issue_delete_modal_empty = "Enter the issue_id"
     tui_issue_delete_modal_hint = "Enter:confirm Esc:close"
+    tui_find_modal_title = "Search issues (Esc to close)"
+    tui_find_modal_input_label = "query> "
+    tui_find_modal_hint = "Enter:search (empty Enter clears) Esc:close"
     tui_wiki_delete_failed = "Failed to delete wiki page: {error}"
     tui_wiki_delete_page_missing = "Wiki page not found: {title}"
     tui_wiki_delete_modal_title = "Confirm wiki page deletion (Esc to close)"
@@ -605,14 +624,21 @@ class En(MessagesProto):
     arg_help_debug = "Enable debug logging"
     arg_help_debug_tui = "Dump TUI screen contents to a YAML log"
     arg_help_profile = (
-        "Profile name to use (overrides default_profile in config.toml temporarily)"
+        "Profile name to use (overrides default_profile in config.toml temporarily; "
+        "list with `redi config --full`)"
     )
     arg_help_refresh = (
         "Fetch without reading the cache (refreshes tracker / custom field choices)"
     )
 
     # ---- argparse helps (common) ----
-    arg_help_full_json = "Output full JSON"
+    arg_help_format = "Output format (default: plain)"
+    arg_help_format_list = (
+        "Output format (default: plain). "
+        "tsv: header row + tab-separated columns, for pipes and spreadsheets "
+        "(header names are fixed in English)"
+    )
+    arg_help_full_json = "Output full JSON (same as --format json)"
     arg_help_skip_confirm = "Skip confirmation prompt"
     arg_help_open_web = "Open the Redmine page in a browser"
     arg_help_project_id = "Project ID"
@@ -671,6 +697,9 @@ class En(MessagesProto):
         "Filter by custom query ID (see `redi query`; "
         "cannot be combined with filters other than --project_id)"
     )
+    error_format_tsv_list_only = (
+        "--format tsv is only available for list commands (use plain or json)"
+    )
     error_query_id_conflicts_filters = (
         "--query_id cannot be used with {options} "
         "(the custom query takes precedence and {options} is ignored)"
@@ -680,7 +709,8 @@ class En(MessagesProto):
     arg_help_issue_list = "List issues"
     arg_help_issue_view = "Issue details"
     arg_help_issue_view_id = "Issue ID"
-    arg_help_issue_include = "Additional info (children,attachments,relations,changesets,journals,watchers,allowed_statuses)"
+    arg_help_issue_include = "Additional info, comma separated ({choices})"
+    error_invalid_issue_include = "Unknown value: {values} (available: {choices})"
     arg_help_issue_create = "Create issue"
     arg_help_issue_subject_arg = "Issue subject (omit to enter interactively)"
     arg_help_issue_tracker_id = "Tracker ID"
@@ -704,9 +734,7 @@ class En(MessagesProto):
     arg_help_issue_done_ratio = "Done ratio (0-100)"
     arg_help_issue_estimated_hours = "Estimated hours (e.g. 1.5)"
     arg_help_issue_notes = "Notes"
-    arg_help_issue_relate = (
-        "Relation type (relates, duplicates, blocks, precedes, follows, ...)"
-    )
+    arg_help_issue_relate = "Relation type (use with --to)"
     arg_help_issue_relate_to = "Related issue ID"
     arg_help_issue_delete_relation = "Delete relation (use with --to)"
     arg_help_issue_attach = "Attachment file path (repeatable)"
@@ -762,6 +790,9 @@ class En(MessagesProto):
     arg_help_config_set_wiki_project_id = "Set wiki project ID"
     arg_help_config_set_editor = "Set editor"
     arg_help_config_set_language = "Set language (en or ja)"
+    arg_help_config_set_text_formatting = (
+        "Set text formatting of the Redmine server (markdown or textile)"
+    )
     arg_help_config_set_api_key = "Set Redmine API key"
     arg_help_config_set_url = "Set Redmine URL"
     arg_help_config_set_default_profile = "Set default profile"
@@ -773,6 +804,9 @@ class En(MessagesProto):
     arg_help_config_wiki_project_id = "Wiki project ID"
     arg_help_config_editor = "Editor"
     arg_help_config_language = "Language (en or ja)"
+    arg_help_config_text_formatting = (
+        "Text formatting of the Redmine server (markdown or textile)"
+    )
     arg_help_config_set_default_flag = "Set the created profile as default_profile"
 
     # ---- argparse helps (init) ----
@@ -1014,6 +1048,10 @@ class En(MessagesProto):
     config_profile_source_default = "default"
     config_profile_source_option = "via --profile"
     config_current_profile_comment = "current profile ({source})"
+    config_top_level_api_key_warning = (
+        "warning: redmine_api_key at the top level of {path} is not used for "
+        "authentication. Put it inside a profile ([profile_name] table)"
+    )
 
     # ---- TUI help labels (sections / common) ----
     tui_help_section_navigation = "Navigation"
@@ -1033,6 +1071,7 @@ class En(MessagesProto):
     tui_help_next_prev_match = "Next / previous match"
     tui_help_clear_search = "Clear search (when a search query is set)"
     tui_help_filter_issues = "Filter by status/assignee/tracker/query"
+    tui_help_find_issues = "Search issues on Redmine (across all pages)"
     tui_help_filter_user = "Filter by user"
     tui_help_switch_project = "Switch project"
     tui_help_switch_profile = "Switch profile"

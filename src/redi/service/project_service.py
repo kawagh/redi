@@ -49,9 +49,17 @@ def project_url(project_id: str) -> str:
     return f"{config.redmine_url}/projects/{project_id}"
 
 
-def list_projects() -> list[Project]:
-    """アクセスできるプロジェクトを全件取得する。"""
-    return project_api.fetch_projects()
+def list_projects(
+    limit: int | None = None,
+    offset: int | None = None,
+    all_pages: bool = False,
+) -> list[Project]:
+    """アクセスできるプロジェクトを取得する。
+
+    既定では Redmine の一覧 API の既定件数で打ち切られる。
+    取りこぼせない用途では all_pages を指定する。
+    """
+    return project_api.fetch_projects(limit=limit, offset=offset, all_pages=all_pages)
 
 
 def sort_projects_by_id_desc(projects: list[Project]) -> list[Project]:
@@ -70,7 +78,7 @@ def resolve_project_id(value: str) -> str:
     """
     if str(value).isdigit():
         return str(value)
-    for project in project_api.fetch_projects():
+    for project in project_api.fetch_projects(all_pages=True):
         if project.get("identifier") == value or project.get("name") == value:
             return str(project["id"])
     raise ProjectNotFoundException(value)

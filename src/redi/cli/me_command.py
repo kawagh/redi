@@ -11,6 +11,7 @@ import requests
 
 from redi.api.exceptions import print_http_error_body
 from redi.cli.alias import resolve_alias
+from redi.cli.shared_options import add_format_options, wants_json
 from redi.cli.user_format import format_user_detail
 from redi.i18n import messages
 from redi.output import eprint
@@ -23,9 +24,7 @@ def add_me_parser(
     me_parser = subparsers.add_parser(
         "me", help=messages.arg_help_me_command, parents=parents
     )
-    me_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(me_parser)
     me_subparsers = me_parser.add_subparsers(dest="me_command")
 
     me_update_parser = me_subparsers.add_parser(
@@ -81,4 +80,4 @@ def handle_me(args: argparse.Namespace) -> None:
             mail=args.mail,
         )
         return
-    view_my_account(full=args.full)
+    view_my_account(full=wants_json(args))

@@ -11,7 +11,8 @@ from redi.api.exceptions import (
     QueryNotFoundException,
     RedmineValidationException,
 )
-from redi.api.issue import Issue
+from redi.api.issue import Issue, WatcherNotFoundException
+from redi.api.issue_relation import RELATION_TYPES
 from redi.cli import editor as editor_module
 from redi.cli.issue_command import add_issue_parser
 from redi.cli.issue_command import create as create_module
@@ -20,6 +21,7 @@ from redi.cli.issue_command import update as update_module
 from redi.cli.issue_command import view as view_module
 from redi.cli.issue_command.create import IssueCreateArgs, handle_issue_create
 from redi.cli.issue_command.update import IssueUpdateArgs, handle_issue_update
+from redi.cli.shared_options import OutputFormat
 from redi.i18n import messages
 
 CREATED_ISSUE = {"id": 123, "subject": "件名"}
@@ -236,7 +238,7 @@ class TestIssueListNotFound:
         monkeypatch.setattr(view_module.issue_service, "list_issues", _raise)
 
         with pytest.raises(SystemExit) as exc_info:
-            view_module.list_issues(project_id="missing")
+            view_module.print_issues(project_id="missing")
 
         assert exc_info.value.code == 1
         assert (
@@ -256,7 +258,7 @@ class TestIssueListQueryNotFound:
         monkeypatch.setattr(view_module.issue_service, "list_issues", _raise)
 
         with pytest.raises(SystemExit) as exc_info:
-            view_module.list_issues(project_id="demo", query_id="5")
+            view_module.print_issues(project_id="demo", query_id="5")
 
         assert exc_info.value.code == 1
         err = capsys.readouterr().err
@@ -338,9 +340,26 @@ VIEWED_ISSUE = cast(
         "updated_on": "2026-04-02T00:00:00Z",
         "journals": [
             {
+                "id": 238,
                 "user": {"name": "コメントした人"},
                 "created_on": "2026-04-29T02:26:43Z",
                 "notes": "テストコメント",
+            }
+        ],
+        "relations": [
+            {
+                "id": 13,
+                "issue_id": 42,
+                "issue_to_id": 162,
+                "relation_type": "blocks",
+                "delay": None,
+            }
+        ],
+        "attachments": [
+            {
+                "id": 40,
+                "filename": "sample.txt",
+                "content_url": "http://localhost:3001/attachments/download/40/sample.txt",
             }
         ],
     },
@@ -350,20 +369,53 @@ VIEWED_ISSUE = cast(
 class TestFormatIssueDetail:
     """`issue view` の整形出力"""
 
-    def test_shows_meta_table(self):
-        """件名の次にメタ情報を `[ラベル] 値` の表で出す (先頭はステータス)"""
+    @pytest.fixture(autouse=True)
+    def redmine_url(self, monkeypatch):
+        """URL の組み立てに使う Redmine の URL を固定する"""
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+
+    def test_shows_issue_url(self):
+        """件名の次の行にイシュー自身の URL を出す (`issue list` / `issue create` と揃える)"""
         lines = view_module.format_issue_detail(VIEWED_ISSUE)
 
         assert lines[0] == "#42 件名"
+        assert lines[1] == "http://localhost:3001/issues/42"
+
+    def test_shows_meta_table(self):
+        """URL の次にメタ情報を `[ラベル] 値` の表で出す (先頭はステータス)"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
         # ラベル列の幅は言語設定で変わるため、ラベルと値を前後から挟んで見る
-        assert lines[2].startswith(f"[{messages.meta_status}")
-        assert lines[2].endswith("] 終了")
+        assert lines[3].startswith(f"[{messages.meta_status}")
+        assert lines[3].endswith("] 終了")
 
     def test_separates_description(self):
         """メタ情報と説明の間は `----` で区切る"""
         lines = view_module.format_issue_detail(VIEWED_ISSUE)
 
         assert lines[lines.index("本文") - 1] == "----"
+
+    def test_shows_journal_id(self):
+        """コメントの行頭に journal_id を出す (`issue_journal update/delete` に渡せる)"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
+        assert "  238 [2026-04-29T02:26:43Z] コメントした人" in lines
+
+    def test_shows_relation_id(self):
+        """関係性の行頭に relation_id を出す (`relation view` に渡せる)"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
+        relation_line = lines[lines.index(messages.label_relations_header) + 1]
+        assert relation_line.startswith("  13 [")
+        assert "162" in relation_line
+
+    def test_shows_attachment_id(self):
+        """添付ファイルの行頭に attachment_id を出す (`attachment view` などに渡せる)"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
+        assert lines[lines.index(messages.label_attachments_header) + 1].startswith(
+            "  40 sample.txt "
+        )
 
 
 class TestViewIssueComments:
@@ -382,6 +434,57 @@ class TestViewIssueComments:
 
         assert "journals" in called["include"].split(",")
         assert "テストコメント" in capsys.readouterr().out
+
+
+class TestIssueViewInclude:
+    """`issue view --include` は有効値だけを受け付ける
+
+    Redmine は未知の include を黙って無視するため、送信前に弾かないと
+    タイポしても rc=0 で正常終了してしまう。`search --type` と同じ扱いにする。
+    """
+
+    def test_rejects_unknown_value(self, capsys):
+        """未知の値があれば送信前に exit 2 し、その値と指定可能な値を案内する"""
+        with pytest.raises(SystemExit) as e:
+            parse_issue_args(["issue", "view", "42", "--include", "journal"])
+
+        assert e.value.code == 2
+        err = capsys.readouterr().err
+        assert "journal" in err
+        assert "allowed_statuses" in err
+
+    def test_rejects_unknown_value_mixed_with_valid(self, capsys):
+        """有効値と混ざっていても未知の値があれば弾く"""
+        with pytest.raises(SystemExit):
+            parse_issue_args(["issue", "view", "42", "--include", "journals,bogus"])
+
+        assert "bogus" in capsys.readouterr().err
+
+    def test_accepts_valid_values(self):
+        """有効値をカンマ区切りで受け付け、前後の空白は取り除く"""
+        args = parse_issue_args(
+            ["issue", "view", "42", "--include", "children, watchers"]
+        )
+
+        assert args.include == ["children", "watchers"]
+
+    def test_passes_include_to_api_with_defaults(self, monkeypatch):
+        """指定した include を既定の relations,attachments,journals に足して取得する"""
+        called = {}
+        monkeypatch.setattr(
+            view_module.issue_service,
+            "read_issue",
+            lambda issue_id, include: called.update(include=include) or VIEWED_ISSUE,
+        )
+
+        view_module.view_issue("42", include=["watchers", "journals"])
+
+        assert called["include"].split(",") == [
+            "relations",
+            "attachments",
+            "journals",
+            "watchers",
+        ]
 
 
 class TestIssueUpdateUnknownIdRejected:
@@ -499,3 +602,289 @@ class TestIssueUpdateUnknownIdRejected:
 
         assert choices["tracker_id"] == "1"
         assert choices["status_id"] == "2"
+
+
+class TestIssueUpdateAddWatcher:
+    """`--add-watcher` に追加できないユーザーIDを渡したとき
+
+    Redmine はウォッチャーにできないユーザーIDを 200 で黙って無視するため、
+    追加できたかを確かめないと「追加しました」と出たまま追加されない。
+    """
+
+    def test_not_added_watcher_exits(self, monkeypatch, capsys):
+        """追加が反映されていなければ exit 1 し、成功メッセージを出さない"""
+
+        def fake_add_watcher(issue_id, user_id):
+            raise WatcherNotFoundException(issue_id, user_id)
+
+        monkeypatch.setattr(
+            update_module.issue_service, "add_watcher", fake_add_watcher
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            handle_issue_update(
+                parse_issue_args(["issue", "update", "42", "--add-watcher", "999"])
+            )
+
+        captured = capsys.readouterr()
+        assert exc_info.value.code == 1
+        assert (
+            messages.watcher_not_added.format(issue_id="42", user_id=999)
+            in captured.err
+        )
+        assert messages.watcher_added.format(issue_id="42", user_id=999) not in (
+            captured.out
+        )
+
+
+class TestIssueUpdateDeleteRelation:
+    """`--delete-relation` が Redmine のエラーで失敗したとき"""
+
+    def test_http_error_exits(self, monkeypatch, capsys):
+        """削除に失敗したら理由を出して exit 1 し、成功メッセージを出さない"""
+        monkeypatch.setattr(
+            update_module.issue_relation_service,
+            "delete_relation",
+            _raise_http_error(403),
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            handle_issue_update(
+                parse_issue_args(
+                    ["issue", "update", "42", "--delete-relation", "--to", "43"]
+                )
+            )
+
+        captured = capsys.readouterr()
+        assert exc_info.value.code == 1
+        assert messages.relation_delete_failed in captured.err
+        assert captured.out == ""
+
+
+class TestIssueUpdateStatusChoices:
+    """`issue update` の対話でステータスを選ぶとき
+
+    ステータス一覧には活動中のプロジェクトで使っていないものも並ぶため、
+    そのイシューから遷移できるステータスだけに絞る。
+    """
+
+    @pytest.fixture
+    def selected_options(self, monkeypatch):
+        """ステータスだけ選んだ対話にして、提示された選択肢を記録する"""
+        monkeypatch.setattr(
+            update_module, "fetch_custom_fields", lambda *args, **kwargs: None
+        )
+        monkeypatch.setattr(
+            update_module,
+            "inline_checkbox",
+            lambda *args, **kwargs: ["status"],
+        )
+        recorded: list[tuple[str, str]] = []
+
+        def inline_choice(message, options, default=None):
+            recorded.extend(options)
+            return options[0][0]
+
+        monkeypatch.setattr(update_module, "inline_choice", inline_choice)
+        return recorded
+
+    def _stub_read_issue(self, monkeypatch, issue):
+        """read_issue をスタブし、渡された include を記録して返す"""
+        called = {}
+
+        def read_issue(issue_id, include=""):
+            called["include"] = include
+            return issue
+
+        monkeypatch.setattr(update_module.issue_service, "read_issue", read_issue)
+        return called
+
+    def test_limits_to_allowed_statuses(self, selected_options, monkeypatch):
+        """遷移できるステータス (allowed_statuses) だけを選択肢に出す"""
+        called = self._stub_read_issue(
+            monkeypatch,
+            {
+                "project": {"id": 1},
+                "tracker": {"id": 1},
+                "status": {"id": 2, "name": "進行中"},
+                "allowed_statuses": [
+                    {"id": 2, "name": "進行中"},
+                    {"id": 10, "name": "レビュー"},
+                ],
+            },
+        )
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert "allowed_statuses" in called["include"].split(",")
+        assert selected_options == [("2", "進行中"), ("10", "レビュー")]
+
+
+class TestIssueUpdateParentIssue:
+    """`issue update` の対話で親チケットを変更する"""
+
+    @pytest.fixture
+    def interactive(self, monkeypatch):
+        """親チケットだけ選んだ対話にして、提示された項目と入力の既定値を記録する"""
+        monkeypatch.setattr(
+            update_module, "fetch_custom_fields", lambda *args, **kwargs: None
+        )
+        recorded: dict = {}
+
+        def inline_checkbox(message, options, initial_value=None):
+            recorded["options"] = options
+            return ["parent_issue"]
+
+        monkeypatch.setattr(update_module, "inline_checkbox", inline_checkbox)
+        return recorded
+
+    def _stub_prompt(self, monkeypatch, recorded, value):
+        def prompt_parent_issue_id(default=""):
+            recorded["default"] = default
+            return value
+
+        monkeypatch.setattr(
+            update_module, "prompt_parent_issue_id", prompt_parent_issue_id
+        )
+
+    def _stub_read_issue(self, monkeypatch, issue):
+        monkeypatch.setattr(
+            update_module.issue_service,
+            "read_issue",
+            lambda issue_id, include="": issue,
+        )
+
+    def test_parent_issue_is_selectable(self, interactive, monkeypatch):
+        """更新項目に親チケットが並ぶ"""
+        self._stub_read_issue(monkeypatch, {"project": {"id": 1}, "tracker": {"id": 1}})
+        self._stub_prompt(monkeypatch, interactive, "100")
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert ("parent_issue", messages.field_parent_issue) in interactive["options"]
+        assert args.parent_issue_id == "100"
+
+    def test_current_parent_is_default(self, interactive, monkeypatch):
+        """現在の親チケット id を入力の既定値として出す"""
+        self._stub_read_issue(
+            monkeypatch,
+            {"project": {"id": 1}, "tracker": {"id": 1}, "parent": {"id": 7}},
+        )
+        self._stub_prompt(monkeypatch, interactive, "7")
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert interactive["default"] == "7"
+
+    def test_empty_input_clears_parent(self, interactive, monkeypatch):
+        """空入力は「親チケットを外す」として空文字のまま渡す"""
+        self._stub_read_issue(
+            monkeypatch,
+            {"project": {"id": 1}, "tracker": {"id": 1}, "parent": {"id": 7}},
+        )
+        self._stub_prompt(monkeypatch, interactive, "")
+        args = IssueUpdateArgs(issue_id="42")
+
+        update_module._interactive_fill_issue_update_args(args)
+
+        assert args.parent_issue_id == ""
+
+
+class TestIssueUpdateRelateChoices:
+    """`issue update --relate` の関係性タイプ
+
+    値の集合は Redmine 側で固定なので、API を叩く前にクライアントで弾き、
+    有効な値を一覧で示す。
+    """
+
+    @pytest.mark.parametrize("relation_type", RELATION_TYPES)
+    def test_accepts_every_relation_type(self, relation_type):
+        """Redmine が受け付ける 9 種はすべて指定できる"""
+        args = parse_issue_args(
+            ["issue", "update", "42", "--relate", relation_type, "--to", "43"]
+        )
+
+        assert args.relate == relation_type
+
+    def test_rejects_unknown_relation_type(self, capsys):
+        """不正なタイプは API を叩かずに弾き、有効な値を示す
+
+        `relates` のつもりで `related` と打ちやすいので、Redmine の 422 を
+        待たずにその場で候補を出す。
+        """
+        with pytest.raises(SystemExit):
+            parse_issue_args(
+                ["issue", "update", "42", "--relate", "related", "--to", "43"]
+            )
+
+        err = capsys.readouterr().err
+        for relation_type in RELATION_TYPES:
+            assert relation_type in err
+
+    def test_covers_relation_types_shown_in_view(self):
+        """表示できる関係性はすべて指定できる
+
+        `issue view` の読み替え表と集合がずれると、見えているのに作れない
+        (あるいはその逆の) タイプが出る。
+        """
+        assert set(RELATION_TYPES) == set(view_module.INVERSE_RELATION)
+
+
+LISTED_ISSUE = {
+    "id": 12,
+    "subject": "ログインできない",
+    "description": "複数行\nの説明",
+    "project": {"id": 3, "name": "redi"},
+    "tracker": {"id": 1, "name": "バグ"},
+    "status": {"id": 2, "name": "進行中", "is_closed": False},
+    "priority": {"id": 4, "name": "高め"},
+    "author": {"id": 5, "name": "kawagh"},
+    "category": {"id": 6, "name": "認証"},
+    "fixed_version": {"id": 7, "name": "v1.0"},
+    "start_date": "2026-09-01",
+    "due_date": None,
+    "done_ratio": 30,
+    "is_private": False,
+    "estimated_hours": 2.5,
+    "spent_hours": 1.0,
+    "custom_fields": [{"id": 1, "name": "顧客", "value": "A"}],
+    "created_on": "2026-09-01T00:00:00Z",
+    "updated_on": "2026-09-02T00:00:00Z",
+    "closed_on": None,
+}
+
+
+class TestIssueListTsv:
+    """`issue list --format tsv` は既存の id / subject / url の後ろに API のフィールドを並べる"""
+
+    @pytest.fixture
+    def listed(self, monkeypatch):
+        monkeypatch.setattr(
+            view_module.issue_service, "list_issues", lambda **kwargs: [LISTED_ISSUE]
+        )
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+
+    def test_expands_refs_and_leaves_unassigned_empty(self, listed, capsys):
+        """参照は id / name に展開し、未割り当ての assigned_to は空セルにする
+
+        description と custom_fields は tsv に載せない。
+        """
+        view_module.print_issues(fmt=OutputFormat.TSV)
+
+        header, row = capsys.readouterr().out.splitlines()
+        assert header.split("\t") == [
+            "id", "subject", "url", "project_id", "project_name", "tracker_name",
+            "status_name", "priority_name", "author_name", "assigned_to_id",
+            "assigned_to_name", "category_name", "fixed_version_name", "start_date",
+            "due_date", "done_ratio", "estimated_hours", "spent_hours", "is_private",
+            "created_on", "updated_on", "closed_on",
+        ]  # fmt: skip
+        assert row.split("\t") == [
+            "12", "ログインできない", "http://localhost:3001/issues/12", "3", "redi",
+            "バグ", "進行中", "高め", "kawagh", "", "", "認証", "v1.0", "2026-09-01",
+            "", "30", "2.5", "1.0", "false", "2026-09-01T00:00:00Z",
+            "2026-09-02T00:00:00Z", "",
+        ]  # fmt: skip

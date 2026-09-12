@@ -15,6 +15,14 @@ class MessagesProto(Protocol):
     """プロファイル作成成功。{name} を埋め込む。"""
     profile_already_exists: str
     """profile が既に存在する。{name} を埋め込む。"""
+    profile_not_found: str
+    """profile が設定ファイルに無い。{name}, {path}"""
+    profile_did_you_mean: str
+    """近い名前のプロファイル候補。{names} はカンマ区切り"""
+    profile_available: str
+    """設定ファイルにあるプロファイル名。{names} はカンマ区切り"""
+    profile_list_hint: str
+    """プロファイル一覧の出し方の案内"""
     default_profile_set: str
     """default_profile を設定。{name}"""
     default_project_id_set: str
@@ -23,6 +31,8 @@ class MessagesProto(Protocol):
     """editor を設定。{value}, {suffix}"""
     language_set: str
     """language を設定。{value}, {suffix}"""
+    text_formatting_set: str
+    """text_formatting を設定。{value}, {suffix}"""
     redmine_api_key_set: str
     """redmine_api_key を設定。{suffix}"""
     redmine_url_set: str
@@ -100,6 +110,8 @@ class MessagesProto(Protocol):
     """バージョン指定の Wikiページが見つからない。{title}, {version}"""
     wiki_page_does_not_exist: str
     """Wikiページが存在しない"""
+    wiki_page_already_exists: str
+    """同名の Wikiページが既に存在する。{title}"""
     parent_page_not_found: str
     """親ページが見つからない。{title}"""
     file_not_found: str
@@ -257,6 +269,8 @@ class MessagesProto(Protocol):
     issue_update_failed: str
     issue_delete_failed: str
     watcher_add_failed: str
+    watcher_not_added: str
+    """ウォッチャーに追加されなかった。{issue_id}, {user_id}"""
     watcher_remove_failed: str
     wiki_page_delete_failed: str
     wiki_page_update_conflict: str
@@ -400,6 +414,7 @@ class MessagesProto(Protocol):
     prompt_wiki_project_id: str
     prompt_editor: str
     prompt_select_language: str
+    prompt_select_text_formatting: str
     prompt_start_date: str
     prompt_due_date: str
     prompt_estimated_hours: str
@@ -521,6 +536,7 @@ class MessagesProto(Protocol):
     field_wiki_project_id: str
     field_editor: str
     field_language: str
+    field_text_formatting: str
     field_set_default_profile: str
 
     # ---- sharing options ----
@@ -697,6 +713,9 @@ class MessagesProto(Protocol):
     tui_status_search_active: str
     """{query}"""
     tui_flash_reloaded: str
+    tui_flash_resize_reload_failed: str
+    """{error}"""
+    tui_flash_find_cleared_by_filter: str
     # 列を問わず「絞り込まない」を表す選択肢のラベル
     tui_filter_unspecified: str
     tui_filter_status_open_default: str
@@ -760,6 +779,9 @@ class MessagesProto(Protocol):
     tui_issue_delete_modal_mismatch: str
     tui_issue_delete_modal_empty: str
     tui_issue_delete_modal_hint: str
+    tui_find_modal_title: str
+    tui_find_modal_input_label: str
+    tui_find_modal_hint: str
     tui_wiki_delete_failed: str
     """{error}"""
     tui_wiki_delete_page_missing: str
@@ -786,6 +808,8 @@ class MessagesProto(Protocol):
     arg_help_refresh: str
 
     # ---- argparse helps (common) ----
+    arg_help_format: str
+    arg_help_format_list: str
     arg_help_full_json: str
     arg_help_skip_confirm: str
     arg_help_open_web: str
@@ -829,6 +853,7 @@ class MessagesProto(Protocol):
     arg_help_issue_filter_priority: str
     arg_help_issue_filter_query: str
     error_query_id_conflicts_filters: str
+    error_format_tsv_list_only: str
     """{options}"""
     arg_help_limit: str
     arg_help_offset: str
@@ -836,6 +861,9 @@ class MessagesProto(Protocol):
     arg_help_issue_view: str
     arg_help_issue_view_id: str
     arg_help_issue_include: str
+    """{choices}"""
+    error_invalid_issue_include: str
+    """{values} {choices}"""
     arg_help_issue_create: str
     arg_help_issue_subject_arg: str
     arg_help_issue_tracker_id: str
@@ -911,6 +939,7 @@ class MessagesProto(Protocol):
     arg_help_config_set_wiki_project_id: str
     arg_help_config_set_editor: str
     arg_help_config_set_language: str
+    arg_help_config_set_text_formatting: str
     arg_help_config_set_api_key: str
     arg_help_config_set_url: str
     arg_help_config_set_default_profile: str
@@ -922,6 +951,7 @@ class MessagesProto(Protocol):
     arg_help_config_wiki_project_id: str
     arg_help_config_editor: str
     arg_help_config_language: str
+    arg_help_config_text_formatting: str
     arg_help_config_set_default_flag: str
 
     # ---- argparse helps (init) ----
@@ -1150,6 +1180,8 @@ class MessagesProto(Protocol):
     """--profile による一時上書きであることを示すラベル"""
     config_current_profile_comment: str
     """--full 出力で今回使われたプロファイルの見出しに添えるコメント。{source} を埋め込む。"""
+    config_top_level_api_key_warning: str
+    """config.toml のトップレベルに redmine_api_key が書かれているときの警告。{path} を埋め込む。"""
 
     # ---- TUI help labels (sections / common) ----
     tui_help_section_navigation: str
@@ -1169,6 +1201,7 @@ class MessagesProto(Protocol):
     tui_help_next_prev_match: str
     tui_help_clear_search: str
     tui_help_filter_issues: str
+    tui_help_find_issues: str
     tui_help_filter_user: str
     tui_help_switch_project: str
     tui_help_switch_profile: str

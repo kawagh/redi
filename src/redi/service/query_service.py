@@ -14,9 +14,13 @@ from redi.api.query import Query
 from redi.service.project_service import list_projects, resolve_project_id
 
 
-def list_queries() -> list[Query]:
-    """参照できるカスタムクエリを全件取得する。"""
-    return query_api.fetch_queries()
+def list_queries(all_pages: bool = False) -> list[Query]:
+    """参照できるカスタムクエリを取得する。
+
+    既定では Redmine の一覧 API の既定件数で打ち切られる。
+    取りこぼせない用途では all_pages を指定する。
+    """
+    return query_api.fetch_queries(all_pages=all_pages)
 
 
 def list_queries_for_project(project_id: str | None) -> list[Query]:
@@ -32,7 +36,7 @@ def list_queries_for_project(project_id: str | None) -> list[Query]:
     """
     owner_id = _resolve_owner_id(project_id)
     queries = []
-    for query in list_queries():
+    for query in list_queries(all_pages=True):
         owner = query["project_id"]
         if owner is None or (owner_id is not None and str(owner) == owner_id):
             queries.append(query)
@@ -72,7 +76,7 @@ def resolve_query_project_names(
     if not wanted:
         return {}
     try:
-        projects = list_projects()
+        projects = list_projects(all_pages=True)
     except requests.exceptions.RequestException:
         return {}
     return {

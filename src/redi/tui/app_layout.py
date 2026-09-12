@@ -26,6 +26,7 @@ from redi.tui.app_render import (
 from redi.tui.conditions import Conditions
 from redi.tui.issue.delete_modal import build_delete_float
 from redi.tui.issue.filter_modal import build_filter_float
+from redi.tui.issue.find_modal import build_find_float
 from redi.tui.profile_modal import build_profile_float
 from redi.tui.project_modal import build_project_float
 from redi.tui.state import TuiState
@@ -105,6 +106,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
     )
 
     filter_float = build_filter_float(state, conditions.issue_filter_modal)
+    find_float = build_find_float(state, conditions.issue_find_modal)
 
     time_entry_filter_float = build_time_entry_filter_float(
         state, conditions.time_entry_filter_modal
@@ -143,6 +145,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
             floats=[
                 help_float,
                 filter_float,
+                find_float,
                 time_entry_filter_float,
                 project_float,
                 issue_delete_float,

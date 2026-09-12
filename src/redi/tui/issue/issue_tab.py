@@ -8,7 +8,7 @@ from redi.api.issue import (
     fetch_issues_page,
 )
 from redi.i18n import messages
-from redi.service import issue_service
+from redi.service import issue_service, search_service
 from redi.text_format import highlight_segments, issue_meta_rows, render_meta_table
 from redi.tui.state import (
     CommentSelectState,
@@ -17,6 +17,7 @@ from redi.tui.state import (
     TuiPosition,
     TuiResult,
     TuiState,
+    realign_page,
 )
 from redi.tui.tab import TabView, noop
 
@@ -114,6 +115,9 @@ def _status_hint(state: TuiState) -> str:
     if state.issue_tab.comment_select.active:
         return messages.tui_comment_select_status_hint
     hint = messages.tui_status_hint_issues.format(page_label=_page_label(state))
+    # 検索中はフィルタ条件を無視して検索結果を出しているので、フィルタのラベルは出さない
+    if state.issue_tab.find.is_active():
+        return f" [{state.issue_tab.find.short_label()}]" + hint
     if state.issue_tab.filter.is_active():
         hint = f" [{state.issue_tab.filter.short_label()}]" + hint
     return hint
@@ -278,6 +282,14 @@ def _on_enter(state: TuiState) -> None:
 
 
 def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse:
+    """現在の条件で1ページ取得する。検索中は検索結果が通常のフィルタを置き換える。"""
+    if state.issue_tab.find.is_active():
+        return search_service.search_issues_page(
+            query=state.issue_tab.find.query,
+            project_id=state.effective_project_id(),
+            limit=state.page_size,
+            offset=offset,
+        )
     f = state.issue_tab.filter
     return fetch_issues_page(
         project_id=state.effective_project_id(),
@@ -297,6 +309,18 @@ def _apply_page(state: TuiState, page: IssuesPageResponse, offset: int) -> None:
     state.issue_tab.cursor = 0
 
 
+def clear_find_for_filter(state: TuiState) -> None:
+    """フィルタ操作に切り替えるため検索を解除する。
+
+    検索中はフィルタを触っても一覧が変わらないので、黙って空振りさせず
+    最後に触った方を有効にする。
+    """
+    if not state.issue_tab.find.is_active():
+        return
+    state.issue_tab.find.query = ""
+    state.flash_message = messages.tui_flash_find_cleared_by_filter
+
+
 def reload_with_filter(state: TuiState) -> None:
     """フィルタ条件で先頭ページから再取得する。filter modal からの適用で呼ぶ。"""
     _apply_page(state, fetch_issues_with_filter(state, 0), 0)
@@ -314,6 +338,23 @@ def _on_reload(state: TuiState) -> None:
         )
     else:
         state.issue_tab.cursor = 0
+
+
+def _on_resize(state: TuiState) -> None:
+    """新しい page_size でページを取り直す。選択していた issue は選ばれたまま保つ。
+
+    offset を新しい page_size のページ境界へ揃えるので、リサイズ後も
+    ステータスバーの Page 表示と実データが一致する。通信エラーは呼び出し元
+    (ResizeWatcher) に投げ、失敗時は一覧を書き換えない。
+    """
+    offset, cursor = realign_page(
+        state.issue_tab.offset, state.issue_tab.cursor, state.page_size
+    )
+    page = fetch_issues_with_filter(state, offset)
+    state.issue_tab.offset = offset
+    state.issue_tab.issues = page["issues"]
+    state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
+    state.issue_tab.cursor = min(cursor, max(0, len(state.issue_tab.issues) - 1))
 
 
 def _on_page_forward(state: TuiState) -> None:
@@ -393,6 +434,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  /", messages.tui_help_start_search),
     ("  n / N", messages.tui_help_next_prev_match),
     ("  Esc", messages.tui_help_clear_search),
+    ("  F", messages.tui_help_find_issues),
     (messages.tui_help_section_filter, ""),
     ("  f", messages.tui_help_filter_issues),
     ("  p", messages.tui_help_switch_project),
@@ -429,6 +471,7 @@ ISSUE_TAB = TabView(
     on_open_web_by_id=_on_open_web_by_id,
     on_activate=noop,
     on_reload=_on_reload,
+    on_resize=_on_resize,
     on_action_key=_on_action_key,
     on_search=_on_search,
     get_cursor_y=lambda state: state.issue_tab.cursor,

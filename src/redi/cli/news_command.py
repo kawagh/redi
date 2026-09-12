@@ -7,6 +7,7 @@ import argparse
 import json
 import sys
 import webbrowser
+from typing import assert_never
 
 import requests
 
@@ -16,19 +17,28 @@ from redi.api.news import News, NewsNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor, shorten_to_oneline
-from redi.cli.interactive import prompt
+from redi.cli.interactive import prompt, raise_on_cancel
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.shared_options import project_option_parser
+from redi.cli.shared_options import (
+    OutputFormat,
+    add_format_options,
+    pagination_option_parser,
+    project_option_parser,
+    resolve_list_format,
+    wants_json,
+)
 from redi.cli.validator import RequiredValidator
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv
 from redi.service import news_service
 
 
-def _fetch_news_list(project_id: str | None) -> list[News]:
+def _fetch_news_list(
+    project_id: str | None, limit: int | None = None, offset: int | None = None
+) -> list[News]:
     """ニュース一覧を取得する。プロジェクトが存在しなければ exit 1。"""
     try:
-        return news_service.list_news(project_id)
+        return news_service.list_news(project_id, limit=limit, offset=offset)
     except ProjectNotFoundException:
         eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
@@ -43,23 +53,57 @@ def _fetch_news(news_id: str) -> News:
         sys.exit(1)
 
 
-def _list_news(project_id: str | None = None, full: bool = False) -> None:
-    """ニュース一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
-    news_list = _fetch_news_list(project_id)
-    if full:
-        print(json.dumps(news_list, ensure_ascii=False))
-        return
-    for news in news_list:
-        parts = [str(news["id"]), news["title"]]
-        project = news["project"]["name"]
-        if project:
-            parts.append(f"[{project}]")
-        author = news["author"]["name"]
-        if author:
-            parts.append(f"by {author}")
-        if news["created_on"]:
-            parts.append(news["created_on"])
-        print(" ".join(parts))
+def _list_news(
+    project_id: str | None = None,
+    fmt: OutputFormat = OutputFormat.PLAIN,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> None:
+    """ニュース一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
+    news_list = _fetch_news_list(project_id, limit=limit, offset=offset)
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(news_list, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                (
+                    "id",
+                    "title",
+                    "project_id",
+                    "project_name",
+                    "author_name",
+                    "created_on",
+                    "author_id",
+                    "summary",
+                ),
+                (
+                    (
+                        n["id"],
+                        n["title"],
+                        n["project"]["id"],
+                        n["project"]["name"],
+                        n["author"]["name"],
+                        n["created_on"],
+                        n["author"]["id"],
+                        n.get("summary"),
+                    )
+                    for n in news_list
+                ),
+            )
+        case OutputFormat.PLAIN:
+            for news in news_list:
+                parts = [str(news["id"]), news["title"]]
+                project = news["project"]["name"]
+                if project:
+                    parts.append(f"[{project}]")
+                author = news["author"]["name"]
+                if author:
+                    parts.append(f"by {author}")
+                if news["created_on"]:
+                    parts.append(news["created_on"])
+                print(" ".join(parts))
+        case _:
+            assert_never(fmt)
 
 
 def _view_news(news_id: str, full: bool = False, web: bool = False) -> None:
@@ -177,7 +221,7 @@ def _edit_description(initial_text: str = "") -> str:
     エディタを閉じると入力内容が見えなくなるため表示する。
     空のまま閉じられた場合はキャンセルして終了する。
     """
-    description = open_editor(initial_text)
+    description = open_editor(initial_text, name="news_description")
     if not description:
         eprint(messages.canceled_empty_text)
         sys.exit(1)
@@ -208,11 +252,8 @@ def _interactive_select_news_id(
         (str(n["id"]), f"{n['id']} {n['title']}") for n in news_list
     ]
     labels = dict(options)
-    try:
+    with raise_on_cancel():
         news_id = inline_choice(prompt_message, options)
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if selected_message is not None:
         print(selected_message.format(label=labels[news_id]))
     return news_id
@@ -229,15 +270,12 @@ def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, s
         ("summary", messages.field_summary),
         ("description", messages.field_description),
     ]
-    try:
+    with raise_on_cancel():
         selected = inline_checkbox(
             messages.prompt_select_update_items,
             field_values,
             initial_value="description",
         )
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if not selected:
         eprint(messages.canceled_no_items_selected)
         sys.exit(1)
@@ -246,16 +284,13 @@ def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, s
     title: str | None = None
     summary: str | None = None
     description = ""
-    try:
+    with raise_on_cancel():
         if "title" in selected:
             title = prompt(messages.prompt_title, default=news["title"]).strip()
         if "summary" in selected:
             summary = prompt(
                 messages.prompt_summary, default=news.get("summary") or ""
             ).strip()
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if "description" in selected:
         description = _edit_description(news["description"])
     return title, summary, description
@@ -268,23 +303,25 @@ def add_news_parser(
         "news",
         aliases=["n"],
         help=messages.arg_help_news_command,
-        parents=[*parents, project_option_parser()],
+        parents=[*parents, project_option_parser(), pagination_option_parser()],
     )
     n_subparsers = n_parser.add_subparsers(dest="news_command")
     n_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_news_list,
-        parents=[*parents, project_option_parser(postfix=True)],
+        parents=[
+            *parents,
+            project_option_parser(postfix=True),
+            pagination_option_parser(postfix=True),
+        ],
     )
 
     n_view_parser = n_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_news_view, parents=parents
     )
     n_view_parser.add_argument("news_id", help=messages.arg_help_news_view_id)
-    n_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(n_view_parser)
     n_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
@@ -344,7 +381,7 @@ def add_news_parser(
 def handle_news(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.news_command)
     if cmd == "view":
-        _view_news(args.news_id, full=args.full, web=args.web)
+        _view_news(args.news_id, full=wants_json(args), web=args.web)
         return
     if cmd == "create":
         project_id = args.project_id or config.default_project_id
@@ -354,16 +391,13 @@ def handle_news(args: argparse.Namespace) -> None:
         title = args.title
         summary = args.summary
         if title is None:
-            try:
+            with raise_on_cancel():
                 title = prompt(
                     messages.prompt_title, validator=RequiredValidator()
                 ).strip()
                 if summary is None:
                     # 任意項目なので空のまま確定したら設定しない
                     summary = prompt(messages.prompt_summary).strip() or None
-            except (KeyboardInterrupt, EOFError):
-                eprint(messages.canceled)
-                sys.exit(1)
         description = args.description or _edit_description()
         _create_news(
             project_id=project_id,
@@ -409,4 +443,9 @@ def handle_news(args: argparse.Namespace) -> None:
         return
     if cmd == "list" or cmd is None:
         project_id = args.project_id or config.default_project_id
-        _list_news(project_id=project_id, full=args.full)
+        _list_news(
+            project_id=project_id,
+            fmt=resolve_list_format(args),
+            limit=args.limit,
+            offset=args.offset,
+        )

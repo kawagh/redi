@@ -52,7 +52,9 @@ class NewsNotFoundException(Exception):
 
 
 def fetch_news_list(
-    project_id: str | None = None, limit: int | None = None
+    project_id: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
 ) -> list[News]:
     """ニュースを作成日時の降順で返す。project_id 省略時は全プロジェクトが対象。
 
@@ -67,6 +69,8 @@ def fetch_news_list(
     params: dict = {}
     if limit is not None:
         params["limit"] = limit
+    if offset is not None:
+        params["offset"] = offset
     response = client.get(path, params=params)
     if response.status_code == 404:
         raise ProjectNotFoundException(project_id)

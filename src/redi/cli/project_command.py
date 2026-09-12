@@ -7,6 +7,7 @@ import argparse
 import json
 import sys
 import webbrowser
+from typing import assert_never
 
 import requests
 
@@ -22,23 +23,64 @@ from redi.api.tracker import fetch_trackers
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
 from redi.cli.editor import open_editor, shorten_to_oneline
-from redi.cli.interactive import ensure_interactive, prompt
+from redi.cli.interactive import ensure_interactive, prompt, raise_on_cancel
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.shared_options import full_option_parser
+from redi.cli.shared_options import (
+    OutputFormat,
+    add_format_options,
+    full_option_parser,
+    pagination_option_parser,
+    resolve_list_format,
+    wants_json,
+)
 from redi.cli.validator import ProjectIdentifierValidator, RequiredValidator
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv, tsv_ref
 from redi.service import project_service, version_service
 
 
-def _list_projects(full: bool = False) -> None:
-    """プロジェクト一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
-    projects = project_service.list_projects()
-    if full:
-        print(json.dumps(projects, ensure_ascii=False))
-        return
-    for project in projects:
-        print(f"{project['id']} {project['name']}")
+def _list_projects(
+    fmt: OutputFormat = OutputFormat.PLAIN,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> None:
+    """プロジェクト一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
+    projects = project_service.list_projects(limit=limit, offset=offset)
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(projects, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                (
+                    "id",
+                    "name",
+                    "identifier",
+                    "status",
+                    "is_public",
+                    "parent_id",
+                    "parent_name",
+                    "created_on",
+                    "updated_on",
+                ),
+                (
+                    (
+                        p["id"],
+                        p["name"],
+                        p.get("identifier"),
+                        p.get("status"),
+                        p.get("is_public"),
+                        *tsv_ref(p, "parent"),
+                        p.get("created_on"),
+                        p.get("updated_on"),
+                    )
+                    for p in projects
+                ),
+            )
+        case OutputFormat.PLAIN:
+            for project in projects:
+                print(f"{project['id']} {project['name']}")
+        case _:
+            assert_never(fmt)
 
 
 def _view_project(
@@ -264,7 +306,7 @@ def _interactive_select_parent_id(current: str | None) -> str | None:
         ("", messages.prompt_select_parent_project_none)
     ] + [
         (str(project["id"]), f"{project['id']} {project['name']}")
-        for project in project_service.list_projects()
+        for project in project_service.list_projects(all_pages=True)
     ]
     labels = dict(options)
     selected = inline_choice(
@@ -429,14 +471,16 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
         field_options.append(
             ("issue_custom_field_ids", messages.field_issue_custom_fields)
         )
-    try:
+    with raise_on_cancel():
         selected = inline_checkbox(
             messages.prompt_select_create_optional_items, field_options
         )
         if not selected:
             return
         if "description" in selected:
-            args.description = open_editor(initial_text=args.description or "")
+            args.description = open_editor(
+                initial_text=args.description or "", name="project_description"
+            )
             if args.description:
                 print(
                     messages.prompt_field_value.format(
@@ -493,14 +537,11 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
             args.issue_custom_field_ids = _interactive_select_issue_custom_field_ids(
                 custom_field_options, args.issue_custom_field_ids
             )
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
 
 
 def _interactive_fill_create_args(args: argparse.Namespace) -> None:
     """`project create` の必須項目を対話で埋め、送信前に任意項目の入力機会を挟む。"""
-    try:
+    with raise_on_cancel():
         if args.name is None:
             args.name = prompt(
                 messages.prompt_project_name, validator=RequiredValidator()
@@ -511,19 +552,13 @@ def _interactive_fill_create_args(args: argparse.Namespace) -> None:
                 default=project_service.suggest_identifier(args.name),
                 validator=ProjectIdentifierValidator(),
             ).strip()
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     action_options: list[tuple[str, str]] = [
         ("submit", messages.action_submit),
         ("optional", messages.action_fill_optional),
     ]
     while True:
-        try:
+        with raise_on_cancel():
             action = inline_choice(messages.prompt_what_next, action_options)
-        except (KeyboardInterrupt, EOFError):
-            eprint(messages.canceled)
-            sys.exit(1)
         if action != "optional":
             return
         _interactive_fill_optional_create_fields(args)
@@ -585,11 +620,8 @@ def _interactive_fill_project_update_args(args: argparse.Namespace) -> None:
         field_options.append(
             ("issue_custom_field_ids", messages.field_issue_custom_fields)
         )
-    try:
+    with raise_on_cancel():
         selected = inline_checkbox(messages.prompt_select_update_items, field_options)
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
     if not selected:
         eprint(messages.canceled_no_items_selected)
         sys.exit(1)
@@ -601,7 +633,7 @@ def _interactive_fill_project_update_args(args: argparse.Namespace) -> None:
             args.project_id, include="trackers,enabled_modules,issue_custom_fields"
         )
     )
-    try:
+    with raise_on_cancel():
         if "name" in selected:
             args.name = prompt(
                 messages.prompt_project_name,
@@ -609,7 +641,9 @@ def _interactive_fill_project_update_args(args: argparse.Namespace) -> None:
                 validator=RequiredValidator(),
             ).strip()
         if "description" in selected:
-            args.description = open_editor(initial_text=current["description"])
+            args.description = open_editor(
+                initial_text=current["description"], name="project_description"
+            )
             print(
                 messages.prompt_field_value.format(
                     name=messages.field_description,
@@ -674,9 +708,6 @@ def _interactive_fill_project_update_args(args: argparse.Namespace) -> None:
             args.issue_custom_field_ids = _interactive_select_issue_custom_field_ids(
                 custom_field_options, current["issue_custom_field_ids"]
             )
-    except (KeyboardInterrupt, EOFError):
-        eprint(messages.canceled)
-        sys.exit(1)
 
 
 def _update_fields(args: argparse.Namespace) -> dict:
@@ -705,14 +736,18 @@ def add_project_parser(
         "project",
         aliases=["p"],
         help=messages.arg_help_project_command,
-        parents=[*parents, full_option_parser()],
+        parents=[*parents, full_option_parser(), pagination_option_parser()],
     )
     p_subparsers = p_parser.add_subparsers(dest="project_command")
     p_subparsers.add_parser(
         "list",
         aliases=["l"],
         help=messages.arg_help_project_list,
-        parents=[*parents, full_option_parser(postfix=True)],
+        parents=[
+            *parents,
+            full_option_parser(postfix=True),
+            pagination_option_parser(postfix=True),
+        ],
     )
     p_view_parser = p_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_project_view, parents=parents
@@ -722,9 +757,7 @@ def add_project_parser(
         "--include",
         help=messages.arg_help_project_include,
     )
-    p_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(p_view_parser)
     p_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
@@ -814,7 +847,7 @@ def handle_project(args: argparse.Namespace) -> None:
         _view_project(
             args.project_id,
             include=args.include or "",
-            full=args.full,
+            full=wants_json(args),
             web=args.web,
         )
     elif cmd == "create":
@@ -872,4 +905,8 @@ def handle_project(args: argparse.Namespace) -> None:
             print(messages.update_canceled)
             sys.exit()
     elif cmd == "list" or cmd is None:
-        _list_projects(full=args.full)
+        _list_projects(
+            fmt=resolve_list_format(args),
+            limit=args.limit,
+            offset=args.offset,
+        )

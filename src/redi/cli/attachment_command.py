@@ -10,6 +10,7 @@ from redi.api.exceptions import print_http_error_body
 from redi.api.types import Attachment
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete, confirm_overwrite
+from redi.cli.shared_options import add_format_options, wants_json
 from redi.i18n import messages
 from redi.output import eprint
 from redi.service import attachment_service
@@ -128,9 +129,7 @@ def add_attachment_parser(
     a_view_parser.add_argument(
         "attachment_id", help=messages.arg_help_attachment_view_id
     )
-    a_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(a_view_parser)
     a_download_parser = a_subparsers.add_parser(
         "download",
         aliases=["dl"],
@@ -178,7 +177,7 @@ def add_attachment_parser(
 def handle_attachment(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.attachment_command)
     if cmd == "view":
-        _view_attachment(args.attachment_id, full=args.full)
+        _view_attachment(args.attachment_id, full=wants_json(args))
     elif cmd == "download":
         attachment = _fetch_attachment(args.attachment_id)
         path = attachment_service.resolve_download_path(attachment, args.output)

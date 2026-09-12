@@ -3,7 +3,9 @@ import argparse
 import pytest
 
 from redi import config
+from redi.api.exceptions import ProjectNotFoundException
 from redi.cli import time_entry_command
+from redi.cli.shared_options import OutputFormat
 from redi.cli.time_entry_command import add_time_entry_parser, handle_time_entry
 from redi.i18n import messages
 
@@ -180,3 +182,62 @@ class TestDateFilterOption:
             _parser().parse_args(argv)
 
         assert e.value.code == 2
+
+
+class TestTimeEntryListTsv:
+    """`time_entry list --format tsv` は既存列の後ろに activity_id と作成・更新日時を並べる"""
+
+    def test_prints_activity_id_and_timestamps(self, monkeypatch, capsys):
+        """activity は activity_name しか無かったので activity_id を揃える"""
+        monkeypatch.setattr(
+            time_entry_command.time_entry_service,
+            "fetch_page",
+            lambda **kwargs: {
+                "time_entries": [
+                    {
+                        "id": 9,
+                        "spent_on": "2026-09-01",
+                        "user": {"id": 5, "name": "kawagh"},
+                        "hours": 1.5,
+                        "activity": {"id": 8, "name": "開発"},
+                        "issue": {"id": 12},
+                        "project": {"id": 3, "name": "redi"},
+                        "comments": "調査",
+                        "created_on": "2026-09-01T01:00:00Z",
+                        "updated_on": "2026-09-01T02:00:00Z",
+                    }
+                ]
+            },
+        )
+
+        time_entry_command._list_time_entries(fmt=OutputFormat.TSV)
+
+        assert capsys.readouterr().out == (
+            "id\tspent_on\tuser_id\tuser_name\thours\tactivity_name\tissue_id"
+            "\tproject_id\tproject_name\tcomments\tactivity_id\tcreated_on\tupdated_on\n"
+            "9\t2026-09-01\t5\tkawagh\t1.5\t開発\t12\t3\tredi\t調査\t8"
+            "\t2026-09-01T01:00:00Z\t2026-09-01T02:00:00Z\n"
+        )
+
+
+class TestTimeEntryListProjectNotFound:
+    """`time_entry list` は存在しないプロジェクトを指定すると ID 付きのメッセージで exit 1 する"""
+
+    def test_exits_with_project_id(self, monkeypatch, capsys):
+        """create / update と同じく、生の 404 ではなく何が見つからなかったかを出す"""
+
+        def fake_fetch_page(**kwargs):
+            raise ProjectNotFoundException(kwargs["project_id"])
+
+        monkeypatch.setattr(
+            time_entry_command.time_entry_service, "fetch_page", fake_fetch_page
+        )
+
+        with pytest.raises(SystemExit) as e:
+            time_entry_command._list_time_entries(project_id="nosuchproject")
+
+        assert e.value.code == 1
+        assert (
+            messages.project_not_found.format(id="nosuchproject")
+            in capsys.readouterr().err
+        )

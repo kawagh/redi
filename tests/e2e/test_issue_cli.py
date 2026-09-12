@@ -122,6 +122,39 @@ class TestIssueUpdate:
 
 
 @pytest.mark.e2e
+class TestIssueWatcher:
+    """`redi issue update --add-watcher` はウォッチャーを追加する"""
+
+    def test_added_watcher_appears_in_view(self):
+        """追加したウォッチャーが詳細表示に出る"""
+        issue_id = _create_issue(unique_identifier("e2e-issue-watcher"))
+        me = json.loads(run_redi("me", "--full").stdout)
+
+        run_redi("issue", "update", issue_id, "--add-watcher", str(me["id"]))
+
+        viewed = json.loads(
+            run_redi(
+                "issue", "view", issue_id, "--include", "watchers", "--full"
+            ).stdout
+        )
+        assert me["id"] in [watcher["id"] for watcher in viewed["watchers"]]
+
+    def test_exits_with_error_for_unknown_user_id(self):
+        """Redmine は追加できないユーザーIDを黙って無視するので、redi 側で弾いて exit 1 にする"""
+        issue_id = _create_issue(unique_identifier("e2e-issue-watcher-unknown"))
+
+        with pytest.raises(subprocess.CalledProcessError) as update_error_info:
+            run_redi("issue", "update", issue_id, "--add-watcher", "99999")
+
+        update_error = update_error_info.value
+        assert update_error.returncode == 1
+        assert "Could not add watcher 99999" in update_error.stderr, (
+            f"想定外のエラーで update が失敗\n"
+            f"stdout:\n{update_error.stdout}\nstderr:\n{update_error.stderr}"
+        )
+
+
+@pytest.mark.e2e
 class TestIssueComment:
     """`redi issue comment` はイシューにコメントを追加する"""
 
