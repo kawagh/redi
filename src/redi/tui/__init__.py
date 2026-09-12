@@ -7,9 +7,9 @@ from redi.tui.state import (
     TuiResult,
     TuiState,
     TuiTab,
-    WikiTabState,
 )
 from redi.tui.state.issue import IssueTabState
+from redi.tui.state.wiki import WikiTabState
 
 __all__ = [
     "IssueTabState",

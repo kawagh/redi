@@ -18,7 +18,8 @@ from prompt_toolkit.widgets import Frame
 from redi.api.wiki import WikiPage, WikiPageNotFoundException
 from redi.i18n import messages
 from redi.service import wiki_service
-from redi.tui.state import Renderable, TuiState, WikiDeleteModalState
+from redi.tui.state import Renderable, TuiState
+from redi.tui.state.wiki import WikiDeleteModalState
 from redi.tui.wiki.wiki_tab import current_page, set_pages, viewing_version
 
 # 削除を確定するために打たせる語。ASCII 固定なので日本語タイトルでも入力できる。

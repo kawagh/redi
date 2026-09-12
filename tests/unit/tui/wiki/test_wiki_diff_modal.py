@@ -5,7 +5,8 @@ import pytest
 from redi.api.wiki import WikiPage
 from redi.i18n import messages
 from redi.service import wiki_service
-from redi.tui.state import TuiState, WikiDiffColumn, WikiDiffView, WikiVersionView
+from redi.tui.state import TuiState
+from redi.tui.state.wiki import WikiDiffColumn, WikiDiffView, WikiVersionView
 from redi.tui.wiki import wiki_tab
 from redi.tui.wiki.diff_modal import (
     apply_diff,
