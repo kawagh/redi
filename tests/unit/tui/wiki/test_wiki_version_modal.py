@@ -328,7 +328,7 @@ class TestDiffModal:
     def test_reopen_keeps_applied_pair(self):
         """差分を出しているときに開き直すと、その 2 版にカーソルが乗る"""
         state = _state([_page("Home", version=4)])
-        state.wiki_tab.diff_view = WikiDiffView("Home", 3, 2)
+        state.wiki_tab.diff_view = WikiDiffView("Home", 3, 2, diff="")
 
         open_diff_modal(state)
 
@@ -359,7 +359,7 @@ class TestDiffModal:
     def test_columns_mark_applied_pair(self):
         """差分を出していれば各列の適用中の版に * が付く"""
         state = _state([_page("Home", version=3)])
-        state.wiki_tab.diff_view = WikiDiffView("Home", 1, 2)
+        state.wiki_tab.diff_view = WikiDiffView("Home", 1, 2, diff="")
         open_diff_modal(state)
 
         from_col = "".join(t for _, t in render_diff_column(state, "from"))
@@ -397,7 +397,11 @@ class TestDiff:
         rendered = self._rendered(state)
 
         assert state.wiki_tab.diff_modal.show is True
-        assert state.wiki_tab.diff_view == WikiDiffView("Home", 2, 3)
+        assert state.wiki_tab.diff_view is not None
+        assert (
+            state.wiki_tab.diff_view.from_version,
+            state.wiki_tab.diff_view.to_version,
+        ) == (2, 3)
         assert "--- v2" in rendered
         assert "+++ v3" in rendered
         assert "-b" in rendered
@@ -411,7 +415,11 @@ class TestDiff:
         apply_diff(state)
         rendered = self._rendered(state)
 
-        assert state.wiki_tab.diff_view == WikiDiffView("Home", 3, 2)
+        assert state.wiki_tab.diff_view is not None
+        assert (
+            state.wiki_tab.diff_view.from_version,
+            state.wiki_tab.diff_view.to_version,
+        ) == (3, 2)
         assert "--- v3" in rendered
         assert "+++ v2" in rendered
         assert "-B" in rendered
@@ -424,7 +432,8 @@ class TestDiff:
 
         assert apply_diff(state) is True
 
-        assert state.wiki_tab.diff_view == WikiDiffView("Home", 2, 2)
+        assert state.wiki_tab.diff_view is not None
+        assert state.wiki_tab.diff_view.diff == ""
         assert state.flash_message is None
         assert messages.tui_wiki_diff_no_changes in self._rendered(state)
 

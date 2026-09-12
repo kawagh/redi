@@ -185,7 +185,7 @@ def _render_preview(state: TuiState) -> Renderable:
     lines.append("----")
     diff = viewing_diff(state)
     if diff is not None:
-        return _render_diff(state, diff, lines)
+        return _render_diff(diff, lines)
     text = view.text if view is not None else state.wiki_tab.texts.get(title)
     if text is None:
         lines.append(messages.tui_wiki_press_enter_to_load)
@@ -194,27 +194,13 @@ def _render_preview(state: TuiState) -> Renderable:
     return [("", "\n".join(lines))]
 
 
-def _cached_text(state: TuiState, title: str, version: int) -> str | None:
-    """キャッシュにある本文。最新版は `texts`、過去版は `version_texts` から引く。"""
-    page = current_page(state)
-    if page is not None and page.get("version") == version:
-        return state.wiki_tab.texts.get(title)
-    return state.wiki_tab.version_texts.get((title, version))
-
-
-def _render_diff(state: TuiState, view: WikiDiffView, header: list[str]) -> Renderable:
-    """選んだ 2 版の差分を比較前 → 比較後の向きで出す。本文は選択時にキャッシュへ載せてある。"""
+def _render_diff(view: WikiDiffView, header: list[str]) -> Renderable:
+    """適用時に作った差分を行ごとに色付けして出す。"""
     result: Renderable = [("", "\n".join(header) + "\n")]
-    old = _cached_text(state, view.title, view.from_version)
-    new = _cached_text(state, view.title, view.to_version)
-    if old is None or new is None:
-        result.append(("", messages.tui_wiki_press_enter_to_load))
-        return result
-    diff = wiki_service.diff_texts(old, new, view.from_version, view.to_version)
-    if not diff:
+    if not view.diff:
         result.append(("", messages.tui_wiki_diff_no_changes))
         return result
-    for line in diff.splitlines():
+    for line in view.diff.splitlines():
         result.append((_diff_line_style(line), line + "\n"))
     return result
 

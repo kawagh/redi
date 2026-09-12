@@ -20,6 +20,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Frame
 
 from redi.i18n import messages
+from redi.service import wiki_service
 from redi.tui.state import (
     Renderable,
     TuiState,
@@ -198,7 +199,7 @@ def apply_diff(state: TuiState) -> bool:
     """両列のカーソルにある版の差分を右ペインに出す。
 
     フィルタ modal と同じく適用しても modal は閉じず、組を変えて押し直せる。閉じるのは
-    Esc / d。本文はここでキャッシュに載せ、取得に失敗したら表示は変えない
+    Esc / d。本文はここで取り (キャッシュにも載る)、取得に失敗したら表示は変えない
     (flash は取得側が出す)。同じ版どうしは弾かず、差分無しとして出す。
     """
     modal = state.wiki_tab.diff_modal
@@ -209,12 +210,17 @@ def apply_diff(state: TuiState) -> bool:
     from_version = modal.versions[modal.from_cursor]
     to_version = modal.versions[modal.to_cursor]
     title = page["title"]
-    if load_version_text(state, title, from_version, latest) is None:
+    old = load_version_text(state, title, from_version, latest)
+    if old is None:
         return False
-    if load_version_text(state, title, to_version, latest) is None:
+    new = load_version_text(state, title, to_version, latest)
+    if new is None:
         return False
     state.wiki_tab.diff_view = WikiDiffView(
-        title=title, from_version=from_version, to_version=to_version
+        title=title,
+        from_version=from_version,
+        to_version=to_version,
+        diff=wiki_service.diff_texts(old, new, from_version, to_version),
     )
     return True
 

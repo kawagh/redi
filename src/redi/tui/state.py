@@ -291,13 +291,15 @@ class WikiDiffView:
     """d で選んだ 2 版の差分を右ペインに出している状態。
 
     閲覧中の版 (`WikiVersionView`) とは独立に持ち、最新版を見ながらでも差分を出せる。
-    本文は `WikiTabState.texts` / `version_texts` のキャッシュから引く。
     向きは modal で選んだまま (比較前 → 比較後) で、並べ替えない。
+    `diff` は適用時に作った unified diff で、`WikiVersionView.text` と同じく描画は
+    これを出すだけにする (空なら差分無し)。
     """
 
     title: str
     from_version: int
     to_version: int
+    diff: str
 
 
 @dataclass
