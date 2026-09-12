@@ -8,9 +8,9 @@ from redi.i18n import messages
 from redi.service import wiki_service
 from redi.tui.state import TuiState
 from redi.tui.state.wiki_tab import WikiVersionView
-from redi.tui.wiki import version_modal, wiki_tab
-from redi.tui.wiki.delete_modal import open_delete_modal
-from redi.tui.wiki.version_modal import open_version_modal, select_version
+from redi.tui.wiki import version_dialog, wiki_tab
+from redi.tui.wiki.delete_dialog import open_delete_dialog
+from redi.tui.wiki.version_dialog import open_version_dialog, select_version
 from redi.tui.wiki.wiki_tab import WIKI_TAB, set_pages, viewing_version
 
 
@@ -47,48 +47,48 @@ def _wiki_project(monkeypatch):
     monkeypatch.setattr("redi.config.wiki_project_id", "research")
 
 
-class TestOpenVersionModal:
-    """open_version_modal() は 1..最新 の版を最新から順に並べる"""
+class TestOpenVersionDialog:
+    """open_version_dialog() は 1..最新 の版を最新から順に並べる"""
 
     def test_lists_versions_latest_first(self):
         """最新版が先頭で、最新版には (latest) の印が付く"""
         state = _state([_page("Home", version=3)])
 
-        assert open_version_modal(state) is True
+        assert open_version_dialog(state) is True
 
-        modal = state.wiki_tab.version_modal
-        assert modal.show is True
-        assert [v for v, _ in modal.choices] == ["3", "2", "1"]
-        assert modal.choices[0][1] == messages.tui_wiki_version_latest_label.format(
+        dialog = state.wiki_tab.version_dialog
+        assert dialog.show is True
+        assert [v for v, _ in dialog.choices] == ["3", "2", "1"]
+        assert dialog.choices[0][1] == messages.tui_wiki_version_latest_label.format(
             version=3
         )
-        assert modal.choices[1][1] == messages.tui_wiki_version_label.format(version=2)
+        assert dialog.choices[1][1] == messages.tui_wiki_version_label.format(version=2)
 
     def test_marks_latest_when_viewing_latest(self):
         """最新版を表示中なら先頭が現在の版としてカーソル位置になる"""
         state = _state([_page("Home", version=3)])
 
-        open_version_modal(state)
+        open_version_dialog(state)
 
-        assert state.wiki_tab.version_modal.active_value == "3"
-        assert state.wiki_tab.version_modal.cursor == 0
+        assert state.wiki_tab.version_dialog.active_value == "3"
+        assert state.wiki_tab.version_dialog.cursor == 0
 
     def test_marks_viewing_version(self):
         """過去版を表示中なら、その版にカーソルと現在の印を置く"""
         state = _state([_page("Home", version=3)])
         state.wiki_tab.version_view = WikiVersionView("Home", 1, "old", latest=3)
 
-        open_version_modal(state)
+        open_version_dialog(state)
 
-        assert state.wiki_tab.version_modal.active_value == "1"
-        assert state.wiki_tab.version_modal.cursor == 2
+        assert state.wiki_tab.version_dialog.active_value == "1"
+        assert state.wiki_tab.version_dialog.cursor == 2
 
     def test_returns_false_when_empty(self):
-        """ページが無いときは modal を開かず False"""
+        """ページが無いときはダイアログを開かず False"""
         state = _state([])
 
-        assert open_version_modal(state) is False
-        assert state.wiki_tab.version_modal.show is False
+        assert open_version_dialog(state) is False
+        assert state.wiki_tab.version_dialog.show is False
 
 
 class TestSelectVersion:
@@ -214,13 +214,13 @@ class TestReadOnlyWhileViewingOldVersion:
         assert result is not None
         assert result.action == "update"
 
-    def test_delete_modal_is_blocked(self):
-        """D を押しても削除確認 modal を開かず、flash で最新版に戻るよう促す"""
+    def test_delete_dialog_is_blocked(self):
+        """D を押しても削除確認ダイアログを開かず、flash で最新版に戻るよう促す"""
         state = _state([_page("Home", version=3)])
         state.wiki_tab.version_view = WikiVersionView("Home", 1, "old", latest=3)
 
-        assert open_delete_modal(state) is False
-        assert state.wiki_tab.delete_modal.show is False
+        assert open_delete_dialog(state) is False
+        assert state.wiki_tab.delete_dialog.show is False
         assert state.flash_message == messages.tui_wiki_version_readonly
 
     def test_create_child_is_allowed(self):
@@ -282,12 +282,12 @@ class TestIndication:
         assert opened == ["http://redmine.example/projects/research/wiki/Home/1"]
 
 
-class TestVersionModalModule:
-    """version_modal は wiki タブの最新版番号を一覧の version から取る"""
+class TestVersionDialogModule:
+    """version_dialog は wiki タブの最新版番号を一覧の version から取る"""
 
     def test_latest_version_none_without_version(self):
         """一覧に version が無ければ最新版は不明 (None)"""
         state = _state([cast(WikiPage, {"title": "Home"})])
 
-        assert version_modal.latest_version(wiki_tab.current_page(state)) is None
-        assert open_version_modal(state) is False
+        assert version_dialog.latest_version(wiki_tab.current_page(state)) is None
+        assert open_version_dialog(state) is False

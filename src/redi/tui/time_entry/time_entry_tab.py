@@ -138,7 +138,7 @@ def _status_hint(state: TuiState) -> str:
 
 
 def reload_with_filter(state: TuiState) -> None:
-    """フィルタ条件で先頭ページから取得し直す。filter modal の適用で呼ぶ。"""
+    """フィルタ条件で先頭ページから取得し直す。フィルタダイアログの適用で呼ぶ。"""
     state.time_entry_tab.error = None
     try:
         page = _fetch_page_with_subjects(state, 0)

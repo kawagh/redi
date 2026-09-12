@@ -1,4 +1,4 @@
-"""P で開くプロファイル切替 modal を開く/切り替える操作。"""
+"""P で開くプロファイル切替ダイアログを開く/切り替える操作。"""
 
 from prompt_toolkit.filters import FilterOrBool
 from prompt_toolkit.layout.containers import Float
@@ -6,33 +6,33 @@ from prompt_toolkit.layout.containers import Float
 from redi import config
 from redi.config import list_profile_names, profile_has_credentials
 from redi.i18n import messages
-from redi.tui.choice_modal import build_choice_float
+from redi.tui.choice_dialog import build_choice_dialog
 from redi.tui.state import TuiResult, TuiState
 
 
-def build_profile_float(state: TuiState, show: FilterOrBool) -> Float:
-    return build_choice_float(
-        lambda: state.profile_modal,
-        messages.tui_profile_modal_title,
-        messages.tui_profile_modal_hint,
+def build_profile_dialog(state: TuiState, show: FilterOrBool) -> Float:
+    return build_choice_dialog(
+        lambda: state.profile_dialog,
+        messages.tui_profile_dialog_title,
+        messages.tui_profile_dialog_hint,
         show,
     )
 
 
-def open_profile_modal(state: TuiState) -> None:
-    """プロファイル切替モーダルを開く。プロファイルが無ければ error modal に流す。"""
-    modal = state.profile_modal
+def open_profile_dialog(state: TuiState) -> None:
+    """プロファイル切替ダイアログを開く。プロファイルが無ければ エラーダイアログに流す。"""
+    dialog = state.profile_dialog
     profile_names = list_profile_names()
     if not profile_names:
-        state.error_modal = messages.tui_no_profiles
+        state.error_dialog = messages.tui_no_profiles
         return
     # プロファイル名がそのまま表示ラベルになる
-    modal.choices = [(name, name) for name in profile_names]
-    modal.cursor = 0
-    modal.active_value = config.current_profile
-    if modal.active_value in profile_names:
-        modal.cursor = profile_names.index(modal.active_value)
-    modal.show = True
+    dialog.choices = [(name, name) for name in profile_names]
+    dialog.cursor = 0
+    dialog.active_value = config.current_profile
+    if dialog.active_value in profile_names:
+        dialog.cursor = profile_names.index(dialog.active_value)
+    dialog.show = True
 
 
 def request_profile_switch(state: TuiState, name: str) -> TuiResult | None:
@@ -42,11 +42,11 @@ def request_profile_switch(state: TuiState, name: str) -> TuiResult | None:
     実行中に差し替えられないため、ここでは抜けるだけにして、適用と作り直しは
     `cli.main` に任せる。
     """
-    modal = state.profile_modal
-    modal.show = False
+    dialog = state.profile_dialog
+    dialog.show = False
     if name == config.current_profile:
         return None
     if not profile_has_credentials(name):
-        state.error_modal = messages.tui_profile_switch_invalid.format(name=name)
+        state.error_dialog = messages.tui_profile_switch_invalid.format(name=name)
         return None
     return TuiResult(action="switch_profile", tab=state.tab, profile_name=name)

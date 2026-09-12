@@ -6,7 +6,7 @@ from typing import Literal
 
 from redi import config
 from redi.api import PAGE_LIMIT_MAX
-from redi.tui.state.choice import ChoiceModalState
+from redi.tui.state.choice import ChoiceDialogState
 from redi.tui.state.issue_tab import IssueTabState
 from redi.tui.state.time_entry_tab import TimeEntryTabState
 from redi.tui.state.wiki_tab import WikiTabState
@@ -86,25 +86,25 @@ class TuiState:
     search_mode: bool = False
     search_query: str = ""
     # time_entries タブで D 押下時の削除確認プロンプト (status bar に y/N で出す)。
-    # issue タブはステータスバーではなく Float モーダル (issue_tab.delete_modal) で確認する。
+    # issue タブはステータスバーではなく ダイアログ (issue_tab.delete_dialog) で確認する。
     confirm_delete_prompt: str | None = None
     # 直前のアクション結果をステータスバーに出す一時メッセージ。次のキー入力で消える。
     flash_message: str | None = None
-    # ? でヘルプの floating window を表示しているかどうか。
+    # ? でヘルプのダイアログ を表示しているかどうか。
     show_help: bool = False
     # 右ペイン (preview) のスクロール位置 (先頭からの行数)。
     # カーソル移動・タブ切り替え時に 0 に戻す。
     preview_scroll: int = 0
     # API エラー等を Float で出すための本文
-    error_modal: str | None = None
+    error_dialog: str | None = None
     # 起動時に `/my/account.json` から取得した自分のユーザー id。
-    # フィルタモーダルの選択肢で「自分」と実ユーザーの重複表示を避けるために使う。
+    # フィルタダイアログの選択肢で「自分」と実ユーザーの重複表示を避けるために使う。
     me_id: str | None = None
     # p で切り替えたセッション内のプロジェクト。None は未切替 (config の既定に従う)。
     project_id: str | None = None
     project_label: str = ""
-    project_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
-    profile_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
+    project_dialog: ChoiceDialogState = field(default_factory=ChoiceDialogState)
+    profile_dialog: ChoiceDialogState = field(default_factory=ChoiceDialogState)
 
     def apply_terminal_rows(self, rows: int) -> bool:
         """端末の行数から page_size を更新する。値が変わったときだけ True を返す。"""

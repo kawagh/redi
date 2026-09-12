@@ -50,8 +50,8 @@ This file provides guidance to Agents when working with code in this repository.
 - TUI から入った対話入力 (更新・作成・工数・wiki) をキャンセルしても redi を終了させず、
   同じ絞り込み・カーソル位置の TUI に戻す
 - 削除操作は誤操作の戻しやすさに応じて操作完了までの手間の大小を変える
-    - issue: modal を開き issue_id を打ち直させる(issueに付随する添付ファイルやコメントが削除されるので重く見ている)
-    - wiki: modal を開き `DELETE` と打たせる(数値idが無く、タイトルは日本語もあり打ち直させられないため確認語にしている)
+    - issue: ダイアログを開き issue_id を打ち直させる(issueに付随する添付ファイルやコメントが削除されるので重く見ている)
+    - wiki: ダイアログを開き `DELETE` と打たせる(数値idが無く、タイトルは日本語もあり打ち直させられないため確認語にしている)
     - コメント : ステータスバーの y/N
     - time_entry : ステータスバーの y/N
 

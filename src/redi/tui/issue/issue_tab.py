@@ -322,7 +322,7 @@ def clear_find_for_filter(state: TuiState) -> None:
 
 
 def reload_with_filter(state: TuiState) -> None:
-    """フィルタ条件で先頭ページから再取得する。filter modal からの適用で呼ぶ。"""
+    """フィルタ条件で先頭ページから再取得する。フィルタダイアログからの適用で呼ぶ。"""
     _apply_page(state, fetch_issues_with_filter(state, 0), 0)
 
 

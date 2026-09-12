@@ -1,4 +1,4 @@
-"""wiki タブの h で開く版選択 modal と、選んだ版を表示する操作。
+"""wiki タブの h で開く版選択ダイアログと、選んだ版を表示する操作。
 
 Redmine の REST API には wiki の版一覧を返すエンドポイントが無い。最新版の番号は
 一覧 (`/wiki/index.json`) の `version` で分かるので、1..最新 を並べて選ばせる。
@@ -10,17 +10,17 @@ from prompt_toolkit.layout.containers import Float
 
 from redi.api.wiki import WikiPage
 from redi.i18n import messages
-from redi.tui.choice_modal import build_choice_float
+from redi.tui.choice_dialog import build_choice_dialog
 from redi.tui.state import TuiState
 from redi.tui.state.wiki_tab import WikiVersionView
 from redi.tui.wiki.wiki_tab import current_page, load_version_text, viewing_version
 
 
-def build_version_float(state: TuiState, show: FilterOrBool) -> Float:
-    return build_choice_float(
-        lambda: state.wiki_tab.version_modal,
-        messages.tui_wiki_version_modal_title,
-        messages.tui_wiki_version_modal_hint,
+def build_version_dialog(state: TuiState, show: FilterOrBool) -> Float:
+    return build_choice_dialog(
+        lambda: state.wiki_tab.version_dialog,
+        messages.tui_wiki_version_dialog_title,
+        messages.tui_wiki_version_dialog_hint,
         show,
     )
 
@@ -36,13 +36,13 @@ def latest_version(page: WikiPage | None) -> int | None:
 
 
 def version_label(version: int, latest: int) -> str:
-    """版の表示ラベル。最新版には (最新) を添える。差分 modal の列でも使う。"""
+    """版の表示ラベル。最新版には (最新) を添える。差分ダイアログの列でも使う。"""
     if version == latest:
         return messages.tui_wiki_version_latest_label.format(version=version)
     return messages.tui_wiki_version_label.format(version=version)
 
 
-def open_version_modal(state: TuiState) -> bool:
+def open_version_dialog(state: TuiState) -> bool:
     """カーソル位置のページの版一覧 (最新が先頭) を出す。対象がなければ False。
 
     表示中の版に `*` を付け、カーソルもそこに置く。
@@ -50,13 +50,13 @@ def open_version_modal(state: TuiState) -> bool:
     latest = latest_version(current_page(state))
     if latest is None:
         return False
-    modal = state.wiki_tab.version_modal
-    modal.choices = [(str(v), version_label(v, latest)) for v in range(latest, 0, -1)]
+    dialog = state.wiki_tab.version_dialog
+    dialog.choices = [(str(v), version_label(v, latest)) for v in range(latest, 0, -1)]
     view = viewing_version(state)
     current = view.version if view is not None else latest
-    modal.active_value = str(current)
-    modal.cursor = latest - current
-    modal.show = True
+    dialog.active_value = str(current)
+    dialog.cursor = latest - current
+    dialog.show = True
     return True
 
 

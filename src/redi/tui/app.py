@@ -11,7 +11,7 @@ from redi.tui.hooks.resize_watcher import attach_resize_watcher
 from redi.tui.hooks.screen_logger import attach_screen_log
 from redi.tui.issue.issue_tab import fetch_issues_with_filter, load_journals
 from redi.tui.keybindings import (
-    modal_keybindings,
+    dialog_keybindings,
     normal_keybindings,
     submode_keybindings,
 )
@@ -86,7 +86,7 @@ def run_issue_tui(
     conditions = build_conditions(state)
     kb = KeyBindings()
     normal_keybindings.register(kb, state, conditions)
-    modal_keybindings.register(kb, state, conditions)
+    dialog_keybindings.register(kb, state, conditions)
     submode_keybindings.register(kb, state, conditions)
 
     app = Application(

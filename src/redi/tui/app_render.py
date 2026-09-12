@@ -1,7 +1,7 @@
 """画面パーツ (タブバー / 一覧 / プレビュー / ヘルプ / ステータスバー) の描画。
 
 一覧とプレビューの本文はタブ側が組み立てる。ここが持つのはタブに依らず画面へ
-常に出るものと、ヘルプ・エラー modal の本文。
+常に出るものと、ヘルプ・エラーダイアログの本文。
 """
 
 from importlib.metadata import version
@@ -113,8 +113,8 @@ def render_help(state: TuiState) -> Renderable:
     return parts
 
 
-def render_error_modal(state: TuiState) -> Renderable:
-    body = state.error_modal or ""
+def render_error_dialog(state: TuiState) -> Renderable:
+    body = state.error_dialog or ""
     return [("fg:ansired", body)]
 
 

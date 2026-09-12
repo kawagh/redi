@@ -683,16 +683,16 @@ class MessagesProto(Protocol):
     tui_filter_hint_single: str
     tui_filter_title: str
     tui_filter_title_time_entries: str
-    tui_project_modal_title: str
-    tui_project_modal_hint: str
+    tui_project_dialog_title: str
+    tui_project_dialog_hint: str
     tui_current_project: str
     """{name}"""
     tui_flash_project_switched: str
     """{name}"""
     tui_project_load_failed: str
     """{error}"""
-    tui_profile_modal_title: str
-    tui_profile_modal_hint: str
+    tui_profile_dialog_title: str
+    tui_profile_dialog_hint: str
     tui_current_profile: str
     """{name}"""
     tui_flash_profile_switched: str
@@ -703,7 +703,7 @@ class MessagesProto(Protocol):
     """config.toml にプロファイルが1つも無い。"""
     tui_help_title: str
     """{label}"""
-    tui_error_modal_title: str
+    tui_error_dialog_title: str
     tui_status_hint_issues: str
     """{page_label}"""
     tui_status_hint_wiki: str
@@ -770,36 +770,36 @@ class MessagesProto(Protocol):
     """{error}"""
     tui_issue_delete_missing: str
     """{id}"""
-    tui_issue_delete_modal_title: str
-    tui_issue_delete_modal_target: str
+    tui_issue_delete_dialog_title: str
+    tui_issue_delete_dialog_target: str
     """{id}, {subject}"""
-    tui_issue_delete_modal_prompt: str
+    tui_issue_delete_dialog_prompt: str
     """{expected}"""
-    tui_issue_delete_modal_input_label: str
-    tui_issue_delete_modal_mismatch: str
-    tui_issue_delete_modal_empty: str
-    tui_issue_delete_modal_hint: str
-    tui_find_modal_title: str
-    tui_find_modal_input_label: str
-    tui_find_modal_hint: str
+    tui_issue_delete_dialog_input_label: str
+    tui_issue_delete_dialog_mismatch: str
+    tui_issue_delete_dialog_empty: str
+    tui_issue_delete_dialog_hint: str
+    tui_find_dialog_title: str
+    tui_find_dialog_input_label: str
+    tui_find_dialog_hint: str
     tui_wiki_delete_failed: str
     """{error}"""
     tui_wiki_delete_page_missing: str
     """{title}"""
-    tui_wiki_delete_modal_title: str
-    tui_wiki_delete_modal_target: str
+    tui_wiki_delete_dialog_title: str
+    tui_wiki_delete_dialog_target: str
     """{title}"""
-    tui_wiki_delete_modal_warning: str
-    tui_wiki_delete_modal_prompt: str
+    tui_wiki_delete_dialog_warning: str
+    tui_wiki_delete_dialog_prompt: str
     """{expected}"""
-    tui_wiki_delete_modal_input_label: str
-    tui_wiki_delete_modal_mismatch: str
+    tui_wiki_delete_dialog_input_label: str
+    tui_wiki_delete_dialog_mismatch: str
     """{expected}"""
-    tui_wiki_delete_modal_empty: str
+    tui_wiki_delete_dialog_empty: str
     """{expected}"""
-    tui_wiki_delete_modal_hint: str
-    tui_wiki_version_modal_title: str
-    tui_wiki_version_modal_hint: str
+    tui_wiki_delete_dialog_hint: str
+    tui_wiki_version_dialog_title: str
+    tui_wiki_version_dialog_hint: str
     tui_wiki_version_latest_label: str
     """{version}"""
     tui_wiki_version_label: str
@@ -815,9 +815,9 @@ class MessagesProto(Protocol):
     """{version}, {latest}"""
     tui_wiki_meta_version_of_latest: str
     """{version}, {latest}"""
-    # d で開く、比較前と比較後の版を 2 列で選ぶ modal
-    tui_wiki_diff_modal_title: str
-    tui_wiki_diff_modal_hint: str
+    # d で開く、比較前と比較後の版を 2 列で選ぶダイアログ
+    tui_wiki_diff_dialog_title: str
+    tui_wiki_diff_dialog_hint: str
     tui_wiki_diff_from: str
     tui_wiki_diff_to: str
     # 版が 1 つしか無く比較相手が無いときの案内

@@ -16,17 +16,17 @@ class Conditions:
     normal: Condition
     search: Condition
     confirm_delete: Condition
-    help_modal: Condition
-    issue_filter_modal: Condition
-    issue_find_modal: Condition
-    issue_delete_modal: Condition
-    wiki_delete_modal: Condition
-    wiki_version_modal: Condition
-    wiki_diff_modal: Condition
-    time_entry_filter_modal: Condition
-    error_modal: Condition
-    project_modal: Condition
-    profile_modal: Condition
+    help_dialog: Condition
+    issue_filter_dialog: Condition
+    issue_find_dialog: Condition
+    issue_delete_dialog: Condition
+    wiki_delete_dialog: Condition
+    wiki_version_dialog: Condition
+    wiki_diff_dialog: Condition
+    time_entry_filter_dialog: Condition
+    error_dialog: Condition
+    project_dialog: Condition
+    profile_dialog: Condition
     comment_select: Condition
 
 
@@ -37,34 +37,34 @@ def build_conditions(state: TuiState) -> Conditions:
                 not state.search_mode
                 and state.confirm_delete_prompt is None
                 and not state.show_help
-                and not state.issue_tab.filter_modal.show
-                and not state.issue_tab.find_modal.show
-                and not state.issue_tab.delete_modal.show
-                and not state.wiki_tab.delete_modal.show
-                and not state.wiki_tab.version_modal.show
-                and not state.wiki_tab.diff_modal.show
-                and not state.time_entry_tab.filter_modal.show
-                and state.error_modal is None
+                and not state.issue_tab.filter_dialog.show
+                and not state.issue_tab.find_dialog.show
+                and not state.issue_tab.delete_dialog.show
+                and not state.wiki_tab.delete_dialog.show
+                and not state.wiki_tab.version_dialog.show
+                and not state.wiki_tab.diff_dialog.show
+                and not state.time_entry_tab.filter_dialog.show
+                and state.error_dialog is None
                 and not state.issue_tab.comment_select.active
-                and not state.project_modal.show
-                and not state.profile_modal.show
+                and not state.project_dialog.show
+                and not state.profile_dialog.show
             )
         ),
         search=Condition(lambda: state.search_mode),
         confirm_delete=Condition(lambda: state.confirm_delete_prompt is not None),
-        help_modal=Condition(lambda: state.show_help),
-        issue_filter_modal=Condition(lambda: state.issue_tab.filter_modal.show),
-        issue_find_modal=Condition(lambda: state.issue_tab.find_modal.show),
-        issue_delete_modal=Condition(lambda: state.issue_tab.delete_modal.show),
-        wiki_delete_modal=Condition(lambda: state.wiki_tab.delete_modal.show),
-        wiki_version_modal=Condition(lambda: state.wiki_tab.version_modal.show),
-        wiki_diff_modal=Condition(lambda: state.wiki_tab.diff_modal.show),
-        time_entry_filter_modal=Condition(
-            lambda: state.time_entry_tab.filter_modal.show
+        help_dialog=Condition(lambda: state.show_help),
+        issue_filter_dialog=Condition(lambda: state.issue_tab.filter_dialog.show),
+        issue_find_dialog=Condition(lambda: state.issue_tab.find_dialog.show),
+        issue_delete_dialog=Condition(lambda: state.issue_tab.delete_dialog.show),
+        wiki_delete_dialog=Condition(lambda: state.wiki_tab.delete_dialog.show),
+        wiki_version_dialog=Condition(lambda: state.wiki_tab.version_dialog.show),
+        wiki_diff_dialog=Condition(lambda: state.wiki_tab.diff_dialog.show),
+        time_entry_filter_dialog=Condition(
+            lambda: state.time_entry_tab.filter_dialog.show
         ),
-        error_modal=Condition(lambda: state.error_modal is not None),
-        project_modal=Condition(lambda: state.project_modal.show),
-        profile_modal=Condition(lambda: state.profile_modal.show),
+        error_dialog=Condition(lambda: state.error_dialog is not None),
+        project_dialog=Condition(lambda: state.project_dialog.show),
+        profile_dialog=Condition(lambda: state.profile_dialog.show),
         comment_select=Condition(
             lambda: (
                 state.issue_tab.comment_select.active

@@ -63,7 +63,7 @@ class ResizeWatcher:
         if self._state.tab not in self._stale_tabs or not self._is_ready():
             return
         # resized: サイズが動いている間は待ち直す (デバウンス)
-        # _scheduled_task is None: modal を閉じた / タブを切り替えた等で今から待ち始める
+        # _scheduled_task is None: ダイアログを閉じた / タブを切り替えた等で今から待ち始める
         if resized or self._scheduled_task is None:
             self._restart()
 
@@ -79,8 +79,8 @@ class ResizeWatcher:
     async def _debounced_reload(self) -> None:
         await asyncio.sleep(self._delay)
         self._scheduled_task = None
-        # 待機中に modal が開いた場合は差し替えない (予約時のガードだけでは
-        # すり抜ける)。タブは _stale_tabs に残るので、modal を閉じた後の
+        # 待機中にダイアログが開いた場合は差し替えない (予約時のガードだけでは
+        # すり抜ける)。タブは _stale_tabs に残るので、ダイアログを閉じた後の
         # 描画で予約し直される。
         if not self._is_ready():
             return

@@ -1,17 +1,17 @@
-"""issues タブの f で開くフィルタ modal の単体テスト。"""
+"""issues タブの f で開くフィルタダイアログの単体テスト。"""
 
 import pytest
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
 
 from redi.tui.conditions import build_conditions
-from redi.tui.issue import filter_modal
-from redi.tui.issue.filter_modal import (
-    open_filter_modal,
+from redi.tui.issue import filter_dialog
+from redi.tui.issue.filter_dialog import (
+    open_filter_dialog,
     section_cursor,
     shift_focus,
 )
-from redi.tui.keybindings import modal_keybindings
+from redi.tui.keybindings import dialog_keybindings
 from redi.tui.state import TuiState
 from redi.tui.state.issue_tab import IssueFilter
 
@@ -22,15 +22,15 @@ QUERY_CHOICES = [(None, "(unspecified)"), ("7", "My open issues")]
 
 
 def _stub_choices(monkeypatch) -> None:
-    monkeypatch.setattr(filter_modal, "build_status_choices", lambda: STATUS_CHOICES)
+    monkeypatch.setattr(filter_dialog, "build_status_choices", lambda: STATUS_CHOICES)
     monkeypatch.setattr(
-        filter_modal,
+        filter_dialog,
         "build_assignee_choices",
         lambda _project_id, _me_id: ASSIGNEE_CHOICES,
     )
-    monkeypatch.setattr(filter_modal, "build_tracker_choices", lambda: TRACKER_CHOICES)
+    monkeypatch.setattr(filter_dialog, "build_tracker_choices", lambda: TRACKER_CHOICES)
     monkeypatch.setattr(
-        filter_modal, "build_query_choices", lambda _project_id: QUERY_CHOICES
+        filter_dialog, "build_query_choices", lambda _project_id: QUERY_CHOICES
     )
 
 
@@ -52,8 +52,8 @@ class TestShiftFocus:
         assert shift_focus("assignee", -1) == "status"
 
 
-class TestOpenFilterModal:
-    """open_filter_modal() は選択肢を取り直して現在の絞り込みにカーソルを合わせる"""
+class TestOpenFilterDialog:
+    """open_filter_dialog() は選択肢を取り直して現在の絞り込みにカーソルを合わせる"""
 
     @pytest.mark.parametrize(
         ("issue_filter", "section", "expected_cursor"),
@@ -71,10 +71,10 @@ class TestOpenFilterModal:
         state = TuiState()
         state.issue_tab.filter = issue_filter
 
-        open_filter_modal(state)
+        open_filter_dialog(state)
 
-        modal = state.issue_tab.filter_modal
-        assert section_cursor(modal, section) == expected_cursor
+        dialog = state.issue_tab.filter_dialog
+        assert section_cursor(dialog, section) == expected_cursor
 
 
 def _handler(kb: KeyBindings, keys: tuple):
@@ -85,28 +85,28 @@ def _handler(kb: KeyBindings, keys: tuple):
     raise AssertionError(f"no active binding for {keys}")
 
 
-class TestFilterModalKeys:
-    """フィルタ modal のキー操作で tracker を絞り込める"""
+class TestFilterDialogKeys:
+    """フィルタダイアログのキー操作で tracker を絞り込める"""
 
     def _kb(self, state: TuiState, monkeypatch) -> KeyBindings:
         monkeypatch.setattr(
-            modal_keybindings, "reload_with_filter", lambda _state: None
+            dialog_keybindings, "reload_with_filter", lambda _state: None
         )
         kb = KeyBindings()
-        modal_keybindings.register(kb, state, build_conditions(state))
+        dialog_keybindings.register(kb, state, build_conditions(state))
         return kb
 
     def test_enter_applies_tracker(self, monkeypatch):
         """tracker 列で Enter を押すと tracker_id/tracker_label が反映される"""
         _stub_choices(monkeypatch)
         state = TuiState()
-        open_filter_modal(state)
+        open_filter_dialog(state)
         kb = self._kb(state, monkeypatch)
 
         # tab を 2 回で status -> assignee -> tracker
         _handler(kb, (Keys.ControlI,))(None)
         _handler(kb, (Keys.ControlI,))(None)
-        assert state.issue_tab.filter_modal.focus == "tracker"
+        assert state.issue_tab.filter_dialog.focus == "tracker"
 
         # j で「Bug」まで下げて Enter
         _handler(kb, ("j",))(None)
@@ -120,29 +120,29 @@ class TestFilterModalKeys:
         _stub_choices(monkeypatch)
         state = TuiState()
         state.issue_tab.filter = IssueFilter(tracker_id="1", tracker_label="Bug")
-        open_filter_modal(state)
-        modal = state.issue_tab.filter_modal
-        modal.query_cursor = 1
+        open_filter_dialog(state)
+        dialog = state.issue_tab.filter_dialog
+        dialog.query_cursor = 1
         kb = self._kb(state, monkeypatch)
 
         _handler(kb, ("c",))(None)
 
         assert state.issue_tab.filter.is_active() is False
-        assert modal.tracker_cursor == 0
-        assert modal.query_cursor == 0
+        assert dialog.tracker_cursor == 0
+        assert dialog.query_cursor == 0
 
     def test_enter_applies_query_and_clears_other_conditions(self, monkeypatch):
         """クエリ列で Enter を押すと query_id が入り、他の絞り込みは外れる"""
         _stub_choices(monkeypatch)
         state = TuiState()
         state.issue_tab.filter = IssueFilter(tracker_id="1", tracker_label="Bug")
-        open_filter_modal(state)
+        open_filter_dialog(state)
         kb = self._kb(state, monkeypatch)
 
         # tab を 3 回で status -> assignee -> tracker -> query
         for _ in range(3):
             _handler(kb, (Keys.ControlI,))(None)
-        assert state.issue_tab.filter_modal.focus == "query"
+        assert state.issue_tab.filter_dialog.focus == "query"
 
         _handler(kb, ("j",))(None)
         _handler(kb, (Keys.ControlM,))(None)
@@ -151,4 +151,4 @@ class TestFilterModalKeys:
         assert state.issue_tab.filter.query_label == "My open issues"
         assert state.issue_tab.filter.tracker_id is None
         # クリアされた列のカーソルも (unspecified) の行へ戻す
-        assert state.issue_tab.filter_modal.tracker_cursor == 0
+        assert state.issue_tab.filter_dialog.tracker_cursor == 0
