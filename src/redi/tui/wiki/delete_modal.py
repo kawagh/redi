@@ -19,7 +19,7 @@ from redi.api.wiki import WikiPage, WikiPageNotFoundException
 from redi.i18n import messages
 from redi.service import wiki_service
 from redi.tui.state import Renderable, TuiState, WikiDeleteModalState
-from redi.tui.wiki.wiki_tab import set_pages, viewing_version
+from redi.tui.wiki.wiki_tab import current_page, set_pages, viewing_version
 
 # 削除を確定するために打たせる語。ASCII 固定なので日本語タイトルでも入力できる。
 CONFIRM_WORD = "DELETE"
@@ -81,10 +81,8 @@ def open_delete_modal(state: TuiState) -> bool:
     過去版を表示中は開かない。削除はページ全体に及ぶので、見ている版と消える内容が
     食い違ったまま確定させないため、最新版に戻してから行わせる。
     """
-    pages = state.wiki_tab.pages
-    if not pages:
-        return False
-    title = pages[state.wiki_tab.cursor].get("title")
+    page = current_page(state)
+    title = page.get("title") if page is not None else None
     if not title:
         return False
     if viewing_version(state) is not None:

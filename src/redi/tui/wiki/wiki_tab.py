@@ -114,9 +114,9 @@ def _render_list(state: TuiState) -> Renderable:
 def _render_preview(state: TuiState) -> Renderable:
     if state.wiki_tab.error:
         return [("", state.wiki_tab.error)]
-    if not state.wiki_tab.pages:
+    page = current_page(state)
+    if page is None:
         return [("", "")]
-    page = state.wiki_tab.pages[state.wiki_tab.cursor]
     title = page.get("title", "")
     lines = [title, ""]
     latest = page.get("version")
@@ -166,8 +166,9 @@ def _exit_result(
     wiki_title: str | None = None,
     parent_wiki_title: str | None = None,
 ) -> TuiResult:
-    if wiki_title is None and state.wiki_tab.pages:
-        wiki_title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
+    page = current_page(state)
+    if wiki_title is None and page is not None:
+        wiki_title = page.get("title")
     return TuiResult(
         action=action,
         tab="wiki",
@@ -199,21 +200,21 @@ def _on_goto_bottom(state: TuiState) -> None:
 
 
 def _on_enter(state: TuiState) -> None:
-    if not state.wiki_tab.pages:
+    page = current_page(state)
+    if page is None:
         return
-    title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
+    title = page.get("title")
     if title:
         _load_wiki_text(state, title)
 
 
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
+    page = current_page(state)
     if key == "c":
-        parent = None
-        if state.wiki_tab.pages:
-            parent = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
+        parent = page.get("title") if page is not None else None
         return _exit_result(state, "create", parent_wiki_title=parent)
     if key == "u":
-        if not state.wiki_tab.pages:
+        if page is None:
             return None
         if viewing_version(state) is not None:
             # 過去版の本文で更新画面を開くと、古い内容で最新版を上書きしてしまう
@@ -247,9 +248,8 @@ def _on_reload(state: TuiState) -> None:
     `loaded` を立てたままだと `_load_wikis` が早期 return するので一度倒す。
     既存のカーソル位置はタイトル一致で復元を試み、無ければ先頭に戻る。
     """
-    prev_title: str | None = None
-    if state.wiki_tab.pages:
-        prev_title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
+    prev_page = current_page(state)
+    prev_title = prev_page.get("title") if prev_page is not None else None
     state.wiki_tab.loaded = False
     state.wiki_tab.error = None
     state.wiki_tab.pages = []
@@ -267,12 +267,13 @@ def _on_reload(state: TuiState) -> None:
 
 
 def _on_open_web(state: TuiState) -> None:
-    if not state.wiki_tab.pages:
+    page = current_page(state)
+    if page is None:
         return
     project = _wiki_project(state)
     if not project:
         return
-    title = state.wiki_tab.pages[state.wiki_tab.cursor].get("title")
+    title = page.get("title")
     if not title:
         return
     # 過去版を開いていれば web でも同じ版を出す
