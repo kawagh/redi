@@ -120,7 +120,9 @@ def prompt_custom_field_value(
             # 空のまま閉じられたら開き直す。制約違反のときは書いた内容を残す
             value = ""
             while True:
-                value = open_editor(initial_text=value or default_value)
+                value = open_editor(
+                    initial_text=value or default_value, name="custom_field"
+                )
                 if value:
                     err = check_custom_field_constraints(custom_field, value)
                     if err:

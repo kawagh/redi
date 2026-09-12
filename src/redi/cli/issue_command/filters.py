@@ -19,6 +19,7 @@ from redi.api.enumeration import fetch_issue_priorities
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.tracker import fetch_trackers
 from redi.i18n import messages
+from redi.output import eprint
 
 # Redmine のフィルタ値は `!` で否定、`|` で複数指定を表せる。
 # 検証はこれらを取り除いた個々の値に対して行う。
@@ -109,7 +110,7 @@ def validate_list_filters(args: argparse.Namespace) -> None:
         invalid = _invalid_value(spec, value, known_ids)
         if invalid is None:
             continue
-        print(
+        eprint(
             messages.error_unknown_filter_value.format(
                 label=spec.label,
                 value=invalid,

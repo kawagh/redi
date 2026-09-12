@@ -57,7 +57,7 @@ class TestIssueJournalUpdate:
 
         update_error = update_error_info.value
         assert update_error.returncode == 1
-        assert "Issue journal not found: #99999999" in update_error.stdout, (
+        assert "Issue journal not found: #99999999" in update_error.stderr, (
             f"想定外のエラーで update が失敗\n"
             f"stdout:\n{update_error.stdout}\nstderr:\n{update_error.stderr}"
         )

@@ -74,4 +74,4 @@ class TestUpdateMyAccount:
 
         assert e.value.code == 1
         assert stub_me_service == []
-        assert capsys.readouterr().out.strip() != ""
+        assert capsys.readouterr().err.strip() != ""

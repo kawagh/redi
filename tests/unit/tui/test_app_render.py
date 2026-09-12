@@ -1,6 +1,7 @@
 from prompt_toolkit.utils import get_cwidth
 
 from redi.tui import app_render
+from redi.tui.conditions import build_conditions
 from redi.tui.state import TuiState
 from redi.tui.tabs import TABS
 
@@ -31,3 +32,37 @@ class TestRenderHelp:
         """バージョン行の直前は空行にして本文と分ける"""
         lines = _rendered_lines(app_render.render_help(TuiState()))
         assert lines[-2] == ""
+
+
+class TestRenderStatusSearch:
+    """render_status() は確定後も残っている検索クエリをステータスバーに出す"""
+
+    def _status(self, state: TuiState) -> str:
+        return "".join(
+            text
+            for _style, text in app_render.render_status(state, build_conditions(state))
+        )
+
+    def test_shows_query_after_search_is_committed(self):
+        """検索確定後 (search_mode=False) もクエリと解除方法を表示する"""
+        state = TuiState()
+        state.search_query = "foo"
+
+        status = self._status(state)
+
+        assert "/foo" in status
+        assert "Esc" in status
+
+    def test_hides_query_when_search_is_cleared(self):
+        """検索クエリが空なら検索の表示は出さない"""
+        state = TuiState()
+
+        assert "Esc" not in self._status(state)
+
+    def test_hides_query_while_not_in_normal_mode(self):
+        """通常モードでない間は Esc が検索解除に効かないので案内も出さない"""
+        state = TuiState()
+        state.search_query = "foo"
+        state.issue_tab.comment_select.active = True
+
+        assert "/foo" not in self._status(state)

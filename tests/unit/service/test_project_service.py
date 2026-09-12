@@ -22,7 +22,7 @@ def stub_project_api(monkeypatch):
 
     state = SimpleNamespace(fetch_count=0)
 
-    def fake_fetch_projects():
+    def fake_fetch_projects(**kwargs):
         state.fetch_count += 1
         return PROJECTS
 

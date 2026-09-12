@@ -66,10 +66,15 @@ def issue_meta_rows(issue: Issue) -> list[tuple[str, str]]:
             return value.get("name", "")
         return ""
 
+    # Redmine は親がある場合のみ `"parent": {"id": N}` を返し、subject は含まない
+    parent = issue.get("parent")
+    parent_value = f"#{parent['id']}" if parent else ""
+
     return [
         (messages.meta_status, named("status")),
         (messages.meta_priority, named("priority")),
         (messages.meta_tracker, named("tracker")),
+        (messages.meta_parent, parent_value),
         (messages.meta_assignee, named("assigned_to")),
         (messages.meta_author, named("author")),
         (messages.meta_start_date, issue.get("start_date") or ""),

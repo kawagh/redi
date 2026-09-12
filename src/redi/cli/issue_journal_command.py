@@ -8,6 +8,7 @@ from redi.api.issue_journal import IssueJournalNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import issue_journal_service
 
 
@@ -16,12 +17,12 @@ def update_issue_journal(journal_id: str, notes: str) -> None:
     try:
         issue_journal_service.update_issue_journal(journal_id, notes)
     except IssueJournalNotFoundException:
-        print(messages.issue_journal_not_found.format(id=journal_id))
+        eprint(messages.issue_journal_not_found.format(id=journal_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.issue_journal_update_failed)
+        eprint(messages.issue_journal_update_failed)
         sys.exit(1)
     print(messages.issue_journal_updated.format(id=journal_id))
 
@@ -31,12 +32,12 @@ def delete_issue_journal(journal_id: str) -> None:
     try:
         issue_journal_service.delete_issue_journal(journal_id)
     except IssueJournalNotFoundException:
-        print(messages.issue_journal_not_found.format(id=journal_id))
+        eprint(messages.issue_journal_not_found.format(id=journal_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.issue_journal_delete_failed)
+        eprint(messages.issue_journal_delete_failed)
         sys.exit(1)
     print(messages.issue_journal_deleted.format(id=journal_id))
 

@@ -16,7 +16,8 @@ redi --tui               # launch the TUI
 redi issue               # or list issues
 ```
 
-See [Setup](#setup) for profile / environment variable details and [Usage (examples)](#usage-examples) for the full command reference.
+`redi init` verifies the credentials and writes a profile to `~/.config/redi/config.toml`.
+See [Usage (examples)](#usage-examples) for the full command reference.
 
 ## Install
 
@@ -26,84 +27,47 @@ I recommend installation via [uv](https://github.com/astral-sh/uv).
 uv tool install redtile  # name on PyPI is redtile, NOT redi
 ```
 
-## Setup
+## Plugin (Agent Skill + Hook)
 
-### Config
+`redmine-redi` makes coding agents (Claude Code, Codex) use `redi` for Redmine work.
+It bundles an Agent Skill and a `PreToolUse` hook that denies direct reads of the config file.
+See [Plugin](https://kawagh.github.io/redi/cli/plugin/) for skill-only installation.
 
-To use redi, you need to set the Redmine URL and API key in one of the ways below.
-
-#### redi init (interactive, recommended for first time)
-
-```sh
-redi init
-```
-
-`redi init` first asks which language to use (`en` / `ja`), and the rest of the setup is shown in the selected language.
-You can change it later with `redi config update --language <en|ja>`.
-
-Then, profile will be created in `~/.config/redi/config.toml` like below format.
-You can also create profile by `redi config create`, and update profile by `redi config update` (and also by manual edit).
-
-```toml
-default_profile = "default"
-
-["default"]
-redmine_url = "https://redmine.example.com"
-redmine_api_key = "<your_api_key>"
-default_project_id = "1"
-wiki_project_id = "2"
-editor = "nvim"
-language = "en"  # "en" (default) or "ja"
-
-["sub"]
-redmine_url = "https://redmine.example.com"
-redmine_api_key = "<your_api_key>"
-default_project_id = "2"
-wiki_project_id = "3"
-editor = "code"
-```
-
-#### environment variable
-
-```sh
-export REDMINE_URL=https://redmine.example.com
-export REDMINE_API_KEY=<your_api_key>
-```
-
-
-### Shell completion
-
-```sh
-uv tool install argcomplete
-echo 'eval "$(register-python-argcomplete redi)"' >> ~/.zshrc
-```
-
-### Agent skill
-
-`redmine-redi` is a skill that lets coding agents (Claude Code, Codex) know to
-reach for `redi` when a task involves Redmine.
-
-Install it globally (user scope) so that it is available in every project.
-`curl` needs no extra tooling:
+### Install
 
 ```sh
 # Claude Code
-mkdir -p ~/.claude/skills/redmine-redi && \
-  curl -sL https://raw.githubusercontent.com/kawagh/redi/main/skills/redmine-redi/SKILL.md \
-    -o ~/.claude/skills/redmine-redi/SKILL.md
+claude plugin marketplace add kawagh/redi
+claude plugin install redmine-redi@redi
 
 # Codex
-mkdir -p ~/.agents/skills/redmine-redi && \
-  curl -sL https://raw.githubusercontent.com/kawagh/redi/main/skills/redmine-redi/SKILL.md \
-    -o ~/.agents/skills/redmine-redi/SKILL.md
+codex plugin marketplace add kawagh/redi
+codex plugin add redmine-redi@redi
 ```
 
-Or with a skill manager:
+### Update
+
+Refresh the marketplace first, then update the plugin. Claude Code needs a restart to apply.
 
 ```sh
-npx skills add kawagh/redi --skill redmine-redi -g
-gh skill install kawagh/redi redmine-redi --scope user  # requires gh v2.90+ and a GitHub account
+# Claude Code
+claude plugin marketplace update redi
+claude plugin update redmine-redi@redi
+
+# Codex
+codex plugin marketplace upgrade redi
+codex plugin add redmine-redi@redi
 ```
+
+## Documentation
+
+https://kawagh.github.io/redi/ (also available in [Japanese(日本語)](https://kawagh.github.io/redi/ja/))
+
+- [Getting Started](https://kawagh.github.io/redi/getting-started/) — install and connect
+- [TUI](https://kawagh.github.io/redi/tui/) — tabs and keys
+- [Command Structure](https://kawagh.github.io/redi/cli/command-structure/) — the rule every command follows
+- [Plugin (Agent Skill + Hook)](https://kawagh.github.io/redi/cli/plugin/) — let coding agents reach for redi
+- [Configuration](https://kawagh.github.io/redi/configuration/) — config.toml, environment variables, shell completion
 
 ## Usage (examples)
 
@@ -127,12 +91,14 @@ redi --tui
 
 # config (alias: c)
 redi config
+redi config create # interactive: profile name / Redmine URL / API key / projects
 redi config create <profile_name> --url <url> --api_key <key> # create new profile
 redi config create <profile_name> --url <url> --api_key <key> --set_default
 redi config update # interactive: Enter to switch profile, u to update fields of the profile
 redi config update --default_profile <profile_name> # switch profile
 redi config update <profile_name> --editor nvim # update profile
 redi config update --language ja # switch language ("en" or "ja")
+redi config update --text_formatting textile # text formatting of the Redmine server ("markdown" or "textile")
 redi --profile <profile_name> issue # temporarily switch profile for this command
 
 # project (alias: p)
@@ -140,10 +106,17 @@ redi project # list projects
 redi project list # same as above (`redi project l` / `redi p list` / `redi p l` / `redi p` also work)
 redi project view <project_id> # view project
 redi project view <project_id> --include trackers,issue_categories
+redi project list --limit 10 --offset 10 # `list` returns Redmine's default 25 unless limited
 redi project create # (interactive)
 redi project create <name> <identifier>
 redi project create <name> <identifier> -d "description" --is_public true
+redi project create <name> <identifier> --homepage https://example.com --inherit_members true
+redi project create <name> <identifier> --enabled_module_names issue_tracking,wiki --issue_custom_field_ids 1,2
+redi project update <project_id> # (interactive)
 redi project update <project_id> --name renamed_project
+redi project update <project_id> --enabled_module_names issue_tracking,time_tracking,wiki
+redi project update <project_id> --default_assigned_to_id 3 --default_version_id 5
+redi project update <project_id> --default_assigned_to_id "" # unset
 
 # issue (alias: i)
 redi issue # list issues
@@ -179,7 +152,7 @@ redi version update <version_id> --status closed
 redi wiki
 redi wiki -p <project_id>
 redi wiki view <page_title>
-redi wiki create # (interactive)
+redi wiki create # (interactive, fails if the page already exists)
 redi wiki update # (interactive)
 
 # file (alias: f, project files)
@@ -215,10 +188,12 @@ redi me update -f <firstname> -l <lastname> -m <mail>
 
 # membership (alias: m)
 redi membership -p <project_id>
+redi membership list --limit 10 --offset 10
 redi membership view <membership_id>
 
 # news (alias: n)
 redi news -p <project_id>
+redi news list --limit 10 --offset 10
 redi news view <news_id>
 redi news view <news_id> --web # open in browser
 redi news create -p <project_id> # interactive: title, summary (optional), then the description in an editor
@@ -259,8 +234,10 @@ redi user list --status locked # active / registered / locked (default: active o
 redi user list --name kawagh # partial match on login / firstname / lastname / mail
 redi user list --group_id <group_id> # members of the group
 redi user --status locked list # filters can be placed before the subcommand too
-redi user list --limit 10 --offset 10 # `list` returns all users unless limited
+redi user list --limit 10 --offset 10 # `list` returns Redmine's default 25 unless limited
 redi user list --full # output full JSON
+redi user list --format tsv # header row + tab-separated columns (list only; header names are fixed in English)
+redi user list -f tsv # -f is short for --format
 
 # others
 redi tracker # list trackers (alias: t)
@@ -278,7 +255,7 @@ redi --version
 
 ## Redmine version
 
-`redi` is developed against Redmine 6.1.
+`redi` is developed against Redmine 6.1, 7.0.
 
 ## Development
 

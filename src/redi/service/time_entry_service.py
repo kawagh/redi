@@ -56,7 +56,11 @@ def fetch_page(
     limit: int | None = None,
     offset: int | None = None,
 ) -> TimeEntriesPageResponse:
-    """条件に合う作業時間を総件数付きの 1 ページとして取得する。"""
+    """条件に合う作業時間を総件数付きの 1 ページとして取得する。
+
+    Raises:
+        ProjectNotFoundException: 対象プロジェクトが存在しない (HTTP 404)
+    """
     return time_entry_api.fetch_time_entries_page(
         project_id=project_id,
         user_id=user_id,
@@ -125,6 +129,7 @@ def update_time_entry(
     """作業時間を更新する。project_id は数値の id に解決してから渡す。
 
     Raises:
+        TimeEntryNotFoundException: 対象の作業時間が存在しない (HTTP 404)
         RedmineValidationException: Redmine がバリデーションエラー (HTTP 422) を返した
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """

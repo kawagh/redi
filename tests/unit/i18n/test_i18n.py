@@ -37,6 +37,8 @@ class TestPlaceholdersParity:
         for k in vars(Ja):
             if k.startswith("_"):
                 continue
+            if not isinstance(getattr(Ja, k), str):
+                continue
             ja_holders = sorted(pat.findall(getattr(Ja, k)))
             en_holders = sorted(pat.findall(getattr(En, k)))
             if ja_holders != en_holders:

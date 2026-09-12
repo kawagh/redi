@@ -1,6 +1,7 @@
 import argparse
 import json
 import sys
+from typing import assert_never
 
 import requests
 
@@ -8,9 +9,16 @@ from redi.api.exceptions import print_http_error_body
 from redi.api.user import User, UserNotFoundException, UserPermissionDeniedException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
-from redi.cli.shared_options import SharedOptionParser
+from redi.cli.shared_options import (
+    OutputFormat,
+    SharedOptionParser,
+    add_format_options,
+    resolve_list_format,
+    wants_json,
+)
 from redi.cli.user_format import format_user_detail, user_summary
 from redi.i18n import messages
+from redi.output import eprint, print_tsv
 from redi.service import user_service
 
 MAIL_NOTIFICATION_CHOICES = [
@@ -28,10 +36,10 @@ def _read_user(user_id: str, detail: bool = False) -> User:
     try:
         return user_service.read_user(user_id, detail=detail)
     except UserNotFoundException:
-        print(messages.user_not_found.format(id=user_id))
+        eprint(messages.user_not_found.format(id=user_id))
         sys.exit(1)
     except UserPermissionDeniedException:
-        print(messages.user_detail_permission_required)
+        eprint(messages.user_detail_permission_required)
         sys.exit(1)
 
 
@@ -62,12 +70,12 @@ def _create_user(
             admin=admin,
         )
     except UserPermissionDeniedException:
-        print(messages.user_create_admin_required)
+        eprint(messages.user_create_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.user_create_failed)
+        eprint(messages.user_create_failed)
         sys.exit(1)
     print(
         messages.user_created.format(
@@ -84,22 +92,51 @@ def _list_users(
     group_id: int | None = None,
     limit: int | None = None,
     offset: int | None = None,
-    full: bool = False,
+    fmt: OutputFormat = OutputFormat.PLAIN,
 ) -> None:
-    """ユーザー一覧を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
+    """ユーザー一覧を標準出力に出す。json では取得した JSON をそのまま出す。権限不足なら exit 1。"""
     try:
         users = user_service.list_users(
             status=status, name=name, group_id=group_id, limit=limit, offset=offset
         )
     except UserPermissionDeniedException:
-        print(messages.user_list_admin_required)
-        print(messages.user_list_member_hint)
-        return
-    if full:
-        print(json.dumps(users, ensure_ascii=False))
-        return
-    for user in users:
-        print(f"{user['id']} {user['login']}")
+        eprint(messages.user_list_admin_required)
+        eprint(messages.user_list_member_hint)
+        sys.exit(1)
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(users, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                (
+                    "id",
+                    "login",
+                    "firstname",
+                    "lastname",
+                    "mail",
+                    "admin",
+                    "status",
+                    "last_login_on",
+                ),
+                (
+                    (
+                        u["id"],
+                        u["login"],
+                        u.get("firstname"),
+                        u.get("lastname"),
+                        u.get("mail"),
+                        u.get("admin"),
+                        u.get("status"),
+                        u.get("last_login_on"),
+                    )
+                    for u in users
+                ),
+            )
+        case OutputFormat.PLAIN:
+            for user in users:
+                print(f"{user['id']} {user['login']}")
+        case _:
+            assert_never(fmt)
 
 
 def _view_user(user_id: str, full: bool = False) -> None:
@@ -136,7 +173,7 @@ def _update_user(
         "admin": admin,
     }
     if all(value is None for value in fields.values()):
-        print(messages.update_canceled_no_changes)
+        eprint(messages.update_canceled_no_changes)
         sys.exit(1)
     try:
         user_service.update_user(
@@ -152,15 +189,15 @@ def _update_user(
             admin=admin,
         )
     except UserNotFoundException:
-        print(messages.user_not_found.format(id=user_id))
+        eprint(messages.user_not_found.format(id=user_id))
         sys.exit(1)
     except UserPermissionDeniedException:
-        print(messages.user_update_admin_required)
+        eprint(messages.user_update_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.user_update_failed)
+        eprint(messages.user_update_failed)
         sys.exit(1)
     print(messages.user_updated.format(id=user_id))
 
@@ -170,15 +207,15 @@ def _delete_user(user_id: str) -> None:
     try:
         user_service.delete_user(user_id)
     except UserNotFoundException:
-        print(messages.user_not_found.format(id=user_id))
+        eprint(messages.user_not_found.format(id=user_id))
         sys.exit(1)
     except UserPermissionDeniedException:
-        print(messages.user_delete_admin_required)
+        eprint(messages.user_delete_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.user_delete_failed)
+        eprint(messages.user_delete_failed)
         sys.exit(1)
     print(messages.user_deleted.format(id=user_id))
 
@@ -195,7 +232,7 @@ def _user_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentParse
     parser.add_argument("--group_id", type=int, help=messages.arg_help_user_group_id)
     parser.add_argument("--limit", type=int, help=messages.arg_help_limit)
     parser.add_argument("--offset", type=int, help=messages.arg_help_offset)
-    parser.add_argument("--full", action="store_true", help=messages.arg_help_full_json)
+    add_format_options(parser, tsv=True)
     return parser
 
 
@@ -255,9 +292,7 @@ def add_user_parser(
         "view", aliases=["v"], help=messages.arg_help_user_view, parents=parents
     )
     u_view_parser.add_argument("user_id", help=messages.arg_help_user_view_id)
-    u_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(u_view_parser)
 
     u_update_parser = u_subparsers.add_parser(
         "update", aliases=["u"], help=messages.arg_help_user_update, parents=parents
@@ -319,7 +354,7 @@ def handle_user(args: argparse.Namespace) -> None:
         )
         return
     if cmd == "view":
-        _view_user(args.user_id, full=args.full)
+        _view_user(args.user_id, full=wants_json(args))
         return
     if cmd == "update":
         _update_user(
@@ -351,5 +386,5 @@ def handle_user(args: argparse.Namespace) -> None:
             group_id=args.group_id,
             limit=args.limit,
             offset=args.offset,
-            full=args.full,
+            fmt=resolve_list_format(args),
         )

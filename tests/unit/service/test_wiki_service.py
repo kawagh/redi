@@ -37,20 +37,20 @@ class TestCreatePage:
     """create_page の作成手順"""
 
     def test_new_title_is_created(self, stub_wiki_api):
-        """存在しないタイトルなら作成として返す"""
-        result = wiki_service.create_page("demo", "New", "本文")
+        """存在しないタイトルなら PUT して作成する"""
+        wiki_service.create_page("demo", "New", "本文")
 
-        assert result == wiki_service.WikiCreateResult(title="New", created=True)
         assert stub_wiki_api.calls == [{"page_title": "New", "parent_title": None}]
 
-    def test_existing_title_is_update(self, stub_wiki_api):
-        """既存タイトルへの作成は PUT が更新になるため created=False で返す"""
+    def test_existing_title_raises_without_put(self, stub_wiki_api):
+        """既存タイトルは PUT すると更新になってしまうため、PUT せず例外にする"""
         stub_wiki_api.existing.add("Existing")
 
-        result = wiki_service.create_page("demo", "Existing", "本文")
+        with pytest.raises(wiki_service.WikiPageAlreadyExistsException) as e:
+            wiki_service.create_page("demo", "Existing", "本文")
 
-        assert result == wiki_service.WikiCreateResult(title="Existing", created=False)
-        assert stub_wiki_api.calls == [{"page_title": "Existing", "parent_title": None}]
+        assert e.value.title == "Existing"
+        assert stub_wiki_api.calls == []
 
     def test_missing_parent_raises_without_put(self, stub_wiki_api):
         """親ページが存在しなければ PUT せず例外にする"""

@@ -1,26 +1,62 @@
 import argparse
 import json
 import sys
+from types import MappingProxyType
+from typing import assert_never
 
 from redi.api.role import fetch_role, fetch_roles
 from redi.cli.alias import resolve_alias
-from redi.cli.shared_options import full_option_parser
+from redi.cli.shared_options import (
+    OutputFormat,
+    add_format_options,
+    full_option_parser,
+    resolve_list_format,
+    wants_json,
+)
 from redi.i18n import messages
+from redi.output import eprint, print_tsv
+from redi.service.role_service import CATEGORY_OTHER, group_permissions
+
+CATEGORY_LABELS = MappingProxyType(
+    {
+        "project": messages.permission_category_project,
+        "boards": messages.permission_category_boards,
+        "calendar": messages.permission_category_calendar,
+        "documents": messages.permission_category_documents,
+        "files": messages.permission_category_files,
+        "gantt": messages.permission_category_gantt,
+        "issue_tracking": messages.permission_category_issue_tracking,
+        "news": messages.permission_category_news,
+        "repository": messages.permission_category_repository,
+        "time_tracking": messages.permission_category_time_tracking,
+        "wiki": messages.permission_category_wiki,
+        CATEGORY_OTHER: messages.permission_category_other,
+    }
+)
+"""カテゴリ名の表示ラベル。"""
 
 
-def _print_roles(full: bool) -> None:
+def _print_roles(fmt: OutputFormat) -> None:
     roles = fetch_roles()
-    if full:
-        print(json.dumps(roles, ensure_ascii=False))
-        return
-    for role in roles:
-        print(f"{role['id']} {role['name']}")
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(roles, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                ("id", "name"),
+                ((r["id"], r["name"]) for r in roles),
+            )
+        case OutputFormat.PLAIN:
+            for role in roles:
+                print(f"{role['id']} {role['name']}")
+        case _:
+            assert_never(fmt)
 
 
 def _print_role(role_id: str, full: bool) -> None:
     role = fetch_role(role_id)
     if role is None:
-        print(messages.role_not_found.format(id=role_id))
+        eprint(messages.role_not_found.format(id=role_id))
         sys.exit(1)
     if full:
         print(json.dumps(role, ensure_ascii=False))
@@ -44,9 +80,11 @@ def _print_role(role_id: str, full: bool) -> None:
         )
     permissions = role.get("permissions") or []
     if permissions:
-        lines.append(messages.label_permissions_header)
-        for p in permissions:
-            lines.append(f"  {p}")
+        lines.append(messages.label_permissions_header.format(count=len(permissions)))
+        for category, members in group_permissions(permissions):
+            lines.append(f"  [{CATEGORY_LABELS[category]}]")
+            for p in members:
+                lines.append(f"    {p}")
     print("\n".join(lines))
 
 
@@ -70,14 +108,12 @@ def add_role_parser(
         "view", aliases=["v"], help=messages.arg_help_role_view, parents=parents
     )
     role_view_parser.add_argument("role_id", help=messages.arg_help_role_view_id)
-    role_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(role_view_parser)
 
 
 def handle_role(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.role_command)
     if cmd == "view":
-        _print_role(args.role_id, full=args.full)
+        _print_role(args.role_id, full=wants_json(args))
     elif cmd == "list" or cmd is None:
-        _print_roles(full=args.full)
+        _print_roles(resolve_list_format(args))

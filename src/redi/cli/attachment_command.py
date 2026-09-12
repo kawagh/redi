@@ -10,7 +10,9 @@ from redi.api.exceptions import print_http_error_body
 from redi.api.types import Attachment
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete, confirm_overwrite
+from redi.cli.shared_options import add_format_options, wants_json
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import attachment_service
 
 
@@ -19,7 +21,7 @@ def _fetch_attachment(attachment_id: str) -> Attachment:
     try:
         return attachment_service.read_attachment(attachment_id)
     except AttachmentNotFoundException:
-        print(messages.attachment_not_found.format(id=attachment_id))
+        eprint(messages.attachment_not_found.format(id=attachment_id))
         sys.exit(1)
 
 
@@ -53,19 +55,19 @@ def _download_attachment(attachment: Attachment, path: Path) -> None:
     try:
         attachment_service.download_attachment(attachment, path)
     except attachment_service.UnexpectedContentUrlException as e:
-        print(messages.attachment_content_url_unexpected.format(url=e.url))
+        eprint(messages.attachment_content_url_unexpected.format(url=e.url))
         sys.exit(1)
     except AttachmentNotFoundException as e:
-        print(messages.attachment_not_found.format(id=e.attachment_id))
+        eprint(messages.attachment_not_found.format(id=e.attachment_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.attachment_download_failed)
+        eprint(messages.attachment_download_failed)
         sys.exit(1)
     except OSError as e:
-        print(e)
-        print(messages.attachment_download_failed)
+        eprint(e)
+        eprint(messages.attachment_download_failed)
         sys.exit(1)
     print(messages.attachment_downloaded.format(path=path))
 
@@ -81,12 +83,12 @@ def _update_attachment(
             attachment_id, filename=filename, description=description
         )
     except AttachmentNotFoundException:
-        print(messages.attachment_not_found.format(id=attachment_id))
+        eprint(messages.attachment_not_found.format(id=attachment_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.attachment_update_failed)
+        eprint(messages.attachment_update_failed)
         sys.exit(1)
     print(
         messages.attachment_updated.format(
@@ -100,12 +102,12 @@ def _delete_attachment(attachment_id: str) -> None:
     try:
         attachment_service.delete_attachment(attachment_id)
     except AttachmentNotFoundException:
-        print(messages.attachment_not_found.format(id=attachment_id))
+        eprint(messages.attachment_not_found.format(id=attachment_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.attachment_delete_failed)
+        eprint(messages.attachment_delete_failed)
         sys.exit(1)
     print(messages.attachment_deleted.format(id=attachment_id))
 
@@ -127,9 +129,7 @@ def add_attachment_parser(
     a_view_parser.add_argument(
         "attachment_id", help=messages.arg_help_attachment_view_id
     )
-    a_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(a_view_parser)
     a_download_parser = a_subparsers.add_parser(
         "download",
         aliases=["dl"],
@@ -177,7 +177,7 @@ def add_attachment_parser(
 def handle_attachment(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.attachment_command)
     if cmd == "view":
-        _view_attachment(args.attachment_id, full=args.full)
+        _view_attachment(args.attachment_id, full=wants_json(args))
     elif cmd == "download":
         attachment = _fetch_attachment(args.attachment_id)
         path = attachment_service.resolve_download_path(attachment, args.output)

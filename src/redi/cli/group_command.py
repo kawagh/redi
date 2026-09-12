@@ -6,7 +6,7 @@
 import argparse
 import json
 import sys
-from typing import NoReturn
+from typing import NoReturn, assert_never
 
 import requests
 
@@ -19,31 +19,46 @@ from redi.api.group import (
 )
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.shared_options import full_option_parser
+from redi.cli.shared_options import (
+    OutputFormat,
+    add_format_options,
+    full_option_parser,
+    resolve_list_format,
+    wants_json,
+)
 from redi.i18n import messages
+from redi.output import eprint, print_tsv
 from redi.service import group_service
 
 
 def _exit_group_not_found(group_id: str) -> NoReturn:
-    print(messages.group_not_found.format(id=group_id))
+    eprint(messages.group_not_found.format(id=group_id))
     sys.exit(1)
 
 
 def _exit_http_error(e: requests.exceptions.HTTPError, message: str) -> NoReturn:
-    print(e)
+    eprint(e)
     print_http_error_body(e)
-    print(message)
+    eprint(message)
     sys.exit(1)
 
 
-def _list_groups(full: bool = False) -> None:
-    """グループ一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
+def _list_groups(fmt: OutputFormat = OutputFormat.PLAIN) -> None:
+    """グループ一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
     groups = group_service.list_groups()
-    if full:
-        print(json.dumps(groups, ensure_ascii=False))
-        return
-    for group in groups:
-        print(f"{group['id']} {group['name']}")
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(groups, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                ("id", "name"),
+                ((g["id"], g["name"]) for g in groups),
+            )
+        case OutputFormat.PLAIN:
+            for group in groups:
+                print(f"{group['id']} {group['name']}")
+        case _:
+            assert_never(fmt)
 
 
 def _format_group(group: Group) -> str:
@@ -76,7 +91,7 @@ def _view_group(group_id: str, full: bool = False) -> None:
     except GroupNotFoundException:
         _exit_group_not_found(group_id)
     except GroupAdminRequiredException:
-        print(messages.group_get_admin_required)
+        eprint(messages.group_get_admin_required)
         sys.exit(1)
     if full:
         print(json.dumps(group, ensure_ascii=False))
@@ -89,7 +104,7 @@ def _create_group(name: str, user_ids: list[int] | None = None) -> None:
     try:
         created = group_service.create_group(name, user_ids=user_ids)
     except GroupAdminRequiredException:
-        print(messages.group_create_admin_required)
+        eprint(messages.group_create_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
         _exit_http_error(e, messages.group_create_failed)
@@ -113,7 +128,7 @@ def _update_group(
     except GroupNotFoundException:
         _exit_group_not_found(group_id)
     except GroupAdminRequiredException:
-        print(messages.group_update_admin_required)
+        eprint(messages.group_update_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
         _exit_http_error(e, messages.group_update_failed)
@@ -127,7 +142,7 @@ def _add_group_user(group_id: str, user_id: int) -> None:
     except GroupNotFoundException:
         _exit_group_not_found(group_id)
     except GroupAdminRequiredException:
-        print(messages.group_add_user_admin_required)
+        eprint(messages.group_add_user_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
         _exit_http_error(e, messages.group_add_user_failed)
@@ -139,12 +154,12 @@ def _remove_group_user(group_id: str, user_id: int) -> None:
     try:
         group_service.remove_group_user(group_id, user_id)
     except GroupUserNotFoundException:
-        print(
+        eprint(
             messages.group_or_user_not_found.format(group_id=group_id, user_id=user_id)
         )
         sys.exit(1)
     except GroupAdminRequiredException:
-        print(messages.group_remove_user_admin_required)
+        eprint(messages.group_remove_user_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
         _exit_http_error(e, messages.group_remove_user_failed)
@@ -158,7 +173,7 @@ def _delete_group(group_id: str) -> None:
     except GroupNotFoundException:
         _exit_group_not_found(group_id)
     except GroupAdminRequiredException:
-        print(messages.group_delete_admin_required)
+        eprint(messages.group_delete_admin_required)
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
         _exit_http_error(e, messages.group_delete_failed)
@@ -185,9 +200,7 @@ def add_group_parser(
         "view", aliases=["v"], help=messages.arg_help_group_view, parents=parents
     )
     g_view_parser.add_argument("group_id", help=messages.arg_help_group_view_id)
-    g_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(g_view_parser)
     g_create_parser = group_subparsers.add_parser(
         "create", aliases=["c"], help=messages.arg_help_group_create, parents=parents
     )
@@ -237,7 +250,7 @@ def add_group_parser(
 def handle_group(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.group_command)
     if cmd == "view":
-        _view_group(args.group_id, full=args.full)
+        _view_group(args.group_id, full=wants_json(args))
         return
     if cmd == "create":
         _create_group(name=args.name, user_ids=args.user_ids)
@@ -265,7 +278,7 @@ def handle_group(args: argparse.Namespace) -> None:
             except GroupNotFoundException:
                 _exit_group_not_found(args.group_id)
             except GroupAdminRequiredException:
-                print(messages.group_get_admin_required)
+                eprint(messages.group_get_admin_required)
                 sys.exit(1)
             confirm_delete(
                 messages.delete_target_group.format(id=group["id"], name=group["name"])
@@ -273,4 +286,4 @@ def handle_group(args: argparse.Namespace) -> None:
         _delete_group(args.group_id)
         return
     if cmd == "list" or cmd is None:
-        _list_groups(full=args.full)
+        _list_groups(fmt=resolve_list_format(args))

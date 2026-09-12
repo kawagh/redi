@@ -64,7 +64,7 @@ class TestTimeEntryDelete:
 
         delete_error = delete_error_info.value
         assert delete_error.returncode == 1
-        assert f"Time entry not found: {time_entry_id}" in delete_error.stdout, (
+        assert f"Time entry not found: {time_entry_id}" in delete_error.stderr, (
             f"想定外のエラーで delete が失敗\n"
             f"stdout:\n{delete_error.stdout}\nstderr:\n{delete_error.stderr}"
         )

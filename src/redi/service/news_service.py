@@ -13,14 +13,18 @@ def news_url(news_id: str | int) -> str:
     return f"{config.redmine_url}/news/{news_id}"
 
 
-def list_news(project_id: str | None = None, limit: int | None = None) -> list[News]:
+def list_news(
+    project_id: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> list[News]:
     """ニュース一覧を作成日時の降順で取得する。
 
     Raises:
         ProjectNotFoundException: 対象プロジェクトが存在しない (HTTP 404)
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
-    return news_api.fetch_news_list(project_id, limit=limit)
+    return news_api.fetch_news_list(project_id, limit=limit, offset=offset)
 
 
 def read_news(news_id: str) -> News:

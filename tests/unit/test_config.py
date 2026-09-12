@@ -633,14 +633,70 @@ class TestShowAllProfiles:
         assert "secret-sub" not in out
         assert "redmine_api_key" not in out
 
+    def test_hides_top_level_api_key(self, tmp_path, capsys):
+        """プロファイルの外(トップレベル)に書かれたAPIキーも出力に含まれない"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+            redmine_api_key = "secret-top"
+
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+        """)
+        )
+
+        config.show_all_profiles(config_path=config_path)
+
+        out = capsys.readouterr().out
+        assert "secret-top" not in out
+        assert "redmine_api_key" not in out
+        doc = tomllib.loads(out)
+        assert doc["default_profile"] == "main"
+        assert doc["main"]["redmine_url"] == "https://redmine.example.com/main"
+
+    def test_warns_top_level_api_key(self, tmp_path, capsys):
+        """トップレベルのAPIキーは認証に使われないので、標準エラー出力で置き場所の誤りを知らせる"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            redmine_api_key = "secret-top"
+
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+        """)
+        )
+
+        config.show_all_profiles(config_path=config_path)
+
+        err = capsys.readouterr().err
+        assert "redmine_api_key" in err
+        assert str(config_path) in err
+        assert "secret-top" not in err
+
+    def test_no_warning_when_api_key_is_in_profile(self, tmp_path, capsys):
+        """プロファイル内に書かれたAPIキーは正しい置き場所なので警告しない"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+            redmine_api_key = "secret-main"
+        """)
+        )
+
+        config.show_all_profiles(config_path=config_path)
+
+        assert capsys.readouterr().err == ""
+
     def test_prints_message_when_config_missing(self, tmp_path, capsys):
         """config.tomlが存在しない場合はメッセージを出力する"""
         config_path = tmp_path / "missing.toml"
 
         config.show_all_profiles(config_path=config_path)
 
-        out = capsys.readouterr().out
-        assert "not found" in out
+        err = capsys.readouterr().err
+        assert "not found" in err
 
 
 @pytest.fixture
@@ -746,6 +802,85 @@ class TestApplyProfile:
         assert config.editor == "vim"
 
 
+@pytest.fixture
+def text_formatting_config(tmp_path):
+    config_path = tmp_path / "config.toml"
+    config_path.write_text(
+        textwrap.dedent("""\
+        default_profile = "main"
+        text_formatting = "textile"
+
+        [main]
+        redmine_url = "https://main.example.com"
+        redmine_api_key = "secret-main"
+
+        [md]
+        redmine_url = "https://md.example.com"
+        redmine_api_key = "secret-md"
+        text_formatting = "markdown"
+    """)
+    )
+    return config_path
+
+
+class TestTextFormatting:
+    """text_formattingはRedmineの記法をエージェントが投稿前に参照するための設定
+
+    サーバー側の設定でREST APIからは取得できないため、ユーザーがconfig.tomlに書き、
+    `redi config` / `redi config --full` で参照する。
+    """
+
+    def test_top_level_is_default_for_all_profiles(
+        self, text_formatting_config, no_redmine_env
+    ):
+        """トップレベルの値は、項目を持たないプロファイルの既定になる"""
+        merged = config.resolve_merged_config(
+            "main", config.load_toml(text_formatting_config)
+        )
+
+        assert merged.text_formatting == "textile"
+
+    def test_profile_overrides_top_level(self, text_formatting_config, no_redmine_env):
+        """プロファイル内の値はトップレベルより優先される"""
+        merged = config.resolve_merged_config(
+            "md", config.load_toml(text_formatting_config)
+        )
+
+        assert merged.text_formatting == "markdown"
+
+    def test_defaults_to_markdown(self, two_profiles, no_redmine_env):
+        """どちらにも無ければRedmineの新規インストール既定に合わせてmarkdown"""
+        merged = config.resolve_merged_config("main", config.load_toml(two_profiles))
+
+        assert merged.text_formatting == "markdown"
+
+    def test_show_config_includes_resolved_value(
+        self, text_formatting_config, no_redmine_env, monkeypatch, capsys
+    ):
+        """`redi config` はトップレベルから引き継いだ値も含めて表示する"""
+        monkeypatch.setattr(config.sys, "argv", ["redi", "config"])
+        original_profile = config.current_profile
+        config.apply_profile("main", config_path=text_formatting_config)
+        try:
+            config.show_config()
+        finally:
+            config.apply_profile(original_profile)
+
+        doc = tomllib.loads(capsys.readouterr().out)
+        assert doc["main"]["text_formatting"] == "textile"
+
+    def test_show_all_profiles_keeps_top_level_value(
+        self, text_formatting_config, capsys
+    ):
+        """`redi config --full` はトップレベルの値とプロファイルの上書きを両方出す"""
+        config.show_all_profiles(config_path=text_formatting_config)
+
+        doc = tomllib.loads(capsys.readouterr().out)
+        assert doc["text_formatting"] == "textile"
+        assert doc["md"]["text_formatting"] == "markdown"
+        assert "text_formatting" not in doc["main"]
+
+
 class TestProfileHasCredentials:
     """profile_has_credentials()は切替先として使えるプロファイルかを判定する"""
 
@@ -764,3 +899,81 @@ class TestProfileHasCredentials:
         assert (
             config.profile_has_credentials("missing", config_path=two_profiles) is False
         )
+
+
+class TestProfileNotFoundMessage:
+    """存在しないプロファイルのエラーは、設定ファイルのパスだけで終わらせず次の一手を示す"""
+
+    def test_lists_available_profiles_and_hint(self, tmp_path):
+        """設定ファイルにあるプロファイル名と `redi config --full` の案内を添える"""
+        message = config.profile_not_found_message(
+            "nosuch", tmp_path / "config.toml", ["main", "sub"]
+        )
+
+        assert "nosuch" in message
+        assert "main, sub" in message
+        assert "redi config --full" in message
+
+    def test_suggests_close_match(self, tmp_path):
+        """タイプミスが疑われる近い名前があれば候補として示す"""
+        message = config.profile_not_found_message(
+            "sandbox-admin", tmp_path / "config.toml", ["sandbox_admin", "other"]
+        )
+
+        lines = message.splitlines()
+        assert any("sandbox_admin" in line and "other" not in line for line in lines)
+
+    def test_omits_suggestion_when_nothing_is_close(self, tmp_path):
+        """近い名前が無ければ候補の行は出さず、一覧と案内だけにする"""
+        message = config.profile_not_found_message(
+            "zzz", tmp_path / "config.toml", ["main", "sub"]
+        )
+
+        assert len(message.splitlines()) == 3
+
+    def test_keeps_hint_when_no_profiles(self, tmp_path):
+        """プロファイルが 1 つも無くても一覧の出し方は案内する"""
+        message = config.profile_not_found_message(
+            "nosuch", tmp_path / "config.toml", []
+        )
+
+        assert "redi config --full" in message
+
+
+class TestProfileNotFoundOutput:
+    """プロファイル指定を伴う操作が存在しない名前を受けたとき、利用可能な名前を標準エラーに出す"""
+
+    @pytest.fixture
+    def config_path(self, tmp_path):
+        path = tmp_path / "config.toml"
+        path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+
+            [sub]
+            redmine_url = "https://redmine.example.com/sub"
+        """)
+        )
+        return path
+
+    def test_update_profile_lists_available_profiles(self, config_path, capsys):
+        """update_profile()は存在しないプロファイルに対して一覧を出して exit 1 する"""
+        with pytest.raises(SystemExit):
+            config.update_profile(
+                config.Profile(redmine_url="v"),
+                profile="missing",
+                config_path=config_path,
+            )
+
+        err = capsys.readouterr().err
+        assert "main, sub" in err
+        assert "redi config --full" in err
+
+    def test_set_default_profile_lists_available_profiles(self, config_path, capsys):
+        """set_default_profile()は存在しないプロファイルに対して一覧を出す"""
+        config.set_default_profile("missing", config_path=config_path)
+
+        err = capsys.readouterr().err
+        assert "main, sub" in err
+        assert "redi config --full" in err

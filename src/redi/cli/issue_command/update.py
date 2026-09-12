@@ -21,11 +21,7 @@ from redi.api.exceptions import (
     ProjectPermissionDeniedException,
     print_http_error_body,
 )
-from redi.api.issue import (
-    Issue,
-    IssueNotFoundException,
-    WatcherNotFoundException,
-)
+from redi.api.issue import WatcherNotFoundException
 from redi.api.issue_relation import RelationNotFoundException
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.tracker import fetch_trackers
@@ -35,7 +31,7 @@ from redi.cli.custom_field_prompt import (
     prompt_custom_field_value,
 )
 from redi.cli.editor import open_editor, save_body_on_failure
-from redi.cli.interactive import prompt
+from redi.cli.interactive import InputCanceledException, prompt, raise_on_cancel
 from redi.cli.issue_command.custom_fields import parse_custom_fields
 from redi.cli.issue_command.field_prompt import (
     parse_iso_date,
@@ -43,14 +39,17 @@ from redi.cli.issue_command.field_prompt import (
     prompt_due_date,
     prompt_estimated_hours,
     prompt_fixed_version,
+    prompt_parent_issue_id,
     prompt_project,
     prompt_start_date,
 )
+from redi.cli.issue_guard import exit_if_issue_not_found, read_issue_or_exit
 from redi.cli.keybinding import date_key_bindings
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.time_entry_command import create_time_entry
 from redi.cli.validator import DateValidator, HourValidator
 from redi.i18n import messages
+from redi.output import eprint
 from redi.service import issue_relation_service, issue_service, project_service
 from redi.service.attachment_service import LocalFileNotFoundException
 from redi.service.issue_relation_service import RelationBetweenNotFoundException
@@ -97,29 +96,17 @@ class IssueUpdateArgs:
         return cls(**{f.name: getattr(args, f.name) for f in fields(cls)})
 
 
-def _read_issue(issue_id: str) -> Issue:
-    """更新対象のイシューを取得する。存在しない場合は exit 1。"""
-    try:
-        return issue_service.read_issue(issue_id)
-    except IssueNotFoundException:
-        print(messages.issue_not_found.format(id=issue_id))
-        sys.exit(1)
-
-
 def _interactive_select_issue_id() -> str:
     issues = issue_service.list_issues(project_id=config.default_project_id)
     if not issues:
-        print(messages.no_issues_available)
+        eprint(messages.no_issues_available)
         sys.exit(1)
     options: list[tuple[str, str]] = [
         (str(i["id"]), f"#{i['id']} {i['subject']}") for i in issues
     ]
     labels = dict(options)
-    try:
+    with raise_on_cancel():
         issue_id = inline_choice(messages.prompt_select_issue_to_update, options)
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        sys.exit(1)
     print(messages.update_target_issue.format(label=labels[issue_id]))
     return issue_id
 
@@ -127,7 +114,7 @@ def _interactive_select_issue_id() -> str:
 def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
     # 呼び出し側で issue_id は解決済み
     assert args.issue_id is not None
-    current = _read_issue(args.issue_id)
+    current = read_issue_or_exit(args.issue_id, include="allowed_statuses")
     field_values: list[tuple[str, str]] = [
         ("project", messages.field_project),
         ("tracker", messages.field_tracker),
@@ -137,6 +124,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         ("priority", messages.field_priority),
         ("assigned_to", messages.field_assignee),
         ("fixed_version", messages.field_fixed_version),
+        ("parent_issue", messages.field_parent_issue),
         ("start_date", messages.field_start_date),
         ("due_date", messages.field_due_date),
         ("done_ratio", messages.field_done_ratio),
@@ -165,38 +153,34 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         )
         for custom_field in applicable_custom_fields:
             field_values.append((f"cf_{custom_field['id']}", custom_field["name"]))
-    try:
+    with raise_on_cancel():
         selected = inline_checkbox(
             messages.prompt_select_update_items,
             field_values,
             initial_value="description",
         )
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        sys.exit(1)
     if not selected:
-        print(messages.canceled_no_items_selected)
-        sys.exit(1)
+        raise InputCanceledException(messages.canceled_no_items_selected)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
-    try:
+    with raise_on_cancel():
         if "project" in selected:
             args.project_id = prompt_project(default=str(issue_project_id))
         # 移動する場合、トラッカーなどの選択肢は移動先プロジェクトのものを出す
         project_id = args.project_id or (current.get("project") or {}).get("id")
         if "tracker" in selected:
             if not project_id:
-                print(messages.canceled_no_project)
+                eprint(messages.canceled_no_project)
                 sys.exit(1)
             try:
                 project = project_service.read_project(
                     str(project_id), include="trackers"
                 )
             except ProjectNotFoundException:
-                print(messages.project_not_found.format(id=project_id))
+                eprint(messages.project_not_found.format(id=project_id))
                 sys.exit(1)
             except ProjectPermissionDeniedException:
-                print(messages.project_permission_denied.format(id=project_id))
+                eprint(messages.project_permission_denied.format(id=project_id))
                 sys.exit(1)
             trackers = project.get("trackers") or []
             tracker_options: list[tuple[str, str]] = [
@@ -214,7 +198,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         if "description" in selected:
             args.description = ""
         if "status" in selected:
-            statuses = fetch_issue_statuses()
+            statuses = current["allowed_statuses"]
             status_options: list[tuple[str, str]] = [
                 (str(s["id"]), s["name"]) for s in statuses
             ]
@@ -237,7 +221,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
             )
         if "assigned_to" in selected:
             if not project_id:
-                print(messages.canceled_no_project)
+                eprint(messages.canceled_no_project)
                 sys.exit(1)
             current_assignee_id = (current.get("assigned_to") or {}).get("id")
             default_assignee = (
@@ -248,7 +232,7 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
             )
         if "fixed_version" in selected:
             if not project_id:
-                print(messages.canceled_no_project)
+                eprint(messages.canceled_no_project)
                 sys.exit(1)
             current_version_id = (current.get("fixed_version") or {}).get("id")
             default_version = (
@@ -257,6 +241,13 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
             args.fixed_version_id = prompt_fixed_version(
                 str(project_id), default=default_version
             )
+        if "parent_issue" in selected:
+            current_parent_id = (current.get("parent") or {}).get("id")
+            default_parent = (
+                str(current_parent_id) if current_parent_id is not None else ""
+            )
+            # 空文字は「親チケットを外す」意味なので None に潰さずそのまま渡す
+            args.parent_issue_id = prompt_parent_issue_id(default=default_parent)
         if "start_date" in selected:
             args.start_date = prompt_start_date(
                 current.get("start_date") or date.today().isoformat()
@@ -353,9 +344,6 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
                 )
             else:
                 args.custom_fields = ",".join(added_custom_fields)
-    except (KeyboardInterrupt, EOFError):
-        print(messages.canceled)
-        sys.exit(1)
 
 
 class _IdNameFetcher(Protocol):
@@ -381,8 +369,8 @@ def _ensure_known_id(
     candidates = fetch(refresh=True)
     if _contains_id(candidates, value):
         return
-    print(not_found_message.format(id=value))
-    print(
+    eprint(not_found_message.format(id=value))
+    eprint(
         messages.available_ids.format(
             items=", ".join(
                 f"{candidate['id']}:{candidate['name']}" for candidate in candidates
@@ -437,15 +425,15 @@ def _update_issue(args: IssueUpdateArgs, description: str | None) -> None:
             attachments=args.attach,
         )
     except ProjectNotFoundException:
-        print(messages.project_not_found.format(id=args.project_id))
+        eprint(messages.project_not_found.format(id=args.project_id))
         sys.exit(1)
     except LocalFileNotFoundException as e:
-        print(messages.file_not_found.format(path=e.path))
+        eprint(messages.file_not_found.format(path=e.path))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.issue_update_failed)
+        eprint(messages.issue_update_failed)
         sys.exit(1)
     print(
         messages.issue_updated.format(url=issue_service.issue_url(args.issue_id)),
@@ -455,14 +443,15 @@ def _update_issue(args: IssueUpdateArgs, description: str | None) -> None:
 def _add_watcher(issue_id: str, user_id: int) -> None:
     """ウォッチャーを追加し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
-        issue_service.add_watcher(issue_id, user_id)
-    except IssueNotFoundException:
-        print(messages.issue_not_found.format(id=issue_id))
+        with exit_if_issue_not_found(issue_id):
+            issue_service.add_watcher(issue_id, user_id)
+    except WatcherNotFoundException:
+        eprint(messages.watcher_not_added.format(issue_id=issue_id, user_id=user_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.watcher_add_failed)
+        eprint(messages.watcher_add_failed)
         sys.exit(1)
     print(messages.watcher_added.format(issue_id=issue_id, user_id=user_id))
 
@@ -472,14 +461,14 @@ def _remove_watcher(issue_id: str, user_id: int) -> None:
     try:
         issue_service.remove_watcher(issue_id, user_id)
     except WatcherNotFoundException:
-        print(
+        eprint(
             messages.issue_or_user_not_found.format(issue_id=issue_id, user_id=user_id)
         )
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.watcher_remove_failed)
+        eprint(messages.watcher_remove_failed)
         sys.exit(1)
     print(messages.watcher_removed.format(issue_id=issue_id, user_id=user_id))
 
@@ -493,9 +482,9 @@ def _create_relation(issue_id: str, issue_to_id: str, relation_type: str) -> Non
             relation_type=relation_type,
         )
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.relation_create_failed)
+        eprint(messages.relation_create_failed)
         sys.exit(1)
     print(
         messages.relation_created.format(
@@ -505,14 +494,14 @@ def _create_relation(issue_id: str, issue_to_id: str, relation_type: str) -> Non
 
 
 def _delete_relation(issue_id: str, issue_to_id: str) -> None:
-    """イシュー間の関係性を削除し、結果を標準出力に出す。対象が無ければ exit 1。"""
+    """イシュー間の関係性を削除し、結果を標準出力に出す。対象が無いか失敗したら exit 1。"""
     try:
         relation = issue_relation_service.delete_relation(
             issue_id=issue_id,
             issue_to_id=issue_to_id,
         )
     except RelationBetweenNotFoundException:
-        print(
+        eprint(
             messages.relation_between_not_found.format(
                 from_id=issue_id, to_id=issue_to_id
             )
@@ -520,13 +509,13 @@ def _delete_relation(issue_id: str, issue_to_id: str) -> None:
         sys.exit(1)
     except RelationNotFoundException as e:
         # 一覧を引いてから DELETE するまでの間に消えていた場合
-        print(messages.relation_not_found.format(id=e.relation_id))
+        eprint(messages.relation_not_found.format(id=e.relation_id))
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(e)
+        eprint(e)
         print_http_error_body(e)
-        print(messages.relation_delete_failed)
-        return
+        eprint(messages.relation_delete_failed)
+        sys.exit(1)
     print(
         messages.relation_deleted.format(
             from_id=relation["issue_id"],
@@ -577,8 +566,10 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
         _interactive_fill_issue_update_args(args)
     description = args.description
     if description is not None and description == "":
-        current = _read_issue(args.issue_id)
-        description = open_editor(current.get("description") or "")
+        current = read_issue_or_exit(args.issue_id)
+        description = open_editor(
+            current.get("description") or "", name="issue_description"
+        )
     # 空の説明は「変更しない」扱いなので更新対象から外す
     should_update_issue = (
         args.project_id
@@ -606,12 +597,14 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
         _validate_tracker_and_status(args)
         try:
             _update_issue(args, description)
-        except Exception:
+        except BaseException:
+            # HTTP エラーは _update_issue が sys.exit するので SystemExit も拾う。
+            # 422 でも Ctrl+C でも、エディタで書いた本文は残す。
             save_body_on_failure(description)
             raise
     if args.delete_relation:
         if not args.relate_to:
-            print(messages.delete_relation_requires_to)
+            eprint(messages.delete_relation_requires_to)
             sys.exit(1)
         _delete_relation(
             issue_id=args.issue_id,
@@ -624,7 +617,7 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
             relation_type=args.relate,
         )
     elif args.relate or args.relate_to:
-        print(messages.relate_and_to_required)
+        eprint(messages.relate_and_to_required)
         sys.exit(1)
     if should_create_time_entry:
         create_time_entry(
@@ -645,5 +638,4 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
         and not should_create_time_entry
         and not should_update_watchers
     ):
-        print(messages.update_canceled_no_changes)
-        sys.exit(1)
+        raise InputCanceledException(messages.update_canceled_no_changes)
