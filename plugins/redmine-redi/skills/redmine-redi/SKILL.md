@@ -87,7 +87,8 @@ redi issue list                              # default project
 redi issue list --project_id 15              # one project
 redi issue list --status_id 1 --limit 10
 redi issue list --assigned_to me             # issues assigned to you ("me" is accepted as a user id)
-redi issue list --format tsv                 # + project, tracker, status, assignee, dates (plain shows only id / subject / url)
+redi issue list --url                        # + issue URLs (plain omits them by default)
+redi issue list --format tsv                 # + project, status, dates, url (plain shows only open/closed, id, tracker, subject, assignee)
 redi issue view 160                          # one issue
 redi issue view 160 --format json
 redi issue view 160 --include watchers       # + watchers (see -h for the list)

@@ -4,6 +4,7 @@
 """
 
 import json
+import shutil
 import sys
 import webbrowser
 from typing import assert_never
@@ -15,6 +16,7 @@ from redi.cli.shared_options import OutputFormat
 from redi.i18n import messages
 from redi.output import eprint, print_tsv, tsv_ref
 from redi.service import issue_service
+from redi.service.issue_format import format_issue_list
 from redi.text_format import issue_meta_rows, render_meta_table
 
 # Redmine の関連は片側にだけ記録されるため、相手側から見た関連名に読み替える
@@ -71,8 +73,11 @@ def print_issues(
     limit: int | None = None,
     offset: int | None = None,
     fmt: OutputFormat = OutputFormat.PLAIN,
+    show_url: bool = False,
 ) -> None:
     """イシュー一覧を1行ずつ出す。json では取得した JSON をそのまま出す。
+
+    show_url は plain のときだけ効く (tsv は常に url 列を持つ)。
 
     存在しないプロジェクト・カスタムクエリを指定した場合は案内を出して exit 1。
     """
@@ -127,13 +132,23 @@ def print_issues(
                 (_issue_tsv_row(i) for i in issues),
             )
         case OutputFormat.PLAIN:
-            for issue in issues:
-                print(
-                    f"{issue['id']} {issue['subject']} "
-                    f"{issue_service.issue_url(issue['id'])}"
-                )
+            for line in format_issue_list(
+                issues, width=_output_width(), show_url=show_url
+            ):
+                print(line)
         case _:
             assert_never(fmt)
+
+
+def _output_width() -> int | None:
+    """件名を切り詰める表示幅を返す。端末でなければ切り詰めない(None)。
+
+    パイプやリダイレクト先では読み手が端末幅に縛られないので、`…` で欠けた
+    件名を渡さないようにする。
+    """
+    if not sys.stdout.isatty():
+        return None
+    return shutil.get_terminal_size().columns
 
 
 def view_issue(

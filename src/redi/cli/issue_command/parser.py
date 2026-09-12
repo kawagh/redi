@@ -28,6 +28,9 @@ def _issue_list_option_parser(*, postfix: bool = False) -> argparse.ArgumentPars
     parser = SharedOptionParser(postfix=postfix)
     add_format_options(parser, tsv=True)
     parser.add_argument(
+        "--url", action="store_true", help=messages.arg_help_issue_list_url
+    )
+    parser.add_argument(
         "--project_id", "-p", help=messages.arg_help_issue_filter_project
     )
     parser.add_argument(
