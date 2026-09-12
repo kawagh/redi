@@ -23,7 +23,7 @@ from redi.api.tracker import fetch_trackers
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete_with_identifier
 from redi.cli.editor import open_editor, shorten_to_oneline
-from redi.cli.interactive import ensure_interactive, exit_on_cancel, prompt
+from redi.cli.interactive import ensure_interactive, prompt, raise_on_cancel
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.shared_options import (
     OutputFormat,
@@ -471,7 +471,7 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
         field_options.append(
             ("issue_custom_field_ids", messages.field_issue_custom_fields)
         )
-    with exit_on_cancel():
+    with raise_on_cancel():
         selected = inline_checkbox(
             messages.prompt_select_create_optional_items, field_options
         )
@@ -541,7 +541,7 @@ def _interactive_fill_optional_create_fields(args: argparse.Namespace) -> None:
 
 def _interactive_fill_create_args(args: argparse.Namespace) -> None:
     """`project create` の必須項目を対話で埋め、送信前に任意項目の入力機会を挟む。"""
-    with exit_on_cancel():
+    with raise_on_cancel():
         if args.name is None:
             args.name = prompt(
                 messages.prompt_project_name, validator=RequiredValidator()
@@ -557,7 +557,7 @@ def _interactive_fill_create_args(args: argparse.Namespace) -> None:
         ("optional", messages.action_fill_optional),
     ]
     while True:
-        with exit_on_cancel():
+        with raise_on_cancel():
             action = inline_choice(messages.prompt_what_next, action_options)
         if action != "optional":
             return
@@ -620,7 +620,7 @@ def _interactive_fill_project_update_args(args: argparse.Namespace) -> None:
         field_options.append(
             ("issue_custom_field_ids", messages.field_issue_custom_fields)
         )
-    with exit_on_cancel():
+    with raise_on_cancel():
         selected = inline_checkbox(messages.prompt_select_update_items, field_options)
     if not selected:
         eprint(messages.canceled_no_items_selected)
@@ -633,7 +633,7 @@ def _interactive_fill_project_update_args(args: argparse.Namespace) -> None:
             args.project_id, include="trackers,enabled_modules,issue_custom_fields"
         )
     )
-    with exit_on_cancel():
+    with raise_on_cancel():
         if "name" in selected:
             args.name = prompt(
                 messages.prompt_project_name,

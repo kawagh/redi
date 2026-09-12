@@ -2,7 +2,7 @@ import argparse
 import sys
 
 from redi.cli.alias import resolve_alias
-from redi.cli.interactive import exit_on_cancel, prompt
+from redi.cli.interactive import prompt, raise_on_cancel
 from redi.cli.picker import inline_checkbox, inline_choice, inline_choice_with_action
 from redi.cli.profile_setup import prompt_connection_profile
 from redi.cli.validator import ProfileNameValidator, RequiredValidator, UrlValidator
@@ -110,7 +110,7 @@ def _interactive_select_profile(args: argparse.Namespace) -> bool:
         (name, f"{name} (default)" if name == current_default else name)
         for name in profile_names
     ]
-    with exit_on_cancel():
+    with raise_on_cancel():
         action, selected = inline_choice_with_action(
             messages.prompt_select_profile,
             options,
@@ -171,7 +171,7 @@ def _interactive_fill_config_update_args(
     """
     current = read_profile(profile)
     field_values = _update_field_values(profile)
-    with exit_on_cancel():
+    with raise_on_cancel():
         selected = inline_checkbox(
             messages.prompt_select_update_items,
             _update_field_options(field_values, current),
@@ -234,7 +234,7 @@ def _interactive_fill_config_update_args(
 
 
 def _prompt_profile_name() -> str:
-    with exit_on_cancel():
+    with raise_on_cancel():
         return prompt(
             messages.prompt_profile_name,
             validator=ProfileNameValidator(list_profile_names()),
@@ -242,7 +242,7 @@ def _prompt_profile_name() -> str:
 
 
 def _confirm_set_default(profile_name: str) -> bool:
-    with exit_on_cancel():
+    with raise_on_cancel():
         selected = inline_choice(
             messages.prompt_set_default_profile.format(name=profile_name),
             [("yes", messages.choice_yes), ("no", messages.choice_no)],

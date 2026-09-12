@@ -21,11 +21,7 @@ from redi.api.exceptions import (
     ProjectPermissionDeniedException,
     print_http_error_body,
 )
-from redi.api.issue import (
-    Issue,
-    IssueNotFoundException,
-    WatcherNotFoundException,
-)
+from redi.api.issue import WatcherNotFoundException
 from redi.api.issue_relation import RelationNotFoundException
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.tracker import fetch_trackers
@@ -35,7 +31,7 @@ from redi.cli.custom_field_prompt import (
     prompt_custom_field_value,
 )
 from redi.cli.editor import open_editor, save_body_on_failure
-from redi.cli.interactive import exit_on_cancel, prompt
+from redi.cli.interactive import InputCanceledException, prompt, raise_on_cancel
 from redi.cli.issue_command.custom_fields import (
     ensure_known_custom_field_ids,
     parse_custom_fields,
@@ -50,6 +46,7 @@ from redi.cli.issue_command.field_prompt import (
     prompt_project,
     prompt_start_date,
 )
+from redi.cli.issue_guard import exit_if_issue_not_found, read_issue_or_exit
 from redi.cli.keybinding import date_key_bindings
 from redi.cli.picker import inline_checkbox, inline_choice
 from redi.cli.time_entry_command import create_time_entry
@@ -102,15 +99,6 @@ class IssueUpdateArgs:
         return cls(**{f.name: getattr(args, f.name) for f in fields(cls)})
 
 
-def _read_issue(issue_id: str, include: str = "") -> Issue:
-    """更新対象のイシューを取得する。存在しない場合は exit 1。"""
-    try:
-        return issue_service.read_issue(issue_id, include=include)
-    except IssueNotFoundException:
-        eprint(messages.issue_not_found.format(id=issue_id))
-        sys.exit(1)
-
-
 def _interactive_select_issue_id() -> str:
     issues = issue_service.list_issues(project_id=config.default_project_id)
     if not issues:
@@ -120,7 +108,7 @@ def _interactive_select_issue_id() -> str:
         (str(i["id"]), f"#{i['id']} {i['subject']}") for i in issues
     ]
     labels = dict(options)
-    with exit_on_cancel():
+    with raise_on_cancel():
         issue_id = inline_choice(messages.prompt_select_issue_to_update, options)
     print(messages.update_target_issue.format(label=labels[issue_id]))
     return issue_id
@@ -129,7 +117,7 @@ def _interactive_select_issue_id() -> str:
 def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
     # 呼び出し側で issue_id は解決済み
     assert args.issue_id is not None
-    current = _read_issue(args.issue_id, include="allowed_statuses")
+    current = read_issue_or_exit(args.issue_id, include="allowed_statuses")
     field_values: list[tuple[str, str]] = [
         ("project", messages.field_project),
         ("tracker", messages.field_tracker),
@@ -168,18 +156,17 @@ def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
         )
         for custom_field in applicable_custom_fields:
             field_values.append((f"cf_{custom_field['id']}", custom_field["name"]))
-    with exit_on_cancel():
+    with raise_on_cancel():
         selected = inline_checkbox(
             messages.prompt_select_update_items,
             field_values,
             initial_value="description",
         )
     if not selected:
-        eprint(messages.canceled_no_items_selected)
-        sys.exit(1)
+        raise InputCanceledException(messages.canceled_no_items_selected)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
-    with exit_on_cancel():
+    with raise_on_cancel():
         if "project" in selected:
             args.project_id = prompt_project(default=str(issue_project_id))
         # 移動する場合、トラッカーなどの選択肢は移動先プロジェクトのものを出す
@@ -428,7 +415,7 @@ def _validate_custom_field_ids(args: IssueUpdateArgs) -> None:
     project_id = args.project_id
     tracker_id = args.tracker_id
     if project_id is None or tracker_id is None:
-        current = _read_issue(args.issue_id)
+        current = read_issue_or_exit(args.issue_id)
         project_id = project_id or str(current["project"]["id"])
         tracker_id = tracker_id or str(current["tracker"]["id"])
     ensure_known_custom_field_ids(
@@ -481,10 +468,8 @@ def _update_issue(args: IssueUpdateArgs, description: str | None) -> None:
 def _add_watcher(issue_id: str, user_id: int) -> None:
     """ウォッチャーを追加し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
-        issue_service.add_watcher(issue_id, user_id)
-    except IssueNotFoundException:
-        eprint(messages.issue_not_found.format(id=issue_id))
-        sys.exit(1)
+        with exit_if_issue_not_found(issue_id):
+            issue_service.add_watcher(issue_id, user_id)
     except WatcherNotFoundException:
         eprint(messages.watcher_not_added.format(issue_id=issue_id, user_id=user_id))
         sys.exit(1)
@@ -534,7 +519,7 @@ def _create_relation(issue_id: str, issue_to_id: str, relation_type: str) -> Non
 
 
 def _delete_relation(issue_id: str, issue_to_id: str) -> None:
-    """イシュー間の関係性を削除し、結果を標準出力に出す。対象が無ければ exit 1。"""
+    """イシュー間の関係性を削除し、結果を標準出力に出す。対象が無いか失敗したら exit 1。"""
     try:
         relation = issue_relation_service.delete_relation(
             issue_id=issue_id,
@@ -555,7 +540,7 @@ def _delete_relation(issue_id: str, issue_to_id: str) -> None:
         eprint(e)
         print_http_error_body(e)
         eprint(messages.relation_delete_failed)
-        return
+        sys.exit(1)
     print(
         messages.relation_deleted.format(
             from_id=relation["issue_id"],
@@ -606,7 +591,7 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
         _interactive_fill_issue_update_args(args)
     description = args.description
     if description is not None and description == "":
-        current = _read_issue(args.issue_id)
+        current = read_issue_or_exit(args.issue_id)
         description = open_editor(
             current.get("description") or "", name="issue_description"
         )
@@ -679,5 +664,4 @@ def _run_issue_update(args: IssueUpdateArgs) -> None:
         and not should_create_time_entry
         and not should_update_watchers
     ):
-        eprint(messages.update_canceled_no_changes)
-        sys.exit(1)
+        raise InputCanceledException(messages.update_canceled_no_changes)

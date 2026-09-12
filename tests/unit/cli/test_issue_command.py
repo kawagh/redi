@@ -239,7 +239,7 @@ class TestIssueListNotFound:
         monkeypatch.setattr(view_module.issue_service, "list_issues", _raise)
 
         with pytest.raises(SystemExit) as exc_info:
-            view_module.list_issues(project_id="missing")
+            view_module.print_issues(project_id="missing")
 
         assert exc_info.value.code == 1
         assert (
@@ -259,7 +259,7 @@ class TestIssueListQueryNotFound:
         monkeypatch.setattr(view_module.issue_service, "list_issues", _raise)
 
         with pytest.raises(SystemExit) as exc_info:
-            view_module.list_issues(project_id="demo", query_id="5")
+            view_module.print_issues(project_id="demo", query_id="5")
 
         assert exc_info.value.code == 1
         err = capsys.readouterr().err
@@ -370,14 +370,25 @@ VIEWED_ISSUE = cast(
 class TestFormatIssueDetail:
     """`issue view` の整形出力"""
 
-    def test_shows_meta_table(self):
-        """件名の次にメタ情報を `[ラベル] 値` の表で出す (先頭はステータス)"""
+    @pytest.fixture(autouse=True)
+    def redmine_url(self, monkeypatch):
+        """URL の組み立てに使う Redmine の URL を固定する"""
+        monkeypatch.setattr(config, "redmine_url", "http://localhost:3001")
+
+    def test_shows_issue_url(self):
+        """件名の次の行にイシュー自身の URL を出す (`issue list` / `issue create` と揃える)"""
         lines = view_module.format_issue_detail(VIEWED_ISSUE)
 
         assert lines[0] == "#42 件名"
+        assert lines[1] == "http://localhost:3001/issues/42"
+
+    def test_shows_meta_table(self):
+        """URL の次にメタ情報を `[ラベル] 値` の表で出す (先頭はステータス)"""
+        lines = view_module.format_issue_detail(VIEWED_ISSUE)
+
         # ラベル列の幅は言語設定で変わるため、ラベルと値を前後から挟んで見る
-        assert lines[2].startswith(f"[{messages.meta_status}")
-        assert lines[2].endswith("] 終了")
+        assert lines[3].startswith(f"[{messages.meta_status}")
+        assert lines[3].endswith("] 終了")
 
     def test_separates_description(self):
         """メタ情報と説明の間は `----` で区切る"""
@@ -951,6 +962,30 @@ class TestIssueUpdateAddWatcher:
         )
 
 
+class TestIssueUpdateDeleteRelation:
+    """`--delete-relation` が Redmine のエラーで失敗したとき"""
+
+    def test_http_error_exits(self, monkeypatch, capsys):
+        """削除に失敗したら理由を出して exit 1 し、成功メッセージを出さない"""
+        monkeypatch.setattr(
+            update_module.issue_relation_service,
+            "delete_relation",
+            _raise_http_error(403),
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            handle_issue_update(
+                parse_issue_args(
+                    ["issue", "update", "42", "--delete-relation", "--to", "43"]
+                )
+            )
+
+        captured = capsys.readouterr()
+        assert exc_info.value.code == 1
+        assert messages.relation_delete_failed in captured.err
+        assert captured.out == ""
+
+
 class TestIssueUpdateStatusChoices:
     """`issue update` の対話でステータスを選ぶとき
 
@@ -1162,7 +1197,7 @@ class TestIssueListTsv:
 
         description と custom_fields は tsv に載せない。
         """
-        view_module.list_issues(fmt=OutputFormat.TSV)
+        view_module.print_issues(fmt=OutputFormat.TSV)
 
         header, row = capsys.readouterr().out.splitlines()
         assert header.split("\t") == [

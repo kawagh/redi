@@ -9,7 +9,8 @@ import webbrowser
 from typing import assert_never
 
 from redi.api.exceptions import ProjectNotFoundException, QueryNotFoundException
-from redi.api.issue import Issue, IssueNotFoundException
+from redi.api.issue import Issue
+from redi.cli.issue_guard import read_issue_or_exit
 from redi.cli.shared_options import OutputFormat
 from redi.i18n import messages
 from redi.output import eprint, print_tsv, tsv_ref
@@ -38,7 +39,7 @@ def _issue_tsv_row(issue: Issue) -> tuple[object, ...]:
     return (
         issue["id"],
         issue["subject"],
-        issue_service.issue_url(str(issue["id"])),
+        issue_service.issue_url(issue["id"]),
         *tsv_ref(issue, "project"),
         tsv_ref(issue, "tracker")[1],
         tsv_ref(issue, "status")[1],
@@ -59,7 +60,7 @@ def _issue_tsv_row(issue: Issue) -> tuple[object, ...]:
     )
 
 
-def list_issues(
+def print_issues(
     project_id: str | None = None,
     fixed_version_id: str | None = None,
     assigned_to: str | None = None,
@@ -129,7 +130,7 @@ def list_issues(
             for issue in issues:
                 print(
                     f"{issue['id']} {issue['subject']} "
-                    f"{issue_service.issue_url(str(issue['id']))}"
+                    f"{issue_service.issue_url(issue['id'])}"
                 )
         case _:
             assert_never(fmt)
@@ -155,11 +156,7 @@ def view_issue(
     for name in include or []:
         if name not in includes:
             includes.append(name)
-    try:
-        issue = issue_service.read_issue(issue_id, include=",".join(includes))
-    except IssueNotFoundException:
-        eprint(messages.issue_not_found.format(id=issue_id))
-        sys.exit(1)
+    issue = read_issue_or_exit(issue_id, include=",".join(includes))
     if full:
         print(json.dumps(issue, ensure_ascii=False))
         return
@@ -169,11 +166,13 @@ def view_issue(
 def format_issue_detail(issue: Issue) -> list[str]:
     """イシューの詳細表示を行のリストに整形する。
 
-    件名の下にメタ情報テーブルを出し、`----` で区切って説明・コメントを続ける。
+    件名の次の行に自身の URL を出し、その下にメタ情報テーブル、`----` で区切って説明・コメントを続ける。
+    URL は `issue list` / `issue create` と同じく、読んだ内容と一緒にそのまま貼れるようにする。
     TUI の右ペイン(プレビュー)と同じ見た目になるよう `text_format` を共有する。
     """
     lines = []
     lines.append(f"#{issue['id']} {issue['subject']}")
+    lines.append(issue_service.issue_url(issue["id"]))
     lines.append("")
     lines.extend(render_meta_table(issue_meta_rows(issue)))
     if issue.get("description"):
@@ -208,7 +207,7 @@ def format_issue_detail(issue: Issue) -> list[str]:
             else:
                 # unknown rel_type
                 label = rel_type
-            lines.append(f"  {r['id']} [{label}] {issue_service.issue_url(str(other))}")
+            lines.append(f"  {r['id']} [{label}] {issue_service.issue_url(other)}")
     attachments = issue.get("attachments") or []
     if attachments:
         lines.append("")

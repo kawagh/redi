@@ -10,11 +10,11 @@ from prompt_toolkit.validation import Validator
 from redi import config
 from redi.api.enumeration import fetch_time_entry_activities
 from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
-from redi.api.issue import Issue, IssueNotFoundException
 from redi.api.time_entry import TimeEntry, TimeEntryNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
-from redi.cli.interactive import exit_on_cancel, prompt
+from redi.cli.interactive import InputCanceledException, prompt, raise_on_cancel
+from redi.cli.issue_guard import read_issue_or_exit
 from redi.cli.keybinding import (
     date_key_bindings,
     digit_and_period_key_bindings,
@@ -31,16 +31,7 @@ from redi.cli.shared_options import (
 from redi.cli.validator import DateValidator, HourValidator, is_yyyy_mm_dd
 from redi.i18n import messages
 from redi.output import eprint, print_tsv
-from redi.service import issue_service, project_service, time_entry_service
-
-
-def _read_issue(issue_id: str) -> Issue:
-    """作業時間の対象イシューを取得する。存在しない場合は exit 1。"""
-    try:
-        return issue_service.read_issue(issue_id)
-    except IssueNotFoundException:
-        eprint(messages.issue_not_found.format(id=issue_id))
-        sys.exit(1)
+from redi.service import project_service, time_entry_service
 
 
 def _fetch_time_entry_or_exit(time_entry_id: str) -> TimeEntry:
@@ -61,15 +52,22 @@ def _list_time_entries(
     offset: int | None = None,
     fmt: OutputFormat = OutputFormat.PLAIN,
 ) -> None:
-    """作業時間の一覧を標準出力に出す。json では取得した JSON をそのまま出す。"""
-    entries = time_entry_service.fetch_page(
-        project_id=project_id,
-        user_id=user_id,
-        from_date=from_date,
-        to_date=to_date,
-        limit=limit,
-        offset=offset,
-    )["time_entries"]
+    """作業時間の一覧を標準出力に出す。json では取得した JSON をそのまま出す。
+
+    プロジェクトが存在しない場合は指定した ID を添えて exit 1 する。
+    """
+    try:
+        entries = time_entry_service.fetch_page(
+            project_id=project_id,
+            user_id=user_id,
+            from_date=from_date,
+            to_date=to_date,
+            limit=limit,
+            offset=offset,
+        )["time_entries"]
+    except ProjectNotFoundException as e:
+        eprint(messages.project_not_found.format(id=e.project_id))
+        sys.exit(1)
     match fmt:
         case OutputFormat.JSON:
             print(json.dumps(entries, ensure_ascii=False))
@@ -205,8 +203,7 @@ def _update_time_entry(
         or comments is not None
     )
     if not has_changes:
-        eprint(messages.update_canceled_no_changes)
-        sys.exit(1)
+        raise InputCanceledException(messages.update_canceled_no_changes)
     try:
         time_entry_service.update_time_entry(
             time_entry_id,
@@ -382,7 +379,7 @@ def _lacks_required_time_entry_create_args(args: argparse.Namespace) -> bool:
 
 
 def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
-    with exit_on_cancel():
+    with raise_on_cancel():
         if not args.issue_id and not args.project_id:
             default_issue_id = getattr(args, "default_issue_id", None) or ""
             issue_id = prompt(
@@ -392,7 +389,7 @@ def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
             ).strip()
             if issue_id:
                 args.issue_id = issue_id
-                issue = _read_issue(issue_id)
+                issue = read_issue_or_exit(issue_id)
                 print(
                     messages.issue_label.format(
                         id=issue["id"], subject=issue["subject"]
@@ -462,14 +459,13 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
         ("comments", messages.field_comments),
         ("issue_id", messages.field_issue_id),
     ]
-    with exit_on_cancel():
+    with raise_on_cancel():
         selected = inline_checkbox(messages.prompt_select_update_items, field_values)
     if not selected:
-        eprint(messages.canceled_no_items_selected)
-        sys.exit(1)
+        raise InputCanceledException(messages.canceled_no_items_selected)
     labels = dict(field_values)
     print(messages.update_items.format(items=", ".join(labels[v] for v in selected)))
-    with exit_on_cancel():
+    with raise_on_cancel():
         if "hours" in selected:
             hours_str = prompt(
                 messages.prompt_hours,
@@ -515,7 +511,7 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
                 key_bindings=digit_only_key_bindings(),
             ).strip()
             if issue_id:
-                issue = _read_issue(issue_id)
+                issue = read_issue_or_exit(issue_id)
                 print(
                     messages.issue_label.format(
                         id=issue["id"], subject=issue["subject"]

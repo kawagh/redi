@@ -7,6 +7,10 @@ class Ja(MessagesProto):
     # ---- profile / config ----
     profile_created = "profile '{name}' を作成しました"
     profile_already_exists = "profile '{name}' は既に存在します"
+    profile_not_found = "profile '{name}' は {path} にありません"
+    profile_did_you_mean = "もしかして: {names}"
+    profile_available = "利用可能なプロファイル: {names}"
+    profile_list_hint = "(一覧は `redi config --full` で確認できます)"
     default_profile_set = "default_profileを {name} に設定しました"
     default_project_id_set = "default_project_idを {value} に設定しました{suffix}"
     editor_set = "editorを {value} に設定しました{suffix}"
@@ -627,7 +631,8 @@ class Ja(MessagesProto):
     arg_help_debug = "デバッグログを有効にする"
     arg_help_debug_tui = "TUI のスクリーン内容を YAML 形式でログ出力する"
     arg_help_profile = (
-        "使用するプロファイル名（config.tomlのdefault_profileを一時的に上書き）"
+        "使用するプロファイル名（config.tomlのdefault_profileを一時的に上書き。"
+        "一覧は redi config --full）"
     )
     arg_help_refresh = "キャッシュを読まずに取得し直す（トラッカーやカスタムフィールドの候補を更新する）"
 

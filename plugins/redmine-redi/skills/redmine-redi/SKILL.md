@@ -130,6 +130,17 @@ then attach with `issue update`. Do not reach for the other upload-like commands
 - `redi attachment` only operates on **existing** attachments (view / download / update / delete)
 - `redi file create` uploads to the project's **Files** tab, not to an issue
 
+### Relating issues
+
+Relations are created and deleted with `issue update --relate` / `--delete-relation`,
+not with `redi relation` (which only has `view`):
+
+```sh
+redi issue update 160 --relate relates --to 161      # relates, blocks, blocked, precedes, follows, duplicates, ...
+redi issue update 160 --delete-relation --to 161
+redi relation view 12                                # details of one relation (id is shown in `issue view`)
+```
+
 ### Required custom fields
 
 Custom fields are set with `--custom_fields <id>=<value>` (comma separated for

@@ -15,6 +15,14 @@ class MessagesProto(Protocol):
     """プロファイル作成成功。{name} を埋め込む。"""
     profile_already_exists: str
     """profile が既に存在する。{name} を埋め込む。"""
+    profile_not_found: str
+    """profile が設定ファイルに無い。{name}, {path}"""
+    profile_did_you_mean: str
+    """近い名前のプロファイル候補。{names} はカンマ区切り"""
+    profile_available: str
+    """設定ファイルにあるプロファイル名。{names} はカンマ区切り"""
+    profile_list_hint: str
+    """プロファイル一覧の出し方の案内"""
     default_profile_set: str
     """default_profile を設定。{name}"""
     default_project_id_set: str

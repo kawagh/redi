@@ -9,6 +9,7 @@ from redi.api.exceptions import (
     RedmineValidationException,
 )
 from redi.cli import main as main_module
+from redi.cli.interactive import InputCanceledException
 from redi.cli.main import build_redi_parser
 from redi.cli.shared_options import (
     OutputFormat,
@@ -452,6 +453,84 @@ class TestTuiProfileSwitchLoop:
         assert run_tui_calls[1].flash_message == (
             messages.tui_flash_profile_switched.format(name="sub")
         )
+
+
+class TestTuiInteractiveCancelReturnsToTui:
+    """TUI から入った対話入力をキャンセルしても redi は終了せず TUI に戻る (github#564)
+
+    u で更新に入り項目を選ばず確定したときや Ctrl-C したとき、同じ絞り込み・
+    プロジェクトのまま TUI を再表示し、ステータスバーに通知を出す。
+    """
+
+    @pytest.fixture
+    def run_tui_calls(self, monkeypatch) -> list:
+        """run_issue_tui に渡された TuiState を順に記録する"""
+        from redi.tui.state import IssueFilter, TuiResult, TuiState
+
+        monkeypatch.setattr("sys.argv", ["redi", "--tui"])
+        monkeypatch.setattr(main_module, "list_profile_names", list)
+        monkeypatch.setattr(main_module, "check_config", lambda: None)
+
+        calls: list[TuiState] = []
+        results = [
+            TuiResult(action="update", tab="issues", issue_id="7"),
+            None,
+        ]
+
+        def fake_run_issue_tui(state, debug_log_path=None):
+            calls.append(copy.deepcopy(state))
+            state.project_id = "42"
+            state.issue_tab.filter = IssueFilter(status_id="*", status_label="all")
+            return results.pop(0)
+
+        monkeypatch.setattr(main_module, "run_issue_tui", fake_run_issue_tui)
+        return calls
+
+    def test_returns_to_tui_with_flash(self, run_tui_calls, monkeypatch):
+        """キャンセルすると exit せず、通知文を flash にして TUI を再表示する"""
+
+        def _cancel(issue_id):
+            raise InputCanceledException(messages.canceled_no_items_selected)
+
+        monkeypatch.setattr(main_module, "update_issue_interactively", _cancel)
+
+        main_module.main()
+
+        assert len(run_tui_calls) == 2
+        assert run_tui_calls[1].flash_message == messages.canceled_no_items_selected
+
+    def test_keeps_filter_and_project(self, run_tui_calls, monkeypatch):
+        """絞り込みとプロジェクトはキャンセル前のまま引き継ぐ"""
+
+        def _cancel(issue_id):
+            raise InputCanceledException(messages.canceled)
+
+        monkeypatch.setattr(main_module, "update_issue_interactively", _cancel)
+
+        main_module.main()
+
+        assert run_tui_calls[1].project_id == "42"
+        assert run_tui_calls[1].issue_tab.filter.status_id == "*"
+
+
+class TestInputCanceledIsExitOne:
+    """CLI では対話入力のキャンセルを標準エラーに通知して exit 1 にする"""
+
+    def test_prints_message_and_exits(self, monkeypatch, capsys):
+        """通知文だけを標準エラーに出し、トレースバックは見せない"""
+
+        def _raise():
+            raise InputCanceledException(messages.canceled_no_items_selected)
+
+        monkeypatch.setattr(main_module, "_run", _raise)
+
+        with pytest.raises(SystemExit) as e:
+            main_module.main()
+
+        captured = capsys.readouterr()
+        assert e.value.code == 1
+        assert captured.err.strip() == messages.canceled_no_items_selected
+        assert captured.out == ""
 
 
 class TestConnectionErrorIsNotATraceback:
