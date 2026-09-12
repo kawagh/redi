@@ -642,7 +642,6 @@ class Ja(MessagesProto):
     tui_wiki_diff_from = "比較前"
     tui_wiki_diff_to = "比較後"
     tui_wiki_diff_no_other_versions = "このページは版が 1 つしかありません"
-    tui_wiki_diff_same_version = "比較前と比較後に別の版を選んでください"
     tui_status_wiki_diff_active = "差分 v{from_version} -> v{to_version}"
     tui_wiki_diff_no_changes = "版の間に差分はありません"
 

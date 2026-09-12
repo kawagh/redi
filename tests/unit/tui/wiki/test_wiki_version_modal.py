@@ -417,16 +417,16 @@ class TestDiff:
         assert "-B" in rendered
         assert "+b" in rendered
 
-    def test_apply_same_version_keeps_modal(self):
-        """同じ版どうしは flash で知らせ、modal は開いたまま"""
+    def test_apply_same_version_shows_no_changes(self):
+        """同じ版どうしも弾かず、差分無しとして出す"""
         state = self._state_with_texts()
         self._open_with(state, 2, 2)
 
-        assert apply_diff(state) is False
+        assert apply_diff(state) is True
 
-        assert state.wiki_tab.diff_modal.show is True
-        assert state.wiki_tab.diff_view is None
-        assert state.flash_message == messages.tui_wiki_diff_same_version
+        assert state.wiki_tab.diff_view == WikiDiffView("Home", 2, 2)
+        assert state.flash_message is None
+        assert messages.tui_wiki_diff_no_changes in self._rendered(state)
 
     def test_apply_loads_missing_texts(self, monkeypatch):
         """本文が未取得なら適用時に取りに行き、キャッシュに載せる"""

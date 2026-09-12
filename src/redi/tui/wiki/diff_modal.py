@@ -198,8 +198,8 @@ def apply_diff(state: TuiState) -> bool:
     """両列のカーソルにある版の差分を右ペインに出す。
 
     フィルタ modal と同じく適用しても modal は閉じず、組を変えて押し直せる。閉じるのは
-    Esc / d。同じ版どうしなら flash で知らせる。本文はここでキャッシュに載せ、
-    取得に失敗したら表示は変えない (flash は取得側が出す)。
+    Esc / d。本文はここでキャッシュに載せ、取得に失敗したら表示は変えない
+    (flash は取得側が出す)。同じ版どうしは弾かず、差分無しとして出す。
     """
     modal = state.wiki_tab.diff_modal
     page = current_page(state)
@@ -208,9 +208,6 @@ def apply_diff(state: TuiState) -> bool:
         return False
     from_version = modal.versions[modal.from_cursor]
     to_version = modal.versions[modal.to_cursor]
-    if from_version == to_version:
-        state.flash_message = messages.tui_wiki_diff_same_version
-        return False
     title = page["title"]
     if load_version_text(state, title, from_version, latest) is None:
         return False

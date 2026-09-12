@@ -636,7 +636,6 @@ class En(MessagesProto):
     tui_wiki_diff_from = "From"
     tui_wiki_diff_to = "To"
     tui_wiki_diff_no_other_versions = "This page has only one version"
-    tui_wiki_diff_same_version = "Choose two different versions"
     tui_status_wiki_diff_active = "diff v{from_version} -> v{to_version}"
     tui_wiki_diff_no_changes = "No changes between the versions"
 

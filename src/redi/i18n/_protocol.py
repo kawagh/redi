@@ -822,8 +822,6 @@ class MessagesProto(Protocol):
     tui_wiki_diff_to: str
     # 版が 1 つしか無く比較相手が無いときの案内
     tui_wiki_diff_no_other_versions: str
-    # 比較前と比較後に同じ版を選んだときの案内
-    tui_wiki_diff_same_version: str
     # 2 版の差分を右ペインに出しているときの印
     tui_status_wiki_diff_active: str
     """{from_version}, {to_version}"""
