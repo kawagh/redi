@@ -344,8 +344,8 @@ class TestDiffModal:
         assert state.wiki_tab.diff_modal.show is False
         assert state.flash_message == messages.tui_wiki_diff_no_other_versions
 
-    def test_both_columns_show_cursor(self):
-        """focus の無い列にもカーソル行を出し、2 列の組が分かる。* は適用前は付かない"""
+    def test_cursor_only_in_focused_column(self):
+        """カーソル行を出すのは focus のある列だけ。* は適用前は付かない"""
         state = _state([_page("Home", version=3)])
         open_diff_modal(state)
 
@@ -353,7 +353,7 @@ class TestDiffModal:
         to_col = "".join(t for _, t in render_diff_column(state, "to"))
 
         assert ">   v2" in from_col
-        assert ">   v3" in to_col
+        assert ">" not in to_col
         assert "*" not in from_col + to_col
 
     def test_columns_mark_applied_pair(self):

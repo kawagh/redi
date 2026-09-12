@@ -66,8 +66,8 @@ def _version_label(version: int, latest: int) -> str:
 def render_diff_column(state: TuiState, column: WikiDiffColumn) -> Renderable:
     """比較前 / 比較後の 1 列を描画する。
 
-    2 列のカーソルの組が結果になるので、フィルタ modal と違って focus の無い列にも
-    カーソル行を出す (focus のある列は reverse、無い列は bold)。`*` は適用中の差分の版。
+    フィルタ modal と同じく、カーソル行を出すのは focus のある列だけ。
+    `*` は適用中の差分の版で、focus の無い列でも残る。
     """
     modal = state.wiki_tab.diff_modal
     focused = modal.focus == column
@@ -80,14 +80,11 @@ def render_diff_column(state: TuiState, column: WikiDiffColumn) -> Renderable:
     active = _active_version(state, column)
     cursor = column_cursor(modal, column)
     for i, version in enumerate(modal.versions):
-        is_cursor = i == cursor
+        is_cursor = focused and i == cursor
         is_active = version == active
         cursor_mark = ">" if is_cursor else " "
         active_mark = "*" if is_active else " "
-        if is_cursor:
-            line_style = "reverse" if focused else "bold"
-        else:
-            line_style = ""
+        line_style = "reverse" if is_cursor else ("bold" if is_active else "")
         parts.append(
             (
                 line_style,
