@@ -84,7 +84,7 @@ class TestValidateInput:
 
         assert (
             validate_input(state.issue_tab.delete_dialog)
-            == messages.tui_issue_delete_modal_empty
+            == messages.tui_issue_delete_dialog_empty
         )
 
     def test_reports_mismatch(self):
@@ -94,7 +94,7 @@ class TestValidateInput:
 
         assert (
             validate_input(state.issue_tab.delete_dialog)
-            == messages.tui_issue_delete_modal_mismatch
+            == messages.tui_issue_delete_dialog_mismatch
         )
 
 
@@ -124,7 +124,7 @@ class TestConfirmDelete:
         assert state.issue_tab.delete_dialog.show is True
         assert (
             state.issue_tab.delete_dialog.notice
-            == messages.tui_issue_delete_modal_mismatch
+            == messages.tui_issue_delete_dialog_mismatch
         )
         assert state.issue_tab.delete_dialog.input_text == "9"
 
@@ -139,7 +139,7 @@ class TestConfirmDelete:
         assert state.issue_tab.delete_dialog.show is True
         assert (
             state.issue_tab.delete_dialog.notice
-            == messages.tui_issue_delete_modal_empty
+            == messages.tui_issue_delete_dialog_empty
         )
 
     def test_clamps_cursor_when_deleting_last(self, deleted):

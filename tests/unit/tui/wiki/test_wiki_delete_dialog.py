@@ -84,7 +84,7 @@ class TestValidateInput:
 
         assert validate_input(
             state.wiki_tab.delete_dialog
-        ) == messages.tui_wiki_delete_modal_empty.format(expected=CONFIRM_WORD)
+        ) == messages.tui_wiki_delete_dialog_empty.format(expected=CONFIRM_WORD)
 
     def test_reports_mismatch(self):
         """確認語と違う入力は不一致として返す"""
@@ -93,7 +93,7 @@ class TestValidateInput:
 
         assert validate_input(
             state.wiki_tab.delete_dialog
-        ) == messages.tui_wiki_delete_modal_mismatch.format(expected=CONFIRM_WORD)
+        ) == messages.tui_wiki_delete_dialog_mismatch.format(expected=CONFIRM_WORD)
 
 
 class TestApplyDeleted:

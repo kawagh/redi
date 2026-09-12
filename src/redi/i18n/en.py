@@ -524,13 +524,13 @@ class En(MessagesProto):
     tui_filter_hint_single = "jk:move Enter:apply c:clear Esc/f:close"
     tui_filter_title = "Filter (Esc/f to close)"
     tui_filter_title_time_entries = "Filter user (Esc/f to close)"
-    tui_project_modal_title = "Switch project (Esc/p to close)"
-    tui_project_modal_hint = "jk:move gg/G:top/bottom Enter:switch Esc/p:close"
+    tui_project_dialog_title = "Switch project (Esc/p to close)"
+    tui_project_dialog_hint = "jk:move gg/G:top/bottom Enter:switch Esc/p:close"
     tui_current_project = "  [project: {name}]"
     tui_flash_project_switched = "Switched project to {name}"
     tui_project_load_failed = "Failed to load projects: {error}"
-    tui_profile_modal_title = "Switch profile (Esc/P to close)"
-    tui_profile_modal_hint = "jk:move gg/G:top/bottom Enter:switch Esc/P:close"
+    tui_profile_dialog_title = "Switch profile (Esc/P to close)"
+    tui_profile_dialog_hint = "jk:move gg/G:top/bottom Enter:switch Esc/P:close"
     tui_current_profile = "  [profile: {name}]"
     tui_flash_profile_switched = "Switched profile to {name}"
     tui_profile_switch_invalid = (
@@ -538,7 +538,7 @@ class En(MessagesProto):
     )
     tui_no_profiles = "No profiles found in config.toml"
     tui_help_title = "Help - {label} tab (any key to close)"
-    tui_error_modal_title = "Error (q to close)"
+    tui_error_dialog_title = "Error (q to close)"
     tui_status_hint_issues = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
     tui_status_hint_wiki = (
         " jk:move /:search p:project c:create u:update D:delete"
@@ -595,31 +595,31 @@ class En(MessagesProto):
     tui_time_entry_delete_prompt = "Delete? {summary} [y/N]"
     tui_issue_delete_failed = "Failed to delete issue: {error}"
     tui_issue_delete_missing = "Issue not found: #{id}"
-    tui_issue_delete_modal_title = "Confirm issue deletion (Esc to close)"
-    tui_issue_delete_modal_target = "Target: #{id} {subject}"
-    tui_issue_delete_modal_prompt = 'Type issue_id "{expected}" to confirm deletion'
-    tui_issue_delete_modal_input_label = "issue_id> "
-    tui_issue_delete_modal_mismatch = "issue_id does not match"
-    tui_issue_delete_modal_empty = "Enter the issue_id"
-    tui_issue_delete_modal_hint = "Enter:confirm Esc:close"
-    tui_find_modal_title = "Search issues (Esc to close)"
-    tui_find_modal_input_label = "query> "
-    tui_find_modal_hint = "Enter:search (empty Enter clears) Esc:close"
+    tui_issue_delete_dialog_title = "Confirm issue deletion (Esc to close)"
+    tui_issue_delete_dialog_target = "Target: #{id} {subject}"
+    tui_issue_delete_dialog_prompt = 'Type issue_id "{expected}" to confirm deletion'
+    tui_issue_delete_dialog_input_label = "issue_id> "
+    tui_issue_delete_dialog_mismatch = "issue_id does not match"
+    tui_issue_delete_dialog_empty = "Enter the issue_id"
+    tui_issue_delete_dialog_hint = "Enter:confirm Esc:close"
+    tui_find_dialog_title = "Search issues (Esc to close)"
+    tui_find_dialog_input_label = "query> "
+    tui_find_dialog_hint = "Enter:search (empty Enter clears) Esc:close"
     tui_wiki_delete_failed = "Failed to delete wiki page: {error}"
     tui_wiki_delete_page_missing = "Wiki page not found: {title}"
-    tui_wiki_delete_modal_title = "Confirm wiki page deletion (Esc to close)"
-    tui_wiki_delete_modal_target = "Target: {title}"
-    tui_wiki_delete_modal_warning = (
+    tui_wiki_delete_dialog_title = "Confirm wiki page deletion (Esc to close)"
+    tui_wiki_delete_dialog_target = "Target: {title}"
+    tui_wiki_delete_dialog_warning = (
         "Version history is deleted too and cannot be undone"
         " (child pages move to the top level)"
     )
-    tui_wiki_delete_modal_prompt = 'Type "{expected}" to confirm deletion'
-    tui_wiki_delete_modal_input_label = "confirm> "
-    tui_wiki_delete_modal_mismatch = 'Input does not match "{expected}"'
-    tui_wiki_delete_modal_empty = 'Enter "{expected}"'
-    tui_wiki_delete_modal_hint = "Enter:confirm Esc:close"
-    tui_wiki_version_modal_title = "Wiki page versions (Esc/h to close)"
-    tui_wiki_version_modal_hint = "jk:move gg/G:top/bottom Enter:view Esc/h:close"
+    tui_wiki_delete_dialog_prompt = 'Type "{expected}" to confirm deletion'
+    tui_wiki_delete_dialog_input_label = "confirm> "
+    tui_wiki_delete_dialog_mismatch = 'Input does not match "{expected}"'
+    tui_wiki_delete_dialog_empty = 'Enter "{expected}"'
+    tui_wiki_delete_dialog_hint = "Enter:confirm Esc:close"
+    tui_wiki_version_dialog_title = "Wiki page versions (Esc/h to close)"
+    tui_wiki_version_dialog_hint = "jk:move gg/G:top/bottom Enter:view Esc/h:close"
     tui_wiki_version_latest_label = "v{version} (latest)"
     tui_wiki_version_label = "v{version}"
     tui_wiki_version_missing = "Version {version} of {title} not found"
@@ -629,8 +629,8 @@ class En(MessagesProto):
     )
     tui_status_wiki_version_active = "v{version} (latest v{latest})"
     tui_wiki_meta_version_of_latest = "{version} (latest: {latest})"
-    tui_wiki_diff_modal_title = "Compare versions (Esc/d to close)"
-    tui_wiki_diff_modal_hint = (
+    tui_wiki_diff_dialog_title = "Compare versions (Esc/d to close)"
+    tui_wiki_diff_dialog_hint = (
         "Tab/h/l:column jk:move Enter:apply c:back to text Esc/d:close"
     )
     tui_wiki_diff_from = "From"

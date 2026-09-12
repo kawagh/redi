@@ -13,8 +13,8 @@ from redi.tui.state import TuiResult, TuiState
 def build_profile_dialog(state: TuiState, show: FilterOrBool) -> Float:
     return build_choice_dialog(
         lambda: state.profile_dialog,
-        messages.tui_profile_modal_title,
-        messages.tui_profile_modal_hint,
+        messages.tui_profile_dialog_title,
+        messages.tui_profile_dialog_hint,
         show,
     )
 

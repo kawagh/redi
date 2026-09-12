@@ -28,7 +28,7 @@ def render_delete_dialog(state: TuiState) -> Renderable:
     parts.append(
         (
             "",
-            messages.tui_issue_delete_modal_target.format(
+            messages.tui_issue_delete_dialog_target.format(
                 id=dialog.target_id, subject=dialog.target_subject
             )
             + "\n\n",
@@ -37,11 +37,11 @@ def render_delete_dialog(state: TuiState) -> Renderable:
     parts.append(
         (
             "",
-            messages.tui_issue_delete_modal_prompt.format(expected=dialog.target_id)
+            messages.tui_issue_delete_dialog_prompt.format(expected=dialog.target_id)
             + "\n",
         )
     )
-    parts.append(("bold fg:ansicyan", messages.tui_issue_delete_modal_input_label))
+    parts.append(("bold fg:ansicyan", messages.tui_issue_delete_dialog_input_label))
     parts.append(("", dialog.input_text))
     # 末尾の反転した空白を入力カーソルに見立てる
     parts.append(("reverse", " "))
@@ -49,7 +49,7 @@ def render_delete_dialog(state: TuiState) -> Renderable:
     if dialog.notice:
         parts.append(("fg:ansired", dialog.notice + "\n"))
     parts.append(("", "\n"))
-    parts.append(("", messages.tui_issue_delete_modal_hint))
+    parts.append(("", messages.tui_issue_delete_dialog_hint))
     return parts
 
 
@@ -69,7 +69,7 @@ def build_delete_dialog(state: TuiState, show: FilterOrBool) -> Float:
                             # 何を消すかが読めないと確認にならないので subject は折り返す
                             wrap_lines=True,
                         ),
-                        title=lambda: messages.tui_issue_delete_modal_title,
+                        title=lambda: messages.tui_issue_delete_dialog_title,
                     ),
                     Window(width=1, char=" "),
                 ]
@@ -109,9 +109,9 @@ def validate_input(dialog: IssueDeleteDialogState) -> str | None:
     """入力が対象の issue_id と一致しない理由を返す。一致していれば None。"""
     entered = dialog.input_text.strip()
     if not entered:
-        return messages.tui_issue_delete_modal_empty
+        return messages.tui_issue_delete_dialog_empty
     if entered != str(dialog.target_id):
-        return messages.tui_issue_delete_modal_mismatch
+        return messages.tui_issue_delete_dialog_mismatch
     return None
 
 

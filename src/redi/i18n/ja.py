@@ -521,13 +521,13 @@ class Ja(MessagesProto):
     tui_filter_hint_single = "jk:移動 Enter:適用 c:クリア Esc/f:閉じる"
     tui_filter_title = "フィルタ (Esc/f で閉じる)"
     tui_filter_title_time_entries = "ユーザーでフィルタ (Esc/f で閉じる)"
-    tui_project_modal_title = "プロジェクト切替 (Esc/p で閉じる)"
-    tui_project_modal_hint = "jk:移動 gg/G:先頭/末尾 Enter:切替 Esc/p:閉じる"
+    tui_project_dialog_title = "プロジェクト切替 (Esc/p で閉じる)"
+    tui_project_dialog_hint = "jk:移動 gg/G:先頭/末尾 Enter:切替 Esc/p:閉じる"
     tui_current_project = "  [project: {name}]"
     tui_flash_project_switched = "プロジェクトを {name} に切り替えました"
     tui_project_load_failed = "プロジェクト一覧の取得に失敗しました: {error}"
-    tui_profile_modal_title = "プロファイル切替 (Esc/P で閉じる)"
-    tui_profile_modal_hint = "jk:移動 gg/G:先頭/末尾 Enter:切替 Esc/P:閉じる"
+    tui_profile_dialog_title = "プロファイル切替 (Esc/P で閉じる)"
+    tui_profile_dialog_hint = "jk:移動 gg/G:先頭/末尾 Enter:切替 Esc/P:閉じる"
     tui_current_profile = "  [profile: {name}]"
     tui_flash_profile_switched = "プロファイルを {name} に切り替えました"
     tui_profile_switch_invalid = (
@@ -535,7 +535,7 @@ class Ja(MessagesProto):
     )
     tui_no_profiles = "config.toml にプロファイルがありません"
     tui_help_title = "ヘルプ - {label} タブ (任意のキーで閉じる)"
-    tui_error_modal_title = "エラー (q で閉じる)"
+    tui_error_dialog_title = "エラー (q で閉じる)"
     tui_status_hint_issues = (
         " {page_label}  jk:移動 /:検索 f:フィルタ p:プロジェクト"
         " c:作成 u:更新 v:web ?:ヘルプ q:終了 "
@@ -600,32 +600,32 @@ class Ja(MessagesProto):
     tui_time_entry_delete_prompt = "削除しますか? {summary} [y/N]"
     tui_issue_delete_failed = "イシューの削除に失敗しました: {error}"
     tui_issue_delete_missing = "イシューが見つかりません: #{id}"
-    tui_issue_delete_modal_title = "イシュー削除の確認 (Esc で閉じる)"
-    tui_issue_delete_modal_target = "対象: #{id} {subject}"
-    tui_issue_delete_modal_prompt = (
+    tui_issue_delete_dialog_title = "イシュー削除の確認 (Esc で閉じる)"
+    tui_issue_delete_dialog_target = "対象: #{id} {subject}"
+    tui_issue_delete_dialog_prompt = (
         '削除を実行するには issue_id "{expected}" を入力してください'
     )
-    tui_issue_delete_modal_input_label = "issue_id> "
-    tui_issue_delete_modal_mismatch = "issue_id が一致しません"
-    tui_issue_delete_modal_empty = "issue_id を入力してください"
-    tui_issue_delete_modal_hint = "Enter:確定 Esc:閉じる"
-    tui_find_modal_title = "イシュー検索 (Esc で閉じる)"
-    tui_find_modal_input_label = "クエリ> "
-    tui_find_modal_hint = "Enter:検索 (空のまま Enter で解除) Esc:閉じる"
+    tui_issue_delete_dialog_input_label = "issue_id> "
+    tui_issue_delete_dialog_mismatch = "issue_id が一致しません"
+    tui_issue_delete_dialog_empty = "issue_id を入力してください"
+    tui_issue_delete_dialog_hint = "Enter:確定 Esc:閉じる"
+    tui_find_dialog_title = "イシュー検索 (Esc で閉じる)"
+    tui_find_dialog_input_label = "クエリ> "
+    tui_find_dialog_hint = "Enter:検索 (空のまま Enter で解除) Esc:閉じる"
     tui_wiki_delete_failed = "Wikiページの削除に失敗しました: {error}"
     tui_wiki_delete_page_missing = "Wikiページが見つかりません: {title}"
-    tui_wiki_delete_modal_title = "Wikiページ削除の確認 (Esc で閉じる)"
-    tui_wiki_delete_modal_target = "対象: {title}"
-    tui_wiki_delete_modal_warning = (
+    tui_wiki_delete_dialog_title = "Wikiページ削除の確認 (Esc で閉じる)"
+    tui_wiki_delete_dialog_target = "対象: {title}"
+    tui_wiki_delete_dialog_warning = (
         "版履歴も削除され、元に戻せません (子ページは最上位に移ります)"
     )
-    tui_wiki_delete_modal_prompt = '削除を実行するには "{expected}" を入力してください'
-    tui_wiki_delete_modal_input_label = "確認> "
-    tui_wiki_delete_modal_mismatch = '"{expected}" と一致しません'
-    tui_wiki_delete_modal_empty = '"{expected}" を入力してください'
-    tui_wiki_delete_modal_hint = "Enter:確定 Esc:閉じる"
-    tui_wiki_version_modal_title = "Wikiページの版 (Esc/h で閉じる)"
-    tui_wiki_version_modal_hint = "jk:移動 gg/G:先頭/末尾 Enter:表示 Esc/h:閉じる"
+    tui_wiki_delete_dialog_prompt = '削除を実行するには "{expected}" を入力してください'
+    tui_wiki_delete_dialog_input_label = "確認> "
+    tui_wiki_delete_dialog_mismatch = '"{expected}" と一致しません'
+    tui_wiki_delete_dialog_empty = '"{expected}" を入力してください'
+    tui_wiki_delete_dialog_hint = "Enter:確定 Esc:閉じる"
+    tui_wiki_version_dialog_title = "Wikiページの版 (Esc/h で閉じる)"
+    tui_wiki_version_dialog_hint = "jk:移動 gg/G:先頭/末尾 Enter:表示 Esc/h:閉じる"
     tui_wiki_version_latest_label = "v{version} (最新)"
     tui_wiki_version_label = "v{version}"
     tui_wiki_version_missing = "{title} の版 {version} が見つかりません"
@@ -635,8 +635,8 @@ class Ja(MessagesProto):
     )
     tui_status_wiki_version_active = "v{version} (最新 v{latest})"
     tui_wiki_meta_version_of_latest = "{version} (最新: {latest})"
-    tui_wiki_diff_modal_title = "版を比較 (Esc/d で閉じる)"
-    tui_wiki_diff_modal_hint = (
+    tui_wiki_diff_dialog_title = "版を比較 (Esc/d で閉じる)"
+    tui_wiki_diff_dialog_hint = (
         "Tab/h/l:列切替 jk:移動 Enter:適用 c:本文に戻る Esc/d:閉じる"
     )
     tui_wiki_diff_from = "比較前"

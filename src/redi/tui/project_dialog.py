@@ -17,8 +17,8 @@ from redi.tui.tabs import TABS
 def build_project_dialog(state: TuiState, show: FilterOrBool) -> Float:
     return build_choice_dialog(
         lambda: state.project_dialog,
-        messages.tui_project_modal_title,
-        messages.tui_project_modal_hint,
+        messages.tui_project_dialog_title,
+        messages.tui_project_dialog_hint,
         show,
     )
 

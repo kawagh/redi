@@ -19,8 +19,8 @@ from redi.tui.wiki.wiki_tab import current_page, load_version_text, viewing_vers
 def build_version_dialog(state: TuiState, show: FilterOrBool) -> Float:
     return build_choice_dialog(
         lambda: state.wiki_tab.version_dialog,
-        messages.tui_wiki_version_modal_title,
-        messages.tui_wiki_version_modal_hint,
+        messages.tui_wiki_version_dialog_title,
+        messages.tui_wiki_version_dialog_hint,
         show,
     )
 

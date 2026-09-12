@@ -27,12 +27,12 @@ _TRAILING_WORD = re.compile(r"\S+$")
 def render_find_dialog(state: TuiState) -> Renderable:
     dialog = state.issue_tab.find_dialog
     parts: Renderable = []
-    parts.append(("bold fg:ansicyan", messages.tui_find_modal_input_label))
+    parts.append(("bold fg:ansicyan", messages.tui_find_dialog_input_label))
     parts.append(("", dialog.input_text))
     # 末尾の反転した空白を入力カーソルに見立てる
     parts.append(("reverse", " "))
     parts.append(("", "\n\n"))
-    parts.append(("", messages.tui_find_modal_hint))
+    parts.append(("", messages.tui_find_dialog_hint))
     return parts
 
 
@@ -51,7 +51,7 @@ def build_find_dialog(state: TuiState, show: FilterOrBool) -> Float:
                             ),
                             wrap_lines=True,
                         ),
-                        title=lambda: messages.tui_find_modal_title,
+                        title=lambda: messages.tui_find_dialog_title,
                     ),
                     Window(width=1, char=" "),
                 ]

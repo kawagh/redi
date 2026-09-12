@@ -30,15 +30,18 @@ def render_delete_dialog(state: TuiState) -> Renderable:
     dialog = state.wiki_tab.delete_dialog
     parts: Renderable = []
     parts.append(
-        ("", messages.tui_wiki_delete_modal_target.format(title=dialog.target_title))
+        ("", messages.tui_wiki_delete_dialog_target.format(title=dialog.target_title))
     )
     parts.append(("", "\n"))
-    parts.append(("fg:ansiyellow", messages.tui_wiki_delete_modal_warning))
+    parts.append(("fg:ansiyellow", messages.tui_wiki_delete_dialog_warning))
     parts.append(("", "\n\n"))
     parts.append(
-        ("", messages.tui_wiki_delete_modal_prompt.format(expected=CONFIRM_WORD) + "\n")
+        (
+            "",
+            messages.tui_wiki_delete_dialog_prompt.format(expected=CONFIRM_WORD) + "\n",
+        )
     )
-    parts.append(("bold fg:ansicyan", messages.tui_wiki_delete_modal_input_label))
+    parts.append(("bold fg:ansicyan", messages.tui_wiki_delete_dialog_input_label))
     parts.append(("", dialog.input_text))
     # 末尾の反転した空白を入力カーソルに見立てる
     parts.append(("reverse", " "))
@@ -46,7 +49,7 @@ def render_delete_dialog(state: TuiState) -> Renderable:
     if dialog.notice:
         parts.append(("fg:ansired", dialog.notice + "\n"))
     parts.append(("", "\n"))
-    parts.append(("", messages.tui_wiki_delete_modal_hint))
+    parts.append(("", messages.tui_wiki_delete_dialog_hint))
     return parts
 
 
@@ -66,7 +69,7 @@ def build_delete_dialog(state: TuiState, show: FilterOrBool) -> Float:
                             # 何を消すかが読めないと確認にならないので title は折り返す
                             wrap_lines=True,
                         ),
-                        title=lambda: messages.tui_wiki_delete_modal_title,
+                        title=lambda: messages.tui_wiki_delete_dialog_title,
                     ),
                     Window(width=1, char=" "),
                 ]
@@ -109,9 +112,9 @@ def validate_input(dialog: WikiDeleteDialogState) -> str | None:
     """入力が確認語と一致しない理由を返す。一致していれば None。"""
     entered = dialog.input_text.strip()
     if not entered:
-        return messages.tui_wiki_delete_modal_empty.format(expected=CONFIRM_WORD)
+        return messages.tui_wiki_delete_dialog_empty.format(expected=CONFIRM_WORD)
     if entered != CONFIRM_WORD:
-        return messages.tui_wiki_delete_modal_mismatch.format(expected=CONFIRM_WORD)
+        return messages.tui_wiki_delete_dialog_mismatch.format(expected=CONFIRM_WORD)
     return None
 
 

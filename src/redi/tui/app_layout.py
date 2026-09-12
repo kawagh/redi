@@ -138,7 +138,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
                             ),
                             wrap_lines=True,
                         ),
-                        title=lambda: messages.tui_error_modal_title,
+                        title=lambda: messages.tui_error_dialog_title,
                     ),
                     Window(width=1, char=" "),
                 ]

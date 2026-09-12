@@ -131,14 +131,14 @@ def build_diff_dialog(state: TuiState, show: FilterOrBool) -> Float:
                                 ),
                                 Window(
                                     FormattedTextControl(
-                                        messages.tui_wiki_diff_modal_hint,
+                                        messages.tui_wiki_diff_dialog_hint,
                                         show_cursor=False,
                                     ),
                                     height=1,
                                 ),
                             ]
                         ),
-                        title=messages.tui_wiki_diff_modal_title,
+                        title=messages.tui_wiki_diff_dialog_title,
                     ),
                     Window(width=1, char=" "),
                 ]
