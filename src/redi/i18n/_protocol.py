@@ -816,8 +816,14 @@ class MessagesProto(Protocol):
     tui_wiki_meta_version_of_latest: str
     """{version}, {latest}"""
 
+    # ---- argparse errors ----
+    arg_error_hyphen_prefixed_value: str
+    """`-` 始まりの引数が短オプションに食われた。{arg} {option} {prog} を埋め込む。"""
+
     # ---- argparse helps (root) ----
     arg_help_root_description: str
+    arg_help_root_epilog: str
+    """`-` で始まる位置引数の渡し方"""
     arg_help_tui: str
     arg_help_debug: str
     arg_help_debug_tui: str

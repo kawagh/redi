@@ -633,8 +633,23 @@ class Ja(MessagesProto):
     tui_status_wiki_version_active = "v{version} (最新 v{latest})"
     tui_wiki_meta_version_of_latest = "{version} (最新: {latest})"
 
+    # ---- argparse errors ----
+    arg_error_hyphen_prefixed_value = (
+        "'{arg}' はオプション '{option}' の値として解釈されるため、"
+        "位置引数としては渡りません\n"
+        "件名などの位置引数として渡す場合は、"
+        "他のオプションを先に書いた上で '--' の後ろに置いてください:\n"
+        "  {prog} [サブコマンド/オプション...] -- '{arg}'\n"
+        "オプションの値として渡す場合は '=' で繋いでください: {option}='...'"
+    )
+
     # ---- argparse helps (root) ----
     arg_help_root_description = "Redmine CLI"
+    arg_help_root_epilog = (
+        "'-' で始まる件名やタイトルはオプションと区別できません。"
+        "他のオプションを先に書いた上で '--' の後ろに置いてください "
+        "(例: redi issue create --description 本文 -- '-d で始まるタイトル')"
+    )
     arg_help_tui = "TUI"
     arg_help_debug = "デバッグログを有効にする"
     arg_help_debug_tui = "TUI のスクリーン内容を YAML 形式でログ出力する"
