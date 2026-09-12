@@ -9,6 +9,7 @@ import requests
 from prompt_toolkit.filters import FilterOrBool
 from prompt_toolkit.layout.containers import Float
 
+from redi.api.wiki import WikiPage
 from redi.i18n import messages
 from redi.service import wiki_service
 from redi.tui.choice_modal import build_choice_float
@@ -25,9 +26,8 @@ def build_version_float(state: TuiState, show: FilterOrBool) -> Float:
     )
 
 
-def latest_version(state: TuiState) -> int | None:
-    """カーソル位置のページの最新版番号。ページが無いか版が不明なら None。"""
-    page = current_page(state)
+def latest_version(page: WikiPage | None) -> int | None:
+    """ページの最新版番号。ページが無いか版が不明なら None。"""
     if page is None:
         return None
     version = page.get("version")
@@ -41,7 +41,7 @@ def open_version_modal(state: TuiState) -> bool:
 
     表示中の版に `*` を付け、カーソルもそこに置く。
     """
-    latest = latest_version(state)
+    latest = latest_version(current_page(state))
     if latest is None:
         return False
     modal = state.wiki_tab.version_modal
@@ -69,7 +69,7 @@ def select_version(state: TuiState, version: int) -> None:
     出し、表示は変えない。
     """
     page = current_page(state)
-    latest = latest_version(state)
+    latest = latest_version(page)
     if page is None or latest is None:
         return
     title = page["title"]
@@ -97,5 +97,5 @@ def select_version(state: TuiState, version: int) -> None:
         text = wiki.get("text", "") or ""
         state.wiki_tab.version_texts[(title, version)] = text
     state.wiki_tab.version_view = WikiVersionView(
-        title=title, version=version, text=text
+        title=title, version=version, text=text, latest=latest
     )

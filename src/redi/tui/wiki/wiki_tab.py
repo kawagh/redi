@@ -119,14 +119,14 @@ def _render_preview(state: TuiState) -> Renderable:
         return [("", "")]
     title = page.get("title", "")
     lines = [title, ""]
-    latest = page.get("version")
     view = viewing_version(state)
     if view is not None:
         # 過去版を開いていることをメタ表でも示し、最新版がいくつかを併記する
         version_label = messages.tui_wiki_meta_version_of_latest.format(
-            version=view.version, latest=latest or ""
+            version=view.version, latest=view.latest
         )
     else:
+        latest = page.get("version")
         version_label = str(latest) if latest else ""
     meta = [
         (messages.meta_parent, (page.get("parent") or {}).get("title", "")),
@@ -152,10 +152,8 @@ def _status_hint(state: TuiState) -> str:
     if view is None:
         return hint
     # 過去版を開いている間は、編集や削除の前に気付けるようステータスバーにも出す
-    page = current_page(state)
-    latest = page.get("version", "") if page is not None else ""
     label = messages.tui_status_wiki_version_active.format(
-        version=view.version, latest=latest
+        version=view.version, latest=view.latest
     )
     return f" [{label}]" + hint
 

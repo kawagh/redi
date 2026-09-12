@@ -75,7 +75,7 @@ class TestOpenVersionModal:
     def test_marks_viewing_version(self):
         """過去版を表示中なら、その版にカーソルと現在の印を置く"""
         state = _state([_page("Home", version=3)])
-        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old")
+        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old", latest=3)
 
         open_version_modal(state)
 
@@ -100,12 +100,12 @@ class TestSelectVersion:
 
         select_version(state, 1)
 
-        assert viewing_version(state) == WikiVersionView("Home", 1, "first")
+        assert viewing_version(state) == WikiVersionView("Home", 1, "first", latest=3)
 
     def test_latest_returns_to_latest(self, monkeypatch):
         """最新版を選ぶと過去版の表示をやめる (API は呼ばない)"""
         state = _state([_page("Home", version=3)])
-        state.wiki_tab.version_view = WikiVersionView("Home", 1, "first")
+        state.wiki_tab.version_view = WikiVersionView("Home", 1, "first", latest=3)
         calls = _stub_read_page(monkeypatch, {})
 
         select_version(state, 3)
@@ -158,7 +158,7 @@ class TestViewResetsOnMove:
     def test_moving_cursor_returns_to_latest(self):
         """カーソルを別ページへ動かすと過去版の表示をやめる"""
         state = _state([_page("Guide", version=2), _page("Home", version=3)])
-        state.wiki_tab.version_view = WikiVersionView("Guide", 1, "old")
+        state.wiki_tab.version_view = WikiVersionView("Guide", 1, "old", latest=2)
 
         WIKI_TAB.on_down(state)
 
@@ -167,7 +167,7 @@ class TestViewResetsOnMove:
     def test_staying_keeps_view(self):
         """末尾で j を押してもカーソルが動かなければ表示は保つ"""
         state = _state([_page("Guide", version=2), _page("Home", version=3)], cursor=1)
-        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old")
+        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old", latest=3)
 
         WIKI_TAB.on_down(state)
 
@@ -176,14 +176,14 @@ class TestViewResetsOnMove:
     def test_view_for_other_page_is_ignored(self):
         """version_view のタイトルがカーソル位置と違えば最新版扱いにする"""
         state = _state([_page("Guide", version=2), _page("Home", version=3)], cursor=1)
-        state.wiki_tab.version_view = WikiVersionView("Guide", 1, "old")
+        state.wiki_tab.version_view = WikiVersionView("Guide", 1, "old", latest=2)
 
         assert viewing_version(state) is None
 
     def test_reload_clears_view_and_cache(self, monkeypatch):
         """R で取り直すと過去版の表示とキャッシュを捨てる"""
         state = _state([_page("Home", version=3)])
-        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old")
+        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old", latest=3)
         state.wiki_tab.version_texts[("Home", 1)] = "old"
         monkeypatch.setattr(wiki_service, "list_pages", lambda project: [])
 
@@ -199,7 +199,7 @@ class TestReadOnlyWhileViewingOldVersion:
     def test_update_is_blocked(self):
         """u を押しても TUI を抜けず、flash で最新版に戻るよう促す"""
         state = _state([_page("Home", version=3)])
-        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old")
+        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old", latest=3)
 
         assert WIKI_TAB.on_action_key(state, "u") is None
         assert state.flash_message == messages.tui_wiki_version_readonly
@@ -216,7 +216,7 @@ class TestReadOnlyWhileViewingOldVersion:
     def test_delete_modal_is_blocked(self):
         """D を押しても削除確認 modal を開かず、flash で最新版に戻るよう促す"""
         state = _state([_page("Home", version=3)])
-        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old")
+        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old", latest=3)
 
         assert open_delete_modal(state) is False
         assert state.wiki_tab.delete_modal.show is False
@@ -225,7 +225,7 @@ class TestReadOnlyWhileViewingOldVersion:
     def test_create_child_is_allowed(self):
         """子ページの作成は既存の本文を触らないので過去版表示中でも進める"""
         state = _state([_page("Home", version=3)])
-        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old")
+        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old", latest=3)
 
         result = WIKI_TAB.on_action_key(state, "c")
 
@@ -240,7 +240,7 @@ class TestIndication:
         """プレビューは過去版の本文を出し、メタ表に表示中の版と最新版を併記する"""
         state = _state([_page("Home", version=3)])
         state.wiki_tab.texts["Home"] = "latest body"
-        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old body")
+        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old body", latest=3)
 
         rendered = "".join(text for _, text in WIKI_TAB.render_preview(state))
 
@@ -254,7 +254,7 @@ class TestIndication:
     def test_status_hint_shows_version(self):
         """ステータスバーに表示中の版と最新版を出す"""
         state = _state([_page("Home", version=3)])
-        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old")
+        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old", latest=3)
 
         hint = WIKI_TAB.status_hint(state)
 
@@ -271,7 +271,7 @@ class TestIndication:
     def test_open_web_uses_version(self, monkeypatch):
         """v は表示中の版の URL を開く"""
         state = _state([_page("Home", version=3)])
-        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old")
+        state.wiki_tab.version_view = WikiVersionView("Home", 1, "old", latest=3)
         opened: list[str] = []
         monkeypatch.setattr(wiki_tab.webbrowser, "open", opened.append)
         monkeypatch.setattr("redi.config.redmine_url", "http://redmine.example")
@@ -288,5 +288,5 @@ class TestVersionModalModule:
         """一覧に version が無ければ最新版は不明 (None)"""
         state = _state([cast(WikiPage, {"title": "Home"})])
 
-        assert version_modal.latest_version(state) is None
+        assert version_modal.latest_version(wiki_tab.current_page(state)) is None
         assert open_version_modal(state) is False
