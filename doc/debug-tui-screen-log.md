@@ -7,7 +7,7 @@ YAML ファイルに追記される。TUI の表示を後から追ったり、�
 - 出力先: `~/.config/redi/redi-debug-tui-<起動時刻>.yaml`
     - `<起動時刻>` は `%Y-%m-%dT%H-%M-%S` 形式 (例: `redi-debug-tui-2026-08-23T12-34-56.yaml`)
     - 起動ごとに新しいファイルが作られる
-- 実装: `src/redi/tui/screen_log.py`
+- 実装: `src/redi/tui/hooks/screen_logger.py`
 - 仕様テスト: `tests/unit/tui/test_screen_log.py`
 - 機械可読なスキーマ: `doc/redi-debug-tui.schema.yaml` (JSON Schema 2020-12。
   出力がこれに適合することも仕様テストで検証している)
