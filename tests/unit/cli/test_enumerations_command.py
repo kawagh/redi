@@ -59,6 +59,112 @@ class TestListOutput:
             {"id": 2, "name": "機能"},
         ]
 
+    def test_tsv_prints_header_and_id_name(self, tracker, capsys):
+        """--format tsv では英語固定のヘッダー行と id / name のタブ区切りを出す
+
+        応答に無い列 (default_status / description) は空セルにする。
+        """
+        handle_enumeration(tracker, argparse.Namespace(format="tsv", refresh=False))
+
+        assert capsys.readouterr().out == (
+            "id\tname\tdefault_status_id\tdefault_status_name\tdescription\n"
+            "1\tバグ\t\t\t\n"
+            "2\t機能\t\t\t\n"
+        )
+
+
+class TestTsvColumns:
+    """tsv は既存列の末尾に API が返すフィールドを足す (並べ替え・削除はしない)"""
+
+    def test_tracker_expands_default_status(self, capsys):
+        """tracker は default_status を default_status_id / default_status_name に展開する"""
+        tracker = with_fetch(
+            "tracker",
+            lambda refresh: [
+                {
+                    "id": 1,
+                    "name": "バグ",
+                    "default_status": {"id": 1, "name": "新規"},
+                    "description": "不具合",
+                }
+            ],
+        )
+
+        handle_enumeration(tracker, argparse.Namespace(format="tsv", refresh=False))
+
+        assert capsys.readouterr().out == (
+            "id\tname\tdefault_status_id\tdefault_status_name\tdescription\n"
+            "1\tバグ\t1\t新規\t不具合\n"
+        )
+
+    def test_issue_status_prints_is_closed(self, capsys):
+        """issue_status は is_closed と description を出す"""
+        issue_status = with_fetch(
+            "issue_status",
+            lambda refresh: [
+                {"id": 5, "name": "終了", "is_closed": True, "description": None}
+            ],
+        )
+
+        handle_enumeration(
+            issue_status, argparse.Namespace(format="tsv", refresh=False)
+        )
+
+        assert capsys.readouterr().out == (
+            "id\tname\tis_closed\tdescription\n5\t終了\ttrue\t\n"
+        )
+
+    @pytest.mark.parametrize(
+        "name", ["issue_priority", "time_entry_activity", "document_category"]
+    )
+    def test_enumerations_print_is_default_and_active(self, name, capsys):
+        """enumerations 3 種は共通で is_default / active を出す"""
+        resource = with_fetch(
+            name,
+            lambda refresh: [
+                {"id": 2, "name": "通常", "is_default": True, "active": True}
+            ],
+        )
+
+        handle_enumeration(resource, argparse.Namespace(format="tsv", refresh=False))
+
+        assert capsys.readouterr().out == (
+            "id\tname\tis_default\tactive\n2\t通常\ttrue\ttrue\n"
+        )
+
+    def test_custom_field_prints_definition_but_not_possible_values(self, capsys):
+        """custom_field は定義の属性を出し、可変長の possible_values / trackers は出さない"""
+        custom_field = with_fetch(
+            "custom_field",
+            lambda refresh: [
+                {
+                    "id": 7,
+                    "name": "優先顧客",
+                    "customized_type": "issue",
+                    "field_format": "list",
+                    "is_required": False,
+                    "is_for_all": True,
+                    "is_filter": True,
+                    "multiple": False,
+                    "visible": True,
+                    "editable": True,
+                    "default_value": "",
+                    "possible_values": [{"value": "A"}, {"value": "B"}],
+                    "trackers": [{"id": 1, "name": "バグ"}],
+                }
+            ],
+        )
+
+        handle_enumeration(
+            custom_field, argparse.Namespace(format="tsv", refresh=False)
+        )
+
+        assert capsys.readouterr().out == (
+            "id\tname\tcustomized_type\tfield_format\tis_required\tis_for_all"
+            "\tis_filter\tmultiple\tvisible\teditable\tdefault_value\n"
+            "7\t優先顧客\tissue\tlist\tfalse\ttrue\ttrue\tfalse\ttrue\ttrue\t\n"
+        )
+
 
 class TestQueryListOutput:
     """query は id と name に加えて公開/非公開と対象プロジェクトを出す"""
@@ -136,6 +242,22 @@ class TestQueryListOutput:
         handle_enumeration(resource, argparse.Namespace(full=True))
 
         assert json.loads(capsys.readouterr().out) == [query]
+
+    def test_tsv_prints_is_public_and_project_id(self, capsys):
+        """--format tsv では /queries.json の 4 列 (id / name / is_public / project_id) を出す
+
+        null の project_id は空セル、is_public は true / false にする。
+        """
+        resource = self.query_with(
+            {"id": 8, "name": "バグOR機能", "is_public": False, "project_id": 3},
+            {"id": 4, "name": "ウォッチ", "is_public": True, "project_id": None},
+        )
+
+        handle_enumeration(resource, argparse.Namespace(format="tsv"))
+
+        assert capsys.readouterr().out == (
+            "id\tname\tis_public\tproject_id\n8\tバグOR機能\tfalse\t3\n4\tウォッチ\ttrue\t\n"
+        )
 
 
 class TestCustomFieldPermission:

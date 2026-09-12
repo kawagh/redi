@@ -8,6 +8,7 @@ from redi.api.exceptions import (
 )
 from redi.cli import project_command
 from redi.cli.project_command import add_project_parser, handle_project
+from redi.cli.shared_options import OutputFormat
 from redi.i18n import messages
 
 CREATED_PROJECT = {"id": 7, "name": "新プロジェクト", "identifier": "new-project"}
@@ -640,4 +641,45 @@ class TestInteractiveUpdate:
                 message=messages.prompt_select_update_items.strip().rstrip(":").strip()
             )
             in capsys.readouterr().err
+        )
+
+
+class TestListTsv:
+    """`project list --format tsv` は id / name / identifier の後ろに状態と親を並べる"""
+
+    def test_prints_status_as_number_and_parent(self, monkeypatch, capsys):
+        """status は数値のまま出し、親が無いプロジェクトは parent_id / parent_name が空になる"""
+        monkeypatch.setattr(
+            project_command.project_service,
+            "list_projects",
+            lambda **kwargs: [
+                {
+                    "id": 1,
+                    "name": "親",
+                    "identifier": "parent",
+                    "status": 1,
+                    "is_public": True,
+                    "created_on": "2026-01-01T00:00:00Z",
+                    "updated_on": "2026-01-02T00:00:00Z",
+                },
+                {
+                    "id": 2,
+                    "name": "子",
+                    "identifier": "child",
+                    "status": 5,
+                    "is_public": False,
+                    "parent": {"id": 1, "name": "親"},
+                    "created_on": "2026-01-03T00:00:00Z",
+                    "updated_on": "2026-01-04T00:00:00Z",
+                },
+            ],
+        )
+
+        project_command._list_projects(fmt=OutputFormat.TSV)
+
+        assert capsys.readouterr().out == (
+            "id\tname\tidentifier\tstatus\tis_public\tparent_id\tparent_name"
+            "\tcreated_on\tupdated_on\n"
+            "1\t親\tparent\t1\ttrue\t\t\t2026-01-01T00:00:00Z\t2026-01-02T00:00:00Z\n"
+            "2\t子\tchild\t5\tfalse\t1\t親\t2026-01-03T00:00:00Z\t2026-01-04T00:00:00Z\n"
         )

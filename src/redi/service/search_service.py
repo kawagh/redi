@@ -27,6 +27,9 @@ def search_issues_page(
 
     並び順は検索 API が返した順 (更新日時の降順) を保つ。
     `total_count` は検索側の総数で、引き直した件数ではない。
+
+    Raises:
+        ProjectNotFoundException: 対象プロジェクトが存在しない (HTTP 404)
     """
     found = search(
         query=query,

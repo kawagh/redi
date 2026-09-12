@@ -7,11 +7,14 @@ import json
 import shutil
 import sys
 import webbrowser
+from typing import assert_never
 
 from redi.api.exceptions import ProjectNotFoundException, QueryNotFoundException
-from redi.api.issue import Issue, IssueNotFoundException
+from redi.api.issue import Issue
+from redi.cli.issue_guard import read_issue_or_exit
+from redi.cli.shared_options import OutputFormat
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv, tsv_ref
 from redi.service import issue_service
 from redi.service.issue_format import format_issue_list
 from redi.text_format import issue_meta_rows, render_meta_table
@@ -30,7 +33,36 @@ INVERSE_RELATION = {
 }
 
 
-def list_issues(
+def _issue_tsv_row(issue: Issue) -> tuple[object, ...]:
+    """イシュー 1 件を tsv の 1 行にする。
+
+    description は複数行・長文なので載せない。custom_fields は可変長なので json に任せる。
+    """
+    return (
+        issue["id"],
+        issue["subject"],
+        issue_service.issue_url(issue["id"]),
+        *tsv_ref(issue, "project"),
+        tsv_ref(issue, "tracker")[1],
+        tsv_ref(issue, "status")[1],
+        tsv_ref(issue, "priority")[1],
+        tsv_ref(issue, "author")[1],
+        *tsv_ref(issue, "assigned_to"),
+        tsv_ref(issue, "category")[1],
+        tsv_ref(issue, "fixed_version")[1],
+        issue.get("start_date"),
+        issue.get("due_date"),
+        issue.get("done_ratio"),
+        issue.get("estimated_hours"),
+        issue.get("spent_hours"),
+        issue.get("is_private"),
+        issue.get("created_on"),
+        issue.get("updated_on"),
+        issue.get("closed_on"),
+    )
+
+
+def print_issues(
     project_id: str | None = None,
     fixed_version_id: str | None = None,
     assigned_to: str | None = None,
@@ -40,10 +72,12 @@ def list_issues(
     query_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
-    full: bool = False,
+    fmt: OutputFormat = OutputFormat.PLAIN,
     show_url: bool = False,
 ) -> None:
-    """イシュー一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。
+    """イシュー一覧を1行ずつ出す。json では取得した JSON をそのまま出す。
+
+    show_url は plain のときだけ効く (tsv は常に url 列を持つ)。
 
     存在しないプロジェクト・カスタムクエリを指定した場合は案内を出して exit 1。
     """
@@ -66,11 +100,44 @@ def list_issues(
     except ProjectNotFoundException:
         eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
-    if full:
-        print(json.dumps(issues, ensure_ascii=False))
-        return
-    for line in format_issue_list(issues, width=_output_width(), show_url=show_url):
-        print(line)
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(issues, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                (
+                    "id",
+                    "subject",
+                    "url",
+                    "project_id",
+                    "project_name",
+                    "tracker_name",
+                    "status_name",
+                    "priority_name",
+                    "author_name",
+                    "assigned_to_id",
+                    "assigned_to_name",
+                    "category_name",
+                    "fixed_version_name",
+                    "start_date",
+                    "due_date",
+                    "done_ratio",
+                    "estimated_hours",
+                    "spent_hours",
+                    "is_private",
+                    "created_on",
+                    "updated_on",
+                    "closed_on",
+                ),
+                (_issue_tsv_row(i) for i in issues),
+            )
+        case OutputFormat.PLAIN:
+            for line in format_issue_list(
+                issues, width=_output_width(), show_url=show_url
+            ):
+                print(line)
+        case _:
+            assert_never(fmt)
 
 
 def _output_width() -> int | None:
@@ -85,9 +152,15 @@ def _output_width() -> int | None:
 
 
 def view_issue(
-    issue_id: str, include: str = "", full: bool = False, web: bool = False
+    issue_id: str,
+    include: list[str] | None = None,
+    full: bool = False,
+    web: bool = False,
 ) -> None:
-    """イシューの詳細を標準出力に出す。存在しない場合は exit 1。"""
+    """イシューの詳細を標準出力に出す。存在しない場合は exit 1。
+
+    include は argparse (`_parse_issue_includes`) で検証済みの値を受け取る。
+    """
     if web:
         url = issue_service.issue_url(issue_id)
         print(url)
@@ -95,16 +168,10 @@ def view_issue(
         return
     # コメントは既定で表示するため journals も常に取得する
     includes = ["relations", "attachments", "journals"]
-    if include:
-        for name in include.split(","):
-            name = name.strip()
-            if name and name not in includes:
-                includes.append(name)
-    try:
-        issue = issue_service.read_issue(issue_id, include=",".join(includes))
-    except IssueNotFoundException:
-        eprint(messages.issue_not_found.format(id=issue_id))
-        sys.exit(1)
+    for name in include or []:
+        if name not in includes:
+            includes.append(name)
+    issue = read_issue_or_exit(issue_id, include=",".join(includes))
     if full:
         print(json.dumps(issue, ensure_ascii=False))
         return
@@ -114,11 +181,13 @@ def view_issue(
 def format_issue_detail(issue: Issue) -> list[str]:
     """イシューの詳細表示を行のリストに整形する。
 
-    件名の下にメタ情報テーブルを出し、`----` で区切って説明・コメントを続ける。
+    件名の次の行に自身の URL を出し、その下にメタ情報テーブル、`----` で区切って説明・コメントを続ける。
+    URL は `issue list` / `issue create` と同じく、読んだ内容と一緒にそのまま貼れるようにする。
     TUI の右ペイン(プレビュー)と同じ見た目になるよう `text_format` を共有する。
     """
     lines = []
     lines.append(f"#{issue['id']} {issue['subject']}")
+    lines.append(issue_service.issue_url(issue["id"]))
     lines.append("")
     lines.extend(render_meta_table(issue_meta_rows(issue)))
     if issue.get("description"):
@@ -153,13 +222,15 @@ def format_issue_detail(issue: Issue) -> list[str]:
             else:
                 # unknown rel_type
                 label = rel_type
-            lines.append(f"  [{label}] {issue_service.issue_url(str(other))}")
+            lines.append(f"  {r['id']} [{label}] {issue_service.issue_url(other)}")
     attachments = issue.get("attachments") or []
     if attachments:
         lines.append("")
         lines.append(messages.label_attachments_header)
         for a in attachments:
-            lines.append(f"  {a['filename']} {a.get('content_url', '')}")
+            lines.append(
+                f"  {a['id']} {a['filename']} {a.get('content_url', '')}".rstrip()
+            )
     children = issue.get("children") or []
     if children:
         lines.append("")
@@ -192,7 +263,7 @@ def format_issue_detail(issue: Issue) -> list[str]:
         for j in journals:
             author = (j.get("user") or {}).get("name", "")
             created = j.get("created_on", "")
-            lines.append(f"  [{created}] {author}")
+            lines.append(f"  {j['id']} [{created}] {author}")
             for d in j.get("details") or []:
                 name = d.get("name", "")
                 old = d.get("old_value", "")

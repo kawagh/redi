@@ -7,6 +7,7 @@ import argparse
 import json
 import sys
 import webbrowser
+from typing import assert_never
 
 import requests
 
@@ -16,12 +17,19 @@ from redi.api.news import News, NewsNotFoundException
 from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.editor import open_editor, shorten_to_oneline
-from redi.cli.interactive import exit_on_cancel, prompt
+from redi.cli.interactive import prompt, raise_on_cancel
 from redi.cli.picker import inline_checkbox, inline_choice
-from redi.cli.shared_options import pagination_option_parser, project_option_parser
+from redi.cli.shared_options import (
+    OutputFormat,
+    add_format_options,
+    pagination_option_parser,
+    project_option_parser,
+    resolve_list_format,
+    wants_json,
+)
 from redi.cli.validator import RequiredValidator
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, print_tsv
 from redi.service import news_service
 
 
@@ -47,26 +55,55 @@ def _fetch_news(news_id: str) -> News:
 
 def _list_news(
     project_id: str | None = None,
-    full: bool = False,
+    fmt: OutputFormat = OutputFormat.PLAIN,
     limit: int | None = None,
     offset: int | None = None,
 ) -> None:
-    """ニュース一覧を1行ずつ出す。full=True では取得した JSON をそのまま出す。"""
+    """ニュース一覧を1行ずつ出す。json では取得した JSON をそのまま出す。"""
     news_list = _fetch_news_list(project_id, limit=limit, offset=offset)
-    if full:
-        print(json.dumps(news_list, ensure_ascii=False))
-        return
-    for news in news_list:
-        parts = [str(news["id"]), news["title"]]
-        project = news["project"]["name"]
-        if project:
-            parts.append(f"[{project}]")
-        author = news["author"]["name"]
-        if author:
-            parts.append(f"by {author}")
-        if news["created_on"]:
-            parts.append(news["created_on"])
-        print(" ".join(parts))
+    match fmt:
+        case OutputFormat.JSON:
+            print(json.dumps(news_list, ensure_ascii=False))
+        case OutputFormat.TSV:
+            print_tsv(
+                (
+                    "id",
+                    "title",
+                    "project_id",
+                    "project_name",
+                    "author_name",
+                    "created_on",
+                    "author_id",
+                    "summary",
+                ),
+                (
+                    (
+                        n["id"],
+                        n["title"],
+                        n["project"]["id"],
+                        n["project"]["name"],
+                        n["author"]["name"],
+                        n["created_on"],
+                        n["author"]["id"],
+                        n.get("summary"),
+                    )
+                    for n in news_list
+                ),
+            )
+        case OutputFormat.PLAIN:
+            for news in news_list:
+                parts = [str(news["id"]), news["title"]]
+                project = news["project"]["name"]
+                if project:
+                    parts.append(f"[{project}]")
+                author = news["author"]["name"]
+                if author:
+                    parts.append(f"by {author}")
+                if news["created_on"]:
+                    parts.append(news["created_on"])
+                print(" ".join(parts))
+        case _:
+            assert_never(fmt)
 
 
 def _view_news(news_id: str, full: bool = False, web: bool = False) -> None:
@@ -215,7 +252,7 @@ def _interactive_select_news_id(
         (str(n["id"]), f"{n['id']} {n['title']}") for n in news_list
     ]
     labels = dict(options)
-    with exit_on_cancel():
+    with raise_on_cancel():
         news_id = inline_choice(prompt_message, options)
     if selected_message is not None:
         print(selected_message.format(label=labels[news_id]))
@@ -233,7 +270,7 @@ def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, s
         ("summary", messages.field_summary),
         ("description", messages.field_description),
     ]
-    with exit_on_cancel():
+    with raise_on_cancel():
         selected = inline_checkbox(
             messages.prompt_select_update_items,
             field_values,
@@ -247,7 +284,7 @@ def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, s
     title: str | None = None
     summary: str | None = None
     description = ""
-    with exit_on_cancel():
+    with raise_on_cancel():
         if "title" in selected:
             title = prompt(messages.prompt_title, default=news["title"]).strip()
         if "summary" in selected:
@@ -284,9 +321,7 @@ def add_news_parser(
         "view", aliases=["v"], help=messages.arg_help_news_view, parents=parents
     )
     n_view_parser.add_argument("news_id", help=messages.arg_help_news_view_id)
-    n_view_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_json
-    )
+    add_format_options(n_view_parser)
     n_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
@@ -346,7 +381,7 @@ def add_news_parser(
 def handle_news(args: argparse.Namespace) -> None:
     cmd = resolve_alias(args.news_command)
     if cmd == "view":
-        _view_news(args.news_id, full=args.full, web=args.web)
+        _view_news(args.news_id, full=wants_json(args), web=args.web)
         return
     if cmd == "create":
         project_id = args.project_id or config.default_project_id
@@ -356,7 +391,7 @@ def handle_news(args: argparse.Namespace) -> None:
         title = args.title
         summary = args.summary
         if title is None:
-            with exit_on_cancel():
+            with raise_on_cancel():
                 title = prompt(
                     messages.prompt_title, validator=RequiredValidator()
                 ).strip()
@@ -410,7 +445,7 @@ def handle_news(args: argparse.Namespace) -> None:
         project_id = args.project_id or config.default_project_id
         _list_news(
             project_id=project_id,
-            full=args.full,
+            fmt=resolve_list_format(args),
             limit=args.limit,
             offset=args.offset,
         )

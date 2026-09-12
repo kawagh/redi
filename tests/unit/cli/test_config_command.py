@@ -1,4 +1,5 @@
 import argparse
+from typing import ClassVar
 
 import pytest
 
@@ -16,6 +17,7 @@ def _create_args(**overrides) -> argparse.Namespace:
         "wiki_project_id": None,
         "editor": None,
         "language": None,
+        "text_formatting": None,
         "set_default": False,
     }
     values.update(overrides)
@@ -192,3 +194,43 @@ class TestInteractiveFillConfigUpdateArgs:
 
         assert args.default_profile is None
         assert args.editor == "vim"
+
+
+class TestUpdateFieldOptions:
+    """`config update` の更新項目の選択肢に現在値を添える"""
+
+    _field_values: ClassVar[list[tuple[str, str]]] = [
+        ("url", "redmine_url"),
+        ("api_key", "redmine_api_key"),
+        ("editor", "editor"),
+    ]
+
+    def test_shows_current_value(self):
+        """設定済みの項目には現在値を添える"""
+        current = config.Profile(redmine_url="http://example.com", editor="vim")
+
+        options = dict(
+            config_command._update_field_options(self._field_values, current)
+        )
+
+        assert options["url"] == "redmine_url # http://example.com"
+        assert options["editor"] == "editor # vim"
+
+    def test_unset_value_not_shown(self):
+        """未設定の項目はラベルだけにする"""
+        options = dict(
+            config_command._update_field_options(self._field_values, config.Profile())
+        )
+
+        assert options["editor"] == "editor"
+
+    def test_api_key_not_shown(self):
+        """API キーは設定済みでも値を出さない"""
+        current = config.Profile(redmine_api_key="secret")
+
+        options = dict(
+            config_command._update_field_options(self._field_values, current)
+        )
+
+        assert options["api_key"] == "redmine_api_key"
+        assert "secret" not in str(options)

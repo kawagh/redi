@@ -259,3 +259,73 @@ class TestConfirmDelete:
         assert len(state.time_entry_tab.entries) == 2
         assert state.flash_message is not None
         assert expected_in_flash in state.flash_message
+
+
+class TestTimeEntryResize:
+    """time_entry タブの _on_resize() は新しい page_size でページを取り直す"""
+
+    def test_keeps_selected_entry_when_page_size_shrinks(self, monkeypatch):
+        """page_size が縮んでも、選択していた entry が選ばれたままになる"""
+        state = TuiState()
+        state.page_size = 10
+        state.time_entry_tab.offset = 20
+        state.time_entry_tab.cursor = 5
+        state.time_entry_tab.total_count = 60
+
+        new_entries = [{"id": i, "hours": 1.0} for i in range(21, 31)]
+
+        def fake_fetch(state, offset):
+            assert offset == 20
+            return {
+                "time_entries": new_entries,
+                "total_count": 60,
+                "issue_subjects": {1: "subject"},
+            }
+
+        monkeypatch.setattr(time_entry_tab, "_fetch_page_with_subjects", fake_fetch)
+
+        time_entry_tab._on_resize(state)
+
+        assert state.time_entry_tab.offset == 20
+        assert state.time_entry_tab.cursor == 5
+        assert state.time_entry_tab.entries == new_entries
+        assert state.time_entry_tab.issue_subjects == {1: "subject"}
+
+    def test_clamps_cursor_when_fetched_page_is_shorter(self, monkeypatch):
+        """取得件数が選択位置より少なければ cursor を末尾にクランプする"""
+        state = TuiState()
+        state.page_size = 10
+        state.time_entry_tab.offset = 0
+        state.time_entry_tab.cursor = 7
+
+        monkeypatch.setattr(
+            time_entry_tab,
+            "_fetch_page_with_subjects",
+            lambda state, offset: {
+                "time_entries": [{"id": 1, "hours": 1.0}, {"id": 2, "hours": 2.0}],
+                "total_count": 2,
+                "issue_subjects": {},
+            },
+        )
+
+        time_entry_tab._on_resize(state)
+
+        assert state.time_entry_tab.cursor == 1
+
+    def test_request_error_propagates_and_keeps_list(self, monkeypatch):
+        """通信エラーは呼び出し元に伝播し、一覧もエラー表示も書き換えない"""
+        state = TuiState()
+        state.page_size = 10
+        old_entries = cast(list[TimeEntry], [{"id": 1, "hours": 1.0}])
+        state.time_entry_tab.entries = old_entries
+
+        def fail(state, offset):
+            raise requests.exceptions.ConnectionError("boom")
+
+        monkeypatch.setattr(time_entry_tab, "_fetch_page_with_subjects", fail)
+
+        with pytest.raises(requests.exceptions.RequestException):
+            time_entry_tab._on_resize(state)
+
+        assert state.time_entry_tab.entries == old_entries
+        assert state.time_entry_tab.error is None

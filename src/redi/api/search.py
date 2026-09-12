@@ -1,5 +1,6 @@
 from typing import Literal, TypedDict, cast, get_args
 
+from redi.api.exceptions import ProjectNotFoundException
 from redi.client import client
 
 # https://www.redmine.org/projects/redmine/wiki/Rest_Search
@@ -56,6 +57,12 @@ def search(
     attachments: SearchAttachments | None = None,
     types: list[SearchType] | None = None,
 ) -> SearchPageResponse:
+    """検索結果を 1 ページ分取得する。
+
+    Raises:
+        ProjectNotFoundException: project_id で指定したプロジェクトが存在しない場合（HTTP 404）
+        requests.exceptions.HTTPError: 404 以外の HTTP エラーが返った場合
+    """
     params: dict = {"q": query}
     if limit is not None:
         params["limit"] = limit
@@ -78,5 +85,7 @@ def search(
     for search_type in types or []:
         params[search_type] = "1"
     response = client.get("/search.json", params=params)
+    if project_id is not None and response.status_code == 404:
+        raise ProjectNotFoundException(project_id)
     response.raise_for_status()
     return cast(SearchPageResponse, response.json())
