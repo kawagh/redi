@@ -815,6 +815,20 @@ class MessagesProto(Protocol):
     """{version}, {latest}"""
     tui_wiki_meta_version_of_latest: str
     """{version}, {latest}"""
+    # d で開く、比較前と比較後の版を 2 列で選ぶ modal
+    tui_wiki_diff_modal_title: str
+    tui_wiki_diff_modal_hint: str
+    tui_wiki_diff_from: str
+    tui_wiki_diff_to: str
+    # 版が 1 つしか無く比較相手が無いときの案内
+    tui_wiki_diff_no_other_versions: str
+    # 2 版の差分を右ペインに出しているときの印
+    tui_status_wiki_diff_active: str
+    """{from_version}, {to_version}"""
+    tui_wiki_diff_no_changes: str
+    # 差分表示中のメタ表の版。比較している 2 版と最新版
+    tui_wiki_meta_version_diff: str
+    """{from_version}, {to_version}, {latest}"""
 
     # ---- argparse helps (root) ----
     arg_help_root_description: str
@@ -1243,6 +1257,7 @@ class MessagesProto(Protocol):
     tui_help_wiki_delete_page: str
     tui_help_wiki_open_web: str
     tui_help_wiki_versions: str
+    tui_help_wiki_toggle_diff: str
 
     # ---- TUI help labels (time entry tab) ----
     tui_help_time_entry_create: str

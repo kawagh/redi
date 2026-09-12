@@ -23,6 +23,7 @@ from redi.tui.time_entry.time_entry_tab import (
     request_delete as time_entry_request_delete,
 )
 from redi.tui.wiki.delete_modal import open_delete_modal as open_wiki_delete_modal
+from redi.tui.wiki.diff_modal import open_diff_modal as open_wiki_diff_modal
 from redi.tui.wiki.version_modal import open_version_modal
 
 
@@ -101,9 +102,18 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         TABS[state.tab].on_page_forward(state)
 
     @kb.add("left", filter=normal_mode)
-    @kb.add("h", filter=normal_mode)
     def _(event):
         clear_temporary_state(state)
+        reset_preview_scroll(state)
+        TABS[state.tab].on_page_backward(state)
+
+    @kb.add("h", filter=normal_mode)
+    def _(event):
+        # wiki タブはページ送りが無いので、h を版一覧 (history) に充てる
+        clear_temporary_state(state)
+        if state.tab == "wiki":
+            open_version_modal(state)
+            return
         reset_preview_scroll(state)
         TABS[state.tab].on_page_backward(state)
 
@@ -196,11 +206,11 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         elif state.tab == "wiki":
             open_wiki_delete_modal(state)
 
-    @kb.add("H", filter=normal_mode)
+    @kb.add("d", filter=normal_mode)
     def _(event):
         clear_temporary_state(state)
         if state.tab == "wiki":
-            open_version_modal(state)
+            open_wiki_diff_modal(state)
 
     @kb.add("R", filter=normal_mode)
     def _(event):

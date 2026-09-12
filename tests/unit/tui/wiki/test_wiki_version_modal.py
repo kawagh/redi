@@ -25,7 +25,7 @@ def _state(pages: list[WikiPage], *, cursor: int = 0) -> TuiState:
     return state
 
 
-def _stub_read_page(monkeypatch, texts: dict[int, str]):
+def _stub_read_page(monkeypatch, texts: dict[int | None, str]):
     """`read_page` を版番号 -> 本文 の辞書で差し替え、呼び出し回数を数える。"""
     calls: list[int | None] = []
 

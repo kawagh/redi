@@ -35,6 +35,7 @@ from redi.tui.time_entry.filter_modal import (
     build_filter_float as build_time_entry_filter_float,
 )
 from redi.tui.wiki.delete_modal import build_delete_float as build_wiki_delete_float
+from redi.tui.wiki.diff_modal import build_diff_float as build_wiki_diff_float
 from redi.tui.wiki.version_modal import build_version_float as build_wiki_version_float
 
 HALF = Dimension(weight=1, preferred=0)
@@ -118,6 +119,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
     issue_delete_float = build_delete_float(state, conditions.issue_delete_modal)
     wiki_delete_float = build_wiki_delete_float(state, conditions.wiki_delete_modal)
     wiki_version_float = build_wiki_version_float(state, conditions.wiki_version_modal)
+    wiki_diff_float = build_wiki_diff_float(state, conditions.wiki_diff_modal)
     profile_float = build_profile_float(state, conditions.profile_modal)
 
     error_float = Float(
@@ -153,6 +155,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
                 issue_delete_float,
                 wiki_delete_float,
                 wiki_version_float,
+                wiki_diff_float,
                 profile_float,
                 error_float,
             ],

@@ -35,9 +35,16 @@ press `Enter`** — until then the right pane shows only the metadata.
 
 ![Wiki page body](/redi/img/tui-wiki-body-en.png)
 
-`H` lists the versions of the selected page so you can open one. While an old version is
+`h` lists the versions of the selected page so you can open one. While an old version is
 shown, the status bar and the metadata say so, and `u` / `D` are disabled until you return
 to the latest version.
+
+`d` opens a two-column dialog to pick the "from" and "to" versions, like the issue filter.
+"From" starts on the version you are viewing (the previous one when viewing the latest) and
+"to" on the latest, so `d` then `Enter` shows what changed up to the latest version. The
+unified diff replaces the text in the right pane. Like the filter, the dialog stays open after
+`Enter` so you can change the pair and apply again; `Esc` closes it, and `c` goes back to the
+text. `v` opens the diff page in Redmine while the diff is shown.
 
 ## Search
 
