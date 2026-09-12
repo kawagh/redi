@@ -81,6 +81,7 @@ class Ja(MessagesProto):
     category_not_found = "カテゴリが見つかりません: {id}"
     tracker_not_found = "トラッカーが見つかりません: {id}"
     status_not_found = "ステータスが見つかりません: {id}"
+    custom_field_not_found = "カスタムフィールドが見つかりません: {id}"
     available_ids = "指定できる値: {items}"
     news_not_found = "ニュースが見つかりません: {id}"
     no_search_results = "検索結果が見つかりませんでした"

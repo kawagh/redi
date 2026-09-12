@@ -1,6 +1,7 @@
 from typing import Literal, NotRequired, TypedDict, cast
 
 from redi import cache
+from redi.api.project import fetch_project
 from redi.api.types import IdName
 from redi.client import client
 
@@ -68,15 +69,22 @@ def fetch_custom_fields(refresh: bool = False) -> list[CustomField] | None:
     return cast(list[CustomField], data)
 
 
+def fetch_project_issue_custom_fields(project_id: str) -> list[IdName]:
+    """プロジェクトで有効なイシュー用カスタムフィールドの id と名前を取得する。
+
+    管理者限定の /custom_fields.json と違い、プロジェクトを参照できれば取れる。
+
+    Raises:
+        ProjectNotFoundException: 対象プロジェクトが存在しない (HTTP 404)
+        ProjectPermissionDeniedException: アーカイブ済みか参照権限が無い (HTTP 403)
+    """
+    project = fetch_project(project_id, include="issue_custom_fields")
+    return list(project.get("issue_custom_fields") or [])
+
+
 def fetch_project_issue_custom_field_ids(project_id: str) -> set[int]:
     """プロジェクトで有効なイシュー用カスタムフィールドのIDを取得する。"""
-    response = client.get(
-        f"/projects/{project_id}.json", params={"include": "issue_custom_fields"}
-    )
-    response.raise_for_status()
-    project = response.json()["project"]
-
-    return {cf["id"] for cf in project.get("issue_custom_fields") or []}
+    return {cf["id"] for cf in fetch_project_issue_custom_fields(project_id)}
 
 
 def filter_required_issue_custom_fields(
