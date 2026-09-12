@@ -368,7 +368,8 @@ class TestTuiProfileSwitchLoop:
     @pytest.fixture
     def run_tui_calls(self, monkeypatch) -> list:
         """run_issue_tui に渡された TuiState を順に記録する"""
-        from redi.tui.state import IssueFilter, TuiResult, TuiState
+        from redi.tui.state import TuiResult, TuiState
+        from redi.tui.state.issue import IssueFilter
 
         monkeypatch.setattr("sys.argv", ["redi", "--tui"])
         monkeypatch.setattr(main_module, "list_profile_names", list)
@@ -428,7 +429,7 @@ class TestTuiProfileSwitchLoop:
 
         carry_over を通すと別インスタンスの id を持ったまま再取得することになる。
         """
-        from redi.tui.state import IssueFilter
+        from redi.tui.state.issue import IssueFilter
 
         monkeypatch.setattr(main_module.config, "apply_profile", lambda name: None)
 
@@ -465,7 +466,8 @@ class TestTuiInteractiveCancelReturnsToTui:
     @pytest.fixture
     def run_tui_calls(self, monkeypatch) -> list:
         """run_issue_tui に渡された TuiState を順に記録する"""
-        from redi.tui.state import IssueFilter, TuiResult, TuiState
+        from redi.tui.state import TuiResult, TuiState
+        from redi.tui.state.issue import IssueFilter
 
         monkeypatch.setattr("sys.argv", ["redi", "--tui"])
         monkeypatch.setattr(main_module, "list_profile_names", list)

@@ -11,7 +11,6 @@ from redi.i18n import messages
 from redi.service import issue_service, search_service
 from redi.text_format import highlight_segments, issue_meta_rows, render_meta_table
 from redi.tui.state import (
-    CommentSelectState,
     Renderable,
     TuiAction,
     TuiPosition,
@@ -19,6 +18,7 @@ from redi.tui.state import (
     TuiState,
     realign_page,
 )
+from redi.tui.state.issue import CommentSelectState
 from redi.tui.tab import TabView, noop
 
 

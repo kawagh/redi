@@ -4,7 +4,8 @@ from prompt_toolkit.keys import Keys
 
 from redi.tui.conditions import build_conditions
 from redi.tui.keybindings import normal_keybindings
-from redi.tui.state import IssueFilter, TuiState
+from redi.tui.state import TuiState
+from redi.tui.state.issue import IssueFilter
 
 
 def _handler(kb: KeyBindings, keys: tuple):
