@@ -164,14 +164,20 @@ def _render_preview(state: TuiState) -> Renderable:
         return [("", "")]
     title = page.get("title", "")
     lines = [title, ""]
+    latest = page.get("version")
     view = viewing_version(state)
-    if view is not None:
+    diff = viewing_diff(state)
+    if diff is not None:
+        # 差分を出している間はメタ表の版も比較している 2 版にする
+        version_label = messages.tui_wiki_meta_version_diff.format(
+            from_version=diff.from_version, to_version=diff.to_version, latest=latest
+        )
+    elif view is not None:
         # 過去版を開いていることをメタ表でも示し、最新版がいくつかを併記する
         version_label = messages.tui_wiki_meta_version_of_latest.format(
             version=view.version, latest=view.latest
         )
     else:
-        latest = page.get("version")
         version_label = str(latest) if latest else ""
     meta = [
         (messages.meta_parent, (page.get("parent") or {}).get("title", "")),
@@ -183,7 +189,6 @@ def _render_preview(state: TuiState) -> Renderable:
 
     lines.append("")
     lines.append("----")
-    diff = viewing_diff(state)
     if diff is not None:
         return _render_diff(diff, lines)
     text = view.text if view is not None else state.wiki_tab.texts.get(title)

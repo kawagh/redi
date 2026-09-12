@@ -826,6 +826,9 @@ class MessagesProto(Protocol):
     tui_status_wiki_diff_active: str
     """{from_version}, {to_version}"""
     tui_wiki_diff_no_changes: str
+    # 差分表示中のメタ表の版。比較している 2 版と最新版
+    tui_wiki_meta_version_diff: str
+    """{from_version}, {to_version}, {latest}"""
 
     # ---- argparse helps (root) ----
     arg_help_root_description: str

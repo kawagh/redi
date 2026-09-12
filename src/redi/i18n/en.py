@@ -638,6 +638,7 @@ class En(MessagesProto):
     tui_wiki_diff_no_other_versions = "This page has only one version"
     tui_status_wiki_diff_active = "diff v{from_version} -> v{to_version}"
     tui_wiki_diff_no_changes = "No changes between the versions"
+    tui_wiki_meta_version_diff = "{from_version} -> {to_version} (latest: {latest})"
 
     # ---- argparse helps (root) ----
     arg_help_root_description = "Redmine CLI"

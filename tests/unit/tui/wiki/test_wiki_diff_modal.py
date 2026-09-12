@@ -273,6 +273,14 @@ class TestDiff:
         assert state.wiki_tab.diff_modal.show is True
         assert "a\nB\nc" in self._rendered(state)
 
+    def test_meta_shows_diff_versions(self):
+        """差分表示中はメタ表の版が比較している 2 版と最新版になる"""
+        state = self._applied(1, 2)
+
+        assert messages.tui_wiki_meta_version_diff.format(
+            from_version=1, to_version=2, latest=3
+        ) in self._rendered(state)
+
     def test_status_hint_shows_diff(self):
         """差分表示中はステータスバーに 2 版を出す"""
         state = self._applied(2, 3)

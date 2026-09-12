@@ -644,6 +644,7 @@ class Ja(MessagesProto):
     tui_wiki_diff_no_other_versions = "このページは版が 1 つしかありません"
     tui_status_wiki_diff_active = "差分 v{from_version} -> v{to_version}"
     tui_wiki_diff_no_changes = "版の間に差分はありません"
+    tui_wiki_meta_version_diff = "{from_version} -> {to_version} (最新: {latest})"
 
     # ---- argparse helps (root) ----
     arg_help_root_description = "Redmine CLI"
