@@ -90,7 +90,7 @@ class IssueFilter:
 
 
 @dataclass
-class FilterModalState:
+class FilterDialogState:
     """f で開くフィルタ modal の表示・選択肢キャッシュ・カーソル状態。
 
     実際のフィルタ条件 (`IssueFilter`) とは別にして、modal を閉じれば破棄してよい
@@ -141,7 +141,7 @@ class IssueFind:
 
 
 @dataclass
-class IssueFindModalState:
+class IssueFindDialogState:
     """F で開く検索 modal の表示と入力状態。"""
 
     show: bool = False
@@ -149,7 +149,7 @@ class IssueFindModalState:
 
 
 @dataclass
-class IssueDeleteModalState:
+class IssueDeleteDialogState:
     """D で開く issue 削除確認 modal の状態。"""
 
     show: bool = False
@@ -167,8 +167,10 @@ class IssueTabState:
     issues: list[Issue] = field(default_factory=list)
     total_count: int = 0
     filter: IssueFilter = field(default_factory=IssueFilter)
-    filter_modal: FilterModalState = field(default_factory=FilterModalState)
+    filter_dialog: FilterDialogState = field(default_factory=FilterDialogState)
     find: IssueFind = field(default_factory=IssueFind)
-    find_modal: IssueFindModalState = field(default_factory=IssueFindModalState)
+    find_dialog: IssueFindDialogState = field(default_factory=IssueFindDialogState)
     comment_select: CommentSelectState = field(default_factory=CommentSelectState)
-    delete_modal: IssueDeleteModalState = field(default_factory=IssueDeleteModalState)
+    delete_dialog: IssueDeleteDialogState = field(
+        default_factory=IssueDeleteDialogState
+    )

@@ -345,9 +345,9 @@ def _run() -> None:
                 # カーソル位置の TUI に戻して通知だけ出す (github#564)
                 tui_state.flash_message = e.message
             except RedmineValidationException as e:
-                tui_state.error_modal = _format_validation_error(e)
+                tui_state.error_dialog = _format_validation_error(e)
             except WikiUpdateConflictException as e:
-                tui_state.error_modal = messages.wiki_page_update_conflict.format(
+                tui_state.error_dialog = messages.wiki_page_update_conflict.format(
                     title=e.title
                 )
 

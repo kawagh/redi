@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 
 
 @dataclass
-class ChoiceModalState:
+class ChoiceDialogState:
     """一覧から1つ選ぶ modal (p のプロジェクト切替 / P のプロファイル切替) の状態。
 
     描画とキーバインドは `tui.choice_modal` が共通で持つ。

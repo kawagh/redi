@@ -144,10 +144,10 @@ class TestDebounce:
         assert len(harness.tasks) == scheduled
 
 
-class TestModalSuspendsRefetch:
+class TestDialogSuspendsRefetch:
     """modal 表示中は再取得を保留する"""
 
-    def test_no_refetch_while_modal_is_open(self):
+    def test_no_refetch_while_dialog_is_open(self):
         """modal 中は page_size だけ更新し、一覧の取り直しは予約しない
 
         y/N の削除確認中に一覧が入れ替わると、確定時に別の行を消してしまうため。
@@ -162,7 +162,7 @@ class TestModalSuspendsRefetch:
         assert state.page_size == compute_page_size(15)
         assert harness.tasks == []
 
-    def test_modal_opened_during_wait_skips_reload(self, monkeypatch):
+    def test_dialog_opened_during_wait_skips_reload(self, monkeypatch):
         """予約後の待機中に modal が開いたら発火時に取り直さない
 
         予約時のガードだけでは 0.3 秒の待機中に開いた y/N 確認をすり抜け、
@@ -188,7 +188,7 @@ class TestModalSuspendsRefetch:
         harness.render()
         assert len(harness.tasks) == scheduled + 1
 
-    def test_refetches_after_modal_closes(self):
+    def test_refetches_after_dialog_closes(self):
         """modal を閉じた後の再描画で取り直しを予約する"""
         harness = _Harness(_state(), rows=30)
         harness.render()

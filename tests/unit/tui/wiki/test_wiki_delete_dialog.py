@@ -6,12 +6,12 @@ import requests
 from redi.api.wiki import WikiPage, WikiPageNotFoundException
 from redi.i18n import messages
 from redi.tui.state import TuiState
-from redi.tui.wiki import delete_modal
-from redi.tui.wiki.delete_modal import (
+from redi.tui.wiki import delete_dialog
+from redi.tui.wiki.delete_dialog import (
     CONFIRM_WORD,
     apply_deleted,
     confirm_delete,
-    open_delete_modal,
+    open_delete_dialog,
     validate_input,
 )
 from redi.tui.wiki.wiki_tab import set_pages
@@ -37,35 +37,35 @@ def _titles(state: TuiState) -> list[str]:
     return [page["title"] for page in state.wiki_tab.pages]
 
 
-class TestOpenDeleteModal:
+class TestOpenDeleteDialog:
     """open_delete_modal() は対象ページを modal 状態に書き込む"""
 
     def test_opens_with_target_title(self):
         """カーソル位置のページタイトルを target_title に保持する"""
         state = _state([_page("Guide"), _page("Home")], cursor=1)
 
-        assert open_delete_modal(state) is True
+        assert open_delete_dialog(state) is True
 
-        assert state.wiki_tab.delete_modal.show is True
-        assert state.wiki_tab.delete_modal.target_title == "Home"
+        assert state.wiki_tab.delete_dialog.show is True
+        assert state.wiki_tab.delete_dialog.target_title == "Home"
 
     def test_clears_previous_input(self):
         """前回の入力や注意メッセージは持ち越さない"""
         state = _state([_page("Home")])
-        state.wiki_tab.delete_modal.input_text = "DEL"
-        state.wiki_tab.delete_modal.notice = "dummy"
+        state.wiki_tab.delete_dialog.input_text = "DEL"
+        state.wiki_tab.delete_dialog.notice = "dummy"
 
-        open_delete_modal(state)
+        open_delete_dialog(state)
 
-        assert state.wiki_tab.delete_modal.input_text == ""
-        assert state.wiki_tab.delete_modal.notice is None
+        assert state.wiki_tab.delete_dialog.input_text == ""
+        assert state.wiki_tab.delete_dialog.notice is None
 
     def test_returns_false_when_empty(self):
         """ページが無いときは modal を開かず False"""
         state = _state([])
 
-        assert open_delete_modal(state) is False
-        assert state.wiki_tab.delete_modal.show is False
+        assert open_delete_dialog(state) is False
+        assert state.wiki_tab.delete_dialog.show is False
 
 
 class TestValidateInput:
@@ -74,25 +74,25 @@ class TestValidateInput:
     def test_returns_none_when_matches(self):
         """確認語と一致すれば理由なし (None)"""
         state = _state([_page("Home")])
-        state.wiki_tab.delete_modal.input_text = CONFIRM_WORD
+        state.wiki_tab.delete_dialog.input_text = CONFIRM_WORD
 
-        assert validate_input(state.wiki_tab.delete_modal) is None
+        assert validate_input(state.wiki_tab.delete_dialog) is None
 
     def test_asks_input_when_empty(self):
         """未入力なら確認語の入力を促す"""
         state = _state([_page("Home")])
 
         assert validate_input(
-            state.wiki_tab.delete_modal
+            state.wiki_tab.delete_dialog
         ) == messages.tui_wiki_delete_modal_empty.format(expected=CONFIRM_WORD)
 
     def test_reports_mismatch(self):
         """確認語と違う入力は不一致として返す"""
         state = _state([_page("Home")])
-        state.wiki_tab.delete_modal.input_text = "DELET"
+        state.wiki_tab.delete_dialog.input_text = "DELET"
 
         assert validate_input(
-            state.wiki_tab.delete_modal
+            state.wiki_tab.delete_dialog
         ) == messages.tui_wiki_delete_modal_mismatch.format(expected=CONFIRM_WORD)
 
 
@@ -156,14 +156,14 @@ class TestConfirmDelete:
         def fake_delete_page(project_id: str, page_title: str) -> None:
             calls.append((project_id, page_title))
 
-        monkeypatch.setattr(delete_modal.wiki_service, "delete_page", fake_delete_page)
+        monkeypatch.setattr(delete_dialog.wiki_service, "delete_page", fake_delete_page)
         return calls
 
     def _opened(self, input_text: str) -> TuiState:
         state = _state([_page("Guide"), _page("Home")], cursor=1)
         state.project_id = "myproject"
-        open_delete_modal(state)
-        state.wiki_tab.delete_modal.input_text = input_text
+        open_delete_dialog(state)
+        state.wiki_tab.delete_dialog.input_text = input_text
         return state
 
     def test_deletes_when_input_matches(self, deleted):
@@ -174,7 +174,7 @@ class TestConfirmDelete:
 
         assert deleted == [("myproject", "Home")]
         assert _titles(state) == ["Guide"]
-        assert state.wiki_tab.delete_modal.show is False
+        assert state.wiki_tab.delete_dialog.show is False
 
     def test_mismatch_keeps_input(self, deleted):
         """一致しなければ削除せず、入力はそのまま残して直させる"""
@@ -183,9 +183,9 @@ class TestConfirmDelete:
         confirm_delete(state)
 
         assert deleted == []
-        assert state.wiki_tab.delete_modal.show is True
-        assert state.wiki_tab.delete_modal.input_text == "DELET"
-        assert state.wiki_tab.delete_modal.notice is not None
+        assert state.wiki_tab.delete_dialog.show is True
+        assert state.wiki_tab.delete_dialog.input_text == "DELET"
+        assert state.wiki_tab.delete_dialog.notice is not None
 
     @pytest.mark.parametrize(
         ("error", "expected_in_flash"),
@@ -202,10 +202,10 @@ class TestConfirmDelete:
         def fake_delete_page(project_id: str, page_title: str) -> None:
             raise error
 
-        monkeypatch.setattr(delete_modal.wiki_service, "delete_page", fake_delete_page)
+        monkeypatch.setattr(delete_dialog.wiki_service, "delete_page", fake_delete_page)
         confirm_delete(state)
 
         assert _titles(state) == ["Guide", "Home"]
-        assert state.wiki_tab.delete_modal.show is False
+        assert state.wiki_tab.delete_dialog.show is False
         assert state.flash_message is not None
         assert expected_in_flash in state.flash_message

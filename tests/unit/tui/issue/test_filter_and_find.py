@@ -11,7 +11,7 @@ from prompt_toolkit.keys import Keys
 from redi.i18n import messages
 from redi.tui.conditions import build_conditions
 from redi.tui.issue import issue_tab
-from redi.tui.keybindings import modal_keybindings
+from redi.tui.keybindings import dialog_keybindings
 from redi.tui.state import TuiState
 from redi.tui.state.issue_tab import IssueFilter, IssueFind
 
@@ -26,7 +26,7 @@ def _handler(kb: KeyBindings, keys: tuple):
 
 def _kb(state: TuiState) -> KeyBindings:
     kb = KeyBindings()
-    modal_keybindings.register(kb, state, build_conditions(state))
+    dialog_keybindings.register(kb, state, build_conditions(state))
     return kb
 
 
@@ -43,8 +43,8 @@ def searching_state(monkeypatch) -> TuiState:
     state.tab = "issues"
     state.issue_tab.filter = IssueFilter(status_id="closed", status_label="終了")
     state.issue_tab.find = IssueFind(query="hooks")
-    state.issue_tab.filter_modal.show = True
-    state.issue_tab.filter_modal.status_choices = [("open", "未完了")]
+    state.issue_tab.filter_dialog.show = True
+    state.issue_tab.filter_dialog.status_choices = [("open", "未完了")]
     return state
 
 
@@ -83,8 +83,8 @@ class TestFilterWinsOverFind:
         )
         state = TuiState()
         state.page_size = 5
-        state.issue_tab.filter_modal.show = True
-        state.issue_tab.filter_modal.status_choices = [("open", "未完了")]
+        state.issue_tab.filter_dialog.show = True
+        state.issue_tab.filter_dialog.status_choices = [("open", "未完了")]
 
         _handler(_kb(state), (Keys.ControlM,))(None)
 

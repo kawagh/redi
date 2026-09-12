@@ -4,13 +4,13 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from redi.api.wiki import WikiPage
-from redi.tui.state.choice import ChoiceModalState
+from redi.tui.state.choice import ChoiceDialogState
 
 WikiDiffColumn = Literal["from", "to"]
 
 
 @dataclass
-class WikiDeleteModalState:
+class WikiDeleteDialogState:
     """D で開く wiki 削除確認 modal の状態。
 
     wiki は issue_id にあたる数値 id を持たないため、対象の特定ではなく確認語
@@ -57,7 +57,7 @@ class WikiDiffView:
 
 
 @dataclass
-class WikiDiffModalState:
+class WikiDiffDialogState:
     """d で開く、比較前と比較後の版を 2 列で選ぶ modal の状態。
 
     フィルタ modal と同じく列ごとにカーソルを持ち、Tab で列を移る。
@@ -81,14 +81,14 @@ class WikiTabState:
     cursor: int = 0
     texts: dict[str, str] = field(default_factory=dict)
     error: str | None = None
-    delete_modal: WikiDeleteModalState = field(default_factory=WikiDeleteModalState)
+    delete_dialog: WikiDeleteDialogState = field(default_factory=WikiDeleteDialogState)
     # h で開く版選択 modal。描画とキー操作は `tui.choice_modal` の共通部品を使う。
-    version_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
+    version_dialog: ChoiceDialogState = field(default_factory=ChoiceDialogState)
     # 過去版を表示中ならその内容。None は最新版を表示している。
     version_view: WikiVersionView | None = None
     # 過去版の本文キャッシュ。過去版は変わらないので (title, version) で持つ。
     version_texts: dict[tuple[str, int], str] = field(default_factory=dict)
     # d で開く、比較前と比較後の版を選ぶ modal。
-    diff_modal: WikiDiffModalState = field(default_factory=WikiDiffModalState)
+    diff_dialog: WikiDiffDialogState = field(default_factory=WikiDiffDialogState)
     # 差分を表示中ならその 2 版。None なら本文を表示している。
     diff_view: WikiDiffView | None = None

@@ -16,16 +16,16 @@ from prompt_toolkit.widgets import Frame
 from redi.i18n import messages
 from redi.tui.choices import build_user_choices
 from redi.tui.state import Renderable, TuiState
-from redi.tui.state.time_entry_tab import TimeEntryFilterModalState
+from redi.tui.state.time_entry_tab import TimeEntryFilterDialogState
 
 
 def render_filter_column(state: TuiState) -> Renderable:
     """ユーザー選択肢の列を描画する。"""
     f = state.time_entry_tab.filter
-    modal = state.time_entry_tab.filter_modal
+    dialog = state.time_entry_tab.filter_dialog
     parts: Renderable = [("bold fg:ansicyan", f"[{messages.tui_filter_user}]\n")]
-    for i, (api_val, label) in enumerate(modal.user_choices):
-        is_cursor = i == modal.user_cursor
+    for i, (api_val, label) in enumerate(dialog.user_choices):
+        is_cursor = i == dialog.user_cursor
         is_active = api_val == f.user_id
         cursor_mark = ">" if is_cursor else " "
         active_mark = "*" if is_active else " "
@@ -34,16 +34,16 @@ def render_filter_column(state: TuiState) -> Renderable:
     return parts
 
 
-def filter_column_cursor_y(modal: TimeEntryFilterModalState) -> int:
+def filter_column_cursor_y(dialog: TimeEntryFilterDialogState) -> int:
     """`render_filter_column` の描画結果におけるカーソル行 (0 始まり)。
 
     Window にカーソル位置を伝えて選択中の行が常に画面内へ来るようスクロール
     させるために使う。0 行目はセクションヘッダなので選択肢は 1 行目から並ぶ。
     """
-    return 1 + modal.user_cursor
+    return 1 + dialog.user_cursor
 
 
-def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
+def build_filter_dialog(state: TuiState, show: FilterOrBool) -> Float:
     """time_entries タブのフィルタ modal の Float を組み立てる。
 
     プロジェクトのユーザーが多いと選択肢が端末高を超えるため、列に
@@ -68,7 +68,7 @@ def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
                                         get_cursor_position=lambda: Point(
                                             0,
                                             filter_column_cursor_y(
-                                                state.time_entry_tab.filter_modal
+                                                state.time_entry_tab.filter_dialog
                                             ),
                                         ),
                                     ),
@@ -95,13 +95,13 @@ def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
     )
 
 
-def open_filter_modal(state: TuiState) -> None:
+def open_filter_dialog(state: TuiState) -> None:
     """フィルタ modal を開く。選択肢を取り直し、現在の絞り込みにカーソルを合わせる。"""
-    modal = state.time_entry_tab.filter_modal
-    modal.user_choices = build_user_choices(state.effective_project_id(), state.me_id)
-    modal.user_cursor = 0
-    for idx, (api_val, _label) in enumerate(modal.user_choices):
+    dialog = state.time_entry_tab.filter_dialog
+    dialog.user_choices = build_user_choices(state.effective_project_id(), state.me_id)
+    dialog.user_cursor = 0
+    for idx, (api_val, _label) in enumerate(dialog.user_choices):
         if api_val == state.time_entry_tab.filter.user_id:
-            modal.user_cursor = idx
+            dialog.user_cursor = idx
             break
-    modal.show = True
+    dialog.show = True

@@ -1,6 +1,6 @@
 import pytest
 
-from redi.tui.issue import find_modal, issue_tab
+from redi.tui.issue import find_dialog, issue_tab
 from redi.tui.state import TuiState
 from redi.tui.state.issue_tab import IssueFind
 
@@ -18,7 +18,7 @@ def captured_offsets(monkeypatch) -> list[int]:
     return offsets
 
 
-class TestOpenFindModal:
+class TestOpenFindDialog:
     """open_find_modal は打ち直しを省くために直前のクエリを引き継ぐ"""
 
     def test_initializes_input_with_current_query(self):
@@ -26,18 +26,18 @@ class TestOpenFindModal:
         state = TuiState()
         state.issue_tab.find = IssueFind(query="hooks 調査")
 
-        find_modal.open_find_modal(state)
+        find_dialog.open_find_dialog(state)
 
-        assert state.issue_tab.find_modal.show is True
-        assert state.issue_tab.find_modal.input_text == "hooks 調査"
+        assert state.issue_tab.find_dialog.show is True
+        assert state.issue_tab.find_dialog.input_text == "hooks 調査"
 
     def test_initializes_empty_when_not_searching(self):
         """検索していないときは空の入力欄で開く"""
         state = TuiState()
 
-        find_modal.open_find_modal(state)
+        find_dialog.open_find_dialog(state)
 
-        assert state.issue_tab.find_modal.input_text == ""
+        assert state.issue_tab.find_dialog.input_text == ""
 
 
 class TestConfirmFind:
@@ -47,11 +47,11 @@ class TestConfirmFind:
         """クエリを確定すると検索条件になり、先頭ページを読み直す"""
         state = TuiState()
         state.issue_tab.offset = 50
-        find_modal.open_find_modal(state)
+        find_dialog.open_find_dialog(state)
         for char in "hooks":
-            find_modal.input_char(state, char)
+            find_dialog.input_char(state, char)
 
-        find_modal.confirm_find(state)
+        find_dialog.confirm_find(state)
 
         assert state.issue_tab.find.query == "hooks"
         assert captured_offsets == [0]
@@ -61,11 +61,11 @@ class TestConfirmFind:
         """空のまま確定すると検索が解除され、通常の一覧に戻る"""
         state = TuiState()
         state.issue_tab.find = IssueFind(query="hooks")
-        find_modal.open_find_modal(state)
+        find_dialog.open_find_dialog(state)
         for _ in range(len("hooks")):
-            find_modal.backspace(state)
+            find_dialog.backspace(state)
 
-        find_modal.confirm_find(state)
+        find_dialog.confirm_find(state)
 
         assert state.issue_tab.find.is_active() is False
         assert captured_offsets == [0]
@@ -74,38 +74,38 @@ class TestConfirmFind:
         """空白だけの入力は検索と見なさず解除する"""
         state = TuiState()
         state.issue_tab.find = IssueFind(query="hooks")
-        find_modal.open_find_modal(state)
-        state.issue_tab.find_modal.input_text = "   "
+        find_dialog.open_find_dialog(state)
+        state.issue_tab.find_dialog.input_text = "   "
 
-        find_modal.confirm_find(state)
+        find_dialog.confirm_find(state)
 
         assert state.issue_tab.find.is_active() is False
 
-    def test_closes_modal_after_confirm(self, captured_offsets):
+    def test_closes_dialog_after_confirm(self, captured_offsets):
         """確定したら modal を閉じて入力をクリアする"""
         state = TuiState()
-        find_modal.open_find_modal(state)
-        find_modal.input_char(state, "x")
+        find_dialog.open_find_dialog(state)
+        find_dialog.input_char(state, "x")
 
-        find_modal.confirm_find(state)
+        find_dialog.confirm_find(state)
 
-        assert state.issue_tab.find_modal.show is False
-        assert state.issue_tab.find_modal.input_text == ""
+        assert state.issue_tab.find_dialog.show is False
+        assert state.issue_tab.find_dialog.input_text == ""
 
 
-class TestCloseFindModal:
+class TestCloseFindDialog:
     """close_find_modal は検索条件を変えずに modal だけ閉じる"""
 
     def test_keeps_current_query(self):
         """Esc で閉じても実行中の検索は解除されない"""
         state = TuiState()
         state.issue_tab.find = IssueFind(query="hooks")
-        find_modal.open_find_modal(state)
-        find_modal.input_char(state, "z")
+        find_dialog.open_find_dialog(state)
+        find_dialog.input_char(state, "z")
 
-        find_modal.close_find_modal(state)
+        find_dialog.close_find_dialog(state)
 
-        assert state.issue_tab.find_modal.show is False
+        assert state.issue_tab.find_dialog.show is False
         assert state.issue_tab.find.query == "hooks"
 
 
@@ -115,43 +115,43 @@ class TestEditInput:
     def test_delete_word_removes_last_word(self):
         """C-w は末尾の1単語を消し、区切りの空白は残す"""
         state = TuiState()
-        state.issue_tab.find_modal.input_text = "hooks 発火 調査"
+        state.issue_tab.find_dialog.input_text = "hooks 発火 調査"
 
-        find_modal.delete_word(state)
+        find_dialog.delete_word(state)
 
-        assert state.issue_tab.find_modal.input_text == "hooks 発火 "
+        assert state.issue_tab.find_dialog.input_text == "hooks 発火 "
 
     def test_delete_word_skips_trailing_spaces(self):
         """末尾が空白でも、その手前の単語まで遡って消す"""
         state = TuiState()
-        state.issue_tab.find_modal.input_text = "hooks 発火   "
+        state.issue_tab.find_dialog.input_text = "hooks 発火   "
 
-        find_modal.delete_word(state)
+        find_dialog.delete_word(state)
 
-        assert state.issue_tab.find_modal.input_text == "hooks "
+        assert state.issue_tab.find_dialog.input_text == "hooks "
 
     def test_delete_word_handles_fullwidth_space(self):
         """全角スペースも単語の区切りとして扱う"""
         state = TuiState()
-        state.issue_tab.find_modal.input_text = "hooks　発火"
+        state.issue_tab.find_dialog.input_text = "hooks　発火"
 
-        find_modal.delete_word(state)
+        find_dialog.delete_word(state)
 
-        assert state.issue_tab.find_modal.input_text == "hooks　"
+        assert state.issue_tab.find_dialog.input_text == "hooks　"
 
     def test_delete_word_on_empty_input(self):
         """空の入力欄で C-w を押しても例外にならない"""
         state = TuiState()
 
-        find_modal.delete_word(state)
+        find_dialog.delete_word(state)
 
-        assert state.issue_tab.find_modal.input_text == ""
+        assert state.issue_tab.find_dialog.input_text == ""
 
     def test_clear_input_empties_the_field(self):
         """C-u は入力欄を空にする"""
         state = TuiState()
-        state.issue_tab.find_modal.input_text = "hooks 発火 調査"
+        state.issue_tab.find_dialog.input_text = "hooks 発火 調査"
 
-        find_modal.clear_input(state)
+        find_dialog.clear_input(state)
 
-        assert state.issue_tab.find_modal.input_text == ""
+        assert state.issue_tab.find_dialog.input_text == ""

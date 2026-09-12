@@ -113,8 +113,8 @@ def render_help(state: TuiState) -> Renderable:
     return parts
 
 
-def render_error_modal(state: TuiState) -> Renderable:
-    body = state.error_modal or ""
+def render_error_dialog(state: TuiState) -> Renderable:
+    body = state.error_dialog or ""
     return [("fg:ansired", body)]
 
 

@@ -22,8 +22,8 @@ from prompt_toolkit.widgets import Frame
 from redi.i18n import messages
 from redi.service import wiki_service
 from redi.tui.state import Renderable, TuiState
-from redi.tui.state.wiki_tab import WikiDiffColumn, WikiDiffModalState, WikiDiffView
-from redi.tui.wiki.version_modal import latest_version, version_label
+from redi.tui.state.wiki_tab import WikiDiffColumn, WikiDiffDialogState, WikiDiffView
+from redi.tui.wiki.version_dialog import latest_version, version_label
 from redi.tui.wiki.wiki_tab import (
     current_page,
     load_version_text,
@@ -34,15 +34,17 @@ from redi.tui.wiki.wiki_tab import (
 COLUMNS: tuple[WikiDiffColumn, ...] = ("from", "to")
 
 
-def move_cursor(modal: WikiDiffModalState, step: int) -> None:
+def move_cursor(dialog: WikiDiffDialogState, step: int) -> None:
     """focus のある列のカーソルを step だけ動かす。端で止まる。"""
-    last = max(0, len(modal.versions) - 1)
-    modal.cursors[modal.focus] = min(last, max(0, modal.cursors[modal.focus] + step))
+    last = max(0, len(dialog.versions) - 1)
+    dialog.cursors[dialog.focus] = min(
+        last, max(0, dialog.cursors[dialog.focus] + step)
+    )
 
 
-def move_cursor_to_end(modal: WikiDiffModalState, top: bool) -> None:
+def move_cursor_to_end(dialog: WikiDiffDialogState, top: bool) -> None:
     """focus のある列のカーソルを先頭か末尾へ飛ばす。"""
-    modal.cursors[modal.focus] = 0 if top else max(0, len(modal.versions) - 1)
+    dialog.cursors[dialog.focus] = 0 if top else max(0, len(dialog.versions) - 1)
 
 
 def shift_focus(current: WikiDiffColumn, step: int) -> WikiDiffColumn:
@@ -57,17 +59,17 @@ def render_diff_column(state: TuiState, column: WikiDiffColumn) -> Renderable:
     フィルタ modal と同じく、カーソル行を出すのは focus のある列だけ。
     `*` は適用中の差分の版で、focus の無い列でも残る。
     """
-    modal = state.wiki_tab.diff_modal
-    focused = modal.focus == column
+    dialog = state.wiki_tab.diff_dialog
+    focused = dialog.focus == column
     title = (
         messages.tui_wiki_diff_from if column == "from" else messages.tui_wiki_diff_to
     )
     header_style = "bold fg:ansicyan" if focused else "bold"
     parts: Renderable = [(header_style, f"[{title}]\n")]
-    latest = modal.versions[0] if modal.versions else 0
+    latest = dialog.versions[0] if dialog.versions else 0
     active = _active_version(state, column)
-    cursor = modal.cursors[column]
-    for i, version in enumerate(modal.versions):
+    cursor = dialog.cursors[column]
+    for i, version in enumerate(dialog.versions):
         is_cursor = focused and i == cursor
         is_active = version == active
         cursor_mark = ">" if is_cursor else " "
@@ -89,9 +91,9 @@ def _active_version(state: TuiState, column: WikiDiffColumn) -> int | None:
     return diff.from_version if column == "from" else diff.to_version
 
 
-def diff_column_cursor_y(modal: WikiDiffModalState, column: WikiDiffColumn) -> int:
+def diff_column_cursor_y(dialog: WikiDiffDialogState, column: WikiDiffColumn) -> int:
     """描画結果におけるカーソル行 (0 始まり)。0 行目は列ヘッダ。"""
-    return 1 + modal.cursors[column]
+    return 1 + dialog.cursors[column]
 
 
 def _diff_column_window(state: TuiState, column: WikiDiffColumn) -> Window:
@@ -100,7 +102,7 @@ def _diff_column_window(state: TuiState, column: WikiDiffColumn) -> Window:
             lambda: render_diff_column(state, column),
             show_cursor=False,
             get_cursor_position=lambda: Point(
-                0, diff_column_cursor_y(state.wiki_tab.diff_modal, column)
+                0, diff_column_cursor_y(state.wiki_tab.diff_dialog, column)
             ),
         ),
         wrap_lines=False,
@@ -108,7 +110,7 @@ def _diff_column_window(state: TuiState, column: WikiDiffColumn) -> Window:
     )
 
 
-def build_diff_float(state: TuiState, show: FilterOrBool) -> Float:
+def build_diff_dialog(state: TuiState, show: FilterOrBool) -> Float:
     """比較前 / 比較後の 2 列を並べた modal の Float。構成はフィルタ modal に合わせる。"""
     return Float(
         content=ConditionalContainer(
@@ -154,7 +156,7 @@ def shown_version(state: TuiState) -> int | None:
     return latest_version(current_page(state))
 
 
-def open_diff_modal(state: TuiState) -> bool:
+def open_diff_dialog(state: TuiState) -> bool:
     """比較する版を選ぶ modal を開く。版が 1 つしか無ければ flash で知らせて開かない。
 
     比較前は表示中の版、比較後は最新版に置く。最新版を表示中は比較前を 1 つ前の版にし、
@@ -167,20 +169,20 @@ def open_diff_modal(state: TuiState) -> bool:
     if latest < 2:
         state.flash_message = messages.tui_wiki_diff_no_other_versions
         return False
-    modal = state.wiki_tab.diff_modal
-    modal.versions = list(range(latest, 0, -1))
+    dialog = state.wiki_tab.diff_dialog
+    dialog.versions = list(range(latest, 0, -1))
     diff = viewing_diff(state)
     if diff is not None:
         from_version, to_version = diff.from_version, diff.to_version
     else:
         from_version = shown if shown != latest else latest - 1
         to_version = latest
-    modal.cursors = {
-        "from": modal.versions.index(from_version),
-        "to": modal.versions.index(to_version),
+    dialog.cursors = {
+        "from": dialog.versions.index(from_version),
+        "to": dialog.versions.index(to_version),
     }
-    modal.focus = "from"
-    modal.show = True
+    dialog.focus = "from"
+    dialog.show = True
     return True
 
 
@@ -191,13 +193,13 @@ def apply_diff(state: TuiState) -> bool:
     Esc / d。本文はここで取り (キャッシュにも載る)、取得に失敗したら表示は変えない
     (flash は取得側が出す)。同じ版どうしは弾かず、差分無しとして出す。
     """
-    modal = state.wiki_tab.diff_modal
+    dialog = state.wiki_tab.diff_dialog
     page = current_page(state)
     latest = latest_version(page)
-    if page is None or latest is None or not modal.versions:
+    if page is None or latest is None or not dialog.versions:
         return False
-    from_version = modal.versions[modal.cursors["from"]]
-    to_version = modal.versions[modal.cursors["to"]]
+    from_version = dialog.versions[dialog.cursors["from"]]
+    to_version = dialog.versions[dialog.cursors["to"]]
     title = page["title"]
     old = load_version_text(state, title, from_version, latest)
     if old is None:

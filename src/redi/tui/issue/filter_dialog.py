@@ -26,18 +26,18 @@ from redi.tui.choices import (
     build_tracker_choices,
 )
 from redi.tui.state import Renderable, TuiState
-from redi.tui.state.issue_tab import FilterField, FilterModalState
+from redi.tui.state.issue_tab import FilterDialogState, FilterField
 
 
 def _render_filter_section(
-    modal: FilterModalState,
+    dialog: FilterDialogState,
     section: FilterField,
     title: str,
     choices: list[tuple[str | None, str]],
     cursor: int,
     active_id: str | None,
 ) -> Renderable:
-    focused = modal.focus == section
+    focused = dialog.focus == section
     header_style = "bold fg:ansicyan" if focused else "bold"
     parts: Renderable = [(header_style, f"[{title}]\n")]
     for i, (api_val, label) in enumerate(choices):
@@ -61,43 +61,43 @@ def shift_focus(current: FilterField, step: int) -> FilterField:
 
 
 def section_choices(
-    modal: FilterModalState, section: FilterField
+    dialog: FilterDialogState, section: FilterField
 ) -> list[tuple[str | None, str]]:
     match section:
         case "status":
-            return modal.status_choices
+            return dialog.status_choices
         case "assignee":
-            return modal.assignee_choices
+            return dialog.assignee_choices
         case "tracker":
-            return modal.tracker_choices
+            return dialog.tracker_choices
         case "query":
-            return modal.query_choices
+            return dialog.query_choices
 
 
-def section_cursor(modal: FilterModalState, section: FilterField) -> int:
+def section_cursor(dialog: FilterDialogState, section: FilterField) -> int:
     match section:
         case "status":
-            return modal.status_cursor
+            return dialog.status_cursor
         case "assignee":
-            return modal.assignee_cursor
+            return dialog.assignee_cursor
         case "tracker":
-            return modal.tracker_cursor
+            return dialog.tracker_cursor
         case "query":
-            return modal.query_cursor
+            return dialog.query_cursor
 
 
 def set_section_cursor(
-    modal: FilterModalState, section: FilterField, cursor: int
+    dialog: FilterDialogState, section: FilterField, cursor: int
 ) -> None:
     match section:
         case "status":
-            modal.status_cursor = cursor
+            dialog.status_cursor = cursor
         case "assignee":
-            modal.assignee_cursor = cursor
+            dialog.assignee_cursor = cursor
         case "tracker":
-            modal.tracker_cursor = cursor
+            dialog.tracker_cursor = cursor
         case "query":
-            modal.query_cursor = cursor
+            dialog.query_cursor = cursor
 
 
 def render_filter_column(state: TuiState, section: FilterField) -> Renderable:
@@ -107,7 +107,7 @@ def render_filter_column(state: TuiState, section: FilterField) -> Renderable:
     各列の最大値で済み、選択肢が多くても縦に溢れにくくなる。
     """
     f = state.issue_tab.filter
-    modal = state.issue_tab.filter_modal
+    dialog = state.issue_tab.filter_dialog
     if section == "status":
         title, active_id = messages.tui_filter_status, f.status_id
     elif section == "assignee":
@@ -117,22 +117,22 @@ def render_filter_column(state: TuiState, section: FilterField) -> Renderable:
     else:
         title, active_id = messages.tui_filter_query, f.query_id
     return _render_filter_section(
-        modal,
+        dialog,
         section,
         title,
-        section_choices(modal, section),
-        section_cursor(modal, section),
+        section_choices(dialog, section),
+        section_cursor(dialog, section),
         active_id,
     )
 
 
-def filter_column_cursor_y(modal: FilterModalState, section: FilterField) -> int:
+def filter_column_cursor_y(dialog: FilterDialogState, section: FilterField) -> int:
     """`render_filter_column` の描画結果におけるカーソル行 (0 始まり)。
 
     Window にカーソル位置を伝えて選択中の行が常に画面内へ来るようスクロール
     させるために使う。0 行目はセクションヘッダなので選択肢は 1 行目から並ぶ。
     """
-    return 1 + section_cursor(modal, section)
+    return 1 + section_cursor(dialog, section)
 
 
 def _filter_column_window(state: TuiState, section: FilterField) -> Window:
@@ -149,7 +149,7 @@ def _filter_column_window(state: TuiState, section: FilterField) -> Window:
             lambda: render_filter_column(state, section),
             show_cursor=False,
             get_cursor_position=lambda: Point(
-                0, filter_column_cursor_y(state.issue_tab.filter_modal, section)
+                0, filter_column_cursor_y(state.issue_tab.filter_dialog, section)
             ),
         ),
         wrap_lines=False,
@@ -166,7 +166,7 @@ def _column_separator() -> list[Window]:
     ]
 
 
-def build_filter_float(state: TuiState, show: FilterOrBool) -> Float:
+def build_filter_dialog(state: TuiState, show: FilterOrBool) -> Float:
     """フィルタ modal の Float を組み立てる。
 
     Frame を VSplit で挟んで左右に幅1の空白パディングを置く理由は
@@ -217,7 +217,7 @@ def sync_cursors_to_filter(state: TuiState) -> None:
     `IssueFilter` 側でクリアされる。クリアされた列のカーソルが選択したままの
     行に残ると `*` の位置とずれて紛らわしいため、適用のたびに合わせ直す。
     """
-    modal = state.issue_tab.filter_modal
+    dialog = state.issue_tab.filter_dialog
     f = state.issue_tab.filter
     actives: list[tuple[FilterField, str | None]] = [
         ("status", f.status_id),
@@ -227,22 +227,22 @@ def sync_cursors_to_filter(state: TuiState) -> None:
     ]
     for section, active_id in actives:
         cursor = 0
-        for idx, (api_val, _label) in enumerate(section_choices(modal, section)):
+        for idx, (api_val, _label) in enumerate(section_choices(dialog, section)):
             if api_val == active_id:
                 cursor = idx
                 break
-        set_section_cursor(modal, section, cursor)
+        set_section_cursor(dialog, section, cursor)
 
 
-def open_filter_modal(state: TuiState) -> None:
+def open_filter_dialog(state: TuiState) -> None:
     """フィルタ modal を開く。選択肢を取り直し、現在の絞り込みにカーソルを合わせる。"""
-    modal = state.issue_tab.filter_modal
-    modal.status_choices = build_status_choices()
-    modal.assignee_choices = build_assignee_choices(
+    dialog = state.issue_tab.filter_dialog
+    dialog.status_choices = build_status_choices()
+    dialog.assignee_choices = build_assignee_choices(
         state.effective_project_id(), state.me_id
     )
-    modal.tracker_choices = build_tracker_choices()
-    modal.query_choices = build_query_choices(state.effective_project_id())
+    dialog.tracker_choices = build_tracker_choices()
+    dialog.query_choices = build_query_choices(state.effective_project_id())
     sync_cursors_to_filter(state)
-    modal.focus = "status"
-    modal.show = True
+    dialog.focus = "status"
+    dialog.show = True

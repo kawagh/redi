@@ -19,18 +19,18 @@ from redi.api.wiki import WikiPage, WikiPageNotFoundException
 from redi.i18n import messages
 from redi.service import wiki_service
 from redi.tui.state import Renderable, TuiState
-from redi.tui.state.wiki_tab import WikiDeleteModalState
+from redi.tui.state.wiki_tab import WikiDeleteDialogState
 from redi.tui.wiki.wiki_tab import current_page, set_pages, viewing_version
 
 # 削除を確定するために打たせる語。ASCII 固定なので日本語タイトルでも入力できる。
 CONFIRM_WORD = "DELETE"
 
 
-def render_delete_modal(state: TuiState) -> Renderable:
-    modal = state.wiki_tab.delete_modal
+def render_delete_dialog(state: TuiState) -> Renderable:
+    dialog = state.wiki_tab.delete_dialog
     parts: Renderable = []
     parts.append(
-        ("", messages.tui_wiki_delete_modal_target.format(title=modal.target_title))
+        ("", messages.tui_wiki_delete_modal_target.format(title=dialog.target_title))
     )
     parts.append(("", "\n"))
     parts.append(("fg:ansiyellow", messages.tui_wiki_delete_modal_warning))
@@ -39,18 +39,18 @@ def render_delete_modal(state: TuiState) -> Renderable:
         ("", messages.tui_wiki_delete_modal_prompt.format(expected=CONFIRM_WORD) + "\n")
     )
     parts.append(("bold fg:ansicyan", messages.tui_wiki_delete_modal_input_label))
-    parts.append(("", modal.input_text))
+    parts.append(("", dialog.input_text))
     # 末尾の反転した空白を入力カーソルに見立てる
     parts.append(("reverse", " "))
     parts.append(("", "\n"))
-    if modal.notice:
-        parts.append(("fg:ansired", modal.notice + "\n"))
+    if dialog.notice:
+        parts.append(("fg:ansired", dialog.notice + "\n"))
     parts.append(("", "\n"))
     parts.append(("", messages.tui_wiki_delete_modal_hint))
     return parts
 
 
-def build_delete_float(state: TuiState, show: FilterOrBool) -> Float:
+def build_delete_dialog(state: TuiState, show: FilterOrBool) -> Float:
     """削除確認 modal の Float を組み立てる。"""
     return Float(
         content=ConditionalContainer(
@@ -60,7 +60,7 @@ def build_delete_float(state: TuiState, show: FilterOrBool) -> Float:
                     Frame(
                         Window(
                             FormattedTextControl(
-                                lambda: render_delete_modal(state),
+                                lambda: render_delete_dialog(state),
                                 show_cursor=False,
                             ),
                             # 何を消すかが読めないと確認にならないので title は折り返す
@@ -76,7 +76,7 @@ def build_delete_float(state: TuiState, show: FilterOrBool) -> Float:
     )
 
 
-def open_delete_modal(state: TuiState) -> bool:
+def open_delete_dialog(state: TuiState) -> bool:
     """カーソル位置の wiki ページを対象に削除確認 modal を開く。対象がなければ False。
 
     過去版を表示中は開かない。削除はページ全体に及ぶので、見ている版と消える内容が
@@ -89,25 +89,25 @@ def open_delete_modal(state: TuiState) -> bool:
     if viewing_version(state) is not None:
         state.flash_message = messages.tui_wiki_version_readonly
         return False
-    modal = state.wiki_tab.delete_modal
-    modal.show = True
-    modal.target_title = title
-    modal.input_text = ""
-    modal.notice = None
+    dialog = state.wiki_tab.delete_dialog
+    dialog.show = True
+    dialog.target_title = title
+    dialog.input_text = ""
+    dialog.notice = None
     return True
 
 
-def close_delete_modal(state: TuiState) -> None:
+def close_delete_dialog(state: TuiState) -> None:
     """削除確認 modal を閉じて入力をクリアする。"""
-    modal = state.wiki_tab.delete_modal
-    modal.show = False
-    modal.input_text = ""
-    modal.notice = None
+    dialog = state.wiki_tab.delete_dialog
+    dialog.show = False
+    dialog.input_text = ""
+    dialog.notice = None
 
 
-def validate_input(modal: WikiDeleteModalState) -> str | None:
+def validate_input(dialog: WikiDeleteDialogState) -> str | None:
     """入力が確認語と一致しない理由を返す。一致していれば None。"""
-    entered = modal.input_text.strip()
+    entered = dialog.input_text.strip()
     if not entered:
         return messages.tui_wiki_delete_modal_empty.format(expected=CONFIRM_WORD)
     if entered != CONFIRM_WORD:
@@ -142,42 +142,42 @@ def confirm_delete(state: TuiState) -> None:
     削除成功時は modal を閉じ、ローカルの一覧から対象ページを取り除く。
     削除失敗時は modal を閉じて flash_message にエラーを出す。
     """
-    modal = state.wiki_tab.delete_modal
-    notice = validate_input(modal)
+    dialog = state.wiki_tab.delete_dialog
+    notice = validate_input(dialog)
     if notice is not None:
-        modal.notice = notice
+        dialog.notice = notice
         return
     project = state.effective_wiki_project_id()
     if not project:
-        close_delete_modal(state)
+        close_delete_dialog(state)
         state.flash_message = messages.tui_wiki_project_required
         return
     try:
-        wiki_service.delete_page(project, modal.target_title)
+        wiki_service.delete_page(project, dialog.target_title)
     except WikiPageNotFoundException:
-        close_delete_modal(state)
+        close_delete_dialog(state)
         state.flash_message = messages.tui_wiki_delete_page_missing.format(
-            title=modal.target_title
+            title=dialog.target_title
         )
         return
     except requests.exceptions.RequestException as e:
-        close_delete_modal(state)
+        close_delete_dialog(state)
         state.flash_message = messages.tui_wiki_delete_failed.format(error=e)
         return
-    apply_deleted(state, modal.target_title)
-    close_delete_modal(state)
+    apply_deleted(state, dialog.target_title)
+    close_delete_dialog(state)
 
 
 def input_char(state: TuiState, char: str) -> None:
     """入力欄に1文字追加する。"""
-    modal = state.wiki_tab.delete_modal
-    modal.input_text += char
-    modal.notice = None
+    dialog = state.wiki_tab.delete_dialog
+    dialog.input_text += char
+    dialog.notice = None
 
 
 def backspace(state: TuiState) -> None:
     """入力欄の末尾を1文字削る。"""
-    modal = state.wiki_tab.delete_modal
-    if modal.input_text:
-        modal.input_text = modal.input_text[:-1]
-        modal.notice = None
+    dialog = state.wiki_tab.delete_dialog
+    if dialog.input_text:
+        dialog.input_text = dialog.input_text[:-1]
+        dialog.notice = None

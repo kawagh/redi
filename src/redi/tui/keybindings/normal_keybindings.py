@@ -4,27 +4,27 @@ from prompt_toolkit.key_binding import KeyBindings
 
 from redi.i18n import messages
 from redi.tui.conditions import Conditions
-from redi.tui.issue.delete_modal import open_delete_modal as open_issue_delete_modal
-from redi.tui.issue.filter_modal import open_filter_modal as open_issue_filter_modal
-from redi.tui.issue.find_modal import open_find_modal
+from redi.tui.issue.delete_dialog import open_delete_dialog as open_issue_delete_dialog
+from redi.tui.issue.filter_dialog import open_filter_dialog as open_issue_filter_dialog
+from redi.tui.issue.find_dialog import open_find_dialog
 from redi.tui.keybindings.keybinding_actions import (
     clear_temporary_state,
     reset_preview_scroll,
     scroll_preview,
 )
-from redi.tui.profile_modal import open_profile_modal
-from redi.tui.project_modal import open_project_modal
+from redi.tui.profile_dialog import open_profile_dialog
+from redi.tui.project_dialog import open_project_dialog
 from redi.tui.state import TuiState
 from redi.tui.tabs import TABS
-from redi.tui.time_entry.filter_modal import (
-    open_filter_modal as open_time_entry_filter_modal,
+from redi.tui.time_entry.filter_dialog import (
+    open_filter_dialog as open_time_entry_filter_dialog,
 )
 from redi.tui.time_entry.time_entry_tab import (
     request_delete as time_entry_request_delete,
 )
-from redi.tui.wiki.delete_modal import open_delete_modal as open_wiki_delete_modal
-from redi.tui.wiki.diff_modal import open_diff_modal as open_wiki_diff_modal
-from redi.tui.wiki.version_modal import open_version_modal
+from redi.tui.wiki.delete_dialog import open_delete_dialog as open_wiki_delete_dialog
+from redi.tui.wiki.diff_dialog import open_diff_dialog as open_wiki_diff_dialog
+from redi.tui.wiki.version_dialog import open_version_dialog
 
 
 def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
@@ -112,7 +112,7 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
         # wiki タブはページ送りが無いので、h を版一覧 (history) に充てる
         clear_temporary_state(state)
         if state.tab == "wiki":
-            open_version_modal(state)
+            open_version_dialog(state)
             return
         reset_preview_scroll(state)
         TABS[state.tab].on_page_backward(state)
@@ -202,15 +202,15 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
             if prompt is not None:
                 state.confirm_delete_prompt = prompt
         elif state.tab == "issues":
-            open_issue_delete_modal(state)
+            open_issue_delete_dialog(state)
         elif state.tab == "wiki":
-            open_wiki_delete_modal(state)
+            open_wiki_delete_dialog(state)
 
     @kb.add("d", filter=normal_mode)
     def _(event):
         clear_temporary_state(state)
         if state.tab == "wiki":
-            open_wiki_diff_modal(state)
+            open_wiki_diff_dialog(state)
 
     @kb.add("R", filter=normal_mode)
     def _(event):
@@ -233,22 +233,22 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     def _(event):
         clear_temporary_state(state)
         if state.tab == "issues":
-            open_issue_filter_modal(state)
+            open_issue_filter_dialog(state)
         elif state.tab == "time_entries":
-            open_time_entry_filter_modal(state)
+            open_time_entry_filter_dialog(state)
 
     @kb.add("F", filter=normal_mode)
     def _(event):
         clear_temporary_state(state)
         if state.tab == "issues":
-            open_find_modal(state)
+            open_find_dialog(state)
 
     @kb.add("p", filter=normal_mode)
     def _(event):
         clear_temporary_state(state)
-        open_project_modal(state)
+        open_project_dialog(state)
 
     @kb.add("P", filter=normal_mode)
     def _(event):
         clear_temporary_state(state)
-        open_profile_modal(state)
+        open_profile_dialog(state)

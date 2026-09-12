@@ -27,7 +27,7 @@ class TimeEntryFilter:
 
 
 @dataclass
-class TimeEntryFilterModalState:
+class TimeEntryFilterDialogState:
     """time_entry タブの filter modal の表示・選択肢キャッシュ・カーソル状態。"""
 
     show: bool = False
@@ -45,6 +45,6 @@ class TimeEntryTabState:
     cursor: int = 0
     error: str | None = None
     filter: TimeEntryFilter = field(default_factory=TimeEntryFilter)
-    filter_modal: TimeEntryFilterModalState = field(
-        default_factory=TimeEntryFilterModalState
+    filter_dialog: TimeEntryFilterDialogState = field(
+        default_factory=TimeEntryFilterDialogState
     )

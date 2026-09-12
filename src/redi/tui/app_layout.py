@@ -16,7 +16,7 @@ from prompt_toolkit.widgets import Frame
 
 from redi.i18n import messages
 from redi.tui.app_render import (
-    render_error_modal,
+    render_error_dialog,
     render_help,
     render_list_current,
     render_preview_current,
@@ -24,19 +24,21 @@ from redi.tui.app_render import (
     render_tabs,
 )
 from redi.tui.conditions import Conditions
-from redi.tui.issue.delete_modal import build_delete_float
-from redi.tui.issue.filter_modal import build_filter_float
-from redi.tui.issue.find_modal import build_find_float
-from redi.tui.profile_modal import build_profile_float
-from redi.tui.project_modal import build_project_float
+from redi.tui.issue.delete_dialog import build_delete_dialog
+from redi.tui.issue.filter_dialog import build_filter_dialog
+from redi.tui.issue.find_dialog import build_find_dialog
+from redi.tui.profile_dialog import build_profile_dialog
+from redi.tui.project_dialog import build_project_dialog
 from redi.tui.state import TuiState
 from redi.tui.tabs import TABS
-from redi.tui.time_entry.filter_modal import (
-    build_filter_float as build_time_entry_filter_float,
+from redi.tui.time_entry.filter_dialog import (
+    build_filter_dialog as build_time_entry_filter_dialog,
 )
-from redi.tui.wiki.delete_modal import build_delete_float as build_wiki_delete_float
-from redi.tui.wiki.diff_modal import build_diff_float as build_wiki_diff_float
-from redi.tui.wiki.version_modal import build_version_float as build_wiki_version_float
+from redi.tui.wiki.delete_dialog import build_delete_dialog as build_wiki_delete_dialog
+from redi.tui.wiki.diff_dialog import build_diff_dialog as build_wiki_diff_dialog
+from redi.tui.wiki.version_dialog import (
+    build_version_dialog as build_wiki_version_dialog,
+)
 
 HALF = Dimension(weight=1, preferred=0)
 
@@ -84,7 +86,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
     # char の幅ぶんカーソルを進めて Frame ボーダーのセルをスキップしてしまう
     # (= 縁が表示されない)。1セルの空白を挟むとスキップ先がボーダーではなく
     # 空白セルに変わるので、ボーダーは常に描画される。
-    help_float = Float(
+    help_dialog = Float(
         content=ConditionalContainer(
             content=VSplit(
                 [
@@ -103,26 +105,28 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
                     Window(width=1, char=" "),
                 ]
             ),
-            filter=conditions.help_modal,
+            filter=conditions.help_dialog,
         ),
     )
 
-    filter_float = build_filter_float(state, conditions.issue_filter_modal)
-    find_float = build_find_float(state, conditions.issue_find_modal)
+    filter_dialog = build_filter_dialog(state, conditions.issue_filter_dialog)
+    find_dialog = build_find_dialog(state, conditions.issue_find_dialog)
 
-    time_entry_filter_float = build_time_entry_filter_float(
-        state, conditions.time_entry_filter_modal
+    time_entry_filter_dialog = build_time_entry_filter_dialog(
+        state, conditions.time_entry_filter_dialog
     )
 
-    project_float = build_project_float(state, conditions.project_modal)
+    project_dialog = build_project_dialog(state, conditions.project_dialog)
 
-    issue_delete_float = build_delete_float(state, conditions.issue_delete_modal)
-    wiki_delete_float = build_wiki_delete_float(state, conditions.wiki_delete_modal)
-    wiki_version_float = build_wiki_version_float(state, conditions.wiki_version_modal)
-    wiki_diff_float = build_wiki_diff_float(state, conditions.wiki_diff_modal)
-    profile_float = build_profile_float(state, conditions.profile_modal)
+    issue_delete_dialog = build_delete_dialog(state, conditions.issue_delete_dialog)
+    wiki_delete_dialog = build_wiki_delete_dialog(state, conditions.wiki_delete_dialog)
+    wiki_version_dialog = build_wiki_version_dialog(
+        state, conditions.wiki_version_dialog
+    )
+    wiki_diff_dialog = build_wiki_diff_dialog(state, conditions.wiki_diff_dialog)
+    profile_dialog = build_profile_dialog(state, conditions.profile_dialog)
 
-    error_float = Float(
+    error_dialog = Float(
         content=ConditionalContainer(
             content=VSplit(
                 [
@@ -130,7 +134,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
                     Frame(
                         Window(
                             FormattedTextControl(
-                                lambda: render_error_modal(state), show_cursor=False
+                                lambda: render_error_dialog(state), show_cursor=False
                             ),
                             wrap_lines=True,
                         ),
@@ -139,7 +143,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
                     Window(width=1, char=" "),
                 ]
             ),
-            filter=conditions.error_modal,
+            filter=conditions.error_dialog,
         ),
     )
 
@@ -147,17 +151,17 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
         FloatContainer(
             content=main_layout,
             floats=[
-                help_float,
-                filter_float,
-                find_float,
-                time_entry_filter_float,
-                project_float,
-                issue_delete_float,
-                wiki_delete_float,
-                wiki_version_float,
-                wiki_diff_float,
-                profile_float,
-                error_float,
+                help_dialog,
+                filter_dialog,
+                find_dialog,
+                time_entry_filter_dialog,
+                project_dialog,
+                issue_delete_dialog,
+                wiki_delete_dialog,
+                wiki_version_dialog,
+                wiki_diff_dialog,
+                profile_dialog,
+                error_dialog,
             ],
         )
     )

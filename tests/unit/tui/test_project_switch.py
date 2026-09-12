@@ -10,7 +10,7 @@ from redi import config
 from redi.api.project import Project
 from redi.api.time_entry import TimeEntry
 from redi.i18n import messages
-from redi.tui import app_render, project_modal
+from redi.tui import app_render, project_dialog
 from redi.tui.issue import issue_tab
 from redi.tui.state import TuiState
 from redi.tui.state.issue_tab import IssueFilter
@@ -54,68 +54,68 @@ def _fake_tab(on_activate: Callable[[TuiState], None]) -> TabView:
     )
 
 
-class TestOpenProjectModal:
+class TestOpenProjectDialog:
     """open_project_modal() は選択肢を構築し現在プロジェクトへカーソルを合わせる"""
 
     def test_cursor_on_switched_project(self, monkeypatch):
         """切替済みならそのプロジェクトの位置にカーソルが乗り active_value が入る"""
-        monkeypatch.setattr(project_modal, "list_projects", lambda **kwargs: PROJECTS)
+        monkeypatch.setattr(project_dialog, "list_projects", lambda **kwargs: PROJECTS)
         state = TuiState(project_id="2")
 
-        project_modal.open_project_modal(state)
+        project_dialog.open_project_dialog(state)
 
-        assert state.project_modal.show is True
-        assert state.project_modal.choices == [("2", "Beta"), ("1", "Alpha")]
-        assert state.project_modal.cursor == 0
-        assert state.project_modal.active_value == "2"
+        assert state.project_dialog.show is True
+        assert state.project_dialog.choices == [("2", "Beta"), ("1", "Alpha")]
+        assert state.project_dialog.cursor == 0
+        assert state.project_dialog.active_value == "2"
 
     def test_unswitched_marks_config_default_project(self, monkeypatch):
         """未切替でも toml の default_project_id のプロジェクトが active になる"""
-        monkeypatch.setattr(project_modal, "list_projects", lambda **kwargs: PROJECTS)
+        monkeypatch.setattr(project_dialog, "list_projects", lambda **kwargs: PROJECTS)
         monkeypatch.setattr(config, "default_project_id", "1")
         state = TuiState()
 
-        project_modal.open_project_modal(state)
+        project_dialog.open_project_dialog(state)
 
-        assert state.project_modal.active_value == "1"
-        assert state.project_modal.cursor == 1
+        assert state.project_dialog.active_value == "1"
+        assert state.project_dialog.cursor == 1
 
     def test_config_identifier_is_resolved_to_id(self, monkeypatch):
         """config には identifier も設定できるので id に解決して保持する"""
-        monkeypatch.setattr(project_modal, "list_projects", lambda **kwargs: PROJECTS)
+        monkeypatch.setattr(project_dialog, "list_projects", lambda **kwargs: PROJECTS)
         monkeypatch.setattr(config, "default_project_id", "beta")
         state = TuiState()
 
-        project_modal.open_project_modal(state)
+        project_dialog.open_project_dialog(state)
 
-        assert state.project_modal.active_value == "2"
-        assert state.project_modal.cursor == 0
+        assert state.project_dialog.active_value == "2"
+        assert state.project_dialog.cursor == 0
 
     def test_cursor_top_when_no_current_project(self, monkeypatch):
         """未切替かつ config 未設定ならカーソルは先頭で active 無し"""
-        monkeypatch.setattr(project_modal, "list_projects", lambda **kwargs: PROJECTS)
+        monkeypatch.setattr(project_dialog, "list_projects", lambda **kwargs: PROJECTS)
         monkeypatch.setattr(config, "default_project_id", None)
         state = TuiState()
 
-        project_modal.open_project_modal(state)
+        project_dialog.open_project_dialog(state)
 
-        assert state.project_modal.cursor == 0
-        assert state.project_modal.active_value is None
+        assert state.project_dialog.cursor == 0
+        assert state.project_dialog.active_value is None
 
-    def test_request_error_goes_to_error_modal(self, monkeypatch):
+    def test_request_error_goes_to_error_dialog(self, monkeypatch):
         """取得失敗時は error modal に流し、モーダルは開かない"""
 
         def boom(**kwargs) -> list[Project]:
             raise requests.exceptions.RequestException("down")
 
-        monkeypatch.setattr(project_modal, "list_projects", boom)
+        monkeypatch.setattr(project_dialog, "list_projects", boom)
         state = TuiState()
 
-        project_modal.open_project_modal(state)
+        project_dialog.open_project_dialog(state)
 
-        assert state.project_modal.show is False
-        assert state.error_modal is not None
-        assert "down" in state.error_modal
+        assert state.project_dialog.show is False
+        assert state.error_dialog is not None
+        assert "down" in state.error_dialog
 
 
 class TestApplyProjectSwitch:
@@ -124,13 +124,13 @@ class TestApplyProjectSwitch:
     def test_switch_resets_tabs_and_reloads_issues(self, monkeypatch):
         reloaded: list[str | None] = []
         monkeypatch.setattr(
-            project_modal,
+            project_dialog,
             "reload_with_filter",
             lambda state: reloaded.append(state.project_id),
         )
         state = TuiState()
         state.page_size = 5
-        state.project_modal.show = True
+        state.project_dialog.show = True
         state.preview_scroll = 3
         state.time_entry_tab.loaded = True
         state.time_entry_tab.entries = cast(list[TimeEntry], [{"id": 1}])
@@ -139,11 +139,11 @@ class TestApplyProjectSwitch:
         # 旧本文が表示されてしまう。クリアされることを確認する。
         state.wiki_tab.texts = {"Home": "old body"}
 
-        project_modal.apply_project_switch(state, "2", "Beta")
+        project_dialog.apply_project_switch(state, "2", "Beta")
 
         assert state.project_id == "2"
         assert state.project_label == "Beta"
-        assert state.project_modal.show is False
+        assert state.project_dialog.show is False
         # issues は遅延再取得できないため切替時に即時取り直す
         assert reloaded == ["2"]
         assert state.time_entry_tab.loaded is False
@@ -157,7 +157,7 @@ class TestApplyProjectSwitch:
 
     def test_numeric_user_filters_are_cleared(self, monkeypatch):
         """数値 ID のフィルタは旧プロジェクトのユーザーを指すのでクリアされる"""
-        monkeypatch.setattr(project_modal, "reload_with_filter", lambda state: None)
+        monkeypatch.setattr(project_dialog, "reload_with_filter", lambda state: None)
         state = TuiState()
         state.issue_tab.filter = IssueFilter(
             status_id="*",
@@ -167,7 +167,7 @@ class TestApplyProjectSwitch:
         )
         state.time_entry_tab.filter = TimeEntryFilter(user_id="123", user_label="Alice")
 
-        project_modal.apply_project_switch(state, "2", "Beta")
+        project_dialog.apply_project_switch(state, "2", "Beta")
 
         # status はプロジェクト非依存なので保持される
         assert state.issue_tab.filter.status_id == "*"
@@ -176,31 +176,31 @@ class TestApplyProjectSwitch:
 
     def test_query_filter_is_cleared(self, monkeypatch):
         """クエリはプロジェクト固有のものが混ざるので切替時にクリアされる"""
-        monkeypatch.setattr(project_modal, "reload_with_filter", lambda state: None)
+        monkeypatch.setattr(project_dialog, "reload_with_filter", lambda state: None)
         state = TuiState()
         state.issue_tab.filter = IssueFilter(query_id="7", query_label="My open issues")
 
-        project_modal.apply_project_switch(state, "2", "Beta")
+        project_dialog.apply_project_switch(state, "2", "Beta")
 
         assert state.issue_tab.filter.query_id is None
         assert state.issue_tab.filter.is_active() is False
 
     def test_special_filters_are_preserved(self, monkeypatch):
         """me / 未割当などの特殊値はプロジェクト非依存なので保持される"""
-        monkeypatch.setattr(project_modal, "reload_with_filter", lambda state: None)
+        monkeypatch.setattr(project_dialog, "reload_with_filter", lambda state: None)
         state = TuiState()
         state.issue_tab.filter = IssueFilter(
             assigned_to_id="me", assigned_to_label="自分"
         )
         state.time_entry_tab.filter = TimeEntryFilter(user_id="me", user_label="自分")
 
-        project_modal.apply_project_switch(state, "2", "Beta")
+        project_dialog.apply_project_switch(state, "2", "Beta")
 
         assert state.issue_tab.filter.assigned_to_id == "me"
         assert state.time_entry_tab.filter.user_id == "me"
 
     def test_current_tab_time_entries_reloads_immediately(self, monkeypatch):
-        monkeypatch.setattr(project_modal, "reload_with_filter", lambda state: None)
+        monkeypatch.setattr(project_dialog, "reload_with_filter", lambda state: None)
         activated: list[str] = []
         monkeypatch.setitem(
             TABS,
@@ -210,12 +210,12 @@ class TestApplyProjectSwitch:
         state = TuiState()
         state.tab = "time_entries"
 
-        project_modal.apply_project_switch(state, "2", "Beta")
+        project_dialog.apply_project_switch(state, "2", "Beta")
 
         assert activated == ["time_entries"]
 
     def test_issues_tab_does_not_activate_others(self, monkeypatch):
-        monkeypatch.setattr(project_modal, "reload_with_filter", lambda state: None)
+        monkeypatch.setattr(project_dialog, "reload_with_filter", lambda state: None)
         activated: list[str] = []
         monkeypatch.setitem(
             TABS,
@@ -226,7 +226,7 @@ class TestApplyProjectSwitch:
         state = TuiState()
         state.tab = "issues"
 
-        project_modal.apply_project_switch(state, "2", "Beta")
+        project_dialog.apply_project_switch(state, "2", "Beta")
 
         assert activated == []
 
