@@ -73,3 +73,43 @@ class TestFindKey:
 
         with pytest.raises(AssertionError):
             _handler(_kb(state), ("F",))
+
+
+class TestWikiVersionKey:
+    """H は wiki タブでだけ版の表示に使う"""
+
+    def _wiki_state(self) -> TuiState:
+        from typing import cast
+
+        from redi.api.wiki import WikiPage
+        from redi.tui.wiki.wiki_tab import set_pages
+
+        state = TuiState()
+        state.tab = "wiki"
+        set_pages(state, [cast(WikiPage, {"title": "Home", "version": 3})])
+        return state
+
+    def test_opens_version_modal(self):
+        """wiki タブで H を押すと版選択 modal が開く"""
+        state = self._wiki_state()
+
+        _handler(_kb(state), ("H",))(None)
+
+        assert state.wiki_tab.version_modal.show is True
+
+    def test_does_nothing_on_other_tabs(self):
+        """issues タブで H を押しても何も開かない"""
+        state = TuiState()
+        state.tab = "issues"
+
+        _handler(_kb(state), ("H",))(None)
+
+        assert state.wiki_tab.version_modal.show is False
+
+    def test_version_modal_disables_normal_keys(self):
+        """版選択 modal 表示中は通常モードのキーが効かない"""
+        state = self._wiki_state()
+        state.wiki_tab.version_modal.show = True
+
+        with pytest.raises(AssertionError):
+            _handler(_kb(state), ("H",))

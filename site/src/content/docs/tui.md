@@ -35,6 +35,10 @@ press `Enter`** — until then the right pane shows only the metadata.
 
 ![Wiki page body](/redi/img/tui-wiki-body-en.png)
 
+`H` lists the versions of the selected page so you can open one. While an old version is
+shown, the status bar and the metadata say so, and `u` / `D` are disabled until you return
+to the latest version.
+
 ## Search
 
 Press `/` and type. Matches are highlighted in the list as you type, and `n` / `N` move

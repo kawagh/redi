@@ -61,6 +61,7 @@ from redi.tui.wiki.delete_modal import (
 from redi.tui.wiki.delete_modal import (
     input_char as wiki_delete_input_char,
 )
+from redi.tui.wiki.version_modal import select_version as wiki_select_version
 
 
 def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
@@ -73,6 +74,7 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     show_wiki_delete_modal = conditions.wiki_delete_modal
     show_find_modal = conditions.issue_find_modal
     show_profile_modal = conditions.profile_modal
+    show_wiki_version_modal = conditions.wiki_version_modal
 
     @kb.add("<any>", filter=show_help_modal)
     def _(event):
@@ -98,6 +100,19 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
 
     register_choice_keys(
         kb, lambda: state.profile_modal, show_profile_modal, "P", _on_profile_selected
+    )
+
+    def _on_wiki_version_selected(event, value: str, _label: str) -> None:
+        reset_preview_scroll(state)
+        wiki_select_version(state, int(value))
+        state.wiki_tab.version_modal.show = False
+
+    register_choice_keys(
+        kb,
+        lambda: state.wiki_tab.version_modal,
+        show_wiki_version_modal,
+        "H",
+        _on_wiki_version_selected,
     )
 
     @kb.add("tab", filter=show_filter_modal)
