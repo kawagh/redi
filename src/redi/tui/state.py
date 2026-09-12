@@ -307,14 +307,16 @@ class WikiDiffModalState:
     """d で開く、比較前と比較後の版を 2 列で選ぶ modal の状態。
 
     フィルタ modal と同じく列ごとにカーソルを持ち、Tab で列を移る。
-    `versions` は最新が先頭で、両列とも同じ並びを出す。
+    `versions` は最新が先頭で、両列とも同じ並びを出す。列は 2 つしか無いので
+    カーソルは列名をキーにした dict で持ち、振り分け関数を置かない。
     """
 
     show: bool = False
     focus: WikiDiffColumn = "from"
     versions: list[int] = field(default_factory=list)
-    from_cursor: int = 0
-    to_cursor: int = 0
+    cursors: dict[WikiDiffColumn, int] = field(
+        default_factory=lambda: {"from": 0, "to": 0}
+    )
 
 
 @dataclass

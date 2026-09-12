@@ -39,17 +39,15 @@ from redi.tui.wiki.wiki_tab import (
 COLUMNS: tuple[WikiDiffColumn, ...] = ("from", "to")
 
 
-def column_cursor(modal: WikiDiffModalState, column: WikiDiffColumn) -> int:
-    return modal.from_cursor if column == "from" else modal.to_cursor
+def move_cursor(modal: WikiDiffModalState, step: int) -> None:
+    """focus のある列のカーソルを step だけ動かす。端で止まる。"""
+    last = max(0, len(modal.versions) - 1)
+    modal.cursors[modal.focus] = min(last, max(0, modal.cursors[modal.focus] + step))
 
 
-def set_column_cursor(
-    modal: WikiDiffModalState, column: WikiDiffColumn, cursor: int
-) -> None:
-    if column == "from":
-        modal.from_cursor = cursor
-    else:
-        modal.to_cursor = cursor
+def move_cursor_to_end(modal: WikiDiffModalState, top: bool) -> None:
+    """focus のある列のカーソルを先頭か末尾へ飛ばす。"""
+    modal.cursors[modal.focus] = 0 if top else max(0, len(modal.versions) - 1)
 
 
 def shift_focus(current: WikiDiffColumn, step: int) -> WikiDiffColumn:
@@ -73,7 +71,7 @@ def render_diff_column(state: TuiState, column: WikiDiffColumn) -> Renderable:
     parts: Renderable = [(header_style, f"[{title}]\n")]
     latest = modal.versions[0] if modal.versions else 0
     active = _active_version(state, column)
-    cursor = column_cursor(modal, column)
+    cursor = modal.cursors[column]
     for i, version in enumerate(modal.versions):
         is_cursor = focused and i == cursor
         is_active = version == active
@@ -98,7 +96,7 @@ def _active_version(state: TuiState, column: WikiDiffColumn) -> int | None:
 
 def diff_column_cursor_y(modal: WikiDiffModalState, column: WikiDiffColumn) -> int:
     """描画結果におけるカーソル行 (0 始まり)。0 行目は列ヘッダ。"""
-    return 1 + column_cursor(modal, column)
+    return 1 + modal.cursors[column]
 
 
 def _diff_column_window(state: TuiState, column: WikiDiffColumn) -> Window:
@@ -182,8 +180,10 @@ def open_diff_modal(state: TuiState) -> bool:
     else:
         from_version = shown if shown != latest else latest - 1
         to_version = latest
-    modal.from_cursor = modal.versions.index(from_version)
-    modal.to_cursor = modal.versions.index(to_version)
+    modal.cursors = {
+        "from": modal.versions.index(from_version),
+        "to": modal.versions.index(to_version),
+    }
     modal.focus = "from"
     modal.show = True
     return True
@@ -201,8 +201,8 @@ def apply_diff(state: TuiState) -> bool:
     latest = latest_version(page)
     if page is None or latest is None or not modal.versions:
         return False
-    from_version = modal.versions[modal.from_cursor]
-    to_version = modal.versions[modal.to_cursor]
+    from_version = modal.versions[modal.cursors["from"]]
+    to_version = modal.versions[modal.cursors["to"]]
     title = page["title"]
     old = load_version_text(state, title, from_version, latest)
     if old is None:

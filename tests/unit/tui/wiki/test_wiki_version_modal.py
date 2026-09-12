@@ -12,6 +12,8 @@ from redi.tui.wiki.delete_modal import open_delete_modal
 from redi.tui.wiki.diff_modal import (
     apply_diff,
     clear_diff,
+    move_cursor,
+    move_cursor_to_end,
     open_diff_modal,
     render_diff_column,
 )
@@ -311,8 +313,8 @@ class TestDiffModal:
         assert modal.show is True
         assert modal.focus == "from"
         assert modal.versions == [3, 2, 1]
-        assert modal.versions[modal.from_cursor] == 2
-        assert modal.versions[modal.to_cursor] == 3
+        assert modal.versions[modal.cursors["from"]] == 2
+        assert modal.versions[modal.cursors["to"]] == 3
 
     def test_from_is_viewing_version(self):
         """過去版を開いていれば 比較前 はその版から始まる"""
@@ -322,8 +324,8 @@ class TestDiffModal:
         open_diff_modal(state)
 
         modal = state.wiki_tab.diff_modal
-        assert modal.versions[modal.from_cursor] == 1
-        assert modal.versions[modal.to_cursor] == 3
+        assert modal.versions[modal.cursors["from"]] == 1
+        assert modal.versions[modal.cursors["to"]] == 3
 
     def test_reopen_keeps_applied_pair(self):
         """差分を出しているときに開き直すと、その 2 版にカーソルが乗る"""
@@ -333,8 +335,8 @@ class TestDiffModal:
         open_diff_modal(state)
 
         modal = state.wiki_tab.diff_modal
-        assert modal.versions[modal.from_cursor] == 3
-        assert modal.versions[modal.to_cursor] == 2
+        assert modal.versions[modal.cursors["from"]] == 3
+        assert modal.versions[modal.cursors["to"]] == 2
 
     def test_single_version_flashes(self):
         """版が 1 つしか無ければ modal を開かず flash で知らせる"""
@@ -369,6 +371,42 @@ class TestDiffModal:
         assert "* v2" in to_col
 
 
+class TestDiffModalCursor:
+    """jk / gg / G は focus のある列だけを動かし、端で止まる"""
+
+    def _modal(self):
+        state = _state([_page("Home", version=3)])
+        open_diff_modal(state)
+        return state.wiki_tab.diff_modal
+
+    def test_moves_focused_column_only(self):
+        """j は focus のある列のカーソルだけ進める"""
+        modal = self._modal()
+        modal.focus = "to"
+
+        move_cursor(modal, 1)
+
+        assert modal.cursors == {"from": 1, "to": 1}
+
+    def test_stops_at_edges(self):
+        """先頭より上、末尾より下へは動かない"""
+        modal = self._modal()
+
+        move_cursor(modal, -5)
+        assert modal.cursors["from"] == 0
+        move_cursor(modal, 5)
+        assert modal.cursors["from"] == 2
+
+    def test_jump_to_top_and_bottom(self):
+        """gg / G で先頭・末尾へ飛ぶ"""
+        modal = self._modal()
+
+        move_cursor_to_end(modal, top=False)
+        assert modal.cursors["from"] == 2
+        move_cursor_to_end(modal, top=True)
+        assert modal.cursors["from"] == 0
+
+
 class TestDiff:
     """modal で選んだ 2 版の差分を右ペインで見られる"""
 
@@ -385,8 +423,10 @@ class TestDiff:
     def _open_with(self, state: TuiState, from_version: int, to_version: int) -> None:
         open_diff_modal(state)
         modal = state.wiki_tab.diff_modal
-        modal.from_cursor = modal.versions.index(from_version)
-        modal.to_cursor = modal.versions.index(to_version)
+        modal.cursors = {
+            "from": modal.versions.index(from_version),
+            "to": modal.versions.index(to_version),
+        }
 
     def test_apply_shows_diff_and_keeps_modal(self):
         """Enter で両列の版の差分を出す。フィルタと同じく modal は開いたまま"""

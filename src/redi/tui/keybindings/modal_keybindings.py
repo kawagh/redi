@@ -68,10 +68,10 @@ from redi.tui.wiki.diff_modal import (
     clear_diff as wiki_clear_diff,
 )
 from redi.tui.wiki.diff_modal import (
-    column_cursor as wiki_diff_column_cursor,
+    move_cursor as wiki_diff_move_cursor,
 )
 from redi.tui.wiki.diff_modal import (
-    set_column_cursor as wiki_diff_set_column_cursor,
+    move_cursor_to_end as wiki_diff_move_cursor_to_end,
 )
 from redi.tui.wiki.diff_modal import (
     shift_focus as wiki_diff_shift_focus,
@@ -149,33 +149,21 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     @kb.add("down", filter=show_wiki_diff_modal)
     @kb.add("c-n", filter=show_wiki_diff_modal)
     def _wiki_diff_modal_cursor_down(event):
-        modal = state.wiki_tab.diff_modal
-        wiki_diff_set_column_cursor(
-            modal,
-            modal.focus,
-            min(
-                len(modal.versions) - 1, wiki_diff_column_cursor(modal, modal.focus) + 1
-            ),
-        )
+        wiki_diff_move_cursor(state.wiki_tab.diff_modal, 1)
 
     @kb.add("k", filter=show_wiki_diff_modal)
     @kb.add("up", filter=show_wiki_diff_modal)
     @kb.add("c-p", filter=show_wiki_diff_modal)
     def _wiki_diff_modal_cursor_up(event):
-        modal = state.wiki_tab.diff_modal
-        wiki_diff_set_column_cursor(
-            modal, modal.focus, max(0, wiki_diff_column_cursor(modal, modal.focus) - 1)
-        )
+        wiki_diff_move_cursor(state.wiki_tab.diff_modal, -1)
 
     @kb.add("g", "g", filter=show_wiki_diff_modal)
     def _wiki_diff_modal_cursor_top(event):
-        modal = state.wiki_tab.diff_modal
-        wiki_diff_set_column_cursor(modal, modal.focus, 0)
+        wiki_diff_move_cursor_to_end(state.wiki_tab.diff_modal, top=True)
 
     @kb.add("G", filter=show_wiki_diff_modal)
     def _wiki_diff_modal_cursor_bottom(event):
-        modal = state.wiki_tab.diff_modal
-        wiki_diff_set_column_cursor(modal, modal.focus, max(0, len(modal.versions) - 1))
+        wiki_diff_move_cursor_to_end(state.wiki_tab.diff_modal, top=False)
 
     @kb.add("enter", filter=show_wiki_diff_modal)
     def _wiki_diff_modal_apply(event):
