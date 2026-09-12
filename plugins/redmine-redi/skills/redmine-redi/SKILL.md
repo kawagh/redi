@@ -86,6 +86,8 @@ redi project list --format json | jq '.[].name'
 redi issue list                              # default project
 redi issue list --project_id 15              # one project
 redi issue list --status_id 1 --limit 10
+redi issue list --limit 100                  # default is 25; the range and total go to stderr
+redi issue list --offset 25 --limit 25       # next page
 redi issue list --assigned_to me             # issues assigned to you ("me" is accepted as a user id)
 redi issue list --format tsv                 # + project, tracker, status, assignee, dates (plain shows only id / subject / url)
 redi issue view 160                          # one issue

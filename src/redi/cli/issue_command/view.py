@@ -74,10 +74,13 @@ def print_issues(
 ) -> None:
     """イシュー一覧を1行ずつ出す。json では取得した JSON をそのまま出す。
 
+    Redmine が既定 25 件で打ち切るため、全件出せなかったときは表示範囲と総件数を
+    標準エラーに出す。パイプで受け取る側の行を汚さないよう標準出力には混ぜない。
+
     存在しないプロジェクト・カスタムクエリを指定した場合は案内を出して exit 1。
     """
     try:
-        issues = issue_service.list_issues(
+        page = issue_service.list_issues_page(
             project_id=project_id,
             fixed_version_id=fixed_version_id,
             assigned_to=assigned_to,
@@ -95,9 +98,11 @@ def print_issues(
     except ProjectNotFoundException:
         eprint(messages.project_not_found.format(id=project_id))
         sys.exit(1)
+    issues = page["issues"]
     match fmt:
         case OutputFormat.JSON:
-            print(json.dumps(issues, ensure_ascii=False))
+            print(json.dumps(page, ensure_ascii=False))
+            return
         case OutputFormat.TSV:
             print_tsv(
                 (
@@ -134,6 +139,27 @@ def print_issues(
                 )
         case _:
             assert_never(fmt)
+    notice = truncation_notice(
+        shown=len(issues),
+        offset=page.get("offset", 0),
+        total_count=page.get("total_count", len(issues)),
+    )
+    if notice:
+        print(notice, file=sys.stderr)
+
+
+def truncation_notice(shown: int, offset: int, total_count: int) -> str | None:
+    """一覧が総件数の一部しか出せていないときに、表示範囲を伝える1行を返す。
+
+    全件出せている場合は None を返し、何も出さない。
+    """
+    if shown == 0 or shown >= total_count:
+        return None
+    return messages.issue_list_truncated.format(
+        start=offset + 1,
+        end=offset + shown,
+        total=total_count,
+    )
 
 
 def view_issue(

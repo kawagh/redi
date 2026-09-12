@@ -13,7 +13,7 @@ from redi.api.exceptions import (
     ProjectNotFoundException,
     QueryNotFoundException,
 )
-from redi.api.issue import Issue, WatcherNotFoundException
+from redi.api.issue import Issue, IssuesPageResponse, WatcherNotFoundException
 from redi.service.attachment_service import upload_file
 from redi.service.project_service import resolve_project_id
 
@@ -24,6 +24,47 @@ def issue_url(issue_id: str | int, note_number: int | None = None) -> str:
     if note_number is not None:
         url = f"{url}#note-{note_number}"
     return url
+
+
+def list_issues_page(
+    project_id: str | None = None,
+    fixed_version_id: str | None = None,
+    assigned_to: str | None = None,
+    status_id: str | None = None,
+    tracker_id: str | None = None,
+    priority_id: str | None = None,
+    query_id: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> IssuesPageResponse:
+    """イシュー一覧を総件数付きで取得する。
+
+    Redmine は既定 25 件で結果を打ち切るため、打ち切られたことを呼び出し元が
+    判断できるよう `total_count` / `offset` / `limit` を落とさずに返す。
+
+    Raises:
+        QueryNotFoundException: 指定したカスタムクエリが存在しない (HTTP 404)
+        ProjectNotFoundException: 指定したプロジェクトが存在しない (HTTP 404)
+        requests.exceptions.HTTPError: それ以外の HTTP エラー
+    """
+    try:
+        return issue_api.fetch_issues_page(
+            project_id=project_id,
+            fixed_version_id=fixed_version_id,
+            assigned_to=assigned_to,
+            status_id=status_id,
+            tracker_id=tracker_id,
+            priority_id=priority_id,
+            query_id=query_id,
+            limit=limit,
+            offset=offset,
+        )
+    except IssueListNotFoundException as e:
+        # project_id と query_id を同時に指定した 404 は api 層では切り分けられない。
+        # クエリが実在するならプロジェクト側、しないならクエリ側が原因と決める
+        if _query_exists(e.query_id):
+            raise ProjectNotFoundException(e.project_id) from None
+        raise QueryNotFoundException(e.query_id) from None
 
 
 def list_issues(
@@ -44,24 +85,17 @@ def list_issues(
         ProjectNotFoundException: 指定したプロジェクトが存在しない (HTTP 404)
         requests.exceptions.HTTPError: それ以外の HTTP エラー
     """
-    try:
-        return issue_api.fetch_issues(
-            project_id=project_id,
-            fixed_version_id=fixed_version_id,
-            assigned_to=assigned_to,
-            status_id=status_id,
-            tracker_id=tracker_id,
-            priority_id=priority_id,
-            query_id=query_id,
-            limit=limit,
-            offset=offset,
-        )
-    except IssueListNotFoundException as e:
-        # project_id と query_id を同時に指定した 404 は api 層では切り分けられない。
-        # クエリが実在するならプロジェクト側、しないならクエリ側が原因と決める
-        if _query_exists(e.query_id):
-            raise ProjectNotFoundException(e.project_id) from None
-        raise QueryNotFoundException(e.query_id) from None
+    return list_issues_page(
+        project_id=project_id,
+        fixed_version_id=fixed_version_id,
+        assigned_to=assigned_to,
+        status_id=status_id,
+        tracker_id=tracker_id,
+        priority_id=priority_id,
+        query_id=query_id,
+        limit=limit,
+        offset=offset,
+    )["issues"]
 
 
 def _query_exists(query_id: str) -> bool:
