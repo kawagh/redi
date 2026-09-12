@@ -815,12 +815,15 @@ class MessagesProto(Protocol):
     """{version}, {latest}"""
     tui_wiki_meta_version_of_latest: str
     """{version}, {latest}"""
-    # 過去版と最新版の差分を右ペインに出しているときの印
+    # d で開く比較相手の版を選ぶ modal
+    tui_wiki_diff_modal_title: str
+    tui_wiki_diff_modal_hint: str
+    # 版が 1 つしか無く比較相手が無いときの案内
+    tui_wiki_diff_no_other_versions: str
+    # 2 版の差分を右ペインに出しているときの印
     tui_status_wiki_diff_active: str
-    """{version}, {latest}"""
+    """{from_version}, {to_version}"""
     tui_wiki_diff_no_changes: str
-    # 最新版を表示中に d を押したときの案内
-    tui_wiki_diff_requires_version: str
 
     # ---- argparse helps (root) ----
     arg_help_root_description: str

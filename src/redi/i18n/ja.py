@@ -635,9 +635,11 @@ class Ja(MessagesProto):
     )
     tui_status_wiki_version_active = "v{version} (最新 v{latest})"
     tui_wiki_meta_version_of_latest = "{version} (最新: {latest})"
-    tui_status_wiki_diff_active = "差分 v{version} -> v{latest}"
+    tui_wiki_diff_modal_title = "比較する版 (Esc/d で閉じる)"
+    tui_wiki_diff_modal_hint = "jk:移動 gg/G:先頭/末尾 Enter:差分 Esc/d:閉じる"
+    tui_wiki_diff_no_other_versions = "このページは版が 1 つしかありません"
+    tui_status_wiki_diff_active = "差分 v{from_version} -> v{to_version}"
     tui_wiki_diff_no_changes = "版の間に差分はありません"
-    tui_wiki_diff_requires_version = "差分を見るには過去版を開いて (H) ください"
 
     # ---- argparse helps (root) ----
     arg_help_root_description = "Redmine CLI"
@@ -1107,7 +1109,9 @@ class Ja(MessagesProto):
     tui_help_wiki_delete_page = "選択ページを削除 (DELETE の入力で確定)"
     tui_help_wiki_open_web = "選択ページを web で開く"
     tui_help_wiki_versions = "選択ページの版を選んで表示"
-    tui_help_wiki_toggle_diff = "表示中の版と最新版の差分を切り替え"
+    tui_help_wiki_toggle_diff = (
+        "表示中の版と比較する版を選んで差分を表示 (もう一度で閉じる)"
+    )
 
     # ---- TUI help labels (time entry tab) ----
     tui_help_time_entry_create = "時間記録を作成"

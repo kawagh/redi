@@ -277,14 +277,26 @@ class WikiVersionView:
     対象ページを `title` で持つのは、カーソルが別ページへ移った後に古い版の
     本文を別ページのものとして出さないため。`latest` は選んだ時点の最新版番号。
     描画とステータスバーはこれを使い、ページ一覧を引き直さない。
-    `show_diff` は右ペインを本文ではなく最新版との差分にしているかどうか。
     """
 
     title: str
     version: int
     text: str
     latest: int
-    show_diff: bool = False
+
+
+@dataclass
+class WikiDiffView:
+    """d で選んだ 2 版の差分を右ペインに出している状態。
+
+    閲覧中の版 (`WikiVersionView`) とは独立に持ち、最新版を見ながらでも差分を出せる。
+    本文は `WikiTabState.texts` / `version_texts` のキャッシュから引く。
+    `from_version < to_version` になるよう選択時に並べ替える。
+    """
+
+    title: str
+    from_version: int
+    to_version: int
 
 
 @dataclass
@@ -302,6 +314,10 @@ class WikiTabState:
     version_view: WikiVersionView | None = None
     # 過去版の本文キャッシュ。過去版は変わらないので (title, version) で持つ。
     version_texts: dict[tuple[str, int], str] = field(default_factory=dict)
+    # d で開く比較相手の版を選ぶ modal。
+    diff_modal: ChoiceModalState = field(default_factory=ChoiceModalState)
+    # 差分を表示中ならその 2 版。None なら本文を表示している。
+    diff_view: WikiDiffView | None = None
 
 
 @dataclass

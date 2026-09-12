@@ -37,9 +37,12 @@ press `Enter`** — until then the right pane shows only the metadata.
 
 `H` lists the versions of the selected page so you can open one. While an old version is
 shown, the status bar and the metadata say so, and `u` / `D` are disabled until you return
-to the latest version. Press `d` to switch the right pane to a unified diff between the shown
-version and the latest one; press `d` again to go back to the text. `v` opens the diff page
-in Redmine while the diff is shown.
+to the latest version.
+
+`d` asks which version to compare with the one shown (the latest when no old version is open)
+and puts the unified diff in the right pane. The cursor starts on the previous version, so
+`d` then `Enter` shows what the last edit changed. Press `d` again to go back to the text.
+`v` opens the diff page in Redmine while the diff is shown.
 
 ## Search
 

@@ -97,6 +97,14 @@ class TestWikiVersionKey:
 
         assert state.wiki_tab.version_modal.show is True
 
+    def test_d_opens_diff_modal(self):
+        """wiki タブで d を押すと比較する版を選ぶ modal が開く"""
+        state = self._wiki_state()
+
+        _handler(_kb(state), ("d",))(None)
+
+        assert state.wiki_tab.diff_modal.show is True
+
     def test_does_nothing_on_other_tabs(self):
         """issues タブで H を押しても何も開かない"""
         state = TuiState()

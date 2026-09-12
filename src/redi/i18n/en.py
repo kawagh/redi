@@ -629,9 +629,11 @@ class En(MessagesProto):
     )
     tui_status_wiki_version_active = "v{version} (latest v{latest})"
     tui_wiki_meta_version_of_latest = "{version} (latest: {latest})"
-    tui_status_wiki_diff_active = "diff v{version} -> v{latest}"
+    tui_wiki_diff_modal_title = "Compare with version (Esc/d to close)"
+    tui_wiki_diff_modal_hint = "jk:move gg/G:top/bottom Enter:diff Esc/d:close"
+    tui_wiki_diff_no_other_versions = "This page has only one version"
+    tui_status_wiki_diff_active = "diff v{from_version} -> v{to_version}"
     tui_wiki_diff_no_changes = "No changes between the versions"
-    tui_wiki_diff_requires_version = "Open an old version (H) to show its diff"
 
     # ---- argparse helps (root) ----
     arg_help_root_description = "Redmine CLI"
@@ -1112,7 +1114,9 @@ class En(MessagesProto):
     tui_help_wiki_delete_page = "Delete the selected page (confirm by typing DELETE)"
     tui_help_wiki_open_web = "Open the selected page in web"
     tui_help_wiki_versions = "Choose a version of the selected page to view"
-    tui_help_wiki_toggle_diff = "Toggle diff between the shown version and the latest"
+    tui_help_wiki_toggle_diff = (
+        "Choose a version to diff against the shown one (again to close)"
+    )
 
     # ---- TUI help labels (time entry tab) ----
     tui_help_time_entry_create = "Create a time entry"

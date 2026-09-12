@@ -6,11 +6,12 @@ import requests
 from redi.api.wiki import WikiPage
 from redi.i18n import messages
 from redi.service import wiki_service
-from redi.tui.state import TuiState, WikiVersionView
+from redi.tui.state import TuiState, WikiDiffView, WikiVersionView
 from redi.tui.wiki import version_modal, wiki_tab
 from redi.tui.wiki.delete_modal import open_delete_modal
+from redi.tui.wiki.diff_modal import select_diff_target, toggle_diff
 from redi.tui.wiki.version_modal import open_version_modal, select_version
-from redi.tui.wiki.wiki_tab import WIKI_TAB, set_pages, viewing_version
+from redi.tui.wiki.wiki_tab import WIKI_TAB, set_pages, viewing_diff, viewing_version
 
 
 def _page(title: str, version: int = 1) -> WikiPage:
@@ -293,38 +294,100 @@ class TestVersionModalModule:
 
 
 class TestDiff:
-    """過去版を表示中に d で、その版と最新版の差分を右ペインで見られる"""
-
-    def _viewing_old(self, latest_text: str | None = "a\nB\nc") -> TuiState:
-        state = _state([_page("Home", version=3)])
-        if latest_text is not None:
-            state.wiki_tab.texts["Home"] = latest_text
-        state.wiki_tab.version_view = WikiVersionView("Home", 1, "a\nb\nc", latest=3)
-        return state
+    """d で比較する版を選び、2 版の差分を右ペインで見られる"""
 
     def _rendered(self, state: TuiState) -> str:
         return "".join(text for _, text in WIKI_TAB.render_preview(state))
 
-    def test_toggle_shows_diff_and_back(self):
-        """d で本文が差分に切り替わり、もう一度 d で本文に戻る"""
-        state = self._viewing_old()
+    def _state_with_texts(self) -> TuiState:
+        state = _state([_page("Home", version=3)])
+        state.wiki_tab.texts["Home"] = "a\nB\nc"
+        state.wiki_tab.version_texts[("Home", 2)] = "a\nb\nc"
+        state.wiki_tab.version_texts[("Home", 1)] = "a"
+        return state
 
-        WIKI_TAB.on_action_key(state, "d")
-        diff_view = self._rendered(state)
-        WIKI_TAB.on_action_key(state, "d")
-        text_view = self._rendered(state)
+    def test_modal_lists_other_versions_with_cursor_on_previous(self):
+        """最新版を見ながらの d は基準以外の版を最新から並べ、カーソルは 1 つ前の版に置く"""
+        state = self._state_with_texts()
 
-        assert "--- v1" in diff_view
-        assert "+++ v3" in diff_view
-        assert "-b" in diff_view
-        assert "+B" in diff_view
-        assert "-b" not in text_view
-        assert "a\nb\nc" in text_view
+        assert toggle_diff(state) is True
+
+        modal = state.wiki_tab.diff_modal
+        assert modal.show is True
+        assert [v for v, _ in modal.choices] == ["2", "1"]
+        assert modal.choices[modal.cursor][0] == "2"
+
+    def test_modal_base_is_viewing_version(self):
+        """過去版を開いていればその版が基準になり、最新版も選択肢に入る"""
+        state = self._state_with_texts()
+        state.wiki_tab.version_view = WikiVersionView("Home", 2, "a\nb\nc", latest=3)
+
+        toggle_diff(state)
+
+        modal = state.wiki_tab.diff_modal
+        assert [v for v, _ in modal.choices] == ["3", "1"]
+        assert modal.choices[modal.cursor][0] == "1"
+
+    def test_single_version_flashes(self):
+        """版が 1 つしか無ければ modal を開かず flash で知らせる"""
+        state = _state([_page("Home", version=1)])
+
+        assert toggle_diff(state) is False
+        assert state.wiki_tab.diff_modal.show is False
+        assert state.flash_message == messages.tui_wiki_diff_no_other_versions
+
+    def test_select_shows_diff_ordered_by_version(self):
+        """選んだ版と基準の差分を出す。from は番号の小さいほうになる"""
+        state = self._state_with_texts()
+
+        select_diff_target(state, 2)
+        rendered = self._rendered(state)
+
+        assert state.wiki_tab.diff_view == WikiDiffView("Home", 2, 3)
+        assert "--- v2" in rendered
+        assert "+++ v3" in rendered
+        assert "-b" in rendered
+        assert "+B" in rendered
+
+    def test_select_newer_than_base_keeps_direction(self):
+        """過去版を基準に新しい版を選んでも、古い版 -> 新しい版の向きになる"""
+        state = self._state_with_texts()
+        state.wiki_tab.version_view = WikiVersionView("Home", 1, "a", latest=3)
+
+        select_diff_target(state, 3)
+
+        assert state.wiki_tab.diff_view == WikiDiffView("Home", 1, 3)
+
+    def test_select_loads_missing_texts(self, monkeypatch):
+        """本文が未取得なら選択時に取りに行き、キャッシュに載せる"""
+        state = _state([_page("Home", version=3)])
+        calls = _stub_read_page(monkeypatch, {None: "a\nB", 2: "a\nb"})
+
+        select_diff_target(state, 2)
+
+        assert sorted(calls, key=str) == [2, None]
+        assert state.wiki_tab.texts["Home"] == "a\nB"
+        assert state.wiki_tab.version_texts[("Home", 2)] == "a\nb"
+        assert "+B" in self._rendered(state)
+
+    def test_select_failure_keeps_text_view(self, monkeypatch):
+        """本文が取れなければ差分に切り替えず、flash で知らせる"""
+        state = _state([_page("Home", version=3)])
+        state.wiki_tab.texts["Home"] = "latest"
+        _stub_read_page(monkeypatch, {})
+
+        select_diff_target(state, 2)
+
+        assert state.wiki_tab.diff_view is None
+        assert state.flash_message == messages.tui_wiki_version_missing.format(
+            title="Home", version=2
+        )
+        assert "latest" in self._rendered(state)
 
     def test_diff_lines_are_styled(self):
         """追加行と削除行に色が付く"""
-        state = self._viewing_old()
-        WIKI_TAB.on_action_key(state, "d")
+        state = self._state_with_texts()
+        select_diff_target(state, 2)
 
         styles = {
             text.rstrip("\n"): style for style, text in WIKI_TAB.render_preview(state)
@@ -335,53 +398,53 @@ class TestDiff:
 
     def test_no_changes_message(self):
         """差分が無ければその旨を出す"""
-        state = self._viewing_old(latest_text="a\nb\nc")
-        WIKI_TAB.on_action_key(state, "d")
+        state = self._state_with_texts()
+        state.wiki_tab.version_texts[("Home", 2)] = "a\nB\nc"
+
+        select_diff_target(state, 2)
 
         assert messages.tui_wiki_diff_no_changes in self._rendered(state)
 
-    def test_loads_latest_text_when_missing(self, monkeypatch):
-        """最新版の本文が未取得なら d の時点で取りに行く"""
-        state = self._viewing_old(latest_text=None)
-        calls = _stub_read_page(monkeypatch, {None: "a\nB\nc"})
+    def test_toggle_again_closes_diff(self):
+        """差分表示中の d は modal を開かず本文に戻る"""
+        state = self._state_with_texts()
+        select_diff_target(state, 2)
 
-        WIKI_TAB.on_action_key(state, "d")
+        toggle_diff(state)
 
-        assert calls == [None]
-        assert "+B" in self._rendered(state)
-
-    def test_requires_old_version(self):
-        """最新版を表示中の d は差分に切り替えず、flash で案内する"""
-        state = _state([_page("Home", version=3)])
-        state.wiki_tab.texts["Home"] = "latest"
-
-        WIKI_TAB.on_action_key(state, "d")
-
-        assert state.flash_message == messages.tui_wiki_diff_requires_version
-        assert "latest" in self._rendered(state)
+        assert state.wiki_tab.diff_view is None
+        assert state.wiki_tab.diff_modal.show is False
+        assert "a\nB\nc" in self._rendered(state)
 
     def test_status_hint_shows_diff(self):
-        """差分表示中はステータスバーにその旨を出す"""
-        state = self._viewing_old()
-        WIKI_TAB.on_action_key(state, "d")
+        """差分表示中はステータスバーに 2 版を出す"""
+        state = self._state_with_texts()
+        select_diff_target(state, 2)
 
         assert messages.tui_status_wiki_diff_active.format(
-            version=1, latest=3
+            from_version=2, to_version=3
         ) in WIKI_TAB.status_hint(state)
 
-    def test_update_and_delete_stay_blocked(self):
-        """差分表示中も u / D は止めたまま"""
-        state = self._viewing_old()
-        WIKI_TAB.on_action_key(state, "d")
+    def test_update_allowed_when_diff_on_latest(self):
+        """最新版を見ながらの差分表示では u を止めない"""
+        state = self._state_with_texts()
+        select_diff_target(state, 2)
+
+        assert WIKI_TAB.on_action_key(state, "u") is not None
+
+    def test_update_stays_blocked_when_viewing_old(self):
+        """過去版を開いたままの差分表示では u を止めたまま"""
+        state = self._state_with_texts()
+        state.wiki_tab.version_view = WikiVersionView("Home", 1, "a", latest=3)
+        select_diff_target(state, 3)
 
         assert WIKI_TAB.on_action_key(state, "u") is None
         assert state.flash_message == messages.tui_wiki_version_readonly
-        assert open_delete_modal(state) is False
 
     def test_open_web_uses_diff_url(self, monkeypatch):
         """差分表示中の v は Redmine の差分画面を開く"""
-        state = self._viewing_old()
-        WIKI_TAB.on_action_key(state, "d")
+        state = self._state_with_texts()
+        select_diff_target(state, 1)
         opened: list[str] = []
         monkeypatch.setattr(wiki_tab.webbrowser, "open", opened.append)
         monkeypatch.setattr("redi.config.redmine_url", "http://redmine.example")
@@ -396,9 +459,19 @@ class TestDiff:
         """別ページへ移ると差分表示も解除される"""
         state = _state([_page("Guide", version=2), _page("Home", version=3)], cursor=1)
         state.wiki_tab.texts["Home"] = "x"
-        state.wiki_tab.version_view = WikiVersionView("Home", 1, "y", latest=3)
-        WIKI_TAB.on_action_key(state, "d")
+        state.wiki_tab.version_texts[("Home", 2)] = "y"
+        select_diff_target(state, 2)
 
         WIKI_TAB.on_up(state)
 
-        assert viewing_version(state) is None
+        assert viewing_diff(state) is None
+
+    def test_selecting_version_closes_diff(self):
+        """H で版を選び直すと差分表示は閉じる"""
+        state = self._state_with_texts()
+        select_diff_target(state, 2)
+
+        select_version(state, 1)
+
+        assert state.wiki_tab.diff_view is None
+        assert viewing_version(state) == WikiVersionView("Home", 1, "a", latest=3)

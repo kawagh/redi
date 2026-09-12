@@ -5,16 +5,14 @@ Redmine の REST API には wiki の版一覧を返すエンドポイントが�
 HTTP は `service.wiki_service` に任せ、ここでは状態の更新だけを行う。
 """
 
-import requests
 from prompt_toolkit.filters import FilterOrBool
 from prompt_toolkit.layout.containers import Float
 
 from redi.api.wiki import WikiPage
 from redi.i18n import messages
-from redi.service import wiki_service
 from redi.tui.choice_modal import build_choice_float
 from redi.tui.state import TuiState, WikiVersionView
-from redi.tui.wiki.wiki_tab import current_page, viewing_version
+from redi.tui.wiki.wiki_tab import current_page, load_version_text, viewing_version
 
 
 def build_version_float(state: TuiState, show: FilterOrBool) -> Float:
@@ -66,36 +64,20 @@ def select_version(state: TuiState, version: int) -> None:
     """カーソル位置のページの `version` を表示する。
 
     最新版を選んだら過去版の表示をやめて最新版に戻る。取得失敗は flash_message に
-    出し、表示は変えない。
+    出し、表示は変えない。差分を出していればそれも閉じる。
     """
     page = current_page(state)
     latest = latest_version(page)
     if page is None or latest is None:
         return
     title = page["title"]
+    state.wiki_tab.diff_view = None
     if version == latest:
         state.wiki_tab.version_view = None
         return
-    text = state.wiki_tab.version_texts.get((title, version))
+    text = load_version_text(state, title, version, latest)
     if text is None:
-        project = state.effective_wiki_project_id()
-        if not project:
-            state.flash_message = messages.tui_wiki_project_required
-            return
-        try:
-            wiki = wiki_service.read_page(project, title, version=version)
-        except requests.exceptions.RequestException as e:
-            state.flash_message = messages.tui_wiki_version_load_failed.format(
-                version=version, error=e
-            )
-            return
-        if wiki is None:
-            state.flash_message = messages.tui_wiki_version_missing.format(
-                title=title, version=version
-            )
-            return
-        text = wiki.get("text", "") or ""
-        state.wiki_tab.version_texts[(title, version)] = text
+        return
     state.wiki_tab.version_view = WikiVersionView(
         title=title, version=version, text=text, latest=latest
     )
