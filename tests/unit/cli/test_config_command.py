@@ -348,3 +348,59 @@ class TestUpdateFieldOptions:
 
         assert options["api_key"] == "redmine_api_key"
         assert "secret" not in str(options)
+
+
+class TestConfigShow:
+    """`config` の表示は他リソースと同じく list (全プロファイル) / view (現在のプロファイル) で分ける"""
+
+    @pytest.fixture
+    def called(self, monkeypatch):
+        """show_all_profiles / show_config のどちらが呼ばれたかを記録する"""
+        calls: list[str] = []
+        monkeypatch.setattr(
+            config_command, "show_all_profiles", lambda: calls.append("list")
+        )
+        monkeypatch.setattr(config_command, "show_config", lambda: calls.append("view"))
+        return calls
+
+    @pytest.mark.parametrize("cmd", ["list", "l"])
+    def test_list_shows_all_profiles(self, called, cmd):
+        """`config list` は全プロファイルを表示する"""
+        config_command.handle_config(argparse.Namespace(config_command=cmd))
+
+        assert called == ["list"]
+
+    @pytest.mark.parametrize("cmd", ["view", "v"])
+    def test_view_shows_current_profile(self, called, cmd):
+        """`config view` は現在のプロファイルを表示する"""
+        config_command.handle_config(argparse.Namespace(config_command=cmd))
+
+        assert called == ["view"]
+
+    def test_no_subcommand_is_list(self, called):
+        """サブコマンド未指定の `redi config` は list 相当にする"""
+        config_command.handle_config(argparse.Namespace(config_command=None))
+
+        assert called == ["list"]
+
+
+class TestConfigParser:
+    """`config` に `--full` は無く、表示はサブコマンドで分ける"""
+
+    @pytest.fixture
+    def parser(self):
+        parser = argparse.ArgumentParser()
+        config_command.add_config_parser(parser.add_subparsers(dest="command"), [])
+        return parser
+
+    def test_full_is_rejected(self, parser, capsys):
+        """`--full` は他コマンドの `--format json` と意味が違うため受け付けない"""
+        with pytest.raises(SystemExit):
+            parser.parse_args(["config", "--full"])
+
+    @pytest.mark.parametrize(
+        "argv", [["config"], ["config", "list"], ["config", "view"]]
+    )
+    def test_show_subcommands_are_accepted(self, parser, argv):
+        """`config` / `config list` / `config view` を引数無しで受け付ける"""
+        parser.parse_args(argv)

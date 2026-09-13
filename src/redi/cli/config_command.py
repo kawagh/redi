@@ -17,6 +17,7 @@ from redi.config import (
     list_profile_names,
     read_profile,
     set_default_profile,
+    show_all_profiles,
     show_config,
     update_profile,
 )
@@ -30,10 +31,13 @@ def add_config_parser(
     c_parser = subparsers.add_parser(
         "config", aliases=["c"], help=messages.arg_help_config_command, parents=parents
     )
-    c_parser.add_argument(
-        "--full", action="store_true", help=messages.arg_help_full_profiles
-    )
     c_subparsers = c_parser.add_subparsers(dest="config_command")
+    c_subparsers.add_parser(
+        "list", aliases=["l"], help=messages.arg_help_config_list, parents=parents
+    )
+    c_subparsers.add_parser(
+        "view", aliases=["v"], help=messages.arg_help_config_view, parents=parents
+    )
     c_update_parser = c_subparsers.add_parser(
         "update", aliases=["u"], help=messages.arg_help_config_update, parents=parents
     )
@@ -327,8 +331,12 @@ def handle_config(args: argparse.Namespace) -> None:
     if cmd == "delete":
         _handle_config_delete(args)
         return
+    if cmd == "view":
+        show_config()
+        return
     if cmd != "update":
-        show_config(full=args.full)
+        # サブコマンド未指定は他リソースと同じく list 相当にする
+        show_all_profiles()
         return
     no_args_provided = not (
         args.profile_name
