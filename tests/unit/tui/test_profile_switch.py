@@ -103,22 +103,22 @@ class TestRenderTabsProfile:
 
     def test_shows_current_profile(self, monkeypatch):
         """複数インスタンスを行き来するため接続先が分かるようにする"""
-        from redi.tui import app_render
+        from redi.tui.panes import tabs_pane
 
         monkeypatch.setattr(config, "current_profile", "sub")
         state = TuiState()
 
-        rendered = "".join(part[1] for part in app_render.render_tabs(state))
+        rendered = "".join(part[1] for part in tabs_pane.render_tabs(state))
 
         assert "[profile: sub]" in rendered
 
     def test_no_label_when_profile_is_unset(self, monkeypatch):
         """プロファイル未使用 (環境変数のみ) なら何も出さない"""
-        from redi.tui import app_render
+        from redi.tui.panes import tabs_pane
 
         monkeypatch.setattr(config, "current_profile", None)
         state = TuiState()
 
-        rendered = "".join(part[1] for part in app_render.render_tabs(state))
+        rendered = "".join(part[1] for part in tabs_pane.render_tabs(state))
 
         assert "[profile:" not in rendered

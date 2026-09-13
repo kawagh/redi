@@ -10,8 +10,9 @@ from redi import config
 from redi.api.project import Project
 from redi.api.time_entry import TimeEntry
 from redi.i18n import messages
-from redi.tui import app_render, project_dialog
+from redi.tui import project_dialog
 from redi.tui.issue import issue_tab
+from redi.tui.panes import tabs_pane
 from redi.tui.state import TuiState
 from redi.tui.state.issue_tab import IssueFilter
 from redi.tui.state.time_entry_tab import TimeEntryFilter
@@ -243,7 +244,7 @@ class TestRenderTabs:
         monkeypatch.setattr(config, "default_project_id", "redidemo")
         state = TuiState()
 
-        rendered = "".join(part[1] for part in app_render.render_tabs(state))
+        rendered = "".join(part[1] for part in tabs_pane.render_tabs(state))
 
         assert "[project: redidemo]" in rendered
 
@@ -251,7 +252,7 @@ class TestRenderTabs:
         monkeypatch.setattr(config, "default_project_id", "redidemo")
         state = TuiState(project_id="2", project_label="Beta")
 
-        rendered = "".join(part[1] for part in app_render.render_tabs(state))
+        rendered = "".join(part[1] for part in tabs_pane.render_tabs(state))
 
         assert "[project: Beta]" in rendered
         assert "redidemo" not in rendered
@@ -260,7 +261,7 @@ class TestRenderTabs:
         monkeypatch.setattr(config, "default_project_id", None)
         state = TuiState()
 
-        rendered = "".join(part[1] for part in app_render.render_tabs(state))
+        rendered = "".join(part[1] for part in tabs_pane.render_tabs(state))
 
         assert "[project:" not in rendered
 
