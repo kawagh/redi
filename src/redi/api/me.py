@@ -1,7 +1,7 @@
 from typing import NotRequired, TypedDict, cast
 
+from redi.api.client import RedmineClient, client
 from redi.api.exceptions import RedmineValidationException
-from redi.client import RedmineClient, client
 
 
 class MyAccount(TypedDict):

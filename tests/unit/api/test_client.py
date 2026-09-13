@@ -1,8 +1,30 @@
 import pytest
 import requests
 
+from redi.api.client import RedmineClient
 from redi.api.exceptions import RedmineConnectionException
-from redi.client import RedmineClient
+
+
+class TestBaseUrl:
+    """接続先の URL はどの作り方でも末尾のスラッシュを落とす
+
+    パスと繋いだときに `//issues.json` のように二重にしないため、
+    呼び出し側ではなく RedmineClient 自身で正規化する。
+    """
+
+    def test_strips_trailing_slash_on_init(self):
+        """入力されたばかりの URL を渡す `redi init` / 接続確認からも正規化される"""
+        client = RedmineClient("https://main.example.com/", "key-main")
+
+        assert client.base_url == "https://main.example.com"
+
+    def test_strips_trailing_slash_on_reconfigure(self):
+        """プロファイル切替で config.toml の URL に差し替えるときも同じにする"""
+        client = RedmineClient("https://main.example.com", "key-main")
+
+        client.reconfigure("https://sub.example.com/", "key-sub")
+
+        assert client.base_url == "https://sub.example.com"
 
 
 class TestReconfigure:

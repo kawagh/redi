@@ -542,6 +542,7 @@ class Ja(MessagesProto):
     tui_profile_switch_invalid = (
         "profile '{name}' に redmine_url または redmine_api_key がありません"
     )
+    tui_profile_switch_unreachable = "profile {name} で接続できません"
     tui_no_profiles = "config.toml にプロファイルがありません"
     tui_help_title = "ヘルプ - {label} タブ (任意のキーで閉じる)"
     tui_error_dialog_title = "エラー (q で閉じる)"

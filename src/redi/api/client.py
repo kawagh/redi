@@ -16,13 +16,14 @@ class RedmineClient:
     """
 
     def __init__(self, base_url: str, api_key: str) -> None:
-        self.base_url = base_url
+        # パスと繋いだときに二重にならないよう、末尾のスラッシュはここで落とす
+        self.base_url = base_url.rstrip("/")
         self.session = requests.Session()
         self.session.headers["X-Redmine-API-Key"] = api_key
 
     def reconfigure(self, base_url: str, api_key: str) -> None:
         """接続先を差し替える。前の接続先の Cookie は持ち越さない。"""
-        self.base_url = base_url
+        self.base_url = base_url.rstrip("/")
         self.session.headers["X-Redmine-API-Key"] = api_key
         self.session.cookies.clear()
 
@@ -61,3 +62,6 @@ class RedmineClient:
 
 
 client = RedmineClient(config.redmine_url, config.redmine_api_key)
+
+# 接続確認の待ち時間。応答が返らない URL に、対話入力や TUI が長く止められないため。
+CONNECTION_CHECK_TIMEOUT_SECONDS = 10

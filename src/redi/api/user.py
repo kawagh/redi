@@ -1,8 +1,8 @@
 from typing import NotRequired, TypedDict, cast
 
 from redi.api import PAGE_LIMIT_MAX
+from redi.api.client import client
 from redi.api.types import IdName
-from redi.client import client
 
 
 class UserMembership(TypedDict):

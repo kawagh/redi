@@ -1,6 +1,6 @@
 from typing import TypedDict, cast
 
-from redi.client import client
+from redi.api.client import client
 
 # `/queries.json` は limit 未指定だと既定 25 件しか返さないため明示する。
 QUERIES_PAGE_LIMIT = 100

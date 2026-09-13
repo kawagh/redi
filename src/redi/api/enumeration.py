@@ -1,7 +1,7 @@
 from typing import Literal
 
-from redi import cache
-from redi.client import client
+from redi.api import cache
+from redi.api.client import client
 
 # Redmine の /enumerations/{resource}.json で引ける列挙リソース。
 # キャッシュキーとレスポンスのキーも同じ文字列を使う。
