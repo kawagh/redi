@@ -5,6 +5,8 @@
 (prompt_toolkit はフラグメントの 3 要素目をクリック時に呼ぶ)。
 """
 
+from __future__ import annotations
+
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
@@ -94,7 +96,7 @@ def build_tab_click_handler(
     """
 
     def for_tab(tab: TuiTab) -> MouseHandler:
-        def on_mouse(mouse_event: MouseEvent) -> "NotImplementedOrNone":
+        def on_mouse(mouse_event: MouseEvent) -> NotImplementedOrNone:
             if mouse_event.event_type != MouseEventType.MOUSE_UP:
                 return NotImplemented
             if not conditions.normal() or state.tab == tab:
@@ -115,7 +117,7 @@ def _build_dialog_click_handler(
     クリックは MOUSE_UP で受け、通常モードだけで効く。
     """
 
-    def on_mouse(mouse_event: MouseEvent) -> "NotImplementedOrNone":
+    def on_mouse(mouse_event: MouseEvent) -> NotImplementedOrNone:
         if mouse_event.event_type != MouseEventType.MOUSE_UP:
             return NotImplemented
         if not conditions.normal():
