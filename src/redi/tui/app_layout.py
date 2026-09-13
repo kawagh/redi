@@ -30,6 +30,7 @@ from redi.tui.issue.find_dialog import build_find_dialog
 from redi.tui.mouse import (
     PaneControl,
     build_list_wheel_handler,
+    build_preview_click_handler,
     build_preview_wheel_handler,
     build_tab_click_handler,
 )
@@ -65,6 +66,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
         PaneControl(
             lambda: render_preview_current(state),
             on_wheel=build_preview_wheel_handler(state, conditions),
+            on_click=build_preview_click_handler(state, conditions),
         ),
         wrap_lines=True,
         width=HALF,
