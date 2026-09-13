@@ -4,24 +4,43 @@
 常に出るものと、ヘルプ・エラーダイアログの本文。
 """
 
+from collections.abc import Callable
 from importlib.metadata import version
 
+from prompt_toolkit.formatted_text import StyleAndTextTuples
+from prompt_toolkit.mouse_events import MouseEvent
 from prompt_toolkit.utils import get_cwidth
 
 from redi import config
 from redi.i18n import messages
 from redi.tui.conditions import Conditions
-from redi.tui.state import Renderable, TuiState
+from redi.tui.state import Renderable, TuiState, TuiTab
 from redi.tui.tabs import TABS
 
+# タブ行のラベルに付けるマウスハンドラ。タブのキーからハンドラを引く。
+# ハンドラの戻り値は None か NotImplemented。prompt_toolkit はこれを object と
+# 注釈しており、実行時に使える型別名が無いので同じ書き方にする。
+TabMouseHandler = Callable[[TuiTab], Callable[[MouseEvent], object]]
 
-def render_tabs(state: TuiState) -> Renderable:
-    parts: Renderable = []
+
+def render_tabs(
+    state: TuiState, on_click: TabMouseHandler | None = None
+) -> StyleAndTextTuples:
+    """タブ行を描画する。
+
+    `on_click` を渡すと各タブのラベルにマウスハンドラを付ける
+    (prompt_toolkit はフラグメントの 3 要素目をクリック時に呼ぶ)。
+    """
+    parts: StyleAndTextTuples = []
     for i, (key, tab) in enumerate(TABS.items()):
         if i > 0:
             parts.append(("", "  "))
         style = "reverse" if state.tab == key else ""
-        parts.append((style, f" {tab.label} "))
+        label = f" {tab.label} "
+        if on_click is None:
+            parts.append((style, label))
+        else:
+            parts.append((style, label, on_click(key)))
     parts.append(("", messages.tui_tab_switch_hint))
     if config.current_profile:
         parts.append(

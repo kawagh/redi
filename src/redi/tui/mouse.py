@@ -1,9 +1,13 @@
-"""マウス操作 (ホイール) の受け口。
+"""マウス操作 (ホイール / クリック) の受け口。
 
 prompt_toolkit の `Window` はホイールを自前の `vertical_scroll` で処理するが、
 プレビューは `wrap_lines=True` の制約から `state.preview_scroll` で先頭を切る
 自前スクロールをしている (`app_render._skip_lines`)。両方が動くと表示が
 二重にずれるので、`Window` に渡す前にここで握って `scroll_preview` に流す。
+
+タブ行のクリックはラベルごとに対象が違うので、ペイン全体を受ける
+`WheelControl` ではなく、描画フラグメントに付けるハンドラで受ける
+(`app_render.render_tabs` の `on_click`)。
 """
 
 from collections.abc import Callable
@@ -12,13 +16,15 @@ from prompt_toolkit.formatted_text import AnyFormattedText
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
+from redi.tui.app_render import TabMouseHandler
 from redi.tui.conditions import Conditions
 from redi.tui.keybindings.keybinding_actions import (
+    activate_tab,
     clear_temporary_state,
     reset_preview_scroll,
     scroll_preview,
 )
-from redi.tui.state import TuiState
+from redi.tui.state import TuiState, TuiTab
 from redi.tui.tabs import TABS
 
 # ホイール 1 目盛りで動かす行数。Ctrl+E / Ctrl+Y (1 行) より少し大きく、
@@ -93,3 +99,24 @@ def build_list_wheel_handler(state: TuiState, conditions: Conditions) -> WheelHa
             TABS[state.tab].on_up(state)
 
     return on_wheel
+
+
+def build_tab_click_handler(state: TuiState, conditions: Conditions) -> TabMouseHandler:
+    """タブ行のラベルのクリックを Tab キーと同じタブ切り替えに変換する。
+
+    クリックは MOUSE_UP で受ける (prompt_toolkit の Button と同じ流儀)。
+    通常モードだけで効き、今のタブをクリックしても再読込はしない。
+    """
+
+    def for_tab(tab: TuiTab) -> Callable[[MouseEvent], object]:
+        def on_mouse(mouse_event: MouseEvent) -> object:
+            if mouse_event.event_type != MouseEventType.MOUSE_UP:
+                return NotImplemented
+            if not conditions.normal() or state.tab == tab:
+                return NotImplemented
+            activate_tab(state, tab)
+            return None
+
+        return on_mouse
+
+    return for_tab

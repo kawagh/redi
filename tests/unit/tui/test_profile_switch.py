@@ -108,7 +108,7 @@ class TestRenderTabsProfile:
         monkeypatch.setattr(config, "current_profile", "sub")
         state = TuiState()
 
-        rendered = "".join(text for _style, text in app_render.render_tabs(state))
+        rendered = "".join(part[1] for part in app_render.render_tabs(state))
 
         assert "[profile: sub]" in rendered
 
@@ -119,6 +119,6 @@ class TestRenderTabsProfile:
         monkeypatch.setattr(config, "current_profile", None)
         state = TuiState()
 
-        rendered = "".join(text for _style, text in app_render.render_tabs(state))
+        rendered = "".join(part[1] for part in app_render.render_tabs(state))
 
         assert "[profile:" not in rendered

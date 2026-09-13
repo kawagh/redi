@@ -1,6 +1,6 @@
 """キーバインドから呼ぶ state 操作。"""
 
-from redi.tui.state import Renderable, TuiState
+from redi.tui.state import Renderable, TuiState, TuiTab
 from redi.tui.tabs import TABS
 
 
@@ -11,6 +11,14 @@ def clear_temporary_state(state: TuiState) -> None:
 
 def reset_preview_scroll(state: TuiState) -> None:
     state.preview_scroll = 0
+
+
+def activate_tab(state: TuiState, tab: TuiTab) -> None:
+    """タブを切り替える。Tab キーとタブ行のクリックで共通。"""
+    clear_temporary_state(state)
+    reset_preview_scroll(state)
+    state.tab = tab
+    TABS[tab].on_activate(state)
 
 
 def _count_logical_lines(parts: Renderable) -> int:
