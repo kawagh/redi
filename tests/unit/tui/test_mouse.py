@@ -18,7 +18,7 @@ from redi.tui.app_render import render_tabs
 from redi.tui.conditions import build_conditions
 from redi.tui.mouse import (
     WHEEL_LINES,
-    WheelControl,
+    PaneControl,
     build_list_wheel_handler,
     build_preview_wheel_handler,
     build_tab_click_handler,
@@ -45,13 +45,13 @@ def _state(monkeypatch) -> TuiState:
     return state
 
 
-class TestWheelControl:
-    """WheelControl はホイールだけを on_wheel に流す"""
+class TestPaneControl:
+    """PaneControl はホイールを on_wheel に流し、他のマウスイベントは無視する"""
 
     def test_scroll_down_is_positive(self):
         """ホイール下は +1 として渡す"""
         received: list[int] = []
-        control = WheelControl(list, on_wheel=received.append)
+        control = PaneControl(list, on_wheel=received.append)
 
         control.mouse_handler(_event(MouseEventType.SCROLL_DOWN))
 
@@ -60,7 +60,7 @@ class TestWheelControl:
     def test_scroll_up_is_negative(self):
         """ホイール上は -1 として渡す"""
         received: list[int] = []
-        control = WheelControl(list, on_wheel=received.append)
+        control = PaneControl(list, on_wheel=received.append)
 
         control.mouse_handler(_event(MouseEventType.SCROLL_UP))
 
@@ -69,7 +69,7 @@ class TestWheelControl:
     def test_click_is_not_handled(self):
         """クリックは on_wheel に渡さず、未処理 (NotImplemented) として返す"""
         received: list[int] = []
-        control = WheelControl(list, on_wheel=received.append)
+        control = PaneControl(list, on_wheel=received.append)
 
         result = control.mouse_handler(_event(MouseEventType.MOUSE_UP))
 
@@ -78,7 +78,7 @@ class TestWheelControl:
 
     def test_without_handler_swallows_wheel(self):
         """on_wheel が無いときもホイールは Window の既定処理へ渡さない"""
-        control = WheelControl(list)
+        control = PaneControl(list)
 
         result = control.mouse_handler(_event(MouseEventType.SCROLL_DOWN))
 

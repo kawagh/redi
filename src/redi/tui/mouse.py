@@ -6,7 +6,7 @@ prompt_toolkit の `Window` はホイールを自前の `vertical_scroll` で処
 二重にずれるので、`Window` に渡す前にここで握って `scroll_preview` に流す。
 
 タブ行のクリックはラベルごとに対象が違うので、ペイン全体を受ける
-`WheelControl` ではなく、描画フラグメントに付けるハンドラで受ける
+`PaneControl` ではなく、描画フラグメントに付けるハンドラで受ける
 (`app_render.render_tabs` の `on_click`)。
 """
 
@@ -35,9 +35,11 @@ WHEEL_LINES = 3
 WheelHandler = Callable[[int], None]
 
 
-class WheelControl(FormattedTextControl):
-    """ホイールだけを `on_wheel` に流し、他のマウスイベントは無視する FormattedTextControl。
+class PaneControl(FormattedTextControl):
+    """一覧・プレビューのペインに使う FormattedTextControl。
 
+    ペインの矩形全体 (空行や余白を含む) でマウスイベントを受け、ホイールを
+    `on_wheel` に流す。他のイベントは無視する。
     `on_wheel` が None のときはホイールを握りつぶす (Window の既定処理へ渡さない)。
     """
 
