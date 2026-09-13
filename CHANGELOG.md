@@ -1,10 +1,11 @@
 # Changelog
 
-## [Unreleased](https://github.com/kawagh/redi/compare/0.0.81...HEAD)
+## [0.0.82](https://github.com/kawagh/redi/compare/0.0.81...0.0.82) (2026-09-13)
 
 - feat(config): list / view サブコマンドを追加し --full を廃止する ([#576](https://github.com/kawagh/redi/pull/576))
 - fix(config): config list の出力を既知の項目だけ出すホワイトリスト方式にする ([#579](https://github.com/kawagh/redi/pull/579))
 - feat(config): プロファイルを削除する config delete サブコマンドを追加する ([#577](https://github.com/kawagh/redi/pull/577))
+- docs: CHANGELOG.md を作成する ([#581](https://github.com/kawagh/redi/pull/581))
 
 ## [0.0.81](https://github.com/kawagh/redi/compare/0.0.80...0.0.81) (2026-09-12)
 
