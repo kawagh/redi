@@ -11,6 +11,7 @@ from prompt_toolkit.layout.containers import Float
 from redi.api.wiki import WikiPage
 from redi.i18n import messages
 from redi.tui.choice_dialog import build_choice_dialog
+from redi.tui.keybindings.keybinding_actions import reset_preview_scroll
 from redi.tui.state import TuiState
 from redi.tui.state.wiki_tab import WikiVersionView
 from redi.tui.wiki.wiki_tab import current_page, load_version_text, viewing_version
@@ -22,6 +23,7 @@ def build_version_dialog(state: TuiState, show: FilterOrBool) -> Float:
         messages.tui_wiki_version_dialog_title,
         messages.tui_wiki_version_dialog_hint,
         show,
+        lambda value, label: on_version_selected(state, value, label),
     )
 
 
@@ -81,3 +83,10 @@ def select_version(state: TuiState, version: int) -> None:
     state.wiki_tab.version_view = WikiVersionView(
         title=title, version=version, text=text, latest=latest
     )
+
+
+def on_version_selected(state: TuiState, value: str, _label: str) -> None:
+    """ダイアログで決定 (Enter / クリック) したときの処理。"""
+    reset_preview_scroll(state)
+    select_version(state, int(value))
+    state.wiki_tab.version_dialog.show = False

@@ -7,6 +7,7 @@ prompt_toolkit の `Window` はホイールを自前の `vertical_scroll` で処
 `scroll_preview` に流す。
 """
 
+from prompt_toolkit.data_structures import Point
 from prompt_toolkit.layout.containers import Window
 
 from redi.tui.app_render import render_preview_current
@@ -48,7 +49,7 @@ def build_preview_click_handler(
     クリックで意図せずモードが変わらないよう対象にしない。
     """
 
-    def on_click() -> None:
+    def on_click(_position: Point) -> None:
         if not conditions.normal() or state.tab != "wiki":
             return
         TABS["wiki"].on_enter(state)

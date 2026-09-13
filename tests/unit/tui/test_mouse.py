@@ -11,7 +11,9 @@ from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.output import DummyOutput
 from prompt_toolkit.utils import get_cwidth
 
+from redi import config
 from redi.api.issue import Issue
+from redi.tui import profile_dialog, project_dialog
 from redi.tui.app_layout import build_layout
 from redi.tui.conditions import build_conditions
 from redi.tui.mouse import PaneControl
@@ -22,16 +24,21 @@ from redi.tui.panes.preview_pane import (
     build_preview_click_handler,
     build_preview_wheel_handler,
 )
-from redi.tui.panes.top_bar import build_tab_click_handler, render_top_bar
+from redi.tui.panes.top_bar import (
+    build_profile_click_handler,
+    build_project_click_handler,
+    build_tab_click_handler,
+    render_top_bar,
+)
 from redi.tui.state import TuiState, TuiTab
 from redi.tui.tabs import TABS
 
 PREVIEW = [("", "\n".join(f"line {i}" for i in range(50)))]
 
 
-def _event(event_type: MouseEventType) -> MouseEvent:
+def _event(event_type: MouseEventType, position: Point | None = None) -> MouseEvent:
     return MouseEvent(
-        position=Point(0, 0),
+        position=position if position is not None else Point(0, 0),
         event_type=event_type,
         button=MouseButton.NONE,
         modifiers=frozenset(),
@@ -76,15 +83,15 @@ class TestPaneControl:
         assert result is NotImplemented
         assert received == []
 
-    def test_click_calls_on_click(self):
-        """MOUSE_UP は on_click に流し、MOUSE_DOWN では呼ばない"""
-        clicks: list[str] = []
-        control = PaneControl(list, on_click=lambda: clicks.append("x"))
+    def test_click_calls_on_click_with_position(self):
+        """MOUSE_UP はクリック位置と共に on_click に流し、MOUSE_DOWN では呼ばない"""
+        clicks: list[Point] = []
+        control = PaneControl(list, on_click=clicks.append)
 
-        control.mouse_handler(_event(MouseEventType.MOUSE_DOWN))
-        control.mouse_handler(_event(MouseEventType.MOUSE_UP))
+        control.mouse_handler(_event(MouseEventType.MOUSE_DOWN, Point(3, 2)))
+        control.mouse_handler(_event(MouseEventType.MOUSE_UP, Point(3, 2)))
 
-        assert clicks == ["x"]
+        assert clicks == [Point(3, 2)]
 
     def test_without_handler_swallows_wheel(self):
         """on_wheel が無いときもホイールは Window の既定処理へ渡さない"""
@@ -207,7 +214,7 @@ class TestPreviewClick:
         """wiki タブではクリックで on_enter (本文の読み込み) を呼ぶ"""
         state, entered = self._state(monkeypatch, "wiki")
 
-        build_preview_click_handler(state, build_conditions(state))()
+        build_preview_click_handler(state, build_conditions(state))(Point(0, 0))
 
         assert entered == ["wiki"]
 
@@ -215,7 +222,7 @@ class TestPreviewClick:
         """issue タブではクリックしても on_enter (コメント選択モード) に入らない"""
         state, entered = self._state(monkeypatch, "issues")
 
-        build_preview_click_handler(state, build_conditions(state))()
+        build_preview_click_handler(state, build_conditions(state))(Point(0, 0))
 
         assert entered == []
 
@@ -224,7 +231,7 @@ class TestPreviewClick:
         state, entered = self._state(monkeypatch, "wiki")
         state.show_help = True
 
-        build_preview_click_handler(state, build_conditions(state))()
+        build_preview_click_handler(state, build_conditions(state))(Point(0, 0))
 
         assert entered == []
 
@@ -284,6 +291,82 @@ class TestTabClick:
         assert called == []
 
 
+class TestProfileLabelClick:
+    """タブ行のプロファイル名をクリックすると P と同じくプロファイル切替ダイアログが開く"""
+
+    def _state(self, monkeypatch) -> TuiState:
+        monkeypatch.setattr(profile_dialog, "list_profile_names", lambda: ["main"])
+        monkeypatch.setattr(config, "current_profile", "main")
+        state = TuiState()
+        state.flash_message = "x"
+        return state
+
+    def test_click_opens_profile_dialog(self, monkeypatch):
+        """MOUSE_UP でダイアログが開き、一時的な表示 (flash) は消える"""
+        state = self._state(monkeypatch)
+        handler = build_profile_click_handler(state, build_conditions(state))
+
+        result = handler(_event(MouseEventType.MOUSE_UP))
+
+        assert result is None
+        assert state.profile_dialog.show is True
+        assert state.flash_message is None
+
+    def test_mouse_down_is_ignored(self, monkeypatch):
+        """MOUSE_DOWN では開かない (押して離したときに開く)"""
+        state = self._state(monkeypatch)
+        handler = build_profile_click_handler(state, build_conditions(state))
+
+        result = handler(_event(MouseEventType.MOUSE_DOWN))
+
+        assert result is NotImplemented
+        assert state.profile_dialog.show is False
+
+    def test_ignored_while_dialog_is_open(self, monkeypatch):
+        """ダイアログ表示中はタブ行が見えていてもクリックで開かない"""
+        state = self._state(monkeypatch)
+        state.show_help = True
+        handler = build_profile_click_handler(state, build_conditions(state))
+
+        handler(_event(MouseEventType.MOUSE_UP))
+
+        assert state.profile_dialog.show is False
+
+
+class TestProjectLabelClick:
+    """タブ行のプロジェクト名をクリックすると p と同じくプロジェクト切替ダイアログが開く"""
+
+    def _state(self, monkeypatch) -> TuiState:
+        monkeypatch.setattr(
+            project_dialog,
+            "list_projects",
+            lambda all_pages: [{"id": 1, "name": "Alpha", "identifier": "alpha"}],
+        )
+        state = TuiState()
+        state.project_label = "Alpha"
+        return state
+
+    def test_click_opens_project_dialog(self, monkeypatch):
+        """MOUSE_UP でダイアログが開く"""
+        state = self._state(monkeypatch)
+        handler = build_project_click_handler(state, build_conditions(state))
+
+        result = handler(_event(MouseEventType.MOUSE_UP))
+
+        assert result is None
+        assert state.project_dialog.show is True
+
+    def test_ignored_while_dialog_is_open(self, monkeypatch):
+        """ダイアログ表示中はタブ行が見えていてもクリックで開かない"""
+        state = self._state(monkeypatch)
+        state.show_help = True
+        handler = build_project_click_handler(state, build_conditions(state))
+
+        handler(_event(MouseEventType.MOUSE_UP))
+
+        assert state.project_dialog.show is False
+
+
 def test_wheel_lines_is_between_line_and_half_page():
     """ホイール 1 目盛りは 1 行より多く、半ページより少ない"""
     assert 1 < preview_pane.WHEEL_LINES < 10
@@ -292,6 +375,28 @@ def test_wheel_lines_is_between_line_and_half_page():
 class _FixedSizeOutput(DummyOutput):
     def get_size(self) -> Size:
         return Size(rows=24, columns=80)
+
+
+def _find_on_screen(app: Application, text: str) -> Point:
+    """描画結果から `text` が最初に現れる桁・行を返す。
+
+    Float の位置は描画で決まるため。CJK 文字は 2 桁を占めるので、文字列の添字では
+    なく画面の桁で返す。
+    """
+    screen = app.renderer.last_rendered_screen
+    assert screen is not None
+    size = app.output.get_size()
+    for y in range(size.rows):
+        cells: list[tuple[int, str]] = []
+        x = 0
+        while x < size.columns:
+            char = screen.data_buffer[y][x]
+            cells.append((x, char.char))
+            x += max(1, char.width)
+        index = "".join(c for _x, c in cells).find(text)
+        if index >= 0:
+            return Point(cells[index][0], y)
+    raise AssertionError(f"{text!r} is not on screen")
 
 
 class TestLayoutWiring:
@@ -385,3 +490,84 @@ class TestLayoutWiring:
                 self._fire(app, 60, 15, MouseEventType.MOUSE_UP)
 
         assert entered == ["wiki"]
+
+    def test_wheel_over_choice_dialog_moves_dialog_cursor(self, monkeypatch):
+        """プロジェクト切替ダイアログの上でホイール下を回すとダイアログのカーソルが下がり、一覧は動かない"""
+        state = TuiState()
+        state.page_size = 20
+        state.project_dialog.show = True
+        state.project_dialog.choices = [("1", "Alpha"), ("2", "Beta")]
+        with (
+            create_pipe_input() as pipe,
+            create_app_session(input=pipe, output=_FixedSizeOutput()),
+        ):
+            app = self._render(monkeypatch, state)
+            row = _find_on_screen(app, "Alpha")
+            with set_app(app):
+                self._fire(app, row.x, row.y, MouseEventType.SCROLL_DOWN)
+
+        assert state.project_dialog.cursor == 1
+        assert state.issue_tab.cursor == 0
+
+    def test_click_on_choice_dialog_row_selects_it(self, monkeypatch):
+        """プロジェクト切替ダイアログの行を MOUSE_UP でクリックすると、その行が決定される"""
+        state = TuiState()
+        state.page_size = 20
+        state.project_dialog.show = True
+        state.project_dialog.choices = [("1", "Alpha"), ("2", "Beta")]
+        applied: list[tuple[str, str]] = []
+        monkeypatch.setattr(
+            project_dialog,
+            "apply_project_switch",
+            lambda s, project_id, label: applied.append((project_id, label)),
+        )
+        with (
+            create_pipe_input() as pipe,
+            create_app_session(input=pipe, output=_FixedSizeOutput()),
+        ):
+            app = self._render(monkeypatch, state)
+            row = _find_on_screen(app, "Beta")
+            with set_app(app):
+                # ラベルの右側の余白でも同じ行として受ける
+                self._fire(app, row.x + 10, row.y, MouseEventType.MOUSE_UP)
+
+        assert state.project_dialog.cursor == 1
+        assert applied == [("2", "Beta")]
+
+    def test_click_on_profile_label_opens_profile_dialog(self, monkeypatch):
+        """タブ行のプロファイル名の桁を MOUSE_UP でクリックするとプロファイル切替ダイアログが開く"""
+        monkeypatch.setattr(profile_dialog, "list_profile_names", lambda: ["main"])
+        monkeypatch.setattr(config, "current_profile", "main")
+        state = TuiState()
+        state.page_size = 20
+        with (
+            create_pipe_input() as pipe,
+            create_app_session(input=pipe, output=_FixedSizeOutput()),
+        ):
+            app = self._render(monkeypatch, state)
+            label = _find_on_screen(app, "profile: main")
+            with set_app(app):
+                self._fire(app, label.x, label.y, MouseEventType.MOUSE_UP)
+
+        assert state.profile_dialog.show is True
+
+    def test_click_on_project_label_opens_project_dialog(self, monkeypatch):
+        """タブ行のプロジェクト名の桁を MOUSE_UP でクリックするとプロジェクト切替ダイアログが開く"""
+        monkeypatch.setattr(
+            project_dialog,
+            "list_projects",
+            lambda all_pages: [{"id": 1, "name": "Alpha", "identifier": "alpha"}],
+        )
+        state = TuiState()
+        state.page_size = 20
+        state.project_label = "Alpha"
+        with (
+            create_pipe_input() as pipe,
+            create_app_session(input=pipe, output=_FixedSizeOutput()),
+        ):
+            app = self._render(monkeypatch, state)
+            label = _find_on_screen(app, "project: Alpha")
+            with set_app(app):
+                self._fire(app, label.x, label.y, MouseEventType.MOUSE_UP)
+
+        assert state.project_dialog.show is True

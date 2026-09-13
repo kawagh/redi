@@ -43,8 +43,8 @@ from redi.tui.issue.find_dialog import (
 )
 from redi.tui.issue.issue_tab import clear_find_for_filter, reload_with_filter
 from redi.tui.keybindings.keybinding_actions import reset_preview_scroll
-from redi.tui.profile_dialog import request_profile_switch
-from redi.tui.project_dialog import apply_project_switch
+from redi.tui.profile_dialog import on_profile_selected
+from redi.tui.project_dialog import on_project_selected
 from redi.tui.state import TuiState
 from redi.tui.state.issue_tab import IssueFilter
 from redi.tui.state.time_entry_tab import TimeEntryFilter
@@ -78,7 +78,9 @@ from redi.tui.wiki.diff_dialog import (
 from redi.tui.wiki.diff_dialog import (
     shift_focus as wiki_diff_shift_focus,
 )
-from redi.tui.wiki.version_dialog import select_version as wiki_select_version
+from redi.tui.wiki.version_dialog import (
+    on_version_selected as on_wiki_version_selected,
+)
 
 
 def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
@@ -102,35 +104,29 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     def _(event):
         state.error_dialog = None
 
-    def _on_project_selected(event, project_id: str, label: str) -> None:
-        reset_preview_scroll(state)
-        apply_project_switch(state, project_id, label)
-
+    # 決定時の処理は各ダイアログのモジュールに置き、レイアウト側のクリックと共有する
     register_choice_keys(
-        kb, lambda: state.project_dialog, show_project_dialog, "p", _on_project_selected
+        kb,
+        lambda: state.project_dialog,
+        show_project_dialog,
+        "p",
+        lambda project_id, label: on_project_selected(state, project_id, label),
     )
 
-    def _on_profile_selected(event, name: str, _label: str) -> None:
-        # 切替が必要なときだけ TUI を抜ける。適用と state のクリアは cli.main が行う。
-        result = request_profile_switch(state, name)
-        if result is not None:
-            event.app.exit(result=result)
-
     register_choice_keys(
-        kb, lambda: state.profile_dialog, show_profile_dialog, "P", _on_profile_selected
+        kb,
+        lambda: state.profile_dialog,
+        show_profile_dialog,
+        "P",
+        lambda name, label: on_profile_selected(state, name, label),
     )
-
-    def _on_wiki_version_selected(event, value: str, _label: str) -> None:
-        reset_preview_scroll(state)
-        wiki_select_version(state, int(value))
-        state.wiki_tab.version_dialog.show = False
 
     register_choice_keys(
         kb,
         lambda: state.wiki_tab.version_dialog,
         show_wiki_version_dialog,
         "h",
-        _on_wiki_version_selected,
+        lambda value, label: on_wiki_version_selected(state, value, label),
     )
 
     @kb.add("tab", filter=show_wiki_diff_dialog)
