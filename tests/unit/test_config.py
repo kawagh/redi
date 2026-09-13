@@ -689,6 +689,96 @@ class TestShowAllProfiles:
 
         assert capsys.readouterr().err == ""
 
+    def test_hides_unknown_keys(self, tmp_path, capsys):
+        """Profileに無いキーは出力しない(キー名を誤記した鍵や別名で書いた鍵を表示しない)"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+            redmine_apikey = "secret-typo"
+            api_key = "secret-alias"
+            token = "secret-token"
+            defualt_project_id = "1"
+        """)
+        )
+
+        config.show_all_profiles(config_path=config_path)
+
+        out = capsys.readouterr().out
+        assert "secret-" not in out
+        assert "defualt_project_id" not in out
+        assert tomllib.loads(out)["main"] == {
+            "redmine_url": "https://redmine.example.com/main"
+        }
+
+    def test_hides_nested_tables(self, tmp_path, capsys):
+        """プロファイルの下にネストしたテーブルに書かれた値は出力しない"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+
+            [main.extra]
+            redmine_api_key = "secret-nested"
+        """)
+        )
+
+        config.show_all_profiles(config_path=config_path)
+
+        out = capsys.readouterr().out
+        assert "secret-nested" not in out
+        assert "extra" not in out
+        assert tomllib.loads(out)["main"] == {
+            "redmine_url": "https://redmine.example.com/main"
+        }
+
+    def test_hides_unknown_top_level_keys(self, tmp_path, capsys):
+        """トップレベルはdefault_profileと全プロファイル共通の既定値以外を出力しない"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+            text_formatting = "textile"
+            api_key = "secret-top"
+
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+        """)
+        )
+
+        config.show_all_profiles(config_path=config_path)
+
+        out = capsys.readouterr().out
+        assert "secret-top" not in out
+        doc = tomllib.loads(out)
+        assert doc["default_profile"] == "main"
+        assert doc["text_formatting"] == "textile"
+        assert set(doc) == {"default_profile", "text_formatting", "main"}
+
+    def test_outputs_only_display_fields(self, tmp_path, capsys):
+        """出力する項目はProfile.display_field_names()で決まり、秘匿項目を含まない"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+            redmine_api_key = "secret-main"
+            default_project_id = "1"
+            wiki_project_id = "2"
+            editor = "nvim"
+            language = "ja"
+            text_formatting = "textile"
+        """)
+        )
+
+        config.show_all_profiles(config_path=config_path)
+
+        doc = tomllib.loads(capsys.readouterr().out)
+        assert tuple(doc["main"]) == config.Profile.display_field_names()
+        assert "redmine_api_key" not in config.Profile.display_field_names()
+
     def test_prints_message_when_config_missing(self, tmp_path, capsys):
         """config.tomlが存在しない場合はメッセージを出力する"""
         config_path = tmp_path / "missing.toml"
