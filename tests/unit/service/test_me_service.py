@@ -77,7 +77,7 @@ class TestCheckConnection:
 
     def test_uses_given_url_and_key_with_timeout(self, monkeypatch):
         """切替先の URL / API キーで別 client を作り、timeout 付きで自分のアカウントを取る"""
-        from redi.api.client import client
+        from redi.api.client import CONNECTION_CHECK_TIMEOUT_SECONDS, client
 
         calls: list[tuple[str, str, float | None]] = []
 
@@ -100,7 +100,7 @@ class TestCheckConnection:
             (
                 "https://sub.example",
                 "key-sub",
-                me_service.CONNECTION_CHECK_TIMEOUT_SECONDS,
+                CONNECTION_CHECK_TIMEOUT_SECONDS,
             )
         ]
         assert (
