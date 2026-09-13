@@ -98,27 +98,27 @@ class TestRequestProfileSwitch:
         )
 
 
-class TestRenderTabsProfile:
-    """render_tabs() は接続中のプロファイルを常に表示する"""
+class TestRenderTopBarProfile:
+    """render_top_bar() は接続中のプロファイルを常に表示する"""
 
     def test_shows_current_profile(self, monkeypatch):
         """複数インスタンスを行き来するため接続先が分かるようにする"""
-        from redi.tui import app_render
+        from redi.tui.panes import top_bar
 
         monkeypatch.setattr(config, "current_profile", "sub")
         state = TuiState()
 
-        rendered = "".join(part[1] for part in app_render.render_tabs(state))
+        rendered = "".join(part[1] for part in top_bar.render_top_bar(state))
 
         assert "[profile: sub]" in rendered
 
     def test_no_label_when_profile_is_unset(self, monkeypatch):
         """プロファイル未使用 (環境変数のみ) なら何も出さない"""
-        from redi.tui import app_render
+        from redi.tui.panes import top_bar
 
         monkeypatch.setattr(config, "current_profile", None)
         state = TuiState()
 
-        rendered = "".join(part[1] for part in app_render.render_tabs(state))
+        rendered = "".join(part[1] for part in top_bar.render_top_bar(state))
 
         assert "[profile:" not in rendered

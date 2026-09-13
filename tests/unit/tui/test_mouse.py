@@ -1,4 +1,4 @@
-"""TUI のマウスホイールによるプレビュースクロールの単体テスト。"""
+"""TUI のマウス操作 (ホイール / クリック) の単体テスト。"""
 
 from typing import cast
 
@@ -12,18 +12,17 @@ from prompt_toolkit.output import DummyOutput
 from prompt_toolkit.utils import get_cwidth
 
 from redi.api.issue import Issue
-from redi.tui import mouse
 from redi.tui.app_layout import build_layout
-from redi.tui.app_render import render_tabs
 from redi.tui.conditions import build_conditions
-from redi.tui.mouse import (
+from redi.tui.mouse import PaneControl
+from redi.tui.panes import preview_pane
+from redi.tui.panes.list_pane import build_list_wheel_handler
+from redi.tui.panes.preview_pane import (
     WHEEL_LINES,
-    PaneControl,
-    build_list_wheel_handler,
     build_preview_click_handler,
     build_preview_wheel_handler,
-    build_tab_click_handler,
 )
+from redi.tui.panes.top_bar import build_tab_click_handler, render_top_bar
 from redi.tui.state import TuiState, TuiTab
 from redi.tui.tabs import TABS
 
@@ -287,7 +286,7 @@ class TestTabClick:
 
 def test_wheel_lines_is_between_line_and_half_page():
     """ホイール 1 目盛りは 1 行より多く、半ページより少ない"""
-    assert 1 < mouse.WHEEL_LINES < 10
+    assert 1 < preview_pane.WHEEL_LINES < 10
 
 
 class _FixedSizeOutput(DummyOutput):
@@ -356,7 +355,7 @@ class TestLayoutWiring:
             monkeypatch.setattr(tab, "on_activate", lambda s: None)
         # ラベルの位置は描画結果から測る (言語によりラベルの幅が変わる)
         x = 0
-        for part in render_tabs(state):
+        for part in render_top_bar(state):
             if part[1] == f" {TABS['wiki'].label} ":
                 break
             x += get_cwidth(part[1])

@@ -1,6 +1,5 @@
-"""画面のレイアウト (Window / Float) の組み立て。"""
+"""画面のレイアウト。ペイン (`panes/`) とダイアログを並べるだけの薄い層。"""
 
-from prompt_toolkit.data_structures import Point
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import (
     ConditionalContainer,
@@ -11,29 +10,17 @@ from prompt_toolkit.layout.containers import (
     Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.widgets import Frame
 
 from redi.i18n import messages
-from redi.tui.app_render import (
-    render_error_dialog,
-    render_help,
-    render_list_current,
-    render_preview_current,
-    render_status,
-    render_tabs,
-)
+from redi.tui.app_render import render_error_dialog, render_help, render_status
 from redi.tui.conditions import Conditions
 from redi.tui.issue.delete_dialog import build_delete_dialog
 from redi.tui.issue.filter_dialog import build_filter_dialog
 from redi.tui.issue.find_dialog import build_find_dialog
-from redi.tui.mouse import (
-    PaneControl,
-    build_list_wheel_handler,
-    build_preview_click_handler,
-    build_preview_wheel_handler,
-    build_tab_click_handler,
-)
+from redi.tui.panes.list_pane import build_list_window
+from redi.tui.panes.preview_pane import build_preview_window
+from redi.tui.panes.top_bar import build_top_bar_window
 from redi.tui.profile_dialog import build_profile_dialog
 from redi.tui.project_dialog import build_project_dialog
 from redi.tui.state import TuiState
@@ -47,41 +34,14 @@ from redi.tui.wiki.version_dialog import (
     build_version_dialog as build_wiki_version_dialog,
 )
 
-HALF = Dimension(weight=1, preferred=0)
-
 
 def build_layout(state: TuiState, conditions: Conditions) -> Layout:
-    # 一覧のホイールはカーソル移動に充てる。Window 既定の vertical_scroll に
-    # 渡すとカーソル行の追従 (get_cursor_position) と表示がずれる。
-    list_window = Window(
-        PaneControl(
-            lambda: render_list_current(state),
-            on_wheel=build_list_wheel_handler(state, conditions),
-            show_cursor=False,
-            get_cursor_position=lambda: Point(0, TABS[state.tab].get_cursor_y(state)),
-        ),
-        width=HALF,
-    )
-    preview_window = Window(
-        PaneControl(
-            lambda: render_preview_current(state),
-            on_wheel=build_preview_wheel_handler(state, conditions),
-            on_click=build_preview_click_handler(state, conditions),
-        ),
-        wrap_lines=True,
-        width=HALF,
-    )
+    list_window = build_list_window(state, conditions)
+    preview_window = build_preview_window(state, conditions)
 
-    on_click_tab = build_tab_click_handler(state, conditions)
     main_layout = HSplit(
         [
-            Window(
-                FormattedTextControl(
-                    lambda: render_tabs(state, on_click=on_click_tab),
-                    show_cursor=False,
-                ),
-                height=1,
-            ),
+            build_top_bar_window(state, conditions),
             Window(height=1, char="─"),
             VSplit(
                 [
