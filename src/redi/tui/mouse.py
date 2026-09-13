@@ -13,8 +13,13 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
 from redi.tui.conditions import Conditions
-from redi.tui.keybindings.keybinding_actions import scroll_preview
+from redi.tui.keybindings.keybinding_actions import (
+    clear_temporary_state,
+    reset_preview_scroll,
+    scroll_preview,
+)
 from redi.tui.state import TuiState
+from redi.tui.tabs import TABS
 
 # ホイール 1 目盛りで動かす行数。Ctrl+E / Ctrl+Y (1 行) より少し大きく、
 # 半ページ (Ctrl+D / Ctrl+U) より小さい値。
@@ -65,5 +70,26 @@ def build_preview_wheel_handler(
         if not (conditions.normal() or conditions.comment_select()):
             return
         scroll_preview(state, direction * WHEEL_LINES)
+
+    return on_wheel
+
+
+def build_list_wheel_handler(state: TuiState, conditions: Conditions) -> WheelHandler:
+    """一覧上のホイールを j / k と同じカーソル移動に変換する。
+
+    一覧はページ単位で端末に収まっているので、隠れた行をずらす「スクロール」は
+    無い。代わりに 1 目盛りで 1 行カーソルを動かす。j / k と同じく通常モード
+    だけで効き、プレビューのスクロール位置も先頭へ戻す。
+    """
+
+    def on_wheel(direction: int) -> None:
+        if not conditions.normal():
+            return
+        clear_temporary_state(state)
+        reset_preview_scroll(state)
+        if direction > 0:
+            TABS[state.tab].on_down(state)
+        else:
+            TABS[state.tab].on_up(state)
 
     return on_wheel

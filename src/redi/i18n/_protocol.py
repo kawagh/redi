@@ -1239,7 +1239,7 @@ class MessagesProto(Protocol):
     tui_help_switch_tab: str
     tui_help_preview_scroll_line: str
     tui_help_preview_scroll_half_page: str
-    tui_help_preview_scroll_wheel: str
+    tui_help_wheel: str
     tui_help_start_search: str
     tui_help_next_prev_match: str
     tui_help_clear_search: str

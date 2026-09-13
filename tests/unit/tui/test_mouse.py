@@ -14,7 +14,12 @@ from redi.api.issue import Issue
 from redi.tui import mouse
 from redi.tui.app_layout import build_layout
 from redi.tui.conditions import build_conditions
-from redi.tui.mouse import WHEEL_LINES, WheelControl, build_preview_wheel_handler
+from redi.tui.mouse import (
+    WHEEL_LINES,
+    WheelControl,
+    build_list_wheel_handler,
+    build_preview_wheel_handler,
+)
 from redi.tui.state import TuiState
 from redi.tui.tabs import TABS
 
@@ -120,6 +125,58 @@ class TestPreviewWheel:
         assert state.preview_scroll == 0
 
 
+class TestListWheel:
+    """一覧上のホイールは j / k と同じカーソル移動になる"""
+
+    def _state(self) -> TuiState:
+        state = TuiState()
+        state.page_size = 20
+        state.issue_tab.issues = cast(
+            list[Issue], [{"id": i, "subject": f"s{i}"} for i in range(1, 4)]
+        )
+        return state
+
+    def test_scroll_down_moves_cursor_down(self):
+        """ホイール下でカーソルが 1 行下がる"""
+        state = self._state()
+        on_wheel = build_list_wheel_handler(state, build_conditions(state))
+
+        on_wheel(1)
+
+        assert state.issue_tab.cursor == 1
+
+    def test_scroll_up_stops_at_top(self):
+        """ホイール上でカーソルが 1 行上がり、先頭より上へは行かない"""
+        state = self._state()
+        state.issue_tab.cursor = 1
+        on_wheel = build_list_wheel_handler(state, build_conditions(state))
+
+        on_wheel(-1)
+        on_wheel(-1)
+
+        assert state.issue_tab.cursor == 0
+
+    def test_resets_preview_scroll(self, monkeypatch):
+        """カーソルが動いたらプレビューのスクロール位置を先頭へ戻す (j / k と同じ)"""
+        state = self._state()
+        state.preview_scroll = 5
+        on_wheel = build_list_wheel_handler(state, build_conditions(state))
+
+        on_wheel(1)
+
+        assert state.preview_scroll == 0
+
+    def test_ignored_in_comment_select_mode(self):
+        """コメント選択モードでは一覧のカーソルを動かさない"""
+        state = self._state()
+        state.issue_tab.comment_select.active = True
+        on_wheel = build_list_wheel_handler(state, build_conditions(state))
+
+        on_wheel(1)
+
+        assert state.issue_tab.cursor == 0
+
+
 def test_wheel_lines_is_between_line_and_half_page():
     """ホイール 1 目盛りは 1 行より多く、半ページより少ない"""
     assert 1 < mouse.WHEEL_LINES < 10
@@ -139,7 +196,9 @@ class TestLayoutWiring:
         handler(MouseEvent(Point(x, y), event_type, MouseButton.NONE, frozenset()))
 
     def _render(self, monkeypatch, state: TuiState) -> Application:
-        state.issue_tab.issues = cast(list[Issue], [{"id": 1, "subject": "a"}])
+        state.issue_tab.issues = cast(
+            list[Issue], [{"id": 1, "subject": "a"}, {"id": 2, "subject": "b"}]
+        )
         monkeypatch.setattr(TABS["issues"], "render_preview", lambda s: PREVIEW)
         app = Application(
             layout=build_layout(state, build_conditions(state)),
@@ -166,8 +225,8 @@ class TestLayoutWiring:
 
         assert state.preview_scroll == WHEEL_LINES
 
-    def test_wheel_over_list_does_nothing(self, monkeypatch):
-        """左ペイン (一覧) の上でホイールを回してもプレビューは動かない"""
+    def test_wheel_over_list_moves_cursor(self, monkeypatch):
+        """左ペイン (一覧) の上でホイール下を回すとカーソルが下がり、プレビューは動かない"""
         state = TuiState()
         state.page_size = 20
         with (
@@ -178,4 +237,5 @@ class TestLayoutWiring:
             with set_app(app):
                 self._fire(app, 10, 5, MouseEventType.SCROLL_DOWN)
 
+        assert state.issue_tab.cursor == 1
         assert state.preview_scroll == 0
