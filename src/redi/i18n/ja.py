@@ -17,7 +17,7 @@ class Ja(MessagesProto):
     profile_is_default_cannot_delete = (
         "profile '{name}' は default_profile に設定されているため削除できません。"
         "先に default_profile を切り替えてください: "
-        "`redi config update --default_profile <{names}>`"
+        "`redi config update --default_profile <profile>`（切替候補: {names}）"
     )
     default_project_id_set = "default_project_idを {value} に設定しました{suffix}"
     editor_set = "editorを {value} に設定しました{suffix}"

@@ -17,7 +17,7 @@ class En(MessagesProto):
     profile_is_default_cannot_delete = (
         "profile '{name}' is the default_profile and cannot be deleted. "
         "Switch default_profile first: "
-        "`redi config update --default_profile <{names}>`"
+        "`redi config update --default_profile <profile>` (available: {names})"
     )
     default_project_id_set = "Set default_project_id to {value}{suffix}"
     editor_set = "Set editor to {value}{suffix}"
