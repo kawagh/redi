@@ -93,6 +93,10 @@ def run_issue_tui(
         layout=build_layout(state, conditions),
         key_bindings=kb,
         full_screen=True,
+        # プレビューをホイールでスクロールするため端末のマウス追跡を有効にする。
+        # 有効中はドラッグ選択がアプリに渡るので、端末側で文字を選ぶときは
+        # Shift を押しながらドラッグする (多くの端末の慣習)。
+        mouse_support=True,
     )
 
     attach_resize_watcher(app, state, conditions)

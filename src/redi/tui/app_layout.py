@@ -27,6 +27,7 @@ from redi.tui.conditions import Conditions
 from redi.tui.issue.delete_dialog import build_delete_dialog
 from redi.tui.issue.filter_dialog import build_filter_dialog
 from redi.tui.issue.find_dialog import build_find_dialog
+from redi.tui.mouse import WheelControl, build_preview_wheel_handler
 from redi.tui.profile_dialog import build_profile_dialog
 from redi.tui.project_dialog import build_project_dialog
 from redi.tui.state import TuiState
@@ -44,8 +45,10 @@ HALF = Dimension(weight=1, preferred=0)
 
 
 def build_layout(state: TuiState, conditions: Conditions) -> Layout:
+    # 一覧はホイールを握りつぶす。Window 既定の vertical_scroll が動くと
+    # カーソル行の追従 (get_cursor_position) と表示がずれるため。
     list_window = Window(
-        FormattedTextControl(
+        WheelControl(
             lambda: render_list_current(state),
             show_cursor=False,
             get_cursor_position=lambda: Point(0, TABS[state.tab].get_cursor_y(state)),
@@ -53,7 +56,10 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
         width=HALF,
     )
     preview_window = Window(
-        FormattedTextControl(lambda: render_preview_current(state)),
+        WheelControl(
+            lambda: render_preview_current(state),
+            on_wheel=build_preview_wheel_handler(state, conditions),
+        ),
         wrap_lines=True,
         width=HALF,
     )

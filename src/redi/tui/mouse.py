@@ -1,0 +1,69 @@
+"""マウス操作 (ホイール) の受け口。
+
+prompt_toolkit の `Window` はホイールを自前の `vertical_scroll` で処理するが、
+プレビューは `wrap_lines=True` の制約から `state.preview_scroll` で先頭を切る
+自前スクロールをしている (`app_render._skip_lines`)。両方が動くと表示が
+二重にずれるので、`Window` に渡す前にここで握って `scroll_preview` に流す。
+"""
+
+from collections.abc import Callable
+
+from prompt_toolkit.formatted_text import AnyFormattedText
+from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+
+from redi.tui.conditions import Conditions
+from redi.tui.keybindings.keybinding_actions import scroll_preview
+from redi.tui.state import TuiState
+
+# ホイール 1 目盛りで動かす行数。Ctrl+E / Ctrl+Y (1 行) より少し大きく、
+# 半ページ (Ctrl+D / Ctrl+U) より小さい値。
+WHEEL_LINES = 3
+
+# 正: 下方向 / 負: 上方向 の目盛り数を受け取る。
+WheelHandler = Callable[[int], None]
+
+
+class WheelControl(FormattedTextControl):
+    """ホイールだけを `on_wheel` に流し、他のマウスイベントは無視する FormattedTextControl。
+
+    `on_wheel` が None のときはホイールを握りつぶす (Window の既定処理へ渡さない)。
+    """
+
+    def __init__(
+        self,
+        text: AnyFormattedText,
+        *,
+        on_wheel: WheelHandler | None = None,
+        **kwargs,
+    ) -> None:
+        super().__init__(text, **kwargs)
+        self._on_wheel = on_wheel
+
+    def mouse_handler(self, mouse_event: MouseEvent):
+        if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+            direction = 1
+        elif mouse_event.event_type == MouseEventType.SCROLL_UP:
+            direction = -1
+        else:
+            return NotImplemented
+        if self._on_wheel is not None:
+            self._on_wheel(direction)
+        return None
+
+
+def build_preview_wheel_handler(
+    state: TuiState, conditions: Conditions
+) -> WheelHandler:
+    """プレビュー上のホイールを Ctrl+E / Ctrl+Y と同じスクロールに変換する。
+
+    キー操作と同じく、通常モードとコメント選択モードのときだけ効く。
+    ダイアログ表示中はダイアログの外を回しても何も起きない。
+    """
+
+    def on_wheel(direction: int) -> None:
+        if not (conditions.normal() or conditions.comment_select()):
+            return
+        scroll_preview(state, direction * WHEEL_LINES)
+
+    return on_wheel

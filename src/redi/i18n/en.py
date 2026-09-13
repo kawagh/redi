@@ -1103,6 +1103,7 @@ class En(MessagesProto):
     tui_help_switch_tab = "Switch tab (next / prev)"
     tui_help_preview_scroll_line = "Scroll preview up / down by 1 line"
     tui_help_preview_scroll_half_page = "Scroll preview up / down by half page"
+    tui_help_preview_scroll_wheel = "Scroll preview with the mouse wheel over it"
     tui_help_start_search = "Start search"
     tui_help_next_prev_match = "Next / previous match"
     tui_help_clear_search = "Clear search (when a search query is set)"
