@@ -53,7 +53,7 @@ def test_config_toml_へのアクセスを拒否する(tool_input: dict) -> None
     "tool_input",
     [
         # redi 経由の参照は妨げない
-        {"command": "redi config --full"},
+        {"command": "redi config list"},
         {"command": "redi issue list --profile work"},
         # 別物の config.toml を巻き込まない
         {"file_path": "/home/user/project/config.toml"},

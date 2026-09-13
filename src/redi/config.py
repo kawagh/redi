@@ -371,10 +371,7 @@ def profile_source_label() -> str:
     )
 
 
-def show_config(full: bool = False, config_path: Path | None = None) -> None:
-    if full:
-        show_all_profiles(config_path=config_path)
-        return
+def show_config() -> None:
     values = {
         "redmine_url": redmine_url,
         "default_project_id": default_project_id or "",

@@ -8,7 +8,7 @@ class En(MessagesProto):
     profile_not_found = "profile '{name}' not found in {path}"
     profile_did_you_mean = "did you mean: {names}?"
     profile_available = "available profiles: {names}"
-    profile_list_hint = "(run `redi config --full` to list profiles)"
+    profile_list_hint = "(run `redi config list` to list profiles)"
     default_profile_set = "Set default_profile to {name}"
     default_project_id_set = "Set default_project_id to {value}{suffix}"
     editor_set = "Set editor to {value}{suffix}"
@@ -647,7 +647,7 @@ class En(MessagesProto):
     arg_help_debug_tui = "Dump TUI screen contents to a YAML log"
     arg_help_profile = (
         "Profile name to use (overrides default_profile in config.toml temporarily; "
-        "list with `redi config --full`)"
+        "list with `redi config list`)"
     )
     arg_help_refresh = (
         "Fetch without reading the cache (refreshes tracker / custom field choices)"
@@ -664,7 +664,6 @@ class En(MessagesProto):
     arg_help_skip_confirm = "Skip confirmation prompt"
     arg_help_open_web = "Open the Redmine page in a browser"
     arg_help_project_id = "Project ID"
-    arg_help_full_profiles = "Show all profiles"
 
     # ---- argparse helps (subcommand summary) ----
     arg_help_crud_subcommands = "list(l), view(v), create(c), update(u), delete(d)"
@@ -804,6 +803,8 @@ class En(MessagesProto):
 
     # ---- argparse helps (config) ----
     arg_help_config_command = "Show/update configuration / create profile"
+    arg_help_config_list = "List profiles"
+    arg_help_config_view = "Show the current profile"
     arg_help_config_update = "Update configuration"
     arg_help_config_profile_name_optional = (
         "Target profile name (default_profile if omitted)"

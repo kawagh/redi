@@ -827,7 +827,7 @@ class TestTextFormatting:
     """text_formattingはRedmineの記法をエージェントが投稿前に参照するための設定
 
     サーバー側の設定でREST APIからは取得できないため、ユーザーがconfig.tomlに書き、
-    `redi config` / `redi config --full` で参照する。
+    `redi config view` / `redi config list` で参照する。
     """
 
     def test_top_level_is_default_for_all_profiles(
@@ -857,7 +857,7 @@ class TestTextFormatting:
     def test_show_config_includes_resolved_value(
         self, text_formatting_config, no_redmine_env, monkeypatch, capsys
     ):
-        """`redi config` はトップレベルから引き継いだ値も含めて表示する"""
+        """`redi config view` はトップレベルから引き継いだ値も含めて表示する"""
         monkeypatch.setattr(config.sys, "argv", ["redi", "config"])
         original_profile = config.current_profile
         config.apply_profile("main", config_path=text_formatting_config)
@@ -872,7 +872,7 @@ class TestTextFormatting:
     def test_show_all_profiles_keeps_top_level_value(
         self, text_formatting_config, capsys
     ):
-        """`redi config --full` はトップレベルの値とプロファイルの上書きを両方出す"""
+        """`redi config list` はトップレベルの値とプロファイルの上書きを両方出す"""
         config.show_all_profiles(config_path=text_formatting_config)
 
         doc = tomllib.loads(capsys.readouterr().out)
@@ -905,14 +905,14 @@ class TestProfileNotFoundMessage:
     """存在しないプロファイルのエラーは、設定ファイルのパスだけで終わらせず次の一手を示す"""
 
     def test_lists_available_profiles_and_hint(self, tmp_path):
-        """設定ファイルにあるプロファイル名と `redi config --full` の案内を添える"""
+        """設定ファイルにあるプロファイル名と `redi config list` の案内を添える"""
         message = config.profile_not_found_message(
             "nosuch", tmp_path / "config.toml", ["main", "sub"]
         )
 
         assert "nosuch" in message
         assert "main, sub" in message
-        assert "redi config --full" in message
+        assert "redi config list" in message
 
     def test_suggests_close_match(self, tmp_path):
         """タイプミスが疑われる近い名前があれば候補として示す"""
@@ -937,7 +937,7 @@ class TestProfileNotFoundMessage:
             "nosuch", tmp_path / "config.toml", []
         )
 
-        assert "redi config --full" in message
+        assert "redi config list" in message
 
 
 class TestProfileNotFoundOutput:
@@ -968,7 +968,7 @@ class TestProfileNotFoundOutput:
 
         err = capsys.readouterr().err
         assert "main, sub" in err
-        assert "redi config --full" in err
+        assert "redi config list" in err
 
     def test_set_default_profile_lists_available_profiles(self, config_path, capsys):
         """set_default_profile()は存在しないプロファイルに対して一覧を出す"""
@@ -976,4 +976,4 @@ class TestProfileNotFoundOutput:
 
         err = capsys.readouterr().err
         assert "main, sub" in err
-        assert "redi config --full" in err
+        assert "redi config list" in err

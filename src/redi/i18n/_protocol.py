@@ -845,7 +845,6 @@ class MessagesProto(Protocol):
     arg_help_skip_confirm: str
     arg_help_open_web: str
     arg_help_project_id: str
-    arg_help_full_profiles: str
 
     # ---- argparse helps (project) ----
     arg_help_project_command: str
@@ -964,6 +963,8 @@ class MessagesProto(Protocol):
 
     # ---- argparse helps (config) ----
     arg_help_config_command: str
+    arg_help_config_list: str
+    arg_help_config_view: str
     arg_help_config_update: str
     arg_help_config_profile_name_optional: str
     arg_help_config_set_default_project_id: str

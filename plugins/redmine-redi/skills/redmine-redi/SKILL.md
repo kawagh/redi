@@ -31,7 +31,8 @@ Commands use `default_profile` unless you pass `--profile`, so the same command
 can hit a different server than you expect.
 
 ```sh
-redi config --full   # default_profile + every profile (URL, default project, language)
+redi config list     # default_profile + every profile (URL, default project, language)
+redi config view     # the profile in use
 redi me              # who you are on that server: admin or not, and which projects you belong to
 ```
 
@@ -43,8 +44,6 @@ redi issue list --profile work
 
 If a project you know exists does not show up, or a create fails with
 `Project cannot be blank`, you are almost certainly on the wrong profile.
-
-Note: there is no `redi config list`. Use `redi config --full`.
 
 A profile may define `default_project_id`, in which case `--project_id` can be omitted.
 

@@ -10,7 +10,7 @@ class Ja(MessagesProto):
     profile_not_found = "profile '{name}' は {path} にありません"
     profile_did_you_mean = "もしかして: {names}"
     profile_available = "利用可能なプロファイル: {names}"
-    profile_list_hint = "(一覧は `redi config --full` で確認できます)"
+    profile_list_hint = "(一覧は `redi config list` で確認できます)"
     default_profile_set = "default_profileを {name} に設定しました"
     default_project_id_set = "default_project_idを {value} に設定しました{suffix}"
     editor_set = "editorを {value} に設定しました{suffix}"
@@ -653,7 +653,7 @@ class Ja(MessagesProto):
     arg_help_debug_tui = "TUI のスクリーン内容を YAML 形式でログ出力する"
     arg_help_profile = (
         "使用するプロファイル名（config.tomlのdefault_profileを一時的に上書き。"
-        "一覧は redi config --full）"
+        "一覧は redi config list）"
     )
     arg_help_refresh = "キャッシュを読まずに取得し直す（トラッカーやカスタムフィールドの候補を更新する）"
 
@@ -668,7 +668,6 @@ class Ja(MessagesProto):
     arg_help_skip_confirm = "確認プロンプトをスキップ"
     arg_help_open_web = "ブラウザでRedmineのページを開く"
     arg_help_project_id = "プロジェクトID"
-    arg_help_full_profiles = "全プロファイルを表示"
 
     # ---- argparse helps (subcommand summary) ----
     arg_help_crud_subcommands = "list(l): 一覧, view(v): 詳細, create(c): 作成, update(u): 更新, delete(d): 削除"
@@ -808,6 +807,8 @@ class Ja(MessagesProto):
 
     # ---- argparse helps (config) ----
     arg_help_config_command = "設定表示/更新/プロファイル作成"
+    arg_help_config_list = "プロファイル一覧"
+    arg_help_config_view = "現在のプロファイルを表示"
     arg_help_config_update = "設定更新"
     arg_help_config_profile_name_optional = (
         "更新対象のプロファイル名（省略時はdefault_profile）"
