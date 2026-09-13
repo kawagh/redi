@@ -1,0 +1,30 @@
+[changelog]
+header = "# Changelog"
+body = """
+
+## {{ version | default(value="Unreleased") }}{% if timestamp %} ({{ timestamp | date(format="%Y-%m-%d") }}){% endif %}
+{# その版に PR が 1 つも無ければ (PR 運用前の 0.0.x)、直接コミットを載せる #}{% set_global has_pr = false %}{% for c in commits %}{% if c.group == "pr" %}{% set_global has_pr = true %}{% endif %}{% endfor %}
+{% for commit in commits -%}
+{% if commit.group == "pr" or not has_pr -%}
+- {{ commit.message | split(pat="\n") | first | trim }}
+{% endif -%}
+{% endfor -%}
+"""
+footer = ""
+trim = false
+
+[git]
+conventional_commits = false
+commit_preprocessors = [
+  # "Merge pull request #N from ..." + 空行 + PR タイトル を "PR タイトル (#N)" に組み替える
+  { pattern = '^Merge pull request #(\d+) from \S+\n\n(.*)$', replace = "${2} (#${1})" },
+]
+commit_parsers = [
+  { message = '.*\(#\d+\)$', group = "pr" },
+  # 版上げのコミットと develop の取り込みは載せない
+  { message = '^(\[version\] |\[update\] version |version )\d', skip = true },
+  { message = '^Merge ', skip = true },
+  { message = '.*', group = "direct" },
+]
+tag_pattern = "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+sort_commits = "oldest"
