@@ -6,10 +6,12 @@
 """
 
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
-from prompt_toolkit.formatted_text import StyleAndTextTuples
+from prompt_toolkit.formatted_text import OneStyleAndTextTuple, StyleAndTextTuples
 from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.mouse_handlers import MouseHandler
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
 from redi import config
@@ -24,17 +26,18 @@ from redi.tui.project_dialog import open_project_dialog
 from redi.tui.state import TuiState, TuiTab
 from redi.tui.tabs import TABS
 
-# ラベルに付けるマウスハンドラ。
-# ハンドラの戻り値は None か NotImplemented。prompt_toolkit はこれを object と
-# 注釈しており、実行時に使える型別名が無いので同じ書き方にする。
-LabelMouseHandler = Callable[[MouseEvent], object]
-# タブのラベルに付けるマウスハンドラ。タブのキーからハンドラを引く。
-TabMouseHandler = Callable[[TuiTab], LabelMouseHandler]
+if TYPE_CHECKING:
+    # ハンドラの戻り値 (None か NotImplemented) の型。prompt_toolkit が
+    # 型検査時にだけ定義しているので、実行時には import しない。
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
+
+# タブのラベルに付けるマウスハンドラを、タブのキーから作る関数。
+TabMouseHandlerFactory = Callable[[TuiTab], MouseHandler]
 
 
 def _with_handler(
-    style: str, text: str, handler: LabelMouseHandler | None
-) -> tuple[str, str] | tuple[str, str, LabelMouseHandler]:
+    style: str, text: str, handler: MouseHandler | None
+) -> OneStyleAndTextTuple:
     if handler is None:
         return (style, text)
     return (style, text, handler)
@@ -42,9 +45,9 @@ def _with_handler(
 
 def render_top_bar(
     state: TuiState,
-    on_click: TabMouseHandler | None = None,
-    on_profile_click: LabelMouseHandler | None = None,
-    on_project_click: LabelMouseHandler | None = None,
+    on_click: TabMouseHandlerFactory | None = None,
+    on_profile_click: MouseHandler | None = None,
+    on_project_click: MouseHandler | None = None,
 ) -> StyleAndTextTuples:
     """上端のバーを描画する。
 
@@ -81,15 +84,17 @@ def render_top_bar(
     return parts
 
 
-def build_tab_click_handler(state: TuiState, conditions: Conditions) -> TabMouseHandler:
+def build_tab_click_handler(
+    state: TuiState, conditions: Conditions
+) -> TabMouseHandlerFactory:
     """タブ行のラベルのクリックを Tab キーと同じタブ切り替えに変換する。
 
     クリックは MOUSE_UP で受ける (prompt_toolkit の Button と同じ流儀)。
     通常モードだけで効き、今のタブをクリックしても再読込はしない。
     """
 
-    def for_tab(tab: TuiTab) -> Callable[[MouseEvent], object]:
-        def on_mouse(mouse_event: MouseEvent) -> object:
+    def for_tab(tab: TuiTab) -> MouseHandler:
+        def on_mouse(mouse_event: MouseEvent) -> "NotImplementedOrNone":
             if mouse_event.event_type != MouseEventType.MOUSE_UP:
                 return NotImplemented
             if not conditions.normal() or state.tab == tab:
@@ -104,13 +109,13 @@ def build_tab_click_handler(state: TuiState, conditions: Conditions) -> TabMouse
 
 def _build_dialog_click_handler(
     state: TuiState, conditions: Conditions, open_dialog: Callable[[TuiState], None]
-) -> LabelMouseHandler:
+) -> MouseHandler:
     """ラベルのクリックを、ダイアログを開くキーと同じ操作に変換する。
 
     クリックは MOUSE_UP で受け、通常モードだけで効く。
     """
 
-    def on_mouse(mouse_event: MouseEvent) -> object:
+    def on_mouse(mouse_event: MouseEvent) -> "NotImplementedOrNone":
         if mouse_event.event_type != MouseEventType.MOUSE_UP:
             return NotImplemented
         if not conditions.normal():
@@ -124,14 +129,14 @@ def _build_dialog_click_handler(
 
 def build_profile_click_handler(
     state: TuiState, conditions: Conditions
-) -> LabelMouseHandler:
+) -> MouseHandler:
     """プロファイル名のクリックを P と同じプロファイル切替ダイアログの表示にする。"""
     return _build_dialog_click_handler(state, conditions, open_profile_dialog)
 
 
 def build_project_click_handler(
     state: TuiState, conditions: Conditions
-) -> LabelMouseHandler:
+) -> MouseHandler:
     """プロジェクト名のクリックを p と同じプロジェクト切替ダイアログの表示にする。"""
     return _build_dialog_click_handler(state, conditions, open_project_dialog)
 
