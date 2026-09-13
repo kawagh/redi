@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.83](https://github.com/kawagh/redi/compare/0.0.82...0.0.83) (2026-09-13)
+
+- feat(tui): マウスホイールでプレビューのスクロールと一覧のカーソル移動ができるようにする ([#582](https://github.com/kawagh/redi/pull/582))
+- feat(tui): タブ行のラベルをクリックしてタブを切り替えられるようにする ([#584](https://github.com/kawagh/redi/pull/584))
+- feat(tui): wiki の右ペインをクリックしたら本文を読み込むようにする ([#586](https://github.com/kawagh/redi/pull/586))
+- refactor(tui): マウスハンドラをペインの定義と同じモジュールに置く ([#589](https://github.com/kawagh/redi/pull/589))
+- refactor: client.py と cache.py を api/ 配下へ移す ([#591](https://github.com/kawagh/redi/pull/591))
+- fix(tui): 接続できないプロファイルへ切り替えても TUI を終了させない ([#594](https://github.com/kawagh/redi/pull/594))
+- feat(tui): profile / project をマウスで切り替えられるようにする ([#592](https://github.com/kawagh/redi/pull/592))
+
 ## [0.0.82](https://github.com/kawagh/redi/compare/0.0.81...0.0.82) (2026-09-13)
 
 - feat(config): list / view サブコマンドを追加し --full を廃止する ([#576](https://github.com/kawagh/redi/pull/576))
