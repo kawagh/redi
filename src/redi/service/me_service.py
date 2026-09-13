@@ -6,9 +6,13 @@ CLI と TUI で共通の手順をここに置く。HTTP とステータスコー
 import requests
 
 from redi.api import me as me_api
+from redi.api.client import RedmineClient
 from redi.api.me import MyAccount
 from redi.api.user import User
 from redi.service import user_service
+
+# 接続確認の待ち時間。応答が返らない URL に TUI や対話入力が長く止められないため。
+CONNECTION_CHECK_TIMEOUT_SECONDS = 10
 
 
 def read_my_account() -> MyAccount:
@@ -47,6 +51,20 @@ def read_my_user_id() -> str | None:
         return str(me_api.fetch_my_account()["id"])
     except requests.RequestException:
         return None
+
+
+def check_connection(base_url: str, api_key: str) -> MyAccount:
+    """`base_url` / `api_key` で自分のアカウントが取れるか確かめる。
+
+    グローバルの `client` は触らないので、TUI でプロファイルを切り替える前に
+    今の接続先を保ったまま切替先を確かめられる。
+
+    Raises:
+        RedmineConnectionException: 接続できない (サーバ未起動・URL 違い・タイムアウト)
+        requests.exceptions.HTTPError: 接続はできたが HTTP エラーが返った (API キー違いなど)
+    """
+    api_client = RedmineClient(base_url.rstrip("/"), api_key)
+    return me_api.fetch_my_account(api_client, timeout=CONNECTION_CHECK_TIMEOUT_SECONDS)
 
 
 def update_my_account(

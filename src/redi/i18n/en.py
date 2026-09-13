@@ -547,6 +547,7 @@ class En(MessagesProto):
     tui_profile_switch_invalid = (
         "profile '{name}' has no redmine_url or redmine_api_key"
     )
+    tui_profile_switch_unreachable = "Cannot connect to profile '{name}': {error}"
     tui_no_profiles = "No profiles found in config.toml"
     tui_help_title = "Help - {label} tab (any key to close)"
     tui_error_dialog_title = "Error (q to close)"

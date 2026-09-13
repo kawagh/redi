@@ -1,11 +1,13 @@
 """P で開くプロファイル切替ダイアログを開く/切り替える操作。"""
 
+import requests
 from prompt_toolkit.filters import FilterOrBool
 from prompt_toolkit.layout.containers import Float
 
 from redi import config
-from redi.config import list_profile_names, profile_has_credentials
+from redi.config import list_profile_names, profile_has_credentials, resolve_profile
 from redi.i18n import messages
+from redi.service import me_service
 from redi.tui.choice_dialog import build_choice_dialog
 from redi.tui.state import TuiResult, TuiState
 
@@ -41,6 +43,9 @@ def request_profile_switch(state: TuiState, name: str) -> TuiResult | None:
     `TuiState` は conditions / keybindings / layout の各クロージャに捕まえられていて
     実行中に差し替えられないため、ここでは抜けるだけにして、適用と作り直しは
     `cli.main` に任せる。
+
+    切替先に接続できるかはここで確かめる。抜けた後の再起動で接続に失敗すると
+    例外が CLI のトップまで抜けて TUI ごと終了し、元の画面に戻れないため。
     """
     dialog = state.profile_dialog
     dialog.show = False
@@ -48,5 +53,15 @@ def request_profile_switch(state: TuiState, name: str) -> TuiResult | None:
         return None
     if not profile_has_credentials(name):
         state.error_dialog = messages.tui_profile_switch_invalid.format(name=name)
+        return None
+    profile = resolve_profile(name)
+    try:
+        me_service.check_connection(
+            profile.redmine_url or "", profile.redmine_api_key or ""
+        )
+    except requests.exceptions.RequestException as e:
+        state.error_dialog = messages.tui_profile_switch_unreachable.format(
+            name=name, error=e
+        )
         return None
     return TuiResult(action="switch_profile", tab=state.tab, profile_name=name)

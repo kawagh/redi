@@ -193,12 +193,21 @@ def apply_profile(profile_name: str | None, config_path: Path | None = None) -> 
     text_formatting = profile.text_formatting or ""
 
 
+def resolve_profile(profile_name: str, config_path: Path | None = None) -> Profile:
+    """プロファイルの設定値を、適用 (貼り替え) せずに返す。
+
+    TUI の切替前チェックのように、現在の接続先を保ったまま別プロファイルの
+    URL / API キーを見たいときに使う。
+    """
+    return resolve_merged_config(profile_name, load_toml(config_path))
+
+
 def profile_has_credentials(profile_name: str, config_path: Path | None = None) -> bool:
     """接続に必要な設定が揃ったプロファイルかを返す。
 
     `check_config()` は sys.exit するため、TUI からの切り替え前チェックには使えない。
     """
-    profile = resolve_merged_config(profile_name, load_toml(config_path))
+    profile = resolve_profile(profile_name, config_path)
     return bool(profile.redmine_url) and bool(profile.redmine_api_key)
 
 

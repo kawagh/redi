@@ -707,6 +707,8 @@ class MessagesProto(Protocol):
     """{name}"""
     tui_profile_switch_invalid: str
     """切替先に redmine_url / redmine_api_key が揃っていない。{name} を埋め込む。"""
+    tui_profile_switch_unreachable: str
+    """切替先に接続できない。{name} と {error} を埋め込む。"""
     tui_no_profiles: str
     """config.toml にプロファイルが1つも無い。"""
     tui_help_title: str
