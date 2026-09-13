@@ -1,8 +1,8 @@
 import pytest
 import requests
 
+from redi.api.client import RedmineClient
 from redi.api.exceptions import RedmineConnectionException
-from redi.client import RedmineClient
 
 
 class TestReconfigure:

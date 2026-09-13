@@ -3,7 +3,8 @@ import time
 
 import pytest
 
-from redi import cache, config
+from redi import config
+from redi.api import cache
 
 
 class TestSave:

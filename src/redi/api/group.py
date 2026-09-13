@@ -1,8 +1,8 @@
 from typing import NotRequired, TypedDict, cast
 
+from redi.api.client import client
 from redi.api.exceptions import RedmineValidationException
 from redi.api.types import IdName
-from redi.client import client
 
 
 class GroupMembership(TypedDict):

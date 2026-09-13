@@ -1,11 +1,11 @@
 from typing import NotRequired, TypedDict, cast
 
+from redi.api.client import client
 from redi.api.exceptions import (
     ProjectNotFoundException,
     ProjectPermissionDeniedException,
 )
 from redi.api.types import IdName
-from redi.client import client
 
 
 class ProjectFile(TypedDict):

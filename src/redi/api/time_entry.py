@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import NotRequired, TypedDict, cast
 
+from redi.api.client import client
 from redi.api.exceptions import ProjectNotFoundException, RedmineValidationException
 from redi.api.types import IdName
-from redi.client import client
 
 
 class TimeEntry(TypedDict):

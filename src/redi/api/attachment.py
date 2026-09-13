@@ -2,8 +2,8 @@ import mimetypes
 import os
 from collections.abc import Iterator
 
+from redi.api.client import client
 from redi.api.types import Attachment
-from redi.client import client
 
 DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 

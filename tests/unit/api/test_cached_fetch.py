@@ -3,7 +3,8 @@ import json
 import pytest
 import requests
 
-from redi import cache, config
+from redi import config
+from redi.api import cache
 from redi.api import custom_field as custom_field_module
 from redi.api import enumeration as enumeration_module
 from redi.api import issue_status as issue_status_module

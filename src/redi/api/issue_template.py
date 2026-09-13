@@ -1,6 +1,6 @@
 from typing import TypedDict
 
-from redi.client import client
+from redi.api.client import client
 
 
 class IssueTemplate(TypedDict):

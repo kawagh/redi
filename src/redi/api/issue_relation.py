@@ -1,7 +1,7 @@
 from typing import TypedDict, cast
 
+from redi.api.client import client
 from redi.api.exceptions import RedmineValidationException
-from redi.client import client
 
 RELATION_TYPES = (
     "relates",

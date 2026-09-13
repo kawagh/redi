@@ -1,4 +1,4 @@
-from redi.client import client
+from redi.api.client import client
 
 
 def fetch_roles() -> list[dict]:

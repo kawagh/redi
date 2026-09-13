@@ -1,7 +1,7 @@
 from typing import Literal, TypedDict, cast, get_args
 
+from redi.api.client import client
 from redi.api.exceptions import ProjectNotFoundException
-from redi.client import client
 
 # https://www.redmine.org/projects/redmine/wiki/Rest_Search
 SearchScope = Literal["all", "my_projects", "bookmarks", "subprojects"]
