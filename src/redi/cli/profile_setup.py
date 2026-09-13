@@ -9,7 +9,7 @@ import sys
 import requests
 from prompt_toolkit.validation import Validator
 
-from redi.api.client import RedmineClient
+from redi.api.client import CONNECTION_CHECK_TIMEOUT_SECONDS, RedmineClient
 from redi.api.me import MyAccount, fetch_my_account
 from redi.api.project import Project, fetch_projects
 from redi.cli.interactive import prompt, raise_on_cancel
@@ -19,16 +19,12 @@ from redi.config import Profile
 from redi.i18n import MessagesProto
 from redi.output import eprint
 
-# 接続確認は入力されたばかりの URL に対して行うため、応答が返らないときに
-# 待たされ続けないよう timeout を置く
-_VERIFY_TIMEOUT_SECONDS = 10
-
 
 def _verify_connection(
     api_client: RedmineClient, messages: MessagesProto
 ) -> MyAccount | None:
     try:
-        return fetch_my_account(api_client, timeout=_VERIFY_TIMEOUT_SECONDS)
+        return fetch_my_account(api_client, timeout=CONNECTION_CHECK_TIMEOUT_SECONDS)
     except requests.exceptions.HTTPError as e:
         if e.response is not None:
             eprint(
@@ -127,7 +123,7 @@ def prompt_connection_profile(current: Profile, messages: MessagesProto) -> Prof
     入力が中断された場合は exit 1 する。
     """
     url, api_key = _prompt_credentials(current, messages)
-    api_client = RedmineClient(url.rstrip("/"), api_key)
+    api_client = RedmineClient(url, api_key)
 
     print(messages.checking_connection)
     user = _verify_connection(api_client, messages)

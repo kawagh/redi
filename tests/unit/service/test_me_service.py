@@ -70,3 +70,40 @@ class TestReadMyUserId:
         set_error(requests.ConnectionError())
 
         assert me_service.read_my_user_id() is None
+
+
+class TestCheckConnection:
+    """check_connection は指定した接続先だけを確かめ、グローバルの client は触らない"""
+
+    def test_uses_given_url_and_key_with_timeout(self, monkeypatch):
+        """切替先の URL / API キーで別 client を作り、timeout 付きで自分のアカウントを取る"""
+        from redi.api.client import CONNECTION_CHECK_TIMEOUT_SECONDS, client
+
+        calls: list[tuple[str, str, float | None]] = []
+
+        def fake_fetch(api_client, timeout=None):
+            calls.append(
+                (
+                    api_client.base_url,
+                    api_client.session.headers["X-Redmine-API-Key"],
+                    timeout,
+                )
+            )
+            return {"id": 1}
+
+        monkeypatch.setattr(me_service.me_api, "fetch_my_account", fake_fetch)
+        before = (client.base_url, client.session.headers.get("X-Redmine-API-Key"))
+
+        me_service.check_connection("https://sub.example/", "key-sub")
+
+        assert calls == [
+            (
+                "https://sub.example",
+                "key-sub",
+                CONNECTION_CHECK_TIMEOUT_SECONDS,
+            )
+        ]
+        assert (
+            client.base_url,
+            client.session.headers.get("X-Redmine-API-Key"),
+        ) == before
