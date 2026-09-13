@@ -1,8 +1,8 @@
 from typing import Literal, NotRequired, TypedDict, cast
 
-from redi import cache
+from redi.api import cache
+from redi.api.client import client
 from redi.api.types import IdName
-from redi.client import client
 
 CACHE_KEY = "custom_fields"
 

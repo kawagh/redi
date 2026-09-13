@@ -9,12 +9,12 @@ import sys
 import requests
 from prompt_toolkit.validation import Validator
 
+from redi.api.client import RedmineClient
 from redi.api.me import MyAccount, fetch_my_account
 from redi.api.project import Project, fetch_projects
 from redi.cli.interactive import prompt, raise_on_cancel
 from redi.cli.picker import inline_choice
 from redi.cli.validator import UrlValidator
-from redi.client import RedmineClient
 from redi.config import Profile
 from redi.i18n import MessagesProto
 from redi.output import eprint

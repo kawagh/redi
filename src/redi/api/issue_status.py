@@ -1,8 +1,8 @@
 from typing import cast
 
-from redi import cache
+from redi.api import cache
+from redi.api.client import client
 from redi.api.issue import IssueStatus
-from redi.client import client
 
 CACHE_KEY = "issue_statuses"
 

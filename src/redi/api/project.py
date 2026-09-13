@@ -1,13 +1,13 @@
 from typing import NotRequired, TypedDict, cast
 
 from redi.api import PAGE_LIMIT_MAX
+from redi.api.client import RedmineClient, client
 from redi.api.exceptions import (
     ProjectNotFoundException,
     ProjectPermissionDeniedException,
     RedmineValidationException,
 )
 from redi.api.types import IdName
-from redi.client import RedmineClient, client
 
 # 一覧を1回のリクエストで取る件数
 PROJECTS_PAGE_LIMIT = PAGE_LIMIT_MAX

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Literal, NotRequired, TypedDict, cast, get_args
 
+from redi.api.client import client
 from redi.api.exceptions import (
     IssueListNotFoundException,
     ProjectNotFoundException,
@@ -11,7 +12,6 @@ from redi.api.exceptions import (
     RedmineValidationException,
 )
 from redi.api.types import IdName
-from redi.client import client
 
 # https://www.redmine.org/projects/redmine/wiki/Rest_Issues#Showing-an-issue
 IssueInclude = Literal[

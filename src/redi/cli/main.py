@@ -9,6 +9,7 @@ import argcomplete
 import requests
 
 from redi import config
+from redi.api.client import client
 from redi.api.exceptions import (
     RedmineConnectionException,
     RedmineValidationException,
@@ -58,7 +59,6 @@ from redi.cli.time_entry_command import add_time_entry_parser, handle_time_entry
 from redi.cli.user_command import add_user_parser, handle_user
 from redi.cli.version_command import add_version_parser, handle_version
 from redi.cli.wiki_command import add_wiki_parser, handle_wiki
-from redi.client import client
 from redi.config import CONFIG_PATH, check_config, list_profile_names
 from redi.i18n import messages
 from redi.output import eprint
