@@ -100,6 +100,8 @@ redi config update --default_profile <profile_name> # switch profile
 redi config update <profile_name> --editor nvim # update profile
 redi config update --language ja # switch language ("en" or "ja")
 redi config update --text_formatting textile # text formatting of the Redmine server ("markdown" or "textile")
+redi config delete # interactive: select profile to delete
+redi config delete <profile_name> --yes # delete profile without confirmation
 redi --profile <profile_name> issue # temporarily switch profile for this command
 
 # project (alias: p)

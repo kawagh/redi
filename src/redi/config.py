@@ -336,6 +336,53 @@ def set_default_profile(profile_name: str, config_path: Path | None = None) -> b
     return True
 
 
+class DeleteProfileResult(NamedTuple):
+    deleted: bool
+    default_removed: bool
+
+
+def delete_profile(
+    profile_name: str, config_path: Path | None = None
+) -> DeleteProfileResult:
+    """指定プロファイルのテーブルを config.toml から消す。
+
+    default_profile が指すプロファイルは、他にプロファイルが残るなら参照先が無く
+    なるので消さない(先に default_profile を切り替えさせる)。最後の 1 つなら
+    default_profile も一緒に消し、`redi init` からやり直せる状態にする。
+    存在しないプロファイルや消さなかった場合は deleted=False を返す。
+    """
+    from redi.i18n import messages
+
+    path = config_path or CONFIG_PATH
+    if not path.exists():
+        eprint(profile_not_found_message(profile_name, path, []))
+        return DeleteProfileResult(deleted=False, default_removed=False)
+    with open(path) as f:
+        doc = tomlkit.load(f)
+
+    names = [k for k, v in doc.items() if isinstance(v, Table)]
+    if profile_name not in names:
+        eprint(profile_not_found_message(profile_name, path, names))
+        return DeleteProfileResult(deleted=False, default_removed=False)
+
+    is_default = doc.get("default_profile") == profile_name
+    if is_default and len(names) > 1:
+        eprint(
+            messages.profile_is_default_cannot_delete.format(
+                name=profile_name,
+                names=", ".join(n for n in names if n != profile_name),
+            )
+        )
+        return DeleteProfileResult(deleted=False, default_removed=False)
+
+    del doc[profile_name]
+    if is_default:
+        del doc["default_profile"]
+    with open(path, "w") as f:
+        tomlkit.dump(doc, f)
+    return DeleteProfileResult(deleted=True, default_removed=is_default)
+
+
 def list_profile_names(config_path: Path | None = None) -> list[str]:
     path = config_path or CONFIG_PATH
     if not path.exists():

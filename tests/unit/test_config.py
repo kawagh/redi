@@ -358,6 +358,104 @@ class TestSetDefaultProfile:
         assert "default_profile" not in doc
 
 
+class TestDeleteProfile:
+    """delete_profile()はconfig.tomlから指定プロファイルのセクションを消す"""
+
+    def test_deletes_profile_section(self, tmp_path):
+        """default_profile 以外のプロファイルを消し、他のプロファイルと default_profile は残す"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+
+            [sub]
+            redmine_url = "https://redmine.example.com/sub"
+        """)
+        )
+
+        result = config.delete_profile("sub", config_path=config_path)
+
+        assert result == config.DeleteProfileResult(deleted=True, default_removed=False)
+        with open(config_path, "rb") as f:
+            doc = tomllib.load(f)
+        assert "sub" not in doc
+        assert doc["main"]["redmine_url"] == "https://redmine.example.com/main"
+        assert doc["default_profile"] == "main"
+
+    def test_refuses_default_profile_when_others_exist(self, tmp_path, capsys):
+        """default_profile が指すプロファイルは他が残るなら消さず、切替先を案内する"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+
+            [sub]
+            redmine_url = "https://redmine.example.com/sub"
+        """)
+        )
+
+        result = config.delete_profile("main", config_path=config_path)
+
+        assert result.deleted is False
+        err = capsys.readouterr().err
+        assert "main" in err
+        assert "--default_profile" in err
+        assert "sub" in err
+        with open(config_path, "rb") as f:
+            doc = tomllib.load(f)
+        assert "main" in doc
+
+    def test_deletes_last_profile_with_default(self, tmp_path):
+        """最後の 1 つを消すときは行き先の無い default_profile も一緒に消す"""
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            textwrap.dedent("""\
+            default_profile = "main"
+
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+        """)
+        )
+
+        result = config.delete_profile("main", config_path=config_path)
+
+        assert result == config.DeleteProfileResult(deleted=True, default_removed=True)
+        with open(config_path, "rb") as f:
+            doc = tomllib.load(f)
+        assert doc == {}
+
+    def test_returns_false_when_profile_not_found(self, tmp_path, capsys):
+        """存在しないプロファイルは消せず、ファイルを変更しない"""
+        config_path = tmp_path / "config.toml"
+        original = textwrap.dedent("""\
+            [main]
+            redmine_url = "https://redmine.example.com/main"
+        """)
+        config_path.write_text(original)
+
+        result = config.delete_profile("missing", config_path=config_path)
+
+        assert result.deleted is False
+        assert "missing" in capsys.readouterr().err
+        assert config_path.read_text() == original
+
+    def test_returns_false_when_file_missing(self, tmp_path, capsys):
+        """config.toml が無ければ消せず、ファイルも作らない"""
+        config_path = tmp_path / "config.toml"
+
+        result = config.delete_profile("main", config_path=config_path)
+
+        assert result.deleted is False
+        assert "main" in capsys.readouterr().err
+        assert not config_path.exists()
+
+
 class TestResolveProfileName:
     """resolve_profile_name()はargvの--profileを優先しdefault_profileにfallbackする"""
 

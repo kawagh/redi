@@ -10,6 +10,15 @@ class En(MessagesProto):
     profile_available = "available profiles: {names}"
     profile_list_hint = "(run `redi config list` to list profiles)"
     default_profile_set = "Set default_profile to {name}"
+    profile_deleted = "Deleted profile '{name}'"
+    default_profile_removed = (
+        "Removed default_profile as well. To create a profile, run `redi init`"
+    )
+    profile_is_default_cannot_delete = (
+        "profile '{name}' is the default_profile and cannot be deleted. "
+        "Switch default_profile first: "
+        "`redi config update --default_profile <profile>` (available: {names})"
+    )
     default_project_id_set = "Set default_project_id to {value}{suffix}"
     editor_set = "Set editor to {value}{suffix}"
     language_set = "Set language to {value}{suffix}"
@@ -288,6 +297,7 @@ class En(MessagesProto):
     prompt_select_news_to_update = "Select news to update"
     prompt_select_news_to_delete = "Select news to delete"
     prompt_select_profile = "Select profile (Enter: set as default / u: update fields)"
+    prompt_select_profile_to_delete = "Select profile to delete"
     prompt_profile_name = "Profile name: "
     prompt_set_default_profile = "Set profile '{name}' as default_profile?"
     prompt_default_project_id = "default_project_id: "
@@ -440,6 +450,7 @@ class En(MessagesProto):
     delete_target_time_entry = (
         "Time entry to delete: {id} {hours}h {activity} ({spent_on})"
     )
+    delete_target_profile = "Profile to delete: {name}"
 
     # ---- detail labels ----
     label_assignable = "Assignable: {value}"
@@ -802,7 +813,7 @@ class En(MessagesProto):
     arg_help_wiki_update_title = "Wiki page title (omit to select interactively)"
 
     # ---- argparse helps (config) ----
-    arg_help_config_command = "Show/update configuration / create profile"
+    arg_help_config_command = "Show/update configuration / create or delete profile"
     arg_help_config_list = "List profiles"
     arg_help_config_view = "Show the current profile"
     arg_help_config_update = "Update configuration"
@@ -831,6 +842,8 @@ class En(MessagesProto):
         "Text formatting of the Redmine server (markdown or textile)"
     )
     arg_help_config_set_default_flag = "Set the created profile as default_profile"
+    arg_help_config_delete = "Delete profile"
+    arg_help_config_delete_profile_name = "Profile name to delete (prompted if omitted)"
 
     # ---- argparse helps (init) ----
     arg_help_init_command = "Initial setup (verify URL/API key then create profile)"

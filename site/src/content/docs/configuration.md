@@ -66,6 +66,7 @@ redi config view              # the profile in use
 | `redi init` | First-time setup. Asks for the language, then URL and API key, and verifies them |
 | `redi config create` | Add another profile. Walks through the same steps |
 | `redi config update` | Change one value |
+| `redi config delete` | Remove a profile. Asks for confirmation; `--yes` skips it |
 
 Editing the file by hand works too.
 

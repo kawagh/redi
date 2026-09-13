@@ -65,6 +65,7 @@ redi config view              # 使用中のプロファイル
 | `redi init` | 初回セットアップ。言語を尋ね、URL と API キーを疎通確認してから書き込みます |
 | `redi config create` | プロファイルを追加する。同じ手順を辿ります |
 | `redi config update` | 値を1つ変更する |
+| `redi config delete` | プロファイルを削除する。確認を挟み、`--yes` で飛ばせます |
 
 直接ファイルを編集しても構いません。
 

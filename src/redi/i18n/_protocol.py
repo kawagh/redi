@@ -25,6 +25,11 @@ class MessagesProto(Protocol):
     """プロファイル一覧の出し方の案内"""
     default_profile_set: str
     """default_profile を設定。{name}"""
+    profile_deleted: str
+    """{name}"""
+    default_profile_removed: str
+    profile_is_default_cannot_delete: str
+    """{name}, {names}"""
     default_project_id_set: str
     """default_project_id を設定。{value}, {suffix}"""
     editor_set: str
@@ -406,6 +411,7 @@ class MessagesProto(Protocol):
     prompt_select_news_to_delete: str
     prompt_select_profile: str
     """プロファイル一覧の見出し。Enter でデフォルト設定 / u で項目更新の案内を含む"""
+    prompt_select_profile_to_delete: str
     prompt_profile_name: str
     """作成するプロファイル名の入力"""
     prompt_set_default_profile: str
@@ -574,6 +580,8 @@ class MessagesProto(Protocol):
     """{id}, {name}"""
     delete_target_time_entry: str
     """{id}, {hours}, {activity}, {spent_on}"""
+    delete_target_profile: str
+    """{name}"""
 
     # ---- detail/output labels ----
     label_assignable: str
@@ -985,6 +993,8 @@ class MessagesProto(Protocol):
     arg_help_config_language: str
     arg_help_config_text_formatting: str
     arg_help_config_set_default_flag: str
+    arg_help_config_delete: str
+    arg_help_config_delete_profile_name: str
 
     # ---- argparse helps (init) ----
     arg_help_init_command: str
