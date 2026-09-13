@@ -45,6 +45,16 @@ class Profile:
         return tuple(f.name for f in fields(cls))
 
     @classmethod
+    def display_field_names(cls) -> tuple[str, ...]:
+        """設定値の表示 (`redi config list`) に出してよい項目名を返す。
+
+        API キーなどの秘匿項目を除いたもの。出力側はこの一覧から組み立てることで、
+        config.toml にあるキーを取り除く方式で起きる漏れ (キー名の誤記やネスト) を
+        無くす。
+        """
+        return tuple(name for name in cls.field_names() if name not in SECRET_FIELDS)
+
+    @classmethod
     def from_dict(cls, values: Mapping[str, Any]) -> Self:
         """TOML から読んだ dict を Profile にする。
 
@@ -72,6 +82,9 @@ class Profile:
         """other の設定済み項目を自分に重ねた Profile を返す。"""
         return self.from_dict({**self.to_dict(), **other.to_dict()})
 
+
+# 表示に出してはいけない秘匿項目。Profile に秘匿項目を足したらここにも足す
+SECRET_FIELDS = ("redmine_api_key",)
 
 # プロファイルにも環境変数にも項目が無いときに使う値
 DEFAULT_PROFILE = Profile(editor="vim", language="en", text_formatting="markdown")
@@ -395,29 +408,44 @@ def show_config() -> None:
 
 
 def show_all_profiles(config_path: Path | None = None) -> None:
+    """config.toml の全プロファイルを、既知の項目だけに絞って TOML で出力する。
+
+    API キーを見せずに設定値を確認する経路なので、config.toml をそのまま出して秘匿
+    項目を取り除くのではなく、Profile.display_field_names() の項目だけで組み立て直す。
+    キー名を誤記した鍵や、別名で書かれた鍵、ネストしたテーブルの下に書かれた値は
+    出力に含めない。
+    """
     path = config_path or CONFIG_PATH
     if not path.exists():
         eprint(f"config file not found: {path}")
         return
     from redi.i18n import messages
 
-    with open(path) as f:
-        doc = tomlkit.load(f)
-    # API キーは置き場所によらず出力に含めない。プロファイルの外に書かれたキーは
-    # 認証に使われないので、置き場所の誤りとして知らせる
-    if "redmine_api_key" in doc:
-        del doc["redmine_api_key"]
+    source = load_toml(path)
+    # プロファイルの外に書かれたキーは認証に使われないので、置き場所の誤りとして知らせる
+    if "redmine_api_key" in source:
         eprint(messages.config_top_level_api_key_warning.format(path=path))
-    for key in list(doc.keys()):
-        value = doc[key]
-        if isinstance(value, Table) and "redmine_api_key" in value:
-            del value["redmine_api_key"]
-    # default_profile は既定値でしかないので、今回使われたプロファイルの見出しに印を付ける
-    current_table = doc.get(current_profile) if current_profile else None
-    if isinstance(current_table, Table):
-        current_table.comment(
-            messages.config_current_profile_comment.format(
-                source=profile_source_label()
+
+    doc = tomlkit.document()
+    default_profile = source.get("default_profile")
+    if default_profile is not None:
+        doc["default_profile"] = str(default_profile)
+    for key, value in load_top_level_defaults(source).to_dict().items():
+        doc[key] = value
+    for name, value in source.items():
+        if not isinstance(value, dict):
+            continue
+        profile = Profile.from_dict(value)
+        table = tomlkit.table()
+        for key in Profile.display_field_names():
+            if field_value := getattr(profile, key):
+                table[key] = field_value
+        # default_profile は既定値でしかないので、今回使われたプロファイルの見出しに印を付ける
+        if name == current_profile:
+            table.comment(
+                messages.config_current_profile_comment.format(
+                    source=profile_source_label()
+                )
             )
-        )
+        doc[name] = table
     print(tomlkit.dumps(doc).rstrip())
