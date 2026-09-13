@@ -1,5 +1,6 @@
 """P で開くプロファイル切替ダイアログを開く/切り替える操作。"""
 
+from prompt_toolkit.application.current import get_app
 from prompt_toolkit.filters import FilterOrBool
 from prompt_toolkit.layout.containers import Float
 
@@ -16,6 +17,7 @@ def build_profile_dialog(state: TuiState, show: FilterOrBool) -> Float:
         messages.tui_profile_dialog_title,
         messages.tui_profile_dialog_hint,
         show,
+        lambda name, label: on_profile_selected(state, name, label),
     )
 
 
@@ -50,3 +52,13 @@ def request_profile_switch(state: TuiState, name: str) -> TuiResult | None:
         state.error_dialog = messages.tui_profile_switch_invalid.format(name=name)
         return None
     return TuiResult(action="switch_profile", tab=state.tab, profile_name=name)
+
+
+def on_profile_selected(state: TuiState, name: str, _label: str) -> None:
+    """ダイアログで決定 (Enter / クリック) したときの処理。
+
+    切替が必要なときだけ TUI を抜ける。適用と state のクリアは cli.main が行う。
+    """
+    result = request_profile_switch(state, name)
+    if result is not None:
+        get_app().exit(result=result)

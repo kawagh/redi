@@ -8,6 +8,7 @@ from redi.i18n import messages
 from redi.service.project_service import list_projects, sort_projects_by_id_desc
 from redi.tui.choice_dialog import build_choice_dialog
 from redi.tui.issue.issue_tab import reload_with_filter
+from redi.tui.keybindings.keybinding_actions import reset_preview_scroll
 from redi.tui.state import TuiState
 from redi.tui.state.time_entry_tab import TimeEntryFilter, TimeEntryTabState
 from redi.tui.state.wiki_tab import WikiTabState
@@ -20,6 +21,7 @@ def build_project_dialog(state: TuiState, show: FilterOrBool) -> Float:
         messages.tui_project_dialog_title,
         messages.tui_project_dialog_hint,
         show,
+        lambda project_id, label: on_project_selected(state, project_id, label),
     )
 
 
@@ -73,3 +75,9 @@ def apply_project_switch(state: TuiState, project_id: str, label: str) -> None:
     if state.tab in ("time_entries", "wiki"):
         TABS[state.tab].on_activate(state)
     state.flash_message = messages.tui_flash_project_switched.format(name=label)
+
+
+def on_project_selected(state: TuiState, project_id: str, label: str) -> None:
+    """ダイアログで決定 (Enter / クリック) したときの処理。"""
+    reset_preview_scroll(state)
+    apply_project_switch(state, project_id, label)

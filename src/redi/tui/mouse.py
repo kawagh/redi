@@ -7,20 +7,24 @@
 
 from collections.abc import Callable
 
+from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import AnyFormattedText
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
 # 正: 下方向 / 負: 上方向 の目盛り数を受け取る。
 WheelHandler = Callable[[int], None]
-ClickHandler = Callable[[], None]
+# クリックした位置をコントロール内の (桁, 行) で受け取る。行はスクロール分を
+# prompt_toolkit が補正した後の値なので、1 行 1 項目の一覧ではそのまま添字になる。
+ClickHandler = Callable[[Point], None]
 
 
 class PaneControl(FormattedTextControl):
     """一覧・プレビューのペインに使う FormattedTextControl。
 
     ペインの矩形全体 (空行や余白を含む) でマウスイベントを受け、ホイールを
-    `on_wheel` に、クリック (MOUSE_UP) を `on_click` に流す。他のイベントは無視する。
+    `on_wheel` に、クリック (MOUSE_UP) をクリック位置と共に `on_click` に流す。
+    他のイベントは無視する。
     `on_wheel` が None のときはホイールを握りつぶす (Window の既定処理へ渡さない)。
     `on_click` が None のときはクリックを未処理として返す。
     """
@@ -45,7 +49,7 @@ class PaneControl(FormattedTextControl):
         elif mouse_event.event_type == MouseEventType.MOUSE_UP:
             if self._on_click is None:
                 return NotImplemented
-            self._on_click()
+            self._on_click(mouse_event.position)
             return None
         else:
             return NotImplemented

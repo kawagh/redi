@@ -12,6 +12,7 @@ from prompt_toolkit.output import DummyOutput
 from prompt_toolkit.utils import get_cwidth
 
 from redi.api.issue import Issue
+from redi.tui import project_dialog
 from redi.tui.app_layout import build_layout
 from redi.tui.conditions import build_conditions
 from redi.tui.mouse import PaneControl
@@ -29,9 +30,9 @@ from redi.tui.tabs import TABS
 PREVIEW = [("", "\n".join(f"line {i}" for i in range(50)))]
 
 
-def _event(event_type: MouseEventType) -> MouseEvent:
+def _event(event_type: MouseEventType, position: Point | None = None) -> MouseEvent:
     return MouseEvent(
-        position=Point(0, 0),
+        position=position if position is not None else Point(0, 0),
         event_type=event_type,
         button=MouseButton.NONE,
         modifiers=frozenset(),
@@ -76,15 +77,15 @@ class TestPaneControl:
         assert result is NotImplemented
         assert received == []
 
-    def test_click_calls_on_click(self):
-        """MOUSE_UP は on_click に流し、MOUSE_DOWN では呼ばない"""
-        clicks: list[str] = []
-        control = PaneControl(list, on_click=lambda: clicks.append("x"))
+    def test_click_calls_on_click_with_position(self):
+        """MOUSE_UP はクリック位置と共に on_click に流し、MOUSE_DOWN では呼ばない"""
+        clicks: list[Point] = []
+        control = PaneControl(list, on_click=clicks.append)
 
-        control.mouse_handler(_event(MouseEventType.MOUSE_DOWN))
-        control.mouse_handler(_event(MouseEventType.MOUSE_UP))
+        control.mouse_handler(_event(MouseEventType.MOUSE_DOWN, Point(3, 2)))
+        control.mouse_handler(_event(MouseEventType.MOUSE_UP, Point(3, 2)))
 
-        assert clicks == ["x"]
+        assert clicks == [Point(3, 2)]
 
     def test_without_handler_swallows_wheel(self):
         """on_wheel が無いときもホイールは Window の既定処理へ渡さない"""
@@ -207,7 +208,7 @@ class TestPreviewClick:
         """wiki タブではクリックで on_enter (本文の読み込み) を呼ぶ"""
         state, entered = self._state(monkeypatch, "wiki")
 
-        build_preview_click_handler(state, build_conditions(state))()
+        build_preview_click_handler(state, build_conditions(state))(Point(0, 0))
 
         assert entered == ["wiki"]
 
@@ -215,7 +216,7 @@ class TestPreviewClick:
         """issue タブではクリックしても on_enter (コメント選択モード) に入らない"""
         state, entered = self._state(monkeypatch, "issues")
 
-        build_preview_click_handler(state, build_conditions(state))()
+        build_preview_click_handler(state, build_conditions(state))(Point(0, 0))
 
         assert entered == []
 
@@ -224,7 +225,7 @@ class TestPreviewClick:
         state, entered = self._state(monkeypatch, "wiki")
         state.show_help = True
 
-        build_preview_click_handler(state, build_conditions(state))()
+        build_preview_click_handler(state, build_conditions(state))(Point(0, 0))
 
         assert entered == []
 
@@ -292,6 +293,19 @@ def test_wheel_lines_is_between_line_and_half_page():
 class _FixedSizeOutput(DummyOutput):
     def get_size(self) -> Size:
         return Size(rows=24, columns=80)
+
+
+def _find_on_screen(app: Application, text: str) -> Point:
+    """描画結果から `text` が最初に現れる位置を返す。Float の位置は描画で決まるため。"""
+    screen = app.renderer.last_rendered_screen
+    assert screen is not None
+    size = app.output.get_size()
+    for y in range(size.rows):
+        line = "".join(screen.data_buffer[y][x].char for x in range(size.columns))
+        x = line.find(text)
+        if x >= 0:
+            return Point(x, y)
+    raise AssertionError(f"{text!r} is not on screen")
 
 
 class TestLayoutWiring:
@@ -385,3 +399,46 @@ class TestLayoutWiring:
                 self._fire(app, 60, 15, MouseEventType.MOUSE_UP)
 
         assert entered == ["wiki"]
+
+    def test_wheel_over_choice_dialog_moves_dialog_cursor(self, monkeypatch):
+        """プロジェクト切替ダイアログの上でホイール下を回すとダイアログのカーソルが下がり、一覧は動かない"""
+        state = TuiState()
+        state.page_size = 20
+        state.project_dialog.show = True
+        state.project_dialog.choices = [("1", "Alpha"), ("2", "Beta")]
+        with (
+            create_pipe_input() as pipe,
+            create_app_session(input=pipe, output=_FixedSizeOutput()),
+        ):
+            app = self._render(monkeypatch, state)
+            row = _find_on_screen(app, "Alpha")
+            with set_app(app):
+                self._fire(app, row.x, row.y, MouseEventType.SCROLL_DOWN)
+
+        assert state.project_dialog.cursor == 1
+        assert state.issue_tab.cursor == 0
+
+    def test_click_on_choice_dialog_row_selects_it(self, monkeypatch):
+        """プロジェクト切替ダイアログの行を MOUSE_UP でクリックすると、その行が決定される"""
+        state = TuiState()
+        state.page_size = 20
+        state.project_dialog.show = True
+        state.project_dialog.choices = [("1", "Alpha"), ("2", "Beta")]
+        applied: list[tuple[str, str]] = []
+        monkeypatch.setattr(
+            project_dialog,
+            "apply_project_switch",
+            lambda s, project_id, label: applied.append((project_id, label)),
+        )
+        with (
+            create_pipe_input() as pipe,
+            create_app_session(input=pipe, output=_FixedSizeOutput()),
+        ):
+            app = self._render(monkeypatch, state)
+            row = _find_on_screen(app, "Beta")
+            with set_app(app):
+                # ラベルの右側の余白でも同じ行として受ける
+                self._fire(app, row.x + 10, row.y, MouseEventType.MOUSE_UP)
+
+        assert state.project_dialog.cursor == 1
+        assert applied == [("2", "Beta")]
