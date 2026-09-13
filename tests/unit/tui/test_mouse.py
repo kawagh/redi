@@ -18,12 +18,13 @@ from redi.tui.app_render import render_tabs
 from redi.tui.conditions import build_conditions
 from redi.tui.mouse import (
     WHEEL_LINES,
-    WheelControl,
+    PaneControl,
     build_list_wheel_handler,
+    build_preview_click_handler,
     build_preview_wheel_handler,
     build_tab_click_handler,
 )
-from redi.tui.state import TuiState
+from redi.tui.state import TuiState, TuiTab
 from redi.tui.tabs import TABS
 
 PREVIEW = [("", "\n".join(f"line {i}" for i in range(50)))]
@@ -45,13 +46,13 @@ def _state(monkeypatch) -> TuiState:
     return state
 
 
-class TestWheelControl:
-    """WheelControl はホイールだけを on_wheel に流す"""
+class TestPaneControl:
+    """PaneControl はホイールを on_wheel に流し、他のマウスイベントは無視する"""
 
     def test_scroll_down_is_positive(self):
         """ホイール下は +1 として渡す"""
         received: list[int] = []
-        control = WheelControl(list, on_wheel=received.append)
+        control = PaneControl(list, on_wheel=received.append)
 
         control.mouse_handler(_event(MouseEventType.SCROLL_DOWN))
 
@@ -60,25 +61,35 @@ class TestWheelControl:
     def test_scroll_up_is_negative(self):
         """ホイール上は -1 として渡す"""
         received: list[int] = []
-        control = WheelControl(list, on_wheel=received.append)
+        control = PaneControl(list, on_wheel=received.append)
 
         control.mouse_handler(_event(MouseEventType.SCROLL_UP))
 
         assert received == [-1]
 
-    def test_click_is_not_handled(self):
-        """クリックは on_wheel に渡さず、未処理 (NotImplemented) として返す"""
+    def test_click_without_handler_is_not_handled(self):
+        """on_click が無ければクリックは on_wheel に渡さず、未処理 (NotImplemented) として返す"""
         received: list[int] = []
-        control = WheelControl(list, on_wheel=received.append)
+        control = PaneControl(list, on_wheel=received.append)
 
         result = control.mouse_handler(_event(MouseEventType.MOUSE_UP))
 
         assert result is NotImplemented
         assert received == []
 
+    def test_click_calls_on_click(self):
+        """MOUSE_UP は on_click に流し、MOUSE_DOWN では呼ばない"""
+        clicks: list[str] = []
+        control = PaneControl(list, on_click=lambda: clicks.append("x"))
+
+        control.mouse_handler(_event(MouseEventType.MOUSE_DOWN))
+        control.mouse_handler(_event(MouseEventType.MOUSE_UP))
+
+        assert clicks == ["x"]
+
     def test_without_handler_swallows_wheel(self):
         """on_wheel が無いときもホイールは Window の既定処理へ渡さない"""
-        control = WheelControl(list)
+        control = PaneControl(list)
 
         result = control.mouse_handler(_event(MouseEventType.SCROLL_DOWN))
 
@@ -178,6 +189,45 @@ class TestListWheel:
         on_wheel(1)
 
         assert state.issue_tab.cursor == 0
+
+
+class TestPreviewClick:
+    """wiki タブでプレビューをクリックすると Enter と同じく本文を読み込む"""
+
+    def _state(self, monkeypatch, tab: TuiTab) -> tuple[TuiState, list[str]]:
+        state = TuiState()
+        state.tab = tab
+        entered: list[str] = []
+        for key, view in TABS.items():
+            monkeypatch.setattr(
+                view, "on_enter", lambda s, key=key: entered.append(key)
+            )
+        return state, entered
+
+    def test_wiki_click_loads_text(self, monkeypatch):
+        """wiki タブではクリックで on_enter (本文の読み込み) を呼ぶ"""
+        state, entered = self._state(monkeypatch, "wiki")
+
+        build_preview_click_handler(state, build_conditions(state))()
+
+        assert entered == ["wiki"]
+
+    def test_issue_click_does_nothing(self, monkeypatch):
+        """issue タブではクリックしても on_enter (コメント選択モード) に入らない"""
+        state, entered = self._state(monkeypatch, "issues")
+
+        build_preview_click_handler(state, build_conditions(state))()
+
+        assert entered == []
+
+    def test_ignored_while_dialog_is_open(self, monkeypatch):
+        """ダイアログ表示中はクリックしても読み込まない"""
+        state, entered = self._state(monkeypatch, "wiki")
+        state.show_help = True
+
+        build_preview_click_handler(state, build_conditions(state))()
+
+        assert entered == []
 
 
 class TestTabClick:
@@ -319,3 +369,20 @@ class TestLayoutWiring:
                 self._fire(app, x + 1, 0, MouseEventType.MOUSE_UP)
 
         assert state.tab == "wiki"
+
+    def test_click_on_preview_loads_wiki_text(self, monkeypatch):
+        """wiki タブで右ペインの余白を MOUSE_UP でクリックすると本文の読み込みが呼ばれる"""
+        state = TuiState()
+        state.page_size = 20
+        state.tab = "wiki"
+        entered: list[str] = []
+        monkeypatch.setattr(TABS["wiki"], "on_enter", lambda s: entered.append("wiki"))
+        with (
+            create_pipe_input() as pipe,
+            create_app_session(input=pipe, output=_FixedSizeOutput()),
+        ):
+            app = self._render(monkeypatch, state)
+            with set_app(app):
+                self._fire(app, 60, 15, MouseEventType.MOUSE_UP)
+
+        assert entered == ["wiki"]

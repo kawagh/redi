@@ -6,7 +6,7 @@ prompt_toolkit の `Window` はホイールを自前の `vertical_scroll` で処
 二重にずれるので、`Window` に渡す前にここで握って `scroll_preview` に流す。
 
 タブ行のクリックはラベルごとに対象が違うので、ペイン全体を受ける
-`WheelControl` ではなく、描画フラグメントに付けるハンドラで受ける
+`PaneControl` ではなく、描画フラグメントに付けるハンドラで受ける
 (`app_render.render_tabs` の `on_click`)。
 """
 
@@ -33,12 +33,16 @@ WHEEL_LINES = 3
 
 # 正: 下方向 / 負: 上方向 の目盛り数を受け取る。
 WheelHandler = Callable[[int], None]
+ClickHandler = Callable[[], None]
 
 
-class WheelControl(FormattedTextControl):
-    """ホイールだけを `on_wheel` に流し、他のマウスイベントは無視する FormattedTextControl。
+class PaneControl(FormattedTextControl):
+    """一覧・プレビューのペインに使う FormattedTextControl。
 
+    ペインの矩形全体 (空行や余白を含む) でマウスイベントを受け、ホイールを
+    `on_wheel` に、クリック (MOUSE_UP) を `on_click` に流す。他のイベントは無視する。
     `on_wheel` が None のときはホイールを握りつぶす (Window の既定処理へ渡さない)。
+    `on_click` が None のときはクリックを未処理として返す。
     """
 
     def __init__(
@@ -46,16 +50,23 @@ class WheelControl(FormattedTextControl):
         text: AnyFormattedText,
         *,
         on_wheel: WheelHandler | None = None,
+        on_click: ClickHandler | None = None,
         **kwargs,
     ) -> None:
         super().__init__(text, **kwargs)
         self._on_wheel = on_wheel
+        self._on_click = on_click
 
     def mouse_handler(self, mouse_event: MouseEvent):
         if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
             direction = 1
         elif mouse_event.event_type == MouseEventType.SCROLL_UP:
             direction = -1
+        elif mouse_event.event_type == MouseEventType.MOUSE_UP:
+            if self._on_click is None:
+                return NotImplemented
+            self._on_click()
+            return None
         else:
             return NotImplemented
         if self._on_wheel is not None:
@@ -78,6 +89,23 @@ def build_preview_wheel_handler(
         scroll_preview(state, direction * WHEEL_LINES)
 
     return on_wheel
+
+
+def build_preview_click_handler(
+    state: TuiState, conditions: Conditions
+) -> ClickHandler:
+    """プレビューのクリックを wiki タブの Enter (本文の読み込み) に変換する。
+
+    ひとまず wiki だけ。issue タブの Enter はコメント選択モードに入るので、
+    クリックで意図せずモードが変わらないよう対象にしない。
+    """
+
+    def on_click() -> None:
+        if not conditions.normal() or state.tab != "wiki":
+            return
+        TABS["wiki"].on_enter(state)
+
+    return on_click
 
 
 def build_list_wheel_handler(state: TuiState, conditions: Conditions) -> WheelHandler:

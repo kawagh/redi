@@ -28,8 +28,9 @@ from redi.tui.issue.delete_dialog import build_delete_dialog
 from redi.tui.issue.filter_dialog import build_filter_dialog
 from redi.tui.issue.find_dialog import build_find_dialog
 from redi.tui.mouse import (
-    WheelControl,
+    PaneControl,
     build_list_wheel_handler,
+    build_preview_click_handler,
     build_preview_wheel_handler,
     build_tab_click_handler,
 )
@@ -53,7 +54,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
     # 一覧のホイールはカーソル移動に充てる。Window 既定の vertical_scroll に
     # 渡すとカーソル行の追従 (get_cursor_position) と表示がずれる。
     list_window = Window(
-        WheelControl(
+        PaneControl(
             lambda: render_list_current(state),
             on_wheel=build_list_wheel_handler(state, conditions),
             show_cursor=False,
@@ -62,9 +63,10 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
         width=HALF,
     )
     preview_window = Window(
-        WheelControl(
+        PaneControl(
             lambda: render_preview_current(state),
             on_wheel=build_preview_wheel_handler(state, conditions),
+            on_click=build_preview_click_handler(state, conditions),
         ),
         wrap_lines=True,
         width=HALF,
