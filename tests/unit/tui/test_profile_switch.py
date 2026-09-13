@@ -153,7 +153,7 @@ class TestRequestProfileSwitch:
         assert result is None
         assert state.profile_dialog.show is False
         assert state.error_dialog == messages.tui_profile_switch_unreachable.format(
-            name="sub", error=error
+            name="sub"
         )
 
 

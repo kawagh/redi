@@ -59,9 +59,7 @@ def request_profile_switch(state: TuiState, name: str) -> TuiResult | None:
         me_service.check_connection(
             profile.redmine_url or "", profile.redmine_api_key or ""
         )
-    except requests.exceptions.RequestException as e:
-        state.error_dialog = messages.tui_profile_switch_unreachable.format(
-            name=name, error=e
-        )
+    except requests.exceptions.RequestException:
+        state.error_dialog = messages.tui_profile_switch_unreachable.format(name=name)
         return None
     return TuiResult(action="switch_profile", tab=state.tab, profile_name=name)
