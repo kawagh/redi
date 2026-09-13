@@ -243,7 +243,7 @@ class TestRenderTabs:
         monkeypatch.setattr(config, "default_project_id", "redidemo")
         state = TuiState()
 
-        rendered = "".join(text for _style, text in app_render.render_tabs(state))
+        rendered = "".join(part[1] for part in app_render.render_tabs(state))
 
         assert "[project: redidemo]" in rendered
 
@@ -251,7 +251,7 @@ class TestRenderTabs:
         monkeypatch.setattr(config, "default_project_id", "redidemo")
         state = TuiState(project_id="2", project_label="Beta")
 
-        rendered = "".join(text for _style, text in app_render.render_tabs(state))
+        rendered = "".join(part[1] for part in app_render.render_tabs(state))
 
         assert "[project: Beta]" in rendered
         assert "redidemo" not in rendered
@@ -260,7 +260,7 @@ class TestRenderTabs:
         monkeypatch.setattr(config, "default_project_id", None)
         state = TuiState()
 
-        rendered = "".join(text for _style, text in app_render.render_tabs(state))
+        rendered = "".join(part[1] for part in app_render.render_tabs(state))
 
         assert "[project:" not in rendered
 

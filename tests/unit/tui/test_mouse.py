@@ -9,16 +9,19 @@ from prompt_toolkit.data_structures import Point, Size
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.mouse_events import MouseButton, MouseEvent, MouseEventType
 from prompt_toolkit.output import DummyOutput
+from prompt_toolkit.utils import get_cwidth
 
 from redi.api.issue import Issue
 from redi.tui import mouse
 from redi.tui.app_layout import build_layout
+from redi.tui.app_render import render_tabs
 from redi.tui.conditions import build_conditions
 from redi.tui.mouse import (
     WHEEL_LINES,
     WheelControl,
     build_list_wheel_handler,
     build_preview_wheel_handler,
+    build_tab_click_handler,
 )
 from redi.tui.state import TuiState
 from redi.tui.tabs import TABS
@@ -177,6 +180,61 @@ class TestListWheel:
         assert state.issue_tab.cursor == 0
 
 
+class TestTabClick:
+    """タブ行のラベルをクリックすると Tab キーと同じくそのタブに切り替わる"""
+
+    def _state(self, monkeypatch) -> TuiState:
+        state = TuiState()
+        state.page_size = 20
+        # on_activate は API を呼ぶので差し替える
+        for tab in TABS.values():
+            monkeypatch.setattr(tab, "on_activate", lambda s: None)
+        return state
+
+    def test_click_switches_tab(self, monkeypatch):
+        """wiki のラベルを MOUSE_UP でクリックすると wiki タブになる"""
+        state = self._state(monkeypatch)
+        state.preview_scroll = 5
+        handler = build_tab_click_handler(state, build_conditions(state))("wiki")
+
+        result = handler(_event(MouseEventType.MOUSE_UP))
+
+        assert result is None
+        assert state.tab == "wiki"
+        assert state.preview_scroll == 0
+
+    def test_mouse_down_is_ignored(self, monkeypatch):
+        """MOUSE_DOWN では切り替えない (押して離したときに切り替える)"""
+        state = self._state(monkeypatch)
+        handler = build_tab_click_handler(state, build_conditions(state))("wiki")
+
+        result = handler(_event(MouseEventType.MOUSE_DOWN))
+
+        assert result is NotImplemented
+        assert state.tab == "issues"
+
+    def test_ignored_while_dialog_is_open(self, monkeypatch):
+        """ダイアログ表示中はタブ行が見えていてもクリックで切り替えない"""
+        state = self._state(monkeypatch)
+        state.show_help = True
+        handler = build_tab_click_handler(state, build_conditions(state))("wiki")
+
+        handler(_event(MouseEventType.MOUSE_UP))
+
+        assert state.tab == "issues"
+
+    def test_current_tab_is_not_reloaded(self, monkeypatch):
+        """今のタブをクリックしても on_activate (再読込) は呼ばない"""
+        state = self._state(monkeypatch)
+        called: list[str] = []
+        monkeypatch.setattr(TABS["issues"], "on_activate", lambda s: called.append("x"))
+        handler = build_tab_click_handler(state, build_conditions(state))("issues")
+
+        handler(_event(MouseEventType.MOUSE_UP))
+
+        assert called == []
+
+
 def test_wheel_lines_is_between_line_and_half_page():
     """ホイール 1 目盛りは 1 行より多く、半ページより少ない"""
     assert 1 < mouse.WHEEL_LINES < 10
@@ -239,3 +297,25 @@ class TestLayoutWiring:
 
         assert state.issue_tab.cursor == 1
         assert state.preview_scroll == 0
+
+    def test_click_on_tab_label_switches_tab(self, monkeypatch):
+        """タブ行の wiki ラベルの桁を MOUSE_UP でクリックすると wiki タブになる"""
+        state = TuiState()
+        state.page_size = 20
+        for tab in TABS.values():
+            monkeypatch.setattr(tab, "on_activate", lambda s: None)
+        # ラベルの位置は描画結果から測る (言語によりラベルの幅が変わる)
+        x = 0
+        for part in render_tabs(state):
+            if part[1] == f" {TABS['wiki'].label} ":
+                break
+            x += get_cwidth(part[1])
+        with (
+            create_pipe_input() as pipe,
+            create_app_session(input=pipe, output=_FixedSizeOutput()),
+        ):
+            app = self._render(monkeypatch, state)
+            with set_app(app):
+                self._fire(app, x + 1, 0, MouseEventType.MOUSE_UP)
+
+        assert state.tab == "wiki"

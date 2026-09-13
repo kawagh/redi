@@ -8,6 +8,7 @@ from redi.tui.issue.delete_dialog import open_delete_dialog as open_issue_delete
 from redi.tui.issue.filter_dialog import open_filter_dialog as open_issue_filter_dialog
 from redi.tui.issue.find_dialog import open_find_dialog
 from redi.tui.keybindings.keybinding_actions import (
+    activate_tab,
     clear_temporary_state,
     reset_preview_scroll,
     scroll_preview,
@@ -32,21 +33,15 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
 
     @kb.add("tab", filter=normal_mode)
     def _(event):
-        clear_temporary_state(state)
-        reset_preview_scroll(state)
         tab_keys = list(TABS.keys())
         idx = tab_keys.index(state.tab)
-        state.tab = tab_keys[(idx + 1) % len(tab_keys)]
-        TABS[state.tab].on_activate(state)
+        activate_tab(state, tab_keys[(idx + 1) % len(tab_keys)])
 
     @kb.add("s-tab", filter=normal_mode)
     def _(event):
-        clear_temporary_state(state)
-        reset_preview_scroll(state)
         tab_keys = list(TABS.keys())
         idx = tab_keys.index(state.tab)
-        state.tab = tab_keys[(idx - 1) % len(tab_keys)]
-        TABS[state.tab].on_activate(state)
+        activate_tab(state, tab_keys[(idx - 1) % len(tab_keys)])
 
     @kb.add("up", filter=normal_mode)
     @kb.add("k", filter=normal_mode)

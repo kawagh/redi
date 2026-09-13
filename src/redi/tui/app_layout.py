@@ -31,6 +31,7 @@ from redi.tui.mouse import (
     WheelControl,
     build_list_wheel_handler,
     build_preview_wheel_handler,
+    build_tab_click_handler,
 )
 from redi.tui.profile_dialog import build_profile_dialog
 from redi.tui.project_dialog import build_project_dialog
@@ -69,10 +70,14 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
         width=HALF,
     )
 
+    on_click_tab = build_tab_click_handler(state, conditions)
     main_layout = HSplit(
         [
             Window(
-                FormattedTextControl(lambda: render_tabs(state), show_cursor=False),
+                FormattedTextControl(
+                    lambda: render_tabs(state, on_click=on_click_tab),
+                    show_cursor=False,
+                ),
                 height=1,
             ),
             Window(height=1, char="─"),
