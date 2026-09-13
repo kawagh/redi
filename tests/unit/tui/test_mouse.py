@@ -22,7 +22,7 @@ from redi.tui.panes.preview_pane import (
     build_preview_click_handler,
     build_preview_wheel_handler,
 )
-from redi.tui.panes.tabs_pane import build_tab_click_handler, render_tabs
+from redi.tui.panes.top_bar import build_tab_click_handler, render_top_bar
 from redi.tui.state import TuiState, TuiTab
 from redi.tui.tabs import TABS
 
@@ -355,7 +355,7 @@ class TestLayoutWiring:
             monkeypatch.setattr(tab, "on_activate", lambda s: None)
         # ラベルの位置は描画結果から測る (言語によりラベルの幅が変わる)
         x = 0
-        for part in render_tabs(state):
+        for part in render_top_bar(state):
             if part[1] == f" {TABS['wiki'].label} ":
                 break
             x += get_cwidth(part[1])

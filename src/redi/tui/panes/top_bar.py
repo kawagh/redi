@@ -1,6 +1,6 @@
-"""タブ行のペイン。描画と、ラベルのクリックによるタブ切り替えを持つ。
+"""画面上端のバー。タブ・接続中のプロファイル・プロジェクトを 1 行に並べる。
 
-タブ行のクリックはラベルごとに対象が違うので、ペイン全体を受ける
+タブのラベルのクリックはラベルごとに対象が違うので、矩形全体を受ける
 `PaneControl` ではなく、描画フラグメントに付けるハンドラで受ける
 (prompt_toolkit はフラグメントの 3 要素目をクリック時に呼ぶ)。
 """
@@ -25,10 +25,10 @@ from redi.tui.tabs import TABS
 TabMouseHandler = Callable[[TuiTab], Callable[[MouseEvent], object]]
 
 
-def render_tabs(
+def render_top_bar(
     state: TuiState, on_click: TabMouseHandler | None = None
 ) -> StyleAndTextTuples:
-    """タブ行を描画する。
+    """上端のバーを描画する。
 
     `on_click` を渡すと各タブのラベルにマウスハンドラを付ける。
     """
@@ -83,12 +83,12 @@ def build_tab_click_handler(state: TuiState, conditions: Conditions) -> TabMouse
     return for_tab
 
 
-def build_tabs_window(state: TuiState, conditions: Conditions) -> Window:
-    """タブ行の Window。ラベルにクリックハンドラを付けて描画する。"""
+def build_top_bar_window(state: TuiState, conditions: Conditions) -> Window:
+    """上端のバーの Window。タブのラベルにクリックハンドラを付けて描画する。"""
     on_click = build_tab_click_handler(state, conditions)
     return Window(
         FormattedTextControl(
-            lambda: render_tabs(state, on_click=on_click),
+            lambda: render_top_bar(state, on_click=on_click),
             show_cursor=False,
         ),
         height=1,

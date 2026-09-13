@@ -20,7 +20,7 @@ from redi.tui.issue.filter_dialog import build_filter_dialog
 from redi.tui.issue.find_dialog import build_find_dialog
 from redi.tui.panes.list_pane import build_list_window
 from redi.tui.panes.preview_pane import build_preview_window
-from redi.tui.panes.tabs_pane import build_tabs_window
+from redi.tui.panes.top_bar import build_top_bar_window
 from redi.tui.profile_dialog import build_profile_dialog
 from redi.tui.project_dialog import build_project_dialog
 from redi.tui.state import TuiState
@@ -41,7 +41,7 @@ def build_layout(state: TuiState, conditions: Conditions) -> Layout:
 
     main_layout = HSplit(
         [
-            build_tabs_window(state, conditions),
+            build_top_bar_window(state, conditions),
             Window(height=1, char="─"),
             VSplit(
                 [
