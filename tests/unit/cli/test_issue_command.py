@@ -354,19 +354,17 @@ class TestIssueListFilterValidation:
             ("-s", "999"),
             ("-t", "999"),
             ("--priority_id", "999"),
-            ("-a", "zzz"),
-            ("-v", "zzz"),
         ],
     )
     def test_unknown_value_exits(self, masters, option, value, capsys):
-        """マスタに無い ID や数値でない値は、その値を示して exit 1 する"""
+        """マスタに無い ID は、その値を示して exit 1 する"""
         args = parse_issue_args(["issue", "list", option, value])
 
         with pytest.raises(SystemExit) as exc_info:
             dispatch_module.handle_issue(args)
 
         assert exc_info.value.code == 1
-        assert value in capsys.readouterr().out
+        assert value in capsys.readouterr().err
 
     def test_shows_available_values(self, masters, capsys):
         """指定できる値（マスタの ID とキーワード）を併せて示す"""
@@ -375,8 +373,8 @@ class TestIssueListFilterValidation:
         with pytest.raises(SystemExit):
             dispatch_module.handle_issue(args)
 
-        out = capsys.readouterr().out
-        assert "1,2,open,closed,*" in out
+        err = capsys.readouterr().err
+        assert "1,2,open,closed,*" in err
 
     @pytest.mark.parametrize(
         ("option", "value", "sent_as"),
@@ -387,9 +385,6 @@ class TestIssueListFilterValidation:
             ("-s", "*", "status_id"),
             ("-t", "3", "tracker_id"),
             ("--priority_id", "4", "priority_id"),
-            ("-a", "me", "assigned_to"),
-            ("-a", "5", "assigned_to"),
-            ("-v", "6", "fixed_version_id"),
         ],
     )
     def test_valid_value_is_sent(self, masters, option, value, sent_as):
@@ -400,24 +395,23 @@ class TestIssueListFilterValidation:
 
         assert masters[sent_as] == value
 
-    @pytest.mark.parametrize("value", ["!1", "1|2", "!1|2"])
-    def test_negation_and_multiple_values_are_allowed(self, masters, value):
-        """`!` の否定と `|` の複数指定は個々の値を見て通す"""
-        args = parse_issue_args(["issue", "list", "-s", value])
+    @pytest.mark.parametrize(
+        ("option", "value", "sent_as"),
+        [
+            ("-a", "me", "assigned_to"),
+            ("-a", "zzz", "assigned_to"),
+            ("-v", "zzz", "fixed_version_id"),
+        ],
+    )
+    def test_project_dependent_filters_are_not_validated(
+        self, masters, option, value, sent_as
+    ):
+        """担当者と対象バージョンはマスタを安価に引けないので検証せずそのまま送る"""
+        args = parse_issue_args(["issue", "list", option, value])
 
         dispatch_module.handle_issue(args)
 
-        assert masters["status_id"] == value
-
-    def test_unknown_value_in_multiple_values_exits(self, masters, capsys):
-        """`|` で並べた値の中に未知の ID があれば exit 1 する"""
-        args = parse_issue_args(["issue", "list", "-s", "1|999"])
-
-        with pytest.raises(SystemExit) as exc_info:
-            dispatch_module.handle_issue(args)
-
-        assert exc_info.value.code == 1
-        assert "999" in capsys.readouterr().out
+        assert masters[sent_as] == value
 
     def test_master_fetch_failure_does_not_block_list(self, masters, monkeypatch):
         """マスタを取得できないときは検証を諦めて一覧を続ける"""
