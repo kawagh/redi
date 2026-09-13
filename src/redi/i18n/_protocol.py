@@ -24,13 +24,12 @@ class MessagesProto(Protocol):
     profile_list_hint: str
     """プロファイル一覧の出し方の案内"""
     default_profile_set: str
-    profile_deleted: str
-    """プロファイルを削除した。{name} を埋め込む。"""
-    default_profile_removed: str
-    """最後のプロファイルと一緒に default_profile を消した。"""
-    profile_is_default_cannot_delete: str
-    """default_profile が指すプロファイルは消せない。{name} と切替候補の {names} を埋め込む。"""
     """default_profile を設定。{name}"""
+    profile_deleted: str
+    """{name}"""
+    default_profile_removed: str
+    profile_is_default_cannot_delete: str
+    """{name}, {names}"""
     default_project_id_set: str
     """default_project_id を設定。{value}, {suffix}"""
     editor_set: str
@@ -411,8 +410,8 @@ class MessagesProto(Protocol):
     prompt_select_news_to_update: str
     prompt_select_news_to_delete: str
     prompt_select_profile: str
-    prompt_select_profile_to_delete: str
     """プロファイル一覧の見出し。Enter でデフォルト設定 / u で項目更新の案内を含む"""
+    prompt_select_profile_to_delete: str
     prompt_profile_name: str
     """作成するプロファイル名の入力"""
     prompt_set_default_profile: str
@@ -580,8 +579,9 @@ class MessagesProto(Protocol):
     delete_target_group: str
     """{id}, {name}"""
     delete_target_time_entry: str
-    delete_target_profile: str
     """{id}, {hours}, {activity}, {spent_on}"""
+    delete_target_profile: str
+    """{name}"""
 
     # ---- detail/output labels ----
     label_assignable: str
