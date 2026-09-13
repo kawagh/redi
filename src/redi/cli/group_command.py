@@ -200,7 +200,7 @@ def add_group_parser(
         "view", aliases=["v"], help=messages.arg_help_group_view, parents=parents
     )
     g_view_parser.add_argument("group_id", help=messages.arg_help_group_view_id)
-    add_format_options(g_view_parser)
+    add_format_options(g_view_parser, postfix=True)
     g_create_parser = group_subparsers.add_parser(
         "create", aliases=["c"], help=messages.arg_help_group_create, parents=parents
     )

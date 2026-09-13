@@ -321,7 +321,7 @@ def add_news_parser(
         "view", aliases=["v"], help=messages.arg_help_news_view, parents=parents
     )
     n_view_parser.add_argument("news_id", help=messages.arg_help_news_view_id)
-    add_format_options(n_view_parser)
+    add_format_options(n_view_parser, postfix=True)
     n_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )

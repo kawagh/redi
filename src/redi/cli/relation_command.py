@@ -23,7 +23,7 @@ def add_relation_parser(
         "view", aliases=["v"], help=messages.arg_help_relation_view, parents=parents
     )
     r_view_parser.add_argument("relation_id", help=messages.arg_help_relation_view_id)
-    add_format_options(r_view_parser)
+    add_format_options(r_view_parser, postfix=True)
 
 
 def format_relation_detail(relation: IssueRelation) -> list[str]:

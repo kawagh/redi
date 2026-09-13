@@ -84,7 +84,7 @@ def add_issue_parser(
         type=_parse_issue_includes,
         help=messages.arg_help_issue_include.format(choices=",".join(ISSUE_INCLUDES)),
     )
-    add_format_options(i_view_parser)
+    add_format_options(i_view_parser, postfix=True)
     i_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
@@ -131,7 +131,7 @@ def add_issue_parser(
         "--custom_fields",
         help=messages.arg_help_custom_fields,
     )
-    add_format_options(i_create_parser)
+    add_format_options(i_create_parser, postfix=True)
     i_update_parser = i_subparsers.add_parser(
         "update", aliases=["u"], help=messages.arg_help_issue_update, parents=parents
     )

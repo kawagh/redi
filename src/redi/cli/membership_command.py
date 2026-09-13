@@ -192,7 +192,7 @@ def add_membership_parser(
     m_view_parser.add_argument(
         "membership_id", help=messages.arg_help_membership_view_id
     )
-    add_format_options(m_view_parser)
+    add_format_options(m_view_parser, postfix=True)
 
     m_create_parser = m_subparsers.add_parser(
         "create",
