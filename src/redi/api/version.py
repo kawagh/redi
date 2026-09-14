@@ -44,7 +44,7 @@ class VersionBody(TypedDict, total=False):
 
 
 class VersionNotFoundException(Exception):
-    def __init__(self, version_id: str) -> None:
+    def __init__(self, version_id: int) -> None:
         super().__init__(version_id)
         self.version_id = version_id
 
@@ -88,7 +88,7 @@ def fetch_versions(project_id: str) -> list[Version]:
     return cast("list[Version]", response.json()["versions"])
 
 
-def fetch_version(version_id: str) -> Version:
+def fetch_version(version_id: int) -> Version:
     """バージョンを取得する
 
     Raises:
@@ -133,7 +133,7 @@ def create_version(
 
 
 def update_version(
-    version_id: str,
+    version_id: int,
     name: str | None = None,
     status: str | None = None,
     due_date: str | None = None,
@@ -162,7 +162,7 @@ def update_version(
     response.raise_for_status()
 
 
-def delete_version(version_id: str) -> None:
+def delete_version(version_id: int) -> None:
     """バージョンを削除する
 
     Raises:

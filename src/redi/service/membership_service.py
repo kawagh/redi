@@ -14,7 +14,7 @@ def list_memberships(
     return membership_api.fetch_memberships(project_id, limit=limit, offset=offset)
 
 
-def read_membership(membership_id: str) -> Membership:
+def read_membership(membership_id: int) -> Membership:
     """メンバーシップを取得する。
 
     Raises:
@@ -40,7 +40,7 @@ def create_membership(
     return membership_api.create_membership(project_id, principal_id, role_ids)
 
 
-def update_membership(membership_id: str, role_ids: list[int]) -> None:
+def update_membership(membership_id: int, role_ids: list[int]) -> None:
     """メンバーシップのロールを更新する。
 
     Raises:
@@ -51,7 +51,7 @@ def update_membership(membership_id: str, role_ids: list[int]) -> None:
     membership_api.update_membership(membership_id, role_ids)
 
 
-def delete_membership(membership_id: str) -> None:
+def delete_membership(membership_id: int) -> None:
     """メンバーシップを削除する。
 
     Raises:

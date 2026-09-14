@@ -46,7 +46,7 @@ class NewsBody(TypedDict):
 
 
 class NewsNotFoundException(Exception):
-    def __init__(self, news_id: str) -> None:
+    def __init__(self, news_id: int) -> None:
         super().__init__(news_id)
         self.news_id = news_id
 
@@ -78,7 +78,7 @@ def fetch_news_list(
     return cast("list[News]", response.json()["news"])
 
 
-def fetch_news(news_id: str) -> News:
+def fetch_news(news_id: int) -> News:
     """ニュースを添付ファイル・コメント込みで取得する。
 
     Raises:
@@ -122,7 +122,7 @@ def create_news(
 
 
 def update_news(
-    news_id: str,
+    news_id: int,
     title: str | None = None,
     description: str | None = None,
     summary: str | None = None,
@@ -149,7 +149,7 @@ def update_news(
     response.raise_for_status()
 
 
-def delete_news(news_id: str) -> None:
+def delete_news(news_id: int) -> None:
     """ニュースを削除する。
 
     Raises:

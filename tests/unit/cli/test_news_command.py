@@ -6,6 +6,7 @@ import pytest
 
 from redi.cli import confirm, news_command
 from redi.cli.interactive import InputCanceledException
+from redi.cli.main import build_redi_parser
 from redi.cli.shared_options import OutputFormat
 
 
@@ -47,14 +48,14 @@ class TestNewsDelete:
     """
 
     @staticmethod
-    def _args(news_id: str | None, yes: bool = False) -> argparse.Namespace:
+    def _args(news_id: int | None, yes: bool = False) -> argparse.Namespace:
         return argparse.Namespace(
             news_command="delete", news_id=news_id, yes=yes, project_id=None
         )
 
     @pytest.fixture
     def stub_service(self, monkeypatch):
-        deleted: list[str] = []
+        deleted: list[int] = []
         monkeypatch.setattr(
             news_command.news_service,
             "read_news",
@@ -67,9 +68,9 @@ class TestNewsDelete:
         """id を正しく打ち直したら削除する。プロンプトには対象の id とタイトルを示す"""
         monkeypatch.setattr(confirm, "prompt", lambda _msg: "12")
 
-        news_command.handle_news(self._args("12"))
+        news_command.handle_news(self._args(12))
 
-        assert stub_service == ["12"]
+        assert stub_service == [12]
         assert "12 リリース" in capsys.readouterr().out
 
     def test_cancels_when_id_mismatch(self, monkeypatch, stub_service):
@@ -77,7 +78,7 @@ class TestNewsDelete:
         monkeypatch.setattr(confirm, "prompt", lambda _msg: "13")
 
         with pytest.raises(InputCanceledException):
-            news_command.handle_news(self._args("12"))
+            news_command.handle_news(self._args(12))
 
         assert stub_service == []
 
@@ -89,14 +90,14 @@ class TestNewsDelete:
 
         monkeypatch.setattr(confirm, "prompt", fail)
 
-        news_command.handle_news(self._args("12", yes=True))
+        news_command.handle_news(self._args(12, yes=True))
 
-        assert stub_service == ["12"]
+        assert stub_service == [12]
 
     def test_selected_from_list_still_requires_retype(self, monkeypatch, stub_service):
         """一覧から選んだ場合も id を打ち直させる。選ぶ便利さは保ちつつ消す直前に対象を意識させる"""
         monkeypatch.setattr(
-            news_command, "_interactive_select_news_id", lambda *_a, **_k: "12"
+            news_command, "_interactive_select_news_id", lambda *_a, **_k: 12
         )
         monkeypatch.setattr(confirm, "prompt", lambda _msg: "")
 
@@ -104,3 +105,37 @@ class TestNewsDelete:
             news_command.handle_news(self._args(None))
 
         assert stub_service == []
+
+
+class TestNewsIdIsInt:
+    """数値しか取らない news_id は CLI の境界で int に揃える
+
+    非数値を Redmine に送る前に argparse が使用方法を示して exit 2 する。
+    """
+
+    @pytest.fixture
+    def parser(self) -> argparse.ArgumentParser:
+        return build_redi_parser()
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["news", "view", "abc"],
+            ["news", "update", "abc", "--title", "題名"],
+            ["news", "delete", "abc"],
+        ],
+        ids=["view", "update", "delete"],
+    )
+    def test_rejects_non_numeric_id(self, parser, argv, capsys):
+        """非数値の news_id は argparse が弾き exit 2 する"""
+        with pytest.raises(SystemExit) as exc:
+            parser.parse_args(argv)
+
+        assert exc.value.code == 2
+        assert "invalid int value" in capsys.readouterr().err
+
+    def test_view_id_is_int(self, parser):
+        """`news view <id>` の news_id は int で受ける"""
+        args = parser.parse_args(["news", "view", "42"])
+
+        assert args.news_id == 42

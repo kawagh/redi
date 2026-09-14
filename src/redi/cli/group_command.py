@@ -31,7 +31,7 @@ from redi.output import eprint, print_tsv
 from redi.service import group_service
 
 
-def _exit_group_not_found(group_id: str) -> NoReturn:
+def _exit_group_not_found(group_id: int) -> NoReturn:
     eprint(messages.group_not_found.format(id=group_id))
     sys.exit(1)
 
@@ -84,7 +84,7 @@ def _format_group(group: Group) -> str:
     return "\n".join(lines)
 
 
-def _view_group(group_id: str, full: bool = False) -> None:
+def _view_group(group_id: int, full: bool = False) -> None:
     """グループの詳細を標準出力に出す。存在しない場合は exit 1。"""
     try:
         group = group_service.read_group(group_id, include="users,memberships")
@@ -118,7 +118,7 @@ def _create_group(name: str, user_ids: list[int] | None = None) -> None:
 
 
 def _update_group(
-    group_id: str,
+    group_id: int,
     name: str | None = None,
     user_ids: list[int] | None = None,
 ) -> None:
@@ -135,7 +135,7 @@ def _update_group(
     print(messages.group_updated.format(id=group_id))
 
 
-def _add_group_user(group_id: str, user_id: int) -> None:
+def _add_group_user(group_id: int, user_id: int) -> None:
     """グループにユーザーを追加し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         group_service.add_group_user(group_id, user_id)
@@ -149,7 +149,7 @@ def _add_group_user(group_id: str, user_id: int) -> None:
     print(messages.group_user_added.format(group_id=group_id, user_id=user_id))
 
 
-def _remove_group_user(group_id: str, user_id: int) -> None:
+def _remove_group_user(group_id: int, user_id: int) -> None:
     """グループからユーザーを外し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         group_service.remove_group_user(group_id, user_id)
@@ -166,7 +166,7 @@ def _remove_group_user(group_id: str, user_id: int) -> None:
     print(messages.group_user_removed.format(group_id=group_id, user_id=user_id))
 
 
-def _delete_group(group_id: str) -> None:
+def _delete_group(group_id: int) -> None:
     """グループを削除し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         group_service.delete_group(group_id)
@@ -199,7 +199,9 @@ def add_group_parser(
     g_view_parser = group_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_group_view, parents=parents
     )
-    g_view_parser.add_argument("group_id", help=messages.arg_help_group_view_id)
+    g_view_parser.add_argument(
+        "group_id", type=int, help=messages.arg_help_group_view_id
+    )
     add_format_options(g_view_parser)
     g_create_parser = group_subparsers.add_parser(
         "create", aliases=["c"], help=messages.arg_help_group_create, parents=parents
@@ -215,7 +217,9 @@ def add_group_parser(
     g_update_parser = group_subparsers.add_parser(
         "update", aliases=["u"], help=messages.arg_help_group_update, parents=parents
     )
-    g_update_parser.add_argument("group_id", help=messages.arg_help_group_update_id)
+    g_update_parser.add_argument(
+        "group_id", type=int, help=messages.arg_help_group_update_id
+    )
     g_update_parser.add_argument("--name", "-n", help=messages.arg_help_group_name_opt)
     g_update_parser.add_argument(
         "--user_id",
@@ -241,7 +245,9 @@ def add_group_parser(
     g_delete_parser = group_subparsers.add_parser(
         "delete", aliases=["d"], help=messages.arg_help_group_delete, parents=parents
     )
-    g_delete_parser.add_argument("group_id", help=messages.arg_help_group_delete_id)
+    g_delete_parser.add_argument(
+        "group_id", type=int, help=messages.arg_help_group_delete_id
+    )
     g_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
