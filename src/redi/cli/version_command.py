@@ -38,7 +38,7 @@ def _version_line(version: Version) -> str:
     )
 
 
-def _read_version_or_exit(version_id: str) -> Version:
+def _read_version_or_exit(version_id: int) -> Version:
     """バージョンを取得する。存在しない場合は exit 1。"""
     try:
         return version_service.read_version(version_id)
@@ -97,7 +97,7 @@ def _list_versions(project_id: str, fmt: OutputFormat = OutputFormat.PLAIN) -> N
             assert_never(fmt)
 
 
-def _view_version(version_id: str, full: bool = False, web: bool = False) -> None:
+def _view_version(version_id: int, full: bool = False, web: bool = False) -> None:
     """バージョンの詳細を標準出力に出す。存在しない場合は exit 1。"""
     if web:
         url = version_service.version_url(version_id)
@@ -160,7 +160,7 @@ def _create_version(
 
 
 def _update_version(
-    version_id: str,
+    version_id: int,
     name: str | None = None,
     status: str | None = None,
     due_date: str | None = None,
@@ -201,7 +201,7 @@ def _update_version(
     )
 
 
-def _delete_version(version_id: str) -> None:
+def _delete_version(version_id: int) -> None:
     """バージョンを削除し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         version_service.delete_version(version_id)
@@ -235,7 +235,9 @@ def add_version_parser(
     v_view_parser = v_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_version_view, parents=parents
     )
-    v_view_parser.add_argument("version_id", help=messages.arg_help_version_view_id)
+    v_view_parser.add_argument(
+        "version_id", type=int, help=messages.arg_help_version_view_id
+    )
     add_format_options(v_view_parser)
     v_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
@@ -266,7 +268,9 @@ def add_version_parser(
     v_delete_parser = v_subparsers.add_parser(
         "delete", aliases=["d"], help=messages.arg_help_version_delete, parents=parents
     )
-    v_delete_parser.add_argument("version_id", help=messages.arg_help_version_delete_id)
+    v_delete_parser.add_argument(
+        "version_id", type=int, help=messages.arg_help_version_delete_id
+    )
     v_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )
@@ -274,7 +278,7 @@ def add_version_parser(
         "update", aliases=["u"], help=messages.arg_help_version_update, parents=parents
     )
     v_update_parser.add_argument(
-        "version_id", nargs="?", help=messages.arg_help_version_update_id
+        "version_id", nargs="?", type=int, help=messages.arg_help_version_update_id
     )
     v_update_parser.add_argument(
         "--name", "-n", help=messages.arg_help_version_name_opt
@@ -295,7 +299,7 @@ def add_version_parser(
     )
 
 
-def _interactive_select_version_id(project_id: str) -> str:
+def _interactive_select_version_id(project_id: str) -> int:
     versions = version_service.list_versions(project_id)
     if not versions:
         eprint(messages.no_versions_available)
@@ -307,7 +311,8 @@ def _interactive_select_version_id(project_id: str) -> str:
     with raise_on_cancel():
         selected = inline_choice(messages.prompt_select_version_to_update, options)
     print(messages.update_target_version.format(label=labels[selected]))
-    return selected
+    # 対話の戻りは str なので、選択直後に int へ変換する
+    return int(selected)
 
 
 def _interactive_fill_version_update_args(args: argparse.Namespace) -> None:

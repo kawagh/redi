@@ -51,7 +51,7 @@ class MembershipsResponse(TypedDict):
 class MembershipNotFoundException(Exception):
     """対象のメンバーシップが存在しないときに送出する例外。"""
 
-    def __init__(self, membership_id: str) -> None:
+    def __init__(self, membership_id: int) -> None:
         super().__init__(membership_id)
         self.membership_id = membership_id
 
@@ -90,7 +90,7 @@ def fetch_project_users(project_id: str) -> list[ProjectUser]:
     return users
 
 
-def fetch_membership(membership_id: str) -> Membership:
+def fetch_membership(membership_id: int) -> Membership:
     """メンバーシップを取得する。
 
     Raises:
@@ -127,7 +127,7 @@ def create_membership(
     return cast("Membership", response.json()["membership"])
 
 
-def update_membership(membership_id: str, role_ids: list[int]) -> None:
+def update_membership(membership_id: int, role_ids: list[int]) -> None:
     """メンバーシップのロールを更新する。
 
     Raises:
@@ -146,7 +146,7 @@ def update_membership(membership_id: str, role_ids: list[int]) -> None:
     response.raise_for_status()
 
 
-def delete_membership(membership_id: str) -> None:
+def delete_membership(membership_id: int) -> None:
     """メンバーシップを削除する。
 
     Raises:

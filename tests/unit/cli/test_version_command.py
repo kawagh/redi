@@ -40,7 +40,7 @@ def stub_version_service(monkeypatch):
     calls: list[dict] = []
 
     def fake_read_version(version_id):
-        if version_id != str(VERSION["id"]):
+        if version_id != VERSION["id"]:
             raise VersionNotFoundException(version_id)
         return VERSION
 
@@ -119,7 +119,7 @@ class TestVersionUpdate:
 
         assert stub_version_service == [
             {
-                "version_id": "1",
+                "version_id": 1,
                 "name": None,
                 "status": None,
                 "due_date": None,
@@ -152,7 +152,7 @@ class TestVersionDelete:
         """-y なら確認せずに削除する"""
         handle_version(parse_version_args(["version", "delete", "1", "-y"]))
 
-        assert stub_version_service == [{"deleted": "1"}]
+        assert stub_version_service == [{"deleted": 1}]
         assert "1" in capsys.readouterr().out
 
     def test_not_found_exits(self, stub_version_service, capsys):
@@ -185,3 +185,33 @@ class TestVersionListTsv:
             "1\tv1.0\topen\thttp://localhost:3001/versions/1\t2026-12-31\tnone\t説明"
             "\t2026-08-17T00:00:00Z\t2026-08-17T00:00:00Z\n"
         )
+
+
+class TestVersionIdIsInt:
+    """数値しか取らない version_id は CLI の境界で int に揃える
+
+    非数値を Redmine に送る前に argparse が使用方法を示して exit 2 する。
+    """
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["version", "view", "abc"],
+            ["version", "update", "abc", "-n", "v2"],
+            ["version", "delete", "abc"],
+        ],
+        ids=["view", "update", "delete"],
+    )
+    def test_rejects_non_numeric_id(self, argv, capsys):
+        """非数値の version_id は argparse が弾き exit 2 する"""
+        with pytest.raises(SystemExit) as exc:
+            parse_version_args(argv)
+
+        assert exc.value.code == 2
+        assert "invalid int value" in capsys.readouterr().err
+
+    def test_view_id_is_int(self):
+        """`version view <id>` の version_id は int で受ける"""
+        args = parse_version_args(["version", "view", "42"])
+
+        assert args.version_id == 42

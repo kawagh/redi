@@ -8,7 +8,7 @@ from redi.api import group as group_api
 from redi.api.group import Group
 
 
-def group_url(group_id: int | str) -> str:
+def group_url(group_id: int) -> str:
     """グループの Web UI 上の URL を組み立てる。"""
     return f"{config.redmine_url}/groups/{group_id}"
 
@@ -18,7 +18,7 @@ def list_groups() -> list[Group]:
     return group_api.fetch_groups()
 
 
-def read_group(group_id: str, include: str = "") -> Group:
+def read_group(group_id: int, include: str = "") -> Group:
     """グループを取得する。
 
     Raises:
@@ -40,7 +40,7 @@ def create_group(name: str, user_ids: list[int] | None = None) -> Group:
 
 
 def update_group(
-    group_id: str,
+    group_id: int,
     name: str | None = None,
     user_ids: list[int] | None = None,
 ) -> None:
@@ -54,7 +54,7 @@ def update_group(
     group_api.update_group(group_id, name=name, user_ids=user_ids)
 
 
-def delete_group(group_id: str) -> None:
+def delete_group(group_id: int) -> None:
     """グループを削除する。
 
     Raises:
@@ -65,7 +65,7 @@ def delete_group(group_id: str) -> None:
     group_api.delete_group(group_id)
 
 
-def add_group_user(group_id: str, user_id: int) -> None:
+def add_group_user(group_id: int, user_id: int) -> None:
     """グループにユーザーを追加する。
 
     Raises:
@@ -76,7 +76,7 @@ def add_group_user(group_id: str, user_id: int) -> None:
     group_api.add_group_user(group_id, user_id)
 
 
-def remove_group_user(group_id: str, user_id: int) -> None:
+def remove_group_user(group_id: int, user_id: int) -> None:
     """グループからユーザーを外す。
 
     Raises:

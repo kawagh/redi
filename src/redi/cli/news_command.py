@@ -44,7 +44,7 @@ def _fetch_news_list(
         sys.exit(1)
 
 
-def _fetch_news(news_id: str) -> News:
+def _fetch_news(news_id: int) -> News:
     """ニュースを取得する。存在しなければ exit 1。"""
     try:
         return news_service.read_news(news_id)
@@ -106,7 +106,7 @@ def _list_news(
             assert_never(fmt)
 
 
-def _view_news(news_id: str, full: bool = False, web: bool = False) -> None:
+def _view_news(news_id: int, full: bool = False, web: bool = False) -> None:
     """ニュースの詳細を標準出力に出す。存在しない場合は exit 1。"""
     if web:
         url = news_service.news_url(news_id)
@@ -173,7 +173,7 @@ def _create_news(
 
 
 def _update_news(
-    news_id: str,
+    news_id: int,
     title: str | None = None,
     description: str | None = None,
     summary: str | None = None,
@@ -200,7 +200,7 @@ def _update_news(
     print(messages.news_updated.format(url=url))
 
 
-def _delete_news(news_id: str) -> None:
+def _delete_news(news_id: int) -> None:
     """ニュースを削除し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         news_service.delete_news(news_id)
@@ -238,7 +238,7 @@ def _interactive_select_news_id(
     project_id: str | None,
     prompt_message: str,
     selected_message: str | None = None,
-) -> str:
+) -> int:
     """ニュースを選ばせて id を返す。
 
     selected_message を渡すと選んだニュースを `{label}` に埋めて表示する。
@@ -256,7 +256,8 @@ def _interactive_select_news_id(
         news_id = inline_choice(prompt_message, options)
     if selected_message is not None:
         print(selected_message.format(label=labels[news_id]))
-    return news_id
+    # 対話の戻りは str なので、選択直後に int へ変換する
+    return int(news_id)
 
 
 def _interactive_fill_news_update(news: News) -> tuple[str | None, str | None, str]:
@@ -320,7 +321,7 @@ def add_news_parser(
     n_view_parser = n_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_news_view, parents=parents
     )
-    n_view_parser.add_argument("news_id", help=messages.arg_help_news_view_id)
+    n_view_parser.add_argument("news_id", type=int, help=messages.arg_help_news_view_id)
     add_format_options(n_view_parser)
     n_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
@@ -354,7 +355,7 @@ def add_news_parser(
         "update", aliases=["u"], help=messages.arg_help_news_update, parents=parents
     )
     n_update_parser.add_argument(
-        "news_id", nargs="?", help=messages.arg_help_news_update_id
+        "news_id", nargs="?", type=int, help=messages.arg_help_news_update_id
     )
     n_update_parser.add_argument("--title", "-t", help=messages.arg_help_news_title_opt)
     n_update_parser.add_argument(
@@ -371,7 +372,7 @@ def add_news_parser(
         "delete", aliases=["d"], help=messages.arg_help_news_delete, parents=parents
     )
     n_delete_parser.add_argument(
-        "news_id", nargs="?", help=messages.arg_help_news_delete_id
+        "news_id", nargs="?", type=int, help=messages.arg_help_news_delete_id
     )
     n_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm

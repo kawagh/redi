@@ -8,7 +8,7 @@ from redi.api import version as version_api
 from redi.api.version import Version
 
 
-def version_url(version_id: str | int) -> str:
+def version_url(version_id: int) -> str:
     """バージョンの Web UI 上の URL を組み立てる。"""
     return f"{config.redmine_url}/versions/{version_id}"
 
@@ -18,7 +18,7 @@ def list_versions(project_id: str) -> list[Version]:
     return version_api.fetch_versions(project_id)
 
 
-def read_version(version_id: str) -> Version:
+def read_version(version_id: int) -> Version:
     """バージョンを取得する。
 
     Raises:
@@ -71,7 +71,7 @@ def has_update_fields(
 
 
 def update_version(
-    version_id: str,
+    version_id: int,
     name: str | None = None,
     status: str | None = None,
     due_date: str | None = None,
@@ -95,7 +95,7 @@ def update_version(
     )
 
 
-def delete_version(version_id: str) -> None:
+def delete_version(version_id: int) -> None:
     """バージョンを削除する。
 
     Raises:

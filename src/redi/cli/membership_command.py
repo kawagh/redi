@@ -89,7 +89,7 @@ def _list_memberships(
             assert_never(fmt)
 
 
-def _read_membership(membership_id: str) -> Membership:
+def _read_membership(membership_id: int) -> Membership:
     """メンバーシップを取得する。存在しない場合は exit 1。"""
     try:
         return membership_service.read_membership(membership_id)
@@ -98,7 +98,7 @@ def _read_membership(membership_id: str) -> Membership:
         sys.exit(1)
 
 
-def _view_membership(membership_id: str, full: bool = False) -> None:
+def _view_membership(membership_id: int, full: bool = False) -> None:
     """メンバーシップの詳細を標準出力に出す。存在しない場合は exit 1。"""
     membership = _read_membership(membership_id)
     if full:
@@ -135,7 +135,7 @@ def _create_membership(project_id: str, principal_id: int, role_ids: list[int]) 
     print(messages.membership_created.format(line=_format_membership_line(created)))
 
 
-def _update_membership(membership_id: str, role_ids: list[int]) -> None:
+def _update_membership(membership_id: int, role_ids: list[int]) -> None:
     """メンバーシップのロールを更新し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         membership_service.update_membership(membership_id, role_ids)
@@ -150,7 +150,7 @@ def _update_membership(membership_id: str, role_ids: list[int]) -> None:
     print(messages.membership_updated.format(id=membership_id))
 
 
-def _delete_membership(membership_id: str) -> None:
+def _delete_membership(membership_id: int) -> None:
     """メンバーシップを削除し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         membership_service.delete_membership(membership_id)
@@ -190,7 +190,7 @@ def add_membership_parser(
         "view", aliases=["v"], help=messages.arg_help_membership_view, parents=parents
     )
     m_view_parser.add_argument(
-        "membership_id", help=messages.arg_help_membership_view_id
+        "membership_id", type=int, help=messages.arg_help_membership_view_id
     )
     add_format_options(m_view_parser)
 
@@ -223,7 +223,7 @@ def add_membership_parser(
         parents=parents,
     )
     m_update_parser.add_argument(
-        "membership_id", help=messages.arg_help_membership_update_id
+        "membership_id", type=int, help=messages.arg_help_membership_update_id
     )
     m_update_parser.add_argument(
         "--role_ids",
@@ -239,7 +239,7 @@ def add_membership_parser(
         parents=parents,
     )
     m_delete_parser.add_argument(
-        "membership_id", help=messages.arg_help_membership_delete_id
+        "membership_id", type=int, help=messages.arg_help_membership_delete_id
     )
     m_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm

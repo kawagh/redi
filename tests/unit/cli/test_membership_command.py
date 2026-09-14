@@ -4,6 +4,7 @@ import pytest
 
 from redi.api.membership import Membership, MembershipNotFoundException
 from redi.cli import membership_command
+from redi.cli.main import build_redi_parser
 from redi.cli.membership_command import _format_membership_line, handle_membership
 from redi.cli.shared_options import OutputFormat
 
@@ -53,7 +54,7 @@ class TestUpdateWithoutRoleIds:
         with pytest.raises(SystemExit) as e:
             handle_membership(
                 argparse.Namespace(
-                    membership_command="update", membership_id="7", role_ids=" , "
+                    membership_command="update", membership_id=7, role_ids=" , "
                 )
             )
 
@@ -78,7 +79,7 @@ class TestViewMissingMembership:
         with pytest.raises(SystemExit) as e:
             handle_membership(
                 argparse.Namespace(
-                    membership_command="view", membership_id="404", full=False
+                    membership_command="view", membership_id=404, full=False
                 )
             )
 
@@ -111,3 +112,37 @@ class TestMembershipListTsv:
             "\tproject_id\tproject_name\n"
             "7\tuser\t5\tSandbox Developer\t開発者\t3\tredi\n"
         )
+
+
+class TestMembershipIdIsInt:
+    """数値しか取らない membership_id は CLI の境界で int に揃える
+
+    非数値を Redmine に送る前に argparse が使用方法を示して exit 2 する。
+    """
+
+    @pytest.fixture
+    def parser(self) -> argparse.ArgumentParser:
+        return build_redi_parser()
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["membership", "view", "abc"],
+            ["membership", "update", "abc", "--role_ids", "1"],
+            ["membership", "delete", "abc"],
+        ],
+        ids=["view", "update", "delete"],
+    )
+    def test_rejects_non_numeric_id(self, parser, argv, capsys):
+        """非数値の membership_id は argparse が弾き exit 2 する"""
+        with pytest.raises(SystemExit) as exc:
+            parser.parse_args(argv)
+
+        assert exc.value.code == 2
+        assert "invalid int value" in capsys.readouterr().err
+
+    def test_view_id_is_int(self, parser):
+        """`membership view <id>` の membership_id は int で受ける"""
+        args = parser.parse_args(["membership", "view", "42"])
+
+        assert args.membership_id == 42

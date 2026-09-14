@@ -33,7 +33,7 @@ class Group(TypedDict):
 
 
 class GroupNotFoundException(Exception):
-    def __init__(self, group_id: str) -> None:
+    def __init__(self, group_id: int) -> None:
         super().__init__(group_id)
         self.group_id = group_id
 
@@ -44,7 +44,7 @@ class GroupUserNotFoundException(Exception):
     Redmine はどちらが無いのかを区別せず 404 を返すため、両方を保持する。
     """
 
-    def __init__(self, group_id: str, user_id: int) -> None:
+    def __init__(self, group_id: int, user_id: int) -> None:
         super().__init__(f"{group_id}/{user_id}")
         self.group_id = group_id
         self.user_id = user_id
@@ -61,7 +61,7 @@ def fetch_groups() -> list[Group]:
     return cast("list[Group]", response.json()["groups"])
 
 
-def fetch_group(group_id: str, include: str = "") -> Group:
+def fetch_group(group_id: int, include: str = "") -> Group:
     """グループを取得する。
 
     Args:
@@ -105,7 +105,7 @@ def create_group(name: str, user_ids: list[int] | None = None) -> Group:
 
 
 def update_group(
-    group_id: str,
+    group_id: int,
     name: str | None = None,
     user_ids: list[int] | None = None,
 ) -> None:
@@ -132,7 +132,7 @@ def update_group(
     response.raise_for_status()
 
 
-def delete_group(group_id: str) -> None:
+def delete_group(group_id: int) -> None:
     """グループを削除する。
 
     Raises:
@@ -148,7 +148,7 @@ def delete_group(group_id: str) -> None:
     response.raise_for_status()
 
 
-def add_group_user(group_id: str, user_id: int) -> None:
+def add_group_user(group_id: int, user_id: int) -> None:
     """グループにユーザーを追加する。
 
     Raises:
@@ -164,7 +164,7 @@ def add_group_user(group_id: str, user_id: int) -> None:
     response.raise_for_status()
 
 
-def remove_group_user(group_id: str, user_id: int) -> None:
+def remove_group_user(group_id: int, user_id: int) -> None:
     """グループからユーザーを外す。
 
     Raises:

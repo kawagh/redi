@@ -8,7 +8,7 @@ from redi.api import news as news_api
 from redi.api.news import News
 
 
-def news_url(news_id: str | int) -> str:
+def news_url(news_id: int) -> str:
     """ニュースの Web UI 上の URL を組み立てる。"""
     return f"{config.redmine_url}/news/{news_id}"
 
@@ -27,7 +27,7 @@ def list_news(
     return news_api.fetch_news_list(project_id, limit=limit, offset=offset)
 
 
-def read_news(news_id: str) -> News:
+def read_news(news_id: int) -> News:
     """ニュースを取得する。
 
     Raises:
@@ -64,7 +64,7 @@ def create_news(
 
 
 def update_news(
-    news_id: str,
+    news_id: int,
     title: str | None = None,
     description: str | None = None,
     summary: str | None = None,
@@ -84,7 +84,7 @@ def update_news(
     return news_url(news_id)
 
 
-def delete_news(news_id: str) -> None:
+def delete_news(news_id: int) -> None:
     """ニュースを削除する。
 
     Raises:
