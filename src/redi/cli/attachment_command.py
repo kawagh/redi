@@ -16,7 +16,7 @@ from redi.output import eprint
 from redi.service import attachment_service
 
 
-def _fetch_attachment(attachment_id: str) -> Attachment:
+def _fetch_attachment(attachment_id: int) -> Attachment:
     """添付ファイルのメタ情報を取得する。存在しない場合は exit 1。"""
     try:
         return attachment_service.read_attachment(attachment_id)
@@ -25,7 +25,7 @@ def _fetch_attachment(attachment_id: str) -> Attachment:
         sys.exit(1)
 
 
-def _view_attachment(attachment_id: str, full: bool = False) -> None:
+def _view_attachment(attachment_id: int, full: bool = False) -> None:
     """添付ファイルの詳細を標準出力に出す。full=True では取得した JSON をそのまま出す。"""
     attachment = _fetch_attachment(attachment_id)
     if full:
@@ -73,7 +73,7 @@ def _download_attachment(attachment: Attachment, path: Path) -> None:
 
 
 def _update_attachment(
-    attachment_id: str,
+    attachment_id: int,
     filename: str | None = None,
     description: str | None = None,
 ) -> None:
@@ -97,7 +97,7 @@ def _update_attachment(
     )
 
 
-def _delete_attachment(attachment_id: str) -> None:
+def _delete_attachment(attachment_id: int) -> None:
     """添付ファイルを削除し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         attachment_service.delete_attachment(attachment_id)
@@ -127,7 +127,7 @@ def add_attachment_parser(
         "view", aliases=["v"], help=messages.arg_help_attachment_view, parents=parents
     )
     a_view_parser.add_argument(
-        "attachment_id", help=messages.arg_help_attachment_view_id
+        "attachment_id", type=int, help=messages.arg_help_attachment_view_id
     )
     add_format_options(a_view_parser)
     a_download_parser = a_subparsers.add_parser(
@@ -137,7 +137,7 @@ def add_attachment_parser(
         parents=parents,
     )
     a_download_parser.add_argument(
-        "attachment_id", help=messages.arg_help_attachment_download_id
+        "attachment_id", type=int, help=messages.arg_help_attachment_download_id
     )
     a_download_parser.add_argument(
         "--output", "-o", help=messages.arg_help_attachment_output
@@ -152,7 +152,7 @@ def add_attachment_parser(
         parents=parents,
     )
     a_update_parser.add_argument(
-        "attachment_id", help=messages.arg_help_attachment_update_id
+        "attachment_id", type=int, help=messages.arg_help_attachment_update_id
     )
     a_update_parser.add_argument(
         "--filename", "-f", help=messages.arg_help_attachment_filename
@@ -167,7 +167,7 @@ def add_attachment_parser(
         parents=parents,
     )
     a_delete_parser.add_argument(
-        "attachment_id", help=messages.arg_help_attachment_delete_id
+        "attachment_id", type=int, help=messages.arg_help_attachment_delete_id
     )
     a_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm

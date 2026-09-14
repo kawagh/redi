@@ -56,7 +56,7 @@ class TestCarryOver:
         prev.issue_tab.filter = IssueFilter(
             status_id="closed", status_label="closed のみ"
         )
-        result = TuiResult(action="comment", tab="issues", issue_id="1")
+        result = TuiResult(action="comment", tab="issues", issue_id=1)
 
         next_state = prev.carry_over(result)
 
@@ -67,7 +67,7 @@ class TestCarryOver:
         """F で掛けた検索も次ループの TuiState に引き継がれる"""
         prev = TuiState()
         prev.issue_tab.find = IssueFind(query="hooks")
-        result = TuiResult(action="comment", tab="issues", issue_id="1")
+        result = TuiResult(action="comment", tab="issues", issue_id=1)
 
         next_state = prev.carry_over(result)
 
@@ -77,7 +77,7 @@ class TestCarryOver:
         """time_entry タブの絞り込み条件も引き継がれる"""
         prev = TuiState()
         prev.time_entry_tab.filter = TimeEntryFilter(user_id="42", user_label="Alice")
-        result = TuiResult(action="update", tab="time_entries", time_entry_id="9")
+        result = TuiResult(action="update", tab="time_entries", time_entry_id=9)
 
         next_state = prev.carry_over(result)
 
@@ -87,7 +87,7 @@ class TestCarryOver:
     def test_project_override_is_preserved(self):
         """p で切り替えたプロジェクトは action 実行後の次ループにも引き継がれる"""
         prev = TuiState(project_id="2", project_label="Beta")
-        result = TuiResult(action="create", tab="issues", issue_id="")
+        result = TuiResult(action="create", tab="issues")
 
         next_state = prev.carry_over(result)
 

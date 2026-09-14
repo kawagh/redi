@@ -12,7 +12,7 @@ from redi.output import eprint
 from redi.service import issue_journal_service
 
 
-def update_issue_journal(journal_id: str, notes: str) -> None:
+def update_issue_journal(journal_id: int, notes: str) -> None:
     """コメントを更新し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         issue_journal_service.update_issue_journal(journal_id, notes)
@@ -27,7 +27,7 @@ def update_issue_journal(journal_id: str, notes: str) -> None:
     print(messages.issue_journal_updated.format(id=journal_id))
 
 
-def delete_issue_journal(journal_id: str) -> None:
+def delete_issue_journal(journal_id: int) -> None:
     """コメントを削除し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         issue_journal_service.delete_issue_journal(journal_id)
@@ -61,7 +61,7 @@ def add_issue_journal_parser(
         parents=parents,
     )
     ij_update_parser.add_argument(
-        "journal_id", help=messages.arg_help_issue_journal_update_id
+        "journal_id", type=int, help=messages.arg_help_issue_journal_update_id
     )
     ij_update_parser.add_argument(
         "notes", help=messages.arg_help_issue_journal_update_notes
@@ -74,7 +74,7 @@ def add_issue_journal_parser(
         parents=parents,
     )
     ij_delete_parser.add_argument(
-        "journal_id", help=messages.arg_help_issue_journal_delete_id
+        "journal_id", type=int, help=messages.arg_help_issue_journal_delete_id
     )
     ij_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm

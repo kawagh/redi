@@ -18,7 +18,7 @@ class TestIssueJournalParser:
 
         assert args.command == "issue_journal"
         assert args.issue_journal_command == "update"
-        assert args.journal_id == "42"
+        assert args.journal_id == 42
         assert args.notes == "updated note"
 
     def test_update_alias(self, parser):
@@ -27,7 +27,7 @@ class TestIssueJournalParser:
 
         assert args.command == "ij"
         assert args.issue_journal_command == "u"
-        assert args.journal_id == "42"
+        assert args.journal_id == 42
         assert args.notes == "note"
 
     def test_delete_subcommand(self, parser):
@@ -36,7 +36,7 @@ class TestIssueJournalParser:
 
         assert args.command == "issue_journal"
         assert args.issue_journal_command == "delete"
-        assert args.journal_id == "42"
+        assert args.journal_id == 42
         assert args.yes is False
 
     def test_delete_with_yes_flag(self, parser):
@@ -51,4 +51,20 @@ class TestIssueJournalParser:
 
         assert args.command == "ij"
         assert args.issue_journal_command == "d"
-        assert args.journal_id == "42"
+        assert args.journal_id == 42
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["issue_journal", "update", "abc", "note"],
+            ["issue_journal", "delete", "abc"],
+        ],
+        ids=["update", "delete"],
+    )
+    def test_rejects_non_numeric_id(self, parser, argv, capsys):
+        """非数値の journal_id は Redmine に送る前に argparse が弾き exit 2 する"""
+        with pytest.raises(SystemExit) as exc:
+            parser.parse_args(argv)
+
+        assert exc.value.code == 2
+        assert "invalid int value" in capsys.readouterr().err

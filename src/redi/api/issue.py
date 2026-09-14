@@ -115,7 +115,7 @@ class JournalDetail(TypedDict):
 
 
 class IssueNotFoundException(Exception):
-    def __init__(self, issue_id: str) -> None:
+    def __init__(self, issue_id: int) -> None:
         super().__init__(issue_id)
         self.issue_id = issue_id
 
@@ -126,7 +126,7 @@ class WatcherNotFoundException(Exception):
     Redmine はイシューとユーザーのどちらが存在しないかを区別しないため両方を持つ。
     """
 
-    def __init__(self, issue_id: str, user_id: int) -> None:
+    def __init__(self, issue_id: int, user_id: int) -> None:
         super().__init__(f"{issue_id}/{user_id}")
         self.issue_id = issue_id
         self.user_id = user_id
@@ -213,7 +213,7 @@ def fetch_issues(
     )["issues"]
 
 
-def fetch_issue(issue_id: str, include: str = "") -> Issue:
+def fetch_issue(issue_id: int, include: str = "") -> Issue:
     """イシューを取得する
 
     Raises:
@@ -238,7 +238,7 @@ def create_issue(
     priority_id: str | None = None,
     assigned_to_id: str | None = None,
     fixed_version_id: str | None = None,
-    parent_issue_id: str | None = None,
+    parent_issue_id: int | None = None,
     start_date: str | None = None,
     due_date: str | None = None,
     estimated_hours: float | None = None,
@@ -282,7 +282,7 @@ def create_issue(
 
 
 def update_issue(
-    issue_id: str,
+    issue_id: int,
     project_id: str | None = None,
     subject: str | None = None,
     description: str | None = None,
@@ -304,6 +304,7 @@ def update_issue(
 
     Args:
         project_id: 指定するとイシューを別プロジェクトへ移動する
+        parent_issue_id: 空文字は「親チケットを外す」意味で送るため、数値 id でも str で受ける
         uploads: 添付ファイルのアップロード結果 (`api.attachment.upload_file` の戻り値)
 
     Raises:
@@ -350,7 +351,7 @@ def update_issue(
     response.raise_for_status()
 
 
-def add_watcher(issue_id: str, user_id: int) -> None:
+def add_watcher(issue_id: int, user_id: int) -> None:
     """イシューにウォッチャーを追加する
 
     Redmine はウォッチャーにできないユーザーID（存在しない・ロック済みなど）を
@@ -370,7 +371,7 @@ def add_watcher(issue_id: str, user_id: int) -> None:
     response.raise_for_status()
 
 
-def remove_watcher(issue_id: str, user_id: int) -> None:
+def remove_watcher(issue_id: int, user_id: int) -> None:
     """イシューからウォッチャーを削除する
 
     Raises:
@@ -383,7 +384,7 @@ def remove_watcher(issue_id: str, user_id: int) -> None:
     response.raise_for_status()
 
 
-def delete_issue(issue_id: str) -> None:
+def delete_issue(issue_id: int) -> None:
     """イシューを削除する
 
     Raises:
@@ -396,7 +397,7 @@ def delete_issue(issue_id: str) -> None:
     response.raise_for_status()
 
 
-def add_note(issue_id: str, notes: str) -> None:
+def add_note(issue_id: int, notes: str) -> None:
     """イシューにコメントを追加する
 
     Raises:

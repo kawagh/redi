@@ -7,7 +7,7 @@ CLI と TUI で共通の手順をここに置く。HTTP とステータスコー
 from redi.api import issue_journal as issue_journal_api
 
 
-def update_issue_journal(journal_id: str, notes: str) -> None:
+def update_issue_journal(journal_id: int, notes: str) -> None:
     """コメントの本文を更新する。
 
     Raises:
@@ -17,7 +17,7 @@ def update_issue_journal(journal_id: str, notes: str) -> None:
     issue_journal_api.update_issue_journal(journal_id, notes)
 
 
-def delete_issue_journal(journal_id: str) -> None:
+def delete_issue_journal(journal_id: int) -> None:
     """コメントを削除する。
 
     Redmine にコメントを消す API は無いため、本文を空にすることで削除とする。

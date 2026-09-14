@@ -34,7 +34,7 @@ from redi.output import eprint, print_tsv
 from redi.service import project_service, time_entry_service
 
 
-def _fetch_time_entry_or_exit(time_entry_id: str) -> TimeEntry:
+def _fetch_time_entry_or_exit(time_entry_id: int) -> TimeEntry:
     """作業時間を取得する。存在しなければ見つからないと伝えて exit 1。"""
     te = time_entry_service.read_time_entry(time_entry_id)
     if te is None:
@@ -122,7 +122,7 @@ def _list_time_entries(
             assert_never(fmt)
 
 
-def _view_time_entry(time_entry_id: str, full: bool = False) -> None:
+def _view_time_entry(time_entry_id: int, full: bool = False) -> None:
     """作業時間の詳細を標準出力に出す。存在しない場合は exit 1。"""
     te = _fetch_time_entry_or_exit(time_entry_id)
     if full:
@@ -145,7 +145,7 @@ def _view_time_entry(time_entry_id: str, full: bool = False) -> None:
 
 
 def create_time_entry(
-    issue_id: str | None = None,
+    issue_id: int | None = None,
     project_id: str | None = None,
     hours: float = 0,
     activity_id: str | None = None,
@@ -184,9 +184,9 @@ def create_time_entry(
 
 
 def _update_time_entry(
-    time_entry_id: str,
+    time_entry_id: int,
     hours: float | None = None,
-    issue_id: str | None = None,
+    issue_id: int | None = None,
     project_id: str | None = None,
     activity_id: str | None = None,
     spent_on: str | None = None,
@@ -228,7 +228,7 @@ def _update_time_entry(
     print(messages.time_entry_updated.format(id=time_entry_id))
 
 
-def _delete_time_entry(time_entry_id: str) -> None:
+def _delete_time_entry(time_entry_id: int) -> None:
     """作業時間を削除し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         time_entry_service.delete_time_entry(time_entry_id)
@@ -306,7 +306,7 @@ def add_time_entry_parser(
         "hours", type=float, nargs="?", help=messages.arg_help_time_entry_hours
     )
     te_create_parser.add_argument(
-        "--issue_id", "-i", help=messages.arg_help_time_entry_issue_id
+        "--issue_id", "-i", type=int, help=messages.arg_help_time_entry_issue_id
     )
     te_create_parser.add_argument(
         "--project_id", "-p", help=messages.arg_help_project_id
@@ -324,7 +324,7 @@ def add_time_entry_parser(
         "view", aliases=["v"], help=messages.arg_help_time_entry_view, parents=parents
     )
     te_view_parser.add_argument(
-        "time_entry_id", help=messages.arg_help_time_entry_view_id
+        "time_entry_id", type=int, help=messages.arg_help_time_entry_view_id
     )
     add_format_options(te_view_parser)
     te_update_parser = te_subparsers.add_parser(
@@ -334,13 +334,13 @@ def add_time_entry_parser(
         parents=parents,
     )
     te_update_parser.add_argument(
-        "time_entry_id", help=messages.arg_help_time_entry_update_id
+        "time_entry_id", type=int, help=messages.arg_help_time_entry_update_id
     )
     te_update_parser.add_argument(
         "--hours", type=float, help=messages.arg_help_time_entry_update_hours
     )
     te_update_parser.add_argument(
-        "--issue_id", "-i", help=messages.arg_help_time_entry_issue_id
+        "--issue_id", "-i", type=int, help=messages.arg_help_time_entry_issue_id
     )
     te_update_parser.add_argument(
         "--project_id", "-p", help=messages.arg_help_project_id
@@ -361,7 +361,7 @@ def add_time_entry_parser(
         parents=parents,
     )
     te_delete_parser.add_argument(
-        "time_entry_id", help=messages.arg_help_time_entry_delete_id
+        "time_entry_id", type=int, help=messages.arg_help_time_entry_delete_id
     )
     te_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
@@ -381,15 +381,15 @@ def _lacks_required_time_entry_create_args(args: argparse.Namespace) -> bool:
 def _interactive_fill_time_entry_create_args(args: argparse.Namespace) -> None:
     with raise_on_cancel():
         if not args.issue_id and not args.project_id:
-            default_issue_id = getattr(args, "default_issue_id", None) or ""
+            default_issue_id = getattr(args, "default_issue_id", None)
             issue_id = prompt(
                 messages.prompt_issue_id_or_project,
-                default=default_issue_id,
+                default=str(default_issue_id) if default_issue_id is not None else "",
                 key_bindings=digit_only_key_bindings(),
             ).strip()
             if issue_id:
-                args.issue_id = issue_id
-                issue = read_issue_or_exit(issue_id)
+                args.issue_id = int(issue_id)
+                issue = read_issue_or_exit(args.issue_id)
                 print(
                     messages.issue_label.format(
                         id=issue["id"], subject=issue["subject"]
@@ -511,13 +511,13 @@ def _interactive_fill_time_entry_update_args(args: argparse.Namespace) -> None:
                 key_bindings=digit_only_key_bindings(),
             ).strip()
             if issue_id:
-                issue = read_issue_or_exit(issue_id)
+                issue = read_issue_or_exit(int(issue_id))
                 print(
                     messages.issue_label.format(
                         id=issue["id"], subject=issue["subject"]
                     )
                 )
-                args.issue_id = issue_id
+                args.issue_id = issue["id"]
 
 
 def handle_time_entry(args: argparse.Namespace) -> None:

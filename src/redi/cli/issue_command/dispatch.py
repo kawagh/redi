@@ -18,14 +18,14 @@ from redi.output import eprint
 from redi.service import issue_service
 
 
-def add_issue_note(issue_id: str, notes: str) -> None:
+def add_issue_note(issue_id: int, notes: str) -> None:
     """イシューにコメントを追加し、結果を標準出力に出す。失敗時は exit 1。"""
     with exit_if_issue_not_found(issue_id):
         url = issue_service.add_note(issue_id, notes)
     print(messages.comment_added.format(url=url))
 
 
-def _delete_issue(issue_id: str) -> None:
+def _delete_issue(issue_id: int) -> None:
     """イシューを削除し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         with exit_if_issue_not_found(issue_id):

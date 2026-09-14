@@ -90,8 +90,8 @@ class TestIssueUpdateArgsFromNamespace:
 
         update_args = IssueUpdateArgs.from_namespace(args)
 
-        assert update_args.issue_id == "42"
-        assert update_args.relate_to == "43"
+        assert update_args.issue_id == 42
+        assert update_args.relate_to == 43
         assert update_args.add_watcher_ids == [7]
 
     def test_accepts_project_id(self):
@@ -430,7 +430,7 @@ class TestViewIssueComments:
             lambda issue_id, include: called.update(include=include) or VIEWED_ISSUE,
         )
 
-        view_module.view_issue("42")
+        view_module.view_issue(42)
 
         assert "journals" in called["include"].split(",")
         assert "テストコメント" in capsys.readouterr().out
@@ -477,7 +477,7 @@ class TestIssueViewInclude:
             lambda issue_id, include: called.update(include=include) or VIEWED_ISSUE,
         )
 
-        view_module.view_issue("42", include=["watchers", "journals"])
+        view_module.view_issue(42, include=["watchers", "journals"])
 
         assert called["include"].split(",") == [
             "relations",
@@ -713,7 +713,7 @@ class TestIssueUpdateStatusChoices:
                 ],
             },
         )
-        args = IssueUpdateArgs(issue_id="42")
+        args = IssueUpdateArgs(issue_id=42)
 
         update_module._interactive_fill_issue_update_args(args)
 
@@ -759,7 +759,7 @@ class TestIssueUpdateParentIssue:
         """更新項目に親チケットが並ぶ"""
         self._stub_read_issue(monkeypatch, {"project": {"id": 1}, "tracker": {"id": 1}})
         self._stub_prompt(monkeypatch, interactive, "100")
-        args = IssueUpdateArgs(issue_id="42")
+        args = IssueUpdateArgs(issue_id=42)
 
         update_module._interactive_fill_issue_update_args(args)
 
@@ -773,7 +773,7 @@ class TestIssueUpdateParentIssue:
             {"project": {"id": 1}, "tracker": {"id": 1}, "parent": {"id": 7}},
         )
         self._stub_prompt(monkeypatch, interactive, "7")
-        args = IssueUpdateArgs(issue_id="42")
+        args = IssueUpdateArgs(issue_id=42)
 
         update_module._interactive_fill_issue_update_args(args)
 
@@ -786,7 +786,7 @@ class TestIssueUpdateParentIssue:
             {"project": {"id": 1}, "tracker": {"id": 1}, "parent": {"id": 7}},
         )
         self._stub_prompt(monkeypatch, interactive, "")
-        args = IssueUpdateArgs(issue_id="42")
+        args = IssueUpdateArgs(issue_id=42)
 
         update_module._interactive_fill_issue_update_args(args)
 
@@ -888,3 +888,43 @@ class TestIssueListTsv:
             "", "30", "2.5", "1.0", "false", "2026-09-01T00:00:00Z",
             "2026-09-02T00:00:00Z", "",
         ]  # fmt: skip
+
+
+class TestIssueIdArgumentType:
+    """数値しか取らない id は CLI の境界で int に揃える
+
+    非数値を Redmine に送る前に argparse が使用方法を示して exit 2 する。
+    """
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["issue", "view", "abc"],
+            ["issue", "comment", "abc", "コメント"],
+            ["issue", "delete", "abc"],
+            ["issue", "update", "abc", "--subject", "件名"],
+            ["issue", "update", "42", "--relate", "relates", "--to", "abc"],
+            ["issue", "create", "件名", "--parent_issue_id", "abc"],
+        ],
+        ids=[
+            "view",
+            "comment",
+            "delete",
+            "update",
+            "update --to",
+            "create --parent_issue_id",
+        ],
+    )
+    def test_rejects_non_numeric_id(self, argv, capsys):
+        """非数値の id は argparse が弾き exit 2 する"""
+        with pytest.raises(SystemExit) as exc:
+            parse_issue_args(argv)
+
+        assert exc.value.code == 2
+        assert "invalid int value" in capsys.readouterr().err
+
+    def test_parent_issue_id_is_int(self):
+        """`issue create --parent_issue_id` は int で受ける"""
+        args = parse_issue_args(["issue", "create", "件名", "--parent_issue_id", "7"])
+
+        assert IssueCreateArgs.from_namespace(args).parent_issue_id == 7

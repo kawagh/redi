@@ -29,7 +29,7 @@ class UnexpectedContentUrlException(Exception):
         self.url = url
 
 
-def attachment_url(attachment_id: str) -> str:
+def attachment_url(attachment_id: int) -> str:
     """添付ファイルの Web UI 上の URL を組み立てる。"""
     return f"{config.redmine_url}/attachments/{attachment_id}"
 
@@ -46,7 +46,7 @@ def upload_file(file_path: str) -> dict:
     return attachment_api.upload_file(file_path)
 
 
-def read_attachment(attachment_id: str) -> Attachment:
+def read_attachment(attachment_id: int) -> Attachment:
     """添付ファイルのメタ情報を取得する。
 
     Raises:
@@ -97,7 +97,7 @@ def download_attachment(attachment: Attachment, path: Path) -> None:
         resolve_download_url_path(attachment)
     )
     if chunks is None:
-        raise AttachmentNotFoundException(str(attachment["id"]))
+        raise AttachmentNotFoundException(attachment["id"])
     with open(path, "wb") as f:
         # writelines() でも等価だが、チャンク単位の書き込みは for の方が可読性が高い
         for chunk in chunks:  # noqa: FURB122
@@ -105,7 +105,7 @@ def download_attachment(attachment: Attachment, path: Path) -> None:
 
 
 def update_attachment(
-    attachment_id: str,
+    attachment_id: int,
     filename: str | None = None,
     description: str | None = None,
 ) -> None:
@@ -120,7 +120,7 @@ def update_attachment(
     )
 
 
-def delete_attachment(attachment_id: str) -> None:
+def delete_attachment(attachment_id: int) -> None:
     """添付ファイルを削除する。
 
     Raises:

@@ -59,13 +59,13 @@ class TestUpdateIssue:
 
     def test_project_slug_is_resolved_to_id(self, stub_update_issue_api):
         """存在しない移動先を Redmine が黙って無視するので、数値の id に解決してから渡す"""
-        issue_service.update_issue("42", project_id="reditest")
+        issue_service.update_issue(42, project_id="reditest")
 
         assert stub_update_issue_api.calls[0]["project_id"] == "5"
 
     def test_project_is_not_resolved_when_omitted(self, stub_update_issue_api):
         """project_id を指定しなければ解決せず None のまま渡す (プロジェクトを変えない)"""
-        issue_service.update_issue("42", subject="件名")
+        issue_service.update_issue(42, subject="件名")
 
         assert stub_update_issue_api.calls[0]["project_id"] is None
 
@@ -77,14 +77,14 @@ class TestAddNote:
         """追加後のジャーナル数を note 番号にした URL を返す"""
         stub_issue_api.journals = [{"id": 1}, {"id": 2}]
 
-        url = issue_service.add_note("42", "コメント")
+        url = issue_service.add_note(42, "コメント")
 
         assert url == "http://localhost:3001/issues/42#note-2"
-        assert stub_issue_api.added == [("42", "コメント")]
+        assert stub_issue_api.added == [(42, "コメント")]
 
     def test_returns_issue_url_without_journals(self, stub_issue_api):
         """ジャーナルが取れなければ note 番号のない URL を返す"""
-        url = issue_service.add_note("42", "コメント")
+        url = issue_service.add_note(42, "コメント")
 
         assert url == "http://localhost:3001/issues/42"
 
@@ -178,24 +178,24 @@ class TestAddWatcher:
         """追加後の一覧に指定したユーザーがいれば成功とみなす"""
         stub_watcher_api.watchers = [{"id": 7, "name": "redi"}]
 
-        issue_service.add_watcher("42", 7)
+        issue_service.add_watcher(42, 7)
 
-        assert stub_watcher_api.added == [("42", 7)]
+        assert stub_watcher_api.added == [(42, 7)]
 
     def test_raises_when_watcher_is_not_added(self, stub_watcher_api):
         """追加後の一覧に指定したユーザーがいなければ追加できていないので送出する"""
         stub_watcher_api.watchers = [{"id": 1, "name": "other"}]
 
         with pytest.raises(WatcherNotFoundException) as exc_info:
-            issue_service.add_watcher("42", 999)
+            issue_service.add_watcher(42, 999)
 
-        assert exc_info.value.issue_id == "42"
+        assert exc_info.value.issue_id == 42
         assert exc_info.value.user_id == 999
 
     def test_does_not_raise_when_watchers_are_unavailable(self, stub_watcher_api):
         """ウォッチャーを参照する権限が無いと一覧が返らないので、確認せず成功とみなす"""
         stub_watcher_api.watchers = None
 
-        issue_service.add_watcher("42", 7)
+        issue_service.add_watcher(42, 7)
 
-        assert stub_watcher_api.added == [("42", 7)]
+        assert stub_watcher_api.added == [(42, 7)]

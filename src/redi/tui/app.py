@@ -52,7 +52,7 @@ def _restore_session(state: TuiState) -> None:
         and last.action in ("comment", "edit_comment", "delete_comment")
         and last.issue_id
     ):
-        target_id = int(last.issue_id)
+        target_id = last.issue_id
         target = next(
             (i for i in state.issue_tab.issues if i.get("id") == target_id), None
         )

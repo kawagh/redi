@@ -46,13 +46,13 @@ class TimeEntriesPageResponse(TypedDict):
 
 
 class TimeEntryNotFoundException(Exception):
-    def __init__(self, time_entry_id: str) -> None:
+    def __init__(self, time_entry_id: int) -> None:
         super().__init__(time_entry_id)
         self.time_entry_id = time_entry_id
 
 
 def create_time_entry(
-    issue_id: str | None = None,
+    issue_id: int | None = None,
     project_id: str | None = None,
     hours: float = 0,
     activity_id: str | None = None,
@@ -134,7 +134,7 @@ def fetch_issue_subjects(issue_ids: list[int]) -> dict[int, str]:
     return {issue["id"]: issue["subject"] for issue in response.json()["issues"]}
 
 
-def fetch_time_entry(time_entry_id: str) -> TimeEntry | None:
+def fetch_time_entry(time_entry_id: int) -> TimeEntry | None:
     """作業時間を取得する。存在しない場合 (HTTP 404) は None を返す。"""
     response = client.get(f"/time_entries/{time_entry_id}.json")
     if response.status_code == 404:
@@ -144,9 +144,9 @@ def fetch_time_entry(time_entry_id: str) -> TimeEntry | None:
 
 
 def update_time_entry(
-    time_entry_id: str,
+    time_entry_id: int,
     hours: float | None = None,
-    issue_id: str | None = None,
+    issue_id: int | None = None,
     project_id: str | None = None,
     activity_id: str | None = None,
     spent_on: str | None = None,
@@ -186,7 +186,7 @@ def update_time_entry(
     response.raise_for_status()
 
 
-def delete_time_entry(time_entry_id: str) -> None:
+def delete_time_entry(time_entry_id: int) -> None:
     """作業時間を削除する
 
     Raises:

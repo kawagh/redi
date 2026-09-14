@@ -61,11 +61,11 @@ class TuiPosition:
 class TuiResult:
     action: TuiAction
     tab: TuiTab
-    issue_id: str | None = None
+    issue_id: int | None = None
     wiki_title: str | None = None
     parent_wiki_title: str | None = None
-    time_entry_id: str | None = None
-    journal_id: str | None = None
+    time_entry_id: int | None = None
+    journal_id: int | None = None
     journal_notes: str = ""
     # action == "switch_profile" のときの切替先プロファイル名。
     profile_name: str | None = None

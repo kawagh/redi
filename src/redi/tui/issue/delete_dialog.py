@@ -90,7 +90,7 @@ def open_delete_dialog(state: TuiState) -> bool:
         return False
     dialog = state.issue_tab.delete_dialog
     dialog.show = True
-    dialog.target_id = int(issue_id)
+    dialog.target_id = issue_id
     dialog.target_subject = str(issue.get("subject", ""))
     dialog.input_text = ""
     dialog.notice = None
@@ -143,7 +143,7 @@ def confirm_delete(state: TuiState) -> None:
         dialog.notice = notice
         return
     try:
-        issue_service.delete_issue(str(dialog.target_id))
+        issue_service.delete_issue(dialog.target_id)
     except IssueNotFoundException:
         close_delete_dialog(state)
         state.flash_message = messages.tui_issue_delete_missing.format(

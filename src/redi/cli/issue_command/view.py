@@ -137,7 +137,7 @@ def print_issues(
 
 
 def view_issue(
-    issue_id: str,
+    issue_id: int,
     include: list[str] | None = None,
     full: bool = False,
     web: bool = False,

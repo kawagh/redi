@@ -2,12 +2,12 @@ from redi.api.client import client
 
 
 class IssueJournalNotFoundException(Exception):
-    def __init__(self, journal_id: str) -> None:
+    def __init__(self, journal_id: int) -> None:
         super().__init__(journal_id)
         self.journal_id = journal_id
 
 
-def update_issue_journal(journal_id: str, notes: str) -> None:
+def update_issue_journal(journal_id: int, notes: str) -> None:
     """コメント(ジャーナル)の本文を更新する
 
     Raises:

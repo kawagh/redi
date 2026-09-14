@@ -108,7 +108,7 @@ class TestConfirmDelete:
 
         confirm_delete(state)
 
-        assert deleted == ["2"]
+        assert deleted == [2]
         assert [i["id"] for i in state.issue_tab.issues] == [1, 3]
         assert state.issue_tab.total_count == 2
         assert state.issue_tab.delete_dialog.show is False
@@ -155,7 +155,7 @@ class TestConfirmDelete:
     @pytest.mark.parametrize(
         ("error", "expected_in_flash"),
         [
-            (IssueNotFoundException("1"), "1"),
+            (IssueNotFoundException(1), "1"),
             (requests.exceptions.ConnectionError("boom"), "boom"),
         ],
         ids=["issue_missing", "api_failure"],

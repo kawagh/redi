@@ -61,7 +61,7 @@ class IssueCreateArgs:
     priority_id: str | None = None
     assigned_to_id: str | None = None
     fixed_version_id: str | None = None
-    parent_issue_id: str | None = None
+    parent_issue_id: int | None = None
     start_date: str | None = None
     due_date: str | None = None
     estimated_hours: float | None = None
@@ -96,7 +96,7 @@ def _build_create_issue_url(args: IssueCreateArgs) -> str:
     if args.fixed_version_id:
         params.append(("issue[fixed_version_id]", args.fixed_version_id))
     if args.parent_issue_id:
-        params.append(("issue[parent_issue_id]", args.parent_issue_id))
+        params.append(("issue[parent_issue_id]", str(args.parent_issue_id)))
     if args.start_date:
         params.append(("issue[start_date]", args.start_date))
     if args.due_date:
@@ -208,7 +208,8 @@ def _interactive_fill_optional_create_fields(args: IssueCreateArgs) -> None:
         if "fixed_version" in selected:
             args.fixed_version_id = prompt_fixed_version(project_id)
         if "parent_issue" in selected:
-            args.parent_issue_id = prompt_parent_issue_id() or None
+            parent_issue_id = prompt_parent_issue_id()
+            args.parent_issue_id = int(parent_issue_id) if parent_issue_id else None
         if "start_date" in selected:
             args.start_date = prompt_start_date(date.today().isoformat()) or None
         if "due_date" in selected:
