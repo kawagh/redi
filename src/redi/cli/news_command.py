@@ -15,7 +15,7 @@ from redi import config
 from redi.api.exceptions import ProjectNotFoundException, print_http_error_body
 from redi.api.news import News, NewsNotFoundException
 from redi.cli.alias import resolve_alias
-from redi.cli.confirm import confirm_delete
+from redi.cli.confirm import confirm_delete_with_identifier
 from redi.cli.editor import open_editor, shorten_to_oneline
 from redi.cli.interactive import prompt, raise_on_cancel
 from redi.cli.picker import inline_checkbox, inline_choice
@@ -435,9 +435,13 @@ def handle_news(args: argparse.Namespace) -> None:
             messages.prompt_select_news_to_delete,
         )
         if not args.yes:
+            # 一覧から選べるぶん誤選択の余地があり、削除するとコメントと添付ごと戻せない。
+            # yes/No ではなく id を打ち直させて対象を意識させる
             news = _fetch_news(news_id)
-            confirm_delete(
-                messages.delete_target_news.format(id=news["id"], title=news["title"])
+            confirm_delete_with_identifier(
+                messages.delete_target_news.format(id=news["id"], title=news["title"]),
+                str(news["id"]),
+                messages.arg_help_news_view_id,
             )
         _delete_news(news_id)
         return
