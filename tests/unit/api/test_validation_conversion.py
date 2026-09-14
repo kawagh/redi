@@ -61,7 +61,7 @@ CASES = [
         "relation_create",
         issue_relation_module,
         "post",
-        lambda: issue_relation_module.create_relation("1", "2", "nosuchtype"),
+        lambda: issue_relation_module.create_relation(1, 2, "nosuchtype"),
         "issue_relation",
         "create",
     ),
@@ -108,6 +108,6 @@ class TestTimeEntryUpdateNotFound:
         )
 
         with pytest.raises(TimeEntryNotFoundException) as e:
-            time_entry_module.update_time_entry("999999", hours=1)
+            time_entry_module.update_time_entry(999999, hours=1)
 
-        assert e.value.time_entry_id == "999999"
+        assert e.value.time_entry_id == 999999

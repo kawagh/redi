@@ -63,7 +63,7 @@ class IssueUpdateArgs:
     argparse 経由なら `from_namespace` で、TUI からは必要な項目だけ指定して生成する。
     """
 
-    issue_id: str | None = None
+    issue_id: int | None = None
     project_id: str | None = None
     subject: str | None = None
     description: str | None = None
@@ -80,7 +80,7 @@ class IssueUpdateArgs:
     notes: str | None = None
     custom_fields: str | None = None
     relate: str | None = None
-    relate_to: str | None = None
+    relate_to: int | None = None
     delete_relation: bool = False
     attach: list[str] | None = None
     hours: float | None = None
@@ -96,7 +96,7 @@ class IssueUpdateArgs:
         return cls(**{f.name: getattr(args, f.name) for f in fields(cls)})
 
 
-def _interactive_select_issue_id() -> str:
+def _interactive_select_issue_id() -> int:
     issues = issue_service.list_issues(project_id=config.default_project_id)
     if not issues:
         eprint(messages.no_issues_available)
@@ -108,7 +108,8 @@ def _interactive_select_issue_id() -> str:
     with raise_on_cancel():
         issue_id = inline_choice(messages.prompt_select_issue_to_update, options)
     print(messages.update_target_issue.format(label=labels[issue_id]))
-    return issue_id
+    # inline_choice の値は str なので、ここで数値の id に戻す
+    return int(issue_id)
 
 
 def _interactive_fill_issue_update_args(args: IssueUpdateArgs) -> None:
@@ -440,7 +441,7 @@ def _update_issue(args: IssueUpdateArgs, description: str | None) -> None:
     )
 
 
-def _add_watcher(issue_id: str, user_id: int) -> None:
+def _add_watcher(issue_id: int, user_id: int) -> None:
     """ウォッチャーを追加し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         with exit_if_issue_not_found(issue_id):
@@ -456,7 +457,7 @@ def _add_watcher(issue_id: str, user_id: int) -> None:
     print(messages.watcher_added.format(issue_id=issue_id, user_id=user_id))
 
 
-def _remove_watcher(issue_id: str, user_id: int) -> None:
+def _remove_watcher(issue_id: int, user_id: int) -> None:
     """ウォッチャーを削除し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         issue_service.remove_watcher(issue_id, user_id)
@@ -473,7 +474,7 @@ def _remove_watcher(issue_id: str, user_id: int) -> None:
     print(messages.watcher_removed.format(issue_id=issue_id, user_id=user_id))
 
 
-def _create_relation(issue_id: str, issue_to_id: str, relation_type: str) -> None:
+def _create_relation(issue_id: int, issue_to_id: int, relation_type: str) -> None:
     """関係性を作成し、結果を標準出力に出す。失敗時は exit 1。"""
     try:
         issue_relation_service.create_relation(
@@ -493,7 +494,7 @@ def _create_relation(issue_id: str, issue_to_id: str, relation_type: str) -> Non
     )
 
 
-def _delete_relation(issue_id: str, issue_to_id: str) -> None:
+def _delete_relation(issue_id: int, issue_to_id: int) -> None:
     """イシュー間の関係性を削除し、結果を標準出力に出す。対象が無いか失敗したら exit 1。"""
     try:
         relation = issue_relation_service.delete_relation(
@@ -530,13 +531,13 @@ def handle_issue_update(args: argparse.Namespace) -> None:
     _run_issue_update(IssueUpdateArgs.from_namespace(args))
 
 
-def update_issue_interactively(issue_id: str | None = None) -> None:
+def update_issue_interactively(issue_id: int | None = None) -> None:
     """更新項目を対話で選ばせる入口。TUI から使う。"""
     _run_issue_update(IssueUpdateArgs(issue_id=issue_id))
 
 
 def _run_issue_update(args: IssueUpdateArgs) -> None:
-    if not args.issue_id:
+    if args.issue_id is None:
         args.issue_id = _interactive_select_issue_id()
     no_args_provided = not (
         args.project_id

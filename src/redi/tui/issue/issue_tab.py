@@ -23,15 +23,21 @@ from redi.tui.tab import TabView, noop
 
 
 def load_journals(issue: Issue) -> None:
-    fetched = issue_service.read_issue(str(issue["id"]), include="journals")
+    fetched = issue_service.read_issue(issue["id"], include="journals")
     issue["journals"] = fetched.get("journals") or []
 
 
 def _exit_result(
-    state: TuiState, action: TuiAction, issue_id: str | None = None
+    state: TuiState, action: TuiAction, *, with_issue_id: bool = True
 ) -> TuiResult:
-    if issue_id is None and state.issue_tab.issues:
-        issue_id = str(state.issue_tab.issues[state.issue_tab.cursor]["id"])
+    """TUI を抜けて action を実行するための TuiResult を作る。
+
+    with_issue_id が True ならカーソル行のイシュー id を載せる。
+    作成のようにカーソル行と無関係な action では False にする。
+    """
+    issue_id: int | None = None
+    if with_issue_id and state.issue_tab.issues:
+        issue_id = state.issue_tab.issues[state.issue_tab.cursor]["id"]
     return TuiResult(
         action=action,
         tab="issues",
@@ -186,12 +192,12 @@ def confirm_comment_edit(state: TuiState) -> TuiResult | None:
     journal = selected_journal(state)
     if journal is None or journal.get("id") is None:
         return None
-    issue_id = str(state.issue_tab.issues[state.issue_tab.cursor]["id"])
+    issue_id = state.issue_tab.issues[state.issue_tab.cursor]["id"]
     result = TuiResult(
         action="edit_comment",
         tab="issues",
         issue_id=issue_id,
-        journal_id=str(journal["id"]),
+        journal_id=journal["id"],
         journal_notes=journal.get("notes") or "",
         position=TuiPosition(
             offset=state.issue_tab.offset, cursor=state.issue_tab.cursor
@@ -217,12 +223,12 @@ def confirm_comment_delete(state: TuiState) -> TuiResult | None:
     journal = selected_journal(state)
     if journal is None or journal.get("id") is None:
         return None
-    issue_id = str(state.issue_tab.issues[state.issue_tab.cursor]["id"])
+    issue_id = state.issue_tab.issues[state.issue_tab.cursor]["id"]
     return TuiResult(
         action="delete_comment",
         tab="issues",
         issue_id=issue_id,
-        journal_id=str(journal["id"]),
+        journal_id=journal["id"],
         position=TuiPosition(
             offset=state.issue_tab.offset, cursor=state.issue_tab.cursor
         ),
@@ -408,7 +414,7 @@ def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
             return None
         return _exit_result(state, "update")
     if key == "c":
-        return _exit_result(state, "create", issue_id="")
+        return _exit_result(state, "create", with_issue_id=False)
     if key == "n":
         if not state.issue_tab.issues:
             return None

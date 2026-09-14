@@ -275,3 +275,29 @@ class TestIssueResize:
             issue_tab._on_resize(state)
 
         assert state.issue_tab.issues == old_issues
+
+
+class TestActionKeyResult:
+    """アクションキーで TUI を抜けるときの TuiResult"""
+
+    def test_update_carries_cursor_issue_id_as_int(self):
+        """u はカーソル行のイシュー id を int のまま載せる"""
+        state = _make_state(offset=0, page_size=25, total_count=3, issues_on_page=3)
+        state.issue_tab.cursor = 2
+
+        result = issue_tab.ISSUE_TAB.on_action_key(state, "u")
+
+        assert result is not None
+        assert result.action == "update"
+        assert result.issue_id == 2
+
+    def test_create_does_not_carry_issue_id(self):
+        """c はカーソル行と無関係なので issue_id を載せない"""
+        state = _make_state(offset=0, page_size=25, total_count=3, issues_on_page=3)
+        state.issue_tab.cursor = 2
+
+        result = issue_tab.ISSUE_TAB.on_action_key(state, "c")
+
+        assert result is not None
+        assert result.action == "create"
+        assert result.issue_id is None

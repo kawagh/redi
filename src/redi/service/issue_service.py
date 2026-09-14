@@ -18,7 +18,7 @@ from redi.service.attachment_service import upload_file
 from redi.service.project_service import resolve_project_id
 
 
-def issue_url(issue_id: str | int, note_number: int | None = None) -> str:
+def issue_url(issue_id: int, note_number: int | None = None) -> str:
     """イシューの Web UI 上の URL を組み立てる。"""
     url = f"{config.redmine_url}/issues/{issue_id}"
     if note_number is not None:
@@ -77,7 +77,7 @@ def _query_exists(query_id: str) -> bool:
     return any(str(query.get("id")) == str(query_id) for query in queries)
 
 
-def read_issue(issue_id: str, include: str = "") -> Issue:
+def read_issue(issue_id: int, include: str = "") -> Issue:
     """イシューを取得する。
 
     Raises:
@@ -95,7 +95,7 @@ def create_issue(
     priority_id: str | None = None,
     assigned_to_id: str | None = None,
     fixed_version_id: str | None = None,
-    parent_issue_id: str | None = None,
+    parent_issue_id: int | None = None,
     start_date: str | None = None,
     due_date: str | None = None,
     estimated_hours: float | None = None,
@@ -124,7 +124,7 @@ def create_issue(
 
 
 def update_issue(
-    issue_id: str,
+    issue_id: int,
     project_id: str | None = None,
     subject: str | None = None,
     description: str | None = None,
@@ -178,7 +178,7 @@ def update_issue(
     )
 
 
-def delete_issue(issue_id: str) -> None:
+def delete_issue(issue_id: int) -> None:
     """イシューを削除する。
 
     Raises:
@@ -188,7 +188,7 @@ def delete_issue(issue_id: str) -> None:
     issue_api.delete_issue(issue_id)
 
 
-def add_note(issue_id: str, notes: str) -> str:
+def add_note(issue_id: int, notes: str) -> str:
     """イシューにコメントを追加し、追加したコメントの URL を返す。
 
     Redmine はコメント追加のレスポンスに note 番号を含めないため、
@@ -206,7 +206,7 @@ def add_note(issue_id: str, notes: str) -> str:
     return issue_url(issue_id, note_number=len(journals))
 
 
-def add_watcher(issue_id: str, user_id: int) -> None:
+def add_watcher(issue_id: int, user_id: int) -> None:
     """イシューにウォッチャーを追加する。
 
     Redmine はウォッチャーにできないユーザーIDを渡しても追加せずに 200 を返すため、
@@ -226,7 +226,7 @@ def add_watcher(issue_id: str, user_id: int) -> None:
         raise WatcherNotFoundException(issue_id, user_id)
 
 
-def remove_watcher(issue_id: str, user_id: int) -> None:
+def remove_watcher(issue_id: int, user_id: int) -> None:
     """イシューからウォッチャーを削除する。
 
     Raises:

@@ -241,3 +241,36 @@ class TestTimeEntryListProjectNotFound:
             messages.project_not_found.format(id="nosuchproject")
             in capsys.readouterr().err
         )
+
+
+class TestTimeEntryIdArgumentType:
+    """数値しか取らない id は CLI の境界で int に揃える
+
+    非数値を Redmine に送る前に argparse が使用方法を示して exit 2 する。
+    """
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["time_entry", "view", "abc"],
+            ["time_entry", "update", "abc", "--hours", "1"],
+            ["time_entry", "delete", "abc"],
+            ["time_entry", "create", "1", "--issue_id", "abc"],
+            ["time_entry", "update", "1", "--issue_id", "abc"],
+        ],
+        ids=["view", "update", "delete", "create --issue_id", "update --issue_id"],
+    )
+    def test_rejects_non_numeric_id(self, argv, capsys):
+        """非数値の id は argparse が弾き exit 2 する"""
+        with pytest.raises(SystemExit) as exc:
+            parse_time_entry_args(argv)
+
+        assert exc.value.code == 2
+        assert "invalid int value" in capsys.readouterr().err
+
+    def test_ids_are_int(self):
+        """time_entry_id と --issue_id は int で受ける"""
+        args = parse_time_entry_args(["time_entry", "update", "9", "--issue_id", "42"])
+
+        assert args.time_entry_id == 9
+        assert args.issue_id == 42

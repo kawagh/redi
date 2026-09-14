@@ -230,14 +230,14 @@ class TestConfirmDelete:
 
         time_entry_tab.confirm_delete(state)
 
-        assert deleted == ["1"]
+        assert deleted == [1]
         assert state.time_entry_tab.total_count == 4
         assert len(state.time_entry_tab.entries) == 1
 
     @pytest.mark.parametrize(
         ("error", "expected_in_flash"),
         [
-            (TimeEntryNotFoundException("1"), "1"),
+            (TimeEntryNotFoundException(1), "1"),
             (requests.exceptions.ConnectionError("boom"), "boom"),
         ],
         ids=["time_entry_missing", "api_failure"],

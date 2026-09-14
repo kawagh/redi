@@ -22,7 +22,9 @@ def add_relation_parser(
     r_view_parser = r_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_relation_view, parents=parents
     )
-    r_view_parser.add_argument("relation_id", help=messages.arg_help_relation_view_id)
+    r_view_parser.add_argument(
+        "relation_id", type=int, help=messages.arg_help_relation_view_id
+    )
     add_format_options(r_view_parser)
 
 
@@ -38,7 +40,7 @@ def format_relation_detail(relation: IssueRelation) -> list[str]:
     return lines
 
 
-def read_relation(relation_id: str, full: bool = False) -> None:
+def read_relation(relation_id: int, full: bool = False) -> None:
     try:
         relation = issue_relation_service.read_relation(relation_id)
     except RelationNotFoundException:

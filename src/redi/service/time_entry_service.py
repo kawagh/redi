@@ -86,13 +86,13 @@ def fetch_issue_subjects(entries: list[TimeEntry]) -> dict[int, str]:
     return time_entry_api.fetch_issue_subjects(issue_ids)
 
 
-def read_time_entry(time_entry_id: str) -> TimeEntry | None:
+def read_time_entry(time_entry_id: int) -> TimeEntry | None:
     """作業時間を取得する。存在しない場合は None を返す。"""
     return time_entry_api.fetch_time_entry(time_entry_id)
 
 
 def create_time_entry(
-    issue_id: str | None = None,
+    issue_id: int | None = None,
     project_id: str | None = None,
     hours: float = 0,
     activity_id: str | None = None,
@@ -118,9 +118,9 @@ def create_time_entry(
 
 
 def update_time_entry(
-    time_entry_id: str,
+    time_entry_id: int,
     hours: float | None = None,
-    issue_id: str | None = None,
+    issue_id: int | None = None,
     project_id: str | None = None,
     activity_id: str | None = None,
     spent_on: str | None = None,
@@ -146,7 +146,7 @@ def update_time_entry(
     )
 
 
-def delete_time_entry(time_entry_id: str) -> None:
+def delete_time_entry(time_entry_id: int) -> None:
     """作業時間を削除する。
 
     Raises:

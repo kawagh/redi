@@ -11,7 +11,7 @@ DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 class AttachmentNotFoundException(Exception):
     """対象の添付ファイルが存在しないときに送出する例外。"""
 
-    def __init__(self, attachment_id: str) -> None:
+    def __init__(self, attachment_id: int) -> None:
         super().__init__(attachment_id)
         self.attachment_id = attachment_id
 
@@ -41,7 +41,7 @@ def upload_file(file_path: str) -> dict:
     }
 
 
-def fetch_attachment(attachment_id: str) -> Attachment:
+def fetch_attachment(attachment_id: int) -> Attachment:
     """添付ファイルのメタ情報を取得する。
 
     Raises:
@@ -72,7 +72,7 @@ def iter_attachment_content(url_path: str) -> Iterator[bytes] | None:
 
 
 def update_attachment(
-    attachment_id: str,
+    attachment_id: int,
     filename: str | None = None,
     description: str | None = None,
 ) -> None:
@@ -95,7 +95,7 @@ def update_attachment(
     response.raise_for_status()
 
 
-def delete_attachment(attachment_id: str) -> None:
+def delete_attachment(attachment_id: int) -> None:
     """添付ファイルを削除する。
 
     Raises:

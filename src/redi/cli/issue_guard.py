@@ -15,7 +15,7 @@ from redi.service import issue_service
 
 
 @contextmanager
-def exit_if_issue_not_found(issue_id: str) -> Iterator[None]:
+def exit_if_issue_not_found(issue_id: int) -> Iterator[None]:
     """ブロック内で `IssueNotFoundException` が出たら見つからないと伝えて exit 1 する。
 
     取得を伴わない書き込み (コメント追加・削除・ウォッチャー追加) で使う。
@@ -27,7 +27,7 @@ def exit_if_issue_not_found(issue_id: str) -> Iterator[None]:
         sys.exit(1)
 
 
-def read_issue_or_exit(issue_id: str, include: str = "") -> Issue:
+def read_issue_or_exit(issue_id: int, include: str = "") -> Issue:
     """イシューを取得する。存在しなければ見つからないと伝えて exit 1。"""
     with exit_if_issue_not_found(issue_id):
         return issue_service.read_issue(issue_id, include=include)

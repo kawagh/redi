@@ -32,12 +32,12 @@ class IssueRelation(TypedDict):
 
 
 class RelationNotFoundException(Exception):
-    def __init__(self, relation_id: str) -> None:
+    def __init__(self, relation_id: int) -> None:
         super().__init__(relation_id)
         self.relation_id = relation_id
 
 
-def fetch_relation(relation_id: str) -> IssueRelation:
+def fetch_relation(relation_id: int) -> IssueRelation:
     """関係性を取得する
 
     Raises:
@@ -51,7 +51,7 @@ def fetch_relation(relation_id: str) -> IssueRelation:
     return cast("IssueRelation", response.json()["relation"])
 
 
-def fetch_issue_relations(issue_id: str) -> list[IssueRelation]:
+def fetch_issue_relations(issue_id: int) -> list[IssueRelation]:
     """イシューに紐づく関係性の一覧を取得する
 
     Raises:
@@ -63,7 +63,7 @@ def fetch_issue_relations(issue_id: str) -> list[IssueRelation]:
 
 
 def create_relation(
-    issue_id: str, issue_to_id: str, relation_type: str = "relates"
+    issue_id: int, issue_to_id: int, relation_type: str = "relates"
 ) -> IssueRelation:
     """関係性を作成し、作成された関係性を返す
 
@@ -88,7 +88,7 @@ def create_relation(
     return cast("IssueRelation", response.json()["relation"])
 
 
-def delete_relation(relation_id: str) -> None:
+def delete_relation(relation_id: int) -> None:
     """関係性を削除する
 
     Raises:

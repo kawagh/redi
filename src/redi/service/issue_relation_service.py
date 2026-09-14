@@ -11,13 +11,13 @@ from redi.api.issue_relation import IssueRelation
 class RelationBetweenNotFoundException(Exception):
     """2 つのイシューの間に関係性が見つからないときに送出する例外。"""
 
-    def __init__(self, issue_id: str, issue_to_id: str) -> None:
+    def __init__(self, issue_id: int, issue_to_id: int) -> None:
         super().__init__(f"{issue_id}/{issue_to_id}")
         self.issue_id = issue_id
         self.issue_to_id = issue_to_id
 
 
-def read_relation(relation_id: str) -> IssueRelation:
+def read_relation(relation_id: int) -> IssueRelation:
     """関係性を取得する。
 
     Raises:
@@ -27,13 +27,13 @@ def read_relation(relation_id: str) -> IssueRelation:
     return issue_relation_api.fetch_relation(relation_id)
 
 
-def list_relations(issue_id: str) -> list[IssueRelation]:
+def list_relations(issue_id: int) -> list[IssueRelation]:
     """イシューに紐づく関係性の一覧を取得する。"""
     return issue_relation_api.fetch_issue_relations(issue_id)
 
 
 def create_relation(
-    issue_id: str, issue_to_id: str, relation_type: str = "relates"
+    issue_id: int, issue_to_id: int, relation_type: str = "relates"
 ) -> IssueRelation:
     """関係性を作成し、作成された関係性を返す。
 
@@ -47,25 +47,24 @@ def create_relation(
     )
 
 
-def find_relation_between(issue_id: str, issue_to_id: str) -> IssueRelation | None:
+def find_relation_between(issue_id: int, issue_to_id: int) -> IssueRelation | None:
     """イシュー間の関係性を探す。見つからない場合は None を返す。
 
     関係性は向きを持つが「#A と #B の間の関係性」は向きに依らず 1 つとして扱いたいので、
     `issue_id` の関係性一覧から `issue_to_id` を どちらの端に持つものも対象にする。
     """
     relations = issue_relation_api.fetch_issue_relations(issue_id)
-    target_id = int(issue_to_id)
     return next(
         (
             r
             for r in relations
-            if r["issue_id"] == target_id or r["issue_to_id"] == target_id
+            if r["issue_id"] == issue_to_id or r["issue_to_id"] == issue_to_id
         ),
         None,
     )
 
 
-def delete_relation(issue_id: str, issue_to_id: str) -> IssueRelation:
+def delete_relation(issue_id: int, issue_to_id: int) -> IssueRelation:
     """イシュー間の関係性を探して削除し、削除した関係性を返す。
 
     Raises:
@@ -76,5 +75,5 @@ def delete_relation(issue_id: str, issue_to_id: str) -> IssueRelation:
     target_relation = find_relation_between(issue_id, issue_to_id)
     if target_relation is None:
         raise RelationBetweenNotFoundException(issue_id, issue_to_id)
-    issue_relation_api.delete_relation(str(target_relation["id"]))
+    issue_relation_api.delete_relation(target_relation["id"])
     return target_relation

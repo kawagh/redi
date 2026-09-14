@@ -141,7 +141,7 @@ class TestDownloadAttachment:
         with pytest.raises(AttachmentNotFoundException) as e:
             attachment_service.download_attachment(attachment, path)
 
-        assert e.value.attachment_id == "7"
+        assert e.value.attachment_id == 7
         assert not path.exists()
 
 
@@ -151,6 +151,6 @@ class TestAttachmentUrl:
     def test_url(self):
         """添付ファイル ID から Web UI の URL を組み立てる"""
         assert (
-            attachment_service.attachment_url("7")
+            attachment_service.attachment_url(7)
             == "http://localhost:3001/attachments/7"
         )

@@ -475,7 +475,7 @@ class TestTuiInteractiveCancelReturnsToTui:
 
         calls: list[TuiState] = []
         results = [
-            TuiResult(action="update", tab="issues", issue_id="7"),
+            TuiResult(action="update", tab="issues", issue_id=7),
             None,
         ]
 

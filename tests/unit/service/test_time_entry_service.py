@@ -46,7 +46,7 @@ class TestCreateTimeEntry:
 
     def test_issue_only_does_not_resolve_project(self, stub_time_entry_api):
         """project_id を指定しなければ解決せず None のまま渡す"""
-        time_entry_service.create_time_entry(issue_id="1", hours=1.0)
+        time_entry_service.create_time_entry(issue_id=1, hours=1.0)
 
         assert stub_time_entry_api.calls[0]["project_id"] is None
 
@@ -56,7 +56,7 @@ class TestUpdateTimeEntry:
 
     def test_project_slug_is_resolved_to_id(self, stub_time_entry_api):
         """作成と同じく数値の id に解決して渡す"""
-        time_entry_service.update_time_entry("1", project_id="reditest")
+        time_entry_service.update_time_entry(1, project_id="reditest")
 
         assert stub_time_entry_api.calls[0]["project_id"] == "5"
 

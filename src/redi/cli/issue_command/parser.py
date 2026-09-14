@@ -78,7 +78,9 @@ def add_issue_parser(
     i_view_parser = i_subparsers.add_parser(
         "view", aliases=["v"], help=messages.arg_help_issue_view, parents=parents
     )
-    i_view_parser.add_argument("issue_id", help=messages.arg_help_issue_view_id)
+    i_view_parser.add_argument(
+        "issue_id", type=int, help=messages.arg_help_issue_view_id
+    )
     i_view_parser.add_argument(
         "--include",
         type=_parse_issue_includes,
@@ -110,7 +112,7 @@ def add_issue_parser(
         "--fixed_version_id", help=messages.arg_help_issue_fixed_version_id
     )
     i_create_parser.add_argument(
-        "--parent_issue_id", help=messages.arg_help_issue_parent
+        "--parent_issue_id", type=int, help=messages.arg_help_issue_parent
     )
     i_create_parser.add_argument(
         "--start_date", help=messages.arg_help_issue_start_date
@@ -136,7 +138,7 @@ def add_issue_parser(
         "update", aliases=["u"], help=messages.arg_help_issue_update, parents=parents
     )
     i_update_parser.add_argument(
-        "issue_id", nargs="?", help=messages.arg_help_issue_update_id
+        "issue_id", nargs="?", type=int, help=messages.arg_help_issue_update_id
     )
     i_update_parser.add_argument(
         "--subject", "-s", help=messages.arg_help_issue_subject_opt
@@ -190,7 +192,7 @@ def add_issue_parser(
         help=messages.arg_help_issue_relate,
     )
     i_update_parser.add_argument(
-        "--to", dest="relate_to", help=messages.arg_help_issue_relate_to
+        "--to", dest="relate_to", type=int, help=messages.arg_help_issue_relate_to
     )
     i_update_parser.add_argument(
         "--delete-relation",
@@ -229,14 +231,18 @@ def add_issue_parser(
     i_comment_parser = i_subparsers.add_parser(
         "comment", aliases=["co"], help=messages.arg_help_issue_comment, parents=parents
     )
-    i_comment_parser.add_argument("issue_id", help=messages.arg_help_issue_view_id)
+    i_comment_parser.add_argument(
+        "issue_id", type=int, help=messages.arg_help_issue_view_id
+    )
     i_comment_parser.add_argument(
         "notes", nargs="?", default="", help=messages.arg_help_issue_comment_notes
     )
     i_delete_parser = i_subparsers.add_parser(
         "delete", aliases=["d"], help=messages.arg_help_issue_delete, parents=parents
     )
-    i_delete_parser.add_argument("issue_id", help=messages.arg_help_issue_view_id)
+    i_delete_parser.add_argument(
+        "issue_id", type=int, help=messages.arg_help_issue_view_id
+    )
     i_delete_parser.add_argument(
         "-y", "--yes", action="store_true", help=messages.arg_help_skip_confirm
     )

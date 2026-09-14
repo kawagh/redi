@@ -156,12 +156,12 @@ def reload_with_filter(state: TuiState) -> None:
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
     if key == "c":
         entries = state.time_entry_tab.entries
-        issue_id: str | None = None
+        issue_id: int | None = None
         if entries:
             te = entries[state.time_entry_tab.cursor]
             cursor_issue_id = (te.get("issue") or {}).get("id")
             if cursor_issue_id is not None:
-                issue_id = str(cursor_issue_id)
+                issue_id = cursor_issue_id
         return TuiResult(
             action="create",
             tab="time_entries",
@@ -179,7 +179,7 @@ def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
         return TuiResult(
             action="update",
             tab="time_entries",
-            time_entry_id=str(te["id"]),
+            time_entry_id=te["id"],
             position=TuiPosition(
                 offset=state.time_entry_tab.offset,
                 cursor=state.time_entry_tab.cursor,
@@ -261,7 +261,7 @@ def confirm_delete(state: TuiState) -> None:
     cursor = state.time_entry_tab.cursor
     te = entries[cursor]
     try:
-        time_entry_service.delete_time_entry(str(te["id"]))
+        time_entry_service.delete_time_entry(te["id"])
     except TimeEntryNotFoundException:
         state.flash_message = messages.tui_time_entry_delete_missing.format(id=te["id"])
         return

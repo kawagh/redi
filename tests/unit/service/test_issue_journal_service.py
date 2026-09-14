@@ -29,9 +29,9 @@ class TestUpdateIssueJournal:
 
     def test_passes_notes_to_api(self, stub_issue_journal_api):
         """渡された本文でコメントを更新する"""
-        issue_journal_service.update_issue_journal("42", "更新後のコメント")
+        issue_journal_service.update_issue_journal(42, "更新後のコメント")
 
-        assert stub_issue_journal_api == [("42", "更新後のコメント")]
+        assert stub_issue_journal_api == [(42, "更新後のコメント")]
 
     def test_propagates_not_found(self, monkeypatch):
         """存在しないコメントの例外はそのまま呼び出し元に伝える"""
@@ -46,7 +46,7 @@ class TestUpdateIssueJournal:
         )
 
         with pytest.raises(IssueJournalNotFoundException):
-            issue_journal_service.update_issue_journal("42", "コメント")
+            issue_journal_service.update_issue_journal(42, "コメント")
 
 
 class TestDeleteIssueJournal:
@@ -54,6 +54,6 @@ class TestDeleteIssueJournal:
 
     def test_deletes_by_emptying_notes(self, stub_issue_journal_api):
         """Redmine に削除 API が無いため本文を空にして削除とする"""
-        issue_journal_service.delete_issue_journal("42")
+        issue_journal_service.delete_issue_journal(42)
 
-        assert stub_issue_journal_api == [("42", "")]
+        assert stub_issue_journal_api == [(42, "")]

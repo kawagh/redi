@@ -54,25 +54,25 @@ class TestDeleteRelation:
             _relation(11, issue_id=1, issue_to_id=2),
         ]
 
-        deleted = issue_relation_service.delete_relation("1", "2")
+        deleted = issue_relation_service.delete_relation(1, 2)
 
         assert deleted["id"] == 11
-        assert stub_issue_relation_api.deleted == ["11"]
+        assert stub_issue_relation_api.deleted == [11]
 
     def test_deletes_relation_from_target(self, stub_issue_relation_api):
         """向きが逆(相手イシューが issue_id 側)でも同じ関係性として削除する"""
         stub_issue_relation_api.relations = [_relation(12, issue_id=2, issue_to_id=1)]
 
-        deleted = issue_relation_service.delete_relation("1", "2")
+        deleted = issue_relation_service.delete_relation(1, 2)
 
         assert deleted["id"] == 12
-        assert stub_issue_relation_api.deleted == ["12"]
+        assert stub_issue_relation_api.deleted == [12]
 
     def test_raises_when_no_relation_between(self, stub_issue_relation_api):
         """イシュー間に関係性が無ければ例外を送出し、削除は行わない"""
         stub_issue_relation_api.relations = [_relation(13, issue_id=1, issue_to_id=3)]
 
         with pytest.raises(RelationBetweenNotFoundException):
-            issue_relation_service.delete_relation("1", "2")
+            issue_relation_service.delete_relation(1, 2)
 
         assert stub_issue_relation_api.deleted == []
