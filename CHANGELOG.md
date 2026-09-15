@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.84](https://github.com/kawagh/redi/compare/0.0.83...0.0.84) (2026-09-15)
+
+- feat(cli): news delete の確認を yes/No からニュース ID の打ち直しにする ([#597](https://github.com/kawagh/redi/pull/597))
+- refactor: 数値しか取らない ID を CLI の境界で int に揃え api/service まで int で受け渡す ([#598](https://github.com/kawagh/redi/pull/598))
+- refactor: version / news / group / membership の ID も CLI の境界で int に揃える ([#600](https://github.com/kawagh/redi/pull/600))
+- test: プロジェクト名クリックのテストで current_profile を None に固定する ([#602](https://github.com/kawagh/redi/pull/602))
+
 ## [0.0.83](https://github.com/kawagh/redi/compare/0.0.82...0.0.83) (2026-09-13)
 
 - feat(tui): マウスホイールでプレビューのスクロールと一覧のカーソル移動ができるようにする ([#582](https://github.com/kawagh/redi/pull/582))
