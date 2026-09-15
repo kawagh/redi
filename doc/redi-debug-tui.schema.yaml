@@ -1,0 +1,28 @@
+# `--debug-tui` が出力する画面ログの JSON Schema
+# 解説: doc/debug-tui-screen-log.md
+$schema: https://json-schema.org/draft/2020-12/schema
+title: redi --debug-tui screen log
+type: array
+items:
+  type: object
+  required: [timestamp, key, width, height, screen]
+  additionalProperties: false
+  properties:
+    timestamp:
+      description: 描画時刻 (datetime.isoformat, microseconds)
+      type: string
+      format: date-time
+    key:
+      description: 描画の直前に処理されたキーシーケンス。複数キーはスペース区切り
+      type: string
+    width:
+      description: 端末の桁数
+      type: integer
+      minimum: 0
+    height:
+      description: 端末の行数
+      type: integer
+      minimum: 0
+    screen:
+      description: 画面全体のテキスト。1 行が端末の 1 行に対応する
+      type: string
