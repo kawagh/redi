@@ -1,6 +1,12 @@
 # テスト用のredmineの起動と接続方法
 
 - 以下の操作はリポジトリルートで`./script/init-redmine.sh`を実行することで代用出来る
+- `init-redmine.sh` は `REDI_CONFIG_PATH` / `REDI_CACHE_DIR` を `.e2e/<version>/` に向けるため、
+  ユーザーのグローバル設定 (`~/.config/redi/config.toml`) は書き換わらない
+- 手元から一時的にサンドボックスを叩きたい場合は、E2E 用の config を指す
+    ```sh
+    REDI_CONFIG_PATH=.e2e/6.1/config.toml redi issue list
+    ```
 
 ## 手動実行(上のスクリプトを実行すれば不要)
 
