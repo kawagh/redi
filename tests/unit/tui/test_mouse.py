@@ -558,6 +558,9 @@ class TestLayoutWiring:
             "list_projects",
             lambda all_pages: [{"id": 1, "name": "Alpha", "identifier": "alpha"}],
         )
+        # 開発者の設定にプロファイルがあると上端バーに [profile: <名前>] が挟まり、
+        # 24x80 の描画領域から [project: Alpha] が押し出されるので、プロファイルを出さない
+        monkeypatch.setattr(config, "current_profile", None)
         state = TuiState()
         state.page_size = 20
         state.project_label = "Alpha"
