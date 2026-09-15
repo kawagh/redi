@@ -2,9 +2,9 @@ from typing import cast
 
 import pytest
 import requests
+from prompt_toolkit.utils import get_cwidth
 
 from redi.api.issue import Issue
-from redi.tui.app_render import render_preview_current
 from redi.tui.issue import issue_tab
 from redi.tui.issue.issue_tab import _page_label, fetch_issues_with_filter
 from redi.tui.state import TuiState
@@ -305,12 +305,18 @@ class TestActionKeyResult:
 
 
 def _make_comment_state(
-    *, description_lines: int, comment_count: int, page_size: int
+    *,
+    description_lines: int,
+    comment_count: int,
+    page_size: int,
+    notes: list[str] | None = None,
+    preview_size: tuple[int, int] = (0, 0),
 ) -> TuiState:
+    """コメント付きイシューを 1 件持つ state。`notes` は各コメントの本文 (省略時は 1 行)。"""
     journals = [
         {
             "id": 100 + i,
-            "notes": f"note {i}",
+            "notes": notes[i] if notes else f"note {i}",
             "user": {"id": 7, "name": "me"},
             "created_on": f"2026-08-2{i}T00:00:00Z",
         }
@@ -329,17 +335,51 @@ def _make_comment_state(
     state.page_size = page_size
     state.me_id = "7"
     state.issue_tab.issues = [issue]
+    state.preview_width, state.preview_height = preview_size
     return state
 
 
-def _focused_line_in_view(state: TuiState) -> int | None:
-    """右ペインの表示内容 (スクロール適用後) で、選択行が上から何行目かを返す。"""
-    line = 0
-    for style, text in render_preview_current(state):
-        if style == "reverse":
-            return line
-        line += text.count("\n")
-    return None
+def _focused_block(state: TuiState) -> issue_tab.CommentBlock:
+    edit = state.issue_tab.comment_select
+    return issue_tab._layout_preview(state).blocks[edit.editable_indexes[edit.cursor]]
+
+
+def _display_row_of(state: TuiState, line: int) -> int:
+    """論理行 `line` が右ペインの上から何行目に描画されるか (折り返し込み)。
+
+    右ペインは wrap_lines=True なので、幅を超える行は複数行を占める。
+    幅が 0 のときは折り返し無し。
+    """
+    lines = "".join(t for _, t in issue_tab._render_preview(state)).split("\n")
+    width = state.preview_width
+    rows = 0
+    for text in lines[state.preview_scroll : line]:
+        rows += max(1, -(-get_cwidth(text) // width)) if width > 0 else 1
+    return rows
+
+
+def _visible_height(state: TuiState) -> int:
+    return state.preview_height or state.page_size
+
+
+class TestPreviewLayout:
+    """右ペインの描画結果にはコメントごとの行範囲が付く"""
+
+    def test_blocks_cover_header_and_notes(self):
+        """各コメントの範囲は見出し行から本文の最終行まで"""
+        state = _make_comment_state(
+            description_lines=3, comment_count=2, page_size=20, notes=["a\nb", "c"]
+        )
+        issue_tab.enter_comment_select_mode(state)
+
+        layout = issue_tab._layout_preview(state)
+        lines = "".join(t for _, t in layout.parts).split("\n")
+
+        first, second = layout.blocks[0], layout.blocks[1]
+        assert "[2026-08-20T00:00:00Z] me" in lines[first.header_line]
+        assert lines[first.last_line].strip() == "b"
+        assert second.header_line == first.last_line + 1
+        assert lines[second.last_line].strip() == "c"
 
 
 class TestCommentSelectPreviewScroll:
@@ -351,9 +391,8 @@ class TestCommentSelectPreviewScroll:
 
         issue_tab.enter_comment_select_mode(state)
 
-        line = _focused_line_in_view(state)
-        assert line is not None
-        assert 0 <= line < state.page_size
+        row = _display_row_of(state, _focused_block(state).header_line)
+        assert 0 <= row < _visible_height(state)
 
     def test_scrolls_into_view_on_cursor_move(self):
         """カーソルを上に動かしても選択行が表示範囲に入り続ける"""
@@ -362,9 +401,8 @@ class TestCommentSelectPreviewScroll:
 
         issue_tab.comment_select_cursor_up(state)
 
-        line = _focused_line_in_view(state)
-        assert line is not None
-        assert 0 <= line < state.page_size
+        row = _display_row_of(state, _focused_block(state).header_line)
+        assert 0 <= row < _visible_height(state)
 
     def test_keeps_scroll_when_already_visible(self):
         """選択行が既に見えているならスクロール位置は動かさない"""
@@ -373,3 +411,71 @@ class TestCommentSelectPreviewScroll:
         issue_tab.enter_comment_select_mode(state)
 
         assert state.preview_scroll == 0
+
+    def test_counts_wrapped_lines_when_moving_down(self):
+        """長い行が折り返すコメントの下へ j で移ると、折り返し込みで見える位置まで送る"""
+        # 幅 20 桁で 200 文字の本文は 10 行に折り返す。論理行では見出し同士が 2 行しか
+        # 離れていないので、論理行で数えると「見えている」と誤判定して動かない。
+        state = _make_comment_state(
+            description_lines=2,
+            comment_count=2,
+            page_size=8,
+            notes=["x" * 200, "short"],
+            preview_size=(20, 8),
+        )
+        issue_tab.enter_comment_select_mode(state)
+        issue_tab.comment_select_cursor_up(state)
+        first_header = _focused_block(state).header_line
+        assert state.preview_scroll == first_header
+
+        issue_tab.comment_select_cursor_down(state)
+
+        block = _focused_block(state)
+        assert block.header_line - first_header < _visible_height(state)
+        assert state.preview_scroll > first_header
+        row = _display_row_of(state, block.header_line)
+        assert 0 <= row < _visible_height(state)
+
+    def test_moving_down_scrolls_just_enough_to_show_comment(self):
+        """下に外れたときは、そのコメント全体が収まる最小の量だけ送る (先頭に飛ばさない)"""
+        # 上のコメント (見出し + 12 行) が高さ 12 を超えるので、下のコメントの見出しは画面外
+        notes = [
+            "\n".join(f"n{i}" for i in range(12)),
+            "\n".join(f"m{i}" for i in range(5)),
+        ]
+        state = _make_comment_state(
+            description_lines=20,
+            comment_count=2,
+            page_size=12,
+            notes=notes,
+            preview_size=(0, 12),
+        )
+        issue_tab.enter_comment_select_mode(state)
+        issue_tab.comment_select_cursor_up(state)
+
+        issue_tab.comment_select_cursor_down(state)
+
+        block = _focused_block(state)
+        assert state.preview_scroll < block.header_line
+        assert block.last_line - state.preview_scroll + 1 == _visible_height(state)
+
+    def test_tall_comment_puts_header_on_top(self):
+        """表示範囲より長いコメントに下から移ったときは見出しを先頭に置く"""
+        # 上のコメントで下の見出しが画面外になり、下のコメントは高さ 10 に収まらない
+        notes = [
+            "\n".join(f"n{i}" for i in range(12)),
+            "\n".join(f"m{i}" for i in range(20)),
+        ]
+        state = _make_comment_state(
+            description_lines=20,
+            comment_count=2,
+            page_size=10,
+            notes=notes,
+            preview_size=(0, 10),
+        )
+        issue_tab.enter_comment_select_mode(state)
+        issue_tab.comment_select_cursor_up(state)
+
+        issue_tab.comment_select_cursor_down(state)
+
+        assert state.preview_scroll == _focused_block(state).header_line
