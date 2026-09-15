@@ -212,7 +212,7 @@ class TestIssueListFilter:
 
         list_error = list_error_info.value
         assert list_error.returncode == 1
-        assert "9999" in list_error.stdout, (
+        assert "9999" in list_error.stderr, (
             f"想定外のエラーで list が失敗\n"
             f"stdout:\n{list_error.stdout}\nstderr:\n{list_error.stderr}"
         )

@@ -21,6 +21,7 @@ from redi.api.enumeration import fetch_issue_priorities
 from redi.api.issue_status import fetch_issue_statuses
 from redi.api.tracker import fetch_trackers
 from redi.i18n import messages
+from redi.output import eprint
 
 
 @dataclass(frozen=True)
@@ -70,7 +71,7 @@ def validate_list_filters(args: argparse.Namespace) -> None:
         known_ids = _known_ids(spec)
         if known_ids is None or value in known_ids:
             continue
-        print(
+        eprint(
             messages.error_unknown_filter_value.format(
                 label=spec.label,
                 value=value,
