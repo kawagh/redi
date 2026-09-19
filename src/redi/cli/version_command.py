@@ -110,13 +110,10 @@ def _view_version(version_id: int, full: bool = False, web: bool = False) -> Non
         return
 
     lines = [_version_line(version)]
-    project = version.get("project")
-    if project:
-        lines.append(
-            messages.label_project_field.format(
-                id=project.get("id"), name=project.get("name", "")
-            )
-        )
+    project = version["project"]
+    lines.append(
+        messages.label_project_field.format(id=project["id"], name=project["name"])
+    )
     if version.get("due_date"):
         lines.append(messages.label_due_date_field.format(value=version["due_date"]))
     if version.get("sharing"):
