@@ -36,9 +36,7 @@ def _view_attachment(attachment_id: int, full: bool = False) -> None:
         messages.label_size.format(value=attachment.get("filesize", "")),
         messages.label_kind.format(value=attachment.get("content_type", "")),
     ]
-    author = attachment.get("author") or {}
-    if author:
-        lines.append(messages.label_author.format(value=author.get("name", "")))
+    lines.append(messages.label_author.format(value=attachment["author"]["name"]))
     if attachment.get("created_on"):
         lines.append(messages.label_created_on.format(value=attachment["created_on"]))
     if attachment.get("description"):
