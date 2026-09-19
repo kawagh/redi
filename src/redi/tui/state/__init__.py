@@ -95,6 +95,10 @@ class TuiState:
     # 右ペイン (preview) のスクロール位置 (先頭からの行数)。
     # カーソル移動・タブ切り替え時に 0 に戻す。
     preview_scroll: int = 0
+    # 右ペインの直近の描画サイズ (桁, 行)。`wrap_lines=True` で折り返した表示行を
+    # 数えるために描画のたびに受ける。0 はまだ描画していない (折り返し無しとみなす)。
+    preview_width: int = 0
+    preview_height: int = 0
     # API エラー等を Float で出すための本文
     error_dialog: str | None = None
     # 起動時に `/my/account.json` から取得した自分のユーザー id。
@@ -105,6 +109,11 @@ class TuiState:
     project_label: str = ""
     project_dialog: ChoiceDialogState = field(default_factory=ChoiceDialogState)
     profile_dialog: ChoiceDialogState = field(default_factory=ChoiceDialogState)
+
+    def apply_preview_size(self, width: int, height: int) -> None:
+        """右ペインの描画サイズを記録する。描画のたびに PaneControl から呼ばれる。"""
+        self.preview_width = width
+        self.preview_height = height
 
     def apply_terminal_rows(self, rows: int) -> bool:
         """端末の行数から page_size を更新する。値が変わったときだけ True を返す。"""

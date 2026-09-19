@@ -1,4 +1,7 @@
 import webbrowser
+from dataclasses import dataclass, field
+
+from prompt_toolkit.utils import get_cwidth
 
 from redi import config
 from redi.api.issue import (
@@ -61,6 +64,31 @@ def _render_list(state: TuiState) -> Renderable:
     return result
 
 
+# 選択中コメントの見出し行に付ける style (見た目だけ。位置の計算には使わない)。
+_COMMENT_FOCUS_STYLE = "reverse"
+
+
+@dataclass(frozen=True)
+class CommentBlock:
+    """右ペインの描画結果のうち、1 件のコメントが占める論理行の範囲。"""
+
+    header_line: int
+    last_line: int
+
+
+@dataclass(frozen=True)
+class PreviewLayout:
+    """右ペインの描画結果と、その中でコメントがどこにあるか。
+
+    見た目 (style) と位置を分けて持つ。スクロールの追従は `blocks` を見るので、
+    style を変えても位置の計算は影響を受けない。
+    """
+
+    parts: Renderable
+    # journal の添字 -> そのコメントの行範囲
+    blocks: dict[int, CommentBlock] = field(default_factory=dict)
+
+
 def _notes_journals(issue: Issue) -> list[tuple[int, Journal]]:
     journals = issue.get("journals") or []
     return [
@@ -70,11 +98,20 @@ def _notes_journals(issue: Issue) -> list[tuple[int, Journal]]:
     ]
 
 
-def _render_preview(state: TuiState) -> Renderable:
+def _layout_preview(state: TuiState) -> PreviewLayout:
     if not state.issue_tab.issues:
-        return []
+        return PreviewLayout(parts=[])
     issue = state.issue_tab.issues[state.issue_tab.cursor]
     parts: Renderable = []
+    blocks: dict[int, CommentBlock] = {}
+    # parts に積んだ text の改行数から、次に積む text が始まる論理行を数える
+    line = 0
+
+    def append(style: str, text: str) -> None:
+        nonlocal line
+        parts.append((style, text))
+        line += text.count("\n")
+
     head_lines = [f"#{issue.get('id', '')} {issue.get('subject', '')}", ""]
     head_lines.extend(render_meta_table(issue_meta_rows(issue)))
 
@@ -84,13 +121,13 @@ def _render_preview(state: TuiState) -> Renderable:
         head_lines.append("----")
         head_lines.extend(description.splitlines())
 
-    parts.append(("", "\n".join(head_lines)))
+    append("", "\n".join(head_lines))
 
     # journalを描画対象に追加
     indexed = _notes_journals(issue)
     if indexed:
-        parts.append(("", "\n\n----\n"))
-        parts.append(("", messages.tui_preview_comments_header + "\n"))
+        append("", "\n\n----\n")
+        append("", messages.tui_preview_comments_header + "\n")
         edit = state.issue_tab.comment_select
         editable_set = set(edit.editable_indexes) if edit.active else set()
         focus_idx = (
@@ -102,19 +139,23 @@ def _render_preview(state: TuiState) -> Renderable:
             author = (j.get("user") or {}).get("name", "")
             created = j.get("created_on", "")
             header_text = f"[{created}] {author}"
+            header_line = line
             if edit.active:
                 prefix = "> " if j_idx == focus_idx else "  "
                 mark = "*" if j_idx in editable_set else " "
-                style = "reverse" if j_idx == focus_idx else ""
-                parts.append((style, f"{prefix}{mark} {header_text}\n"))
+                style = _COMMENT_FOCUS_STYLE if j_idx == focus_idx else ""
+                append(style, f"{prefix}{mark} {header_text}\n")
             else:
-                parts.append(("", f"{header_text}\n"))
+                append("", f"{header_text}\n")
             for note_line in (j.get("notes") or "").splitlines():
-                parts.append(
-                    ("", f"    {note_line}\n" if edit.active else f"  {note_line}\n")
-                )
+                append("", f"    {note_line}\n" if edit.active else f"  {note_line}\n")
+            blocks[j_idx] = CommentBlock(header_line=header_line, last_line=line - 1)
 
-    return parts
+    return PreviewLayout(parts=parts, blocks=blocks)
+
+
+def _render_preview(state: TuiState) -> Renderable:
+    return _layout_preview(state).parts
 
 
 def _status_hint(state: TuiState) -> str:
@@ -143,6 +184,55 @@ def editable_journal_indexes(issue: Issue, me_id: str | None) -> list[int]:
     return my_note_indexes
 
 
+def _display_rows(parts: Renderable, width: int) -> list[int]:
+    """各論理行が右ペインで占める表示行数。
+
+    右ペインは `wrap_lines=True` なので、幅を超える行は複数の表示行になる。
+    幅が未知 (0) のときは折り返し無しとみなす。CJK は 2 桁として数える。
+    """
+    lines = "".join(text for _style, text in parts).split("\n")
+    if width <= 0:
+        return [1] * len(lines)
+    return [max(1, -(-get_cwidth(text) // width)) for text in lines]
+
+
+def sync_preview_scroll(state: TuiState) -> None:
+    """選択中コメントが右ペインに映るよう `preview_scroll` を合わせる。
+
+    説明が長いイシューでは選択行が必ず画面外になるため、選択モードに入った時と
+    カーソル移動時に呼ぶ。見出しが表示範囲に入っている間は動かさない
+    (手動スクロールの位置をそのまま残す)。
+
+    - 上に外れたとき: 見出しが先頭に来る位置まで戻す
+    - 下に外れたとき: そのコメント (見出し + 本文) が収まる最小の量だけ送る。
+      収まらないほど長いコメントは見出しを先頭に置く
+
+    表示行は折り返し込みで数える (`_display_rows`)。論理行で数えると、長い行を
+    含むコメントの下に移った時に「見えている」と誤判定して動かない。
+    """
+    edit = state.issue_tab.comment_select
+    if not (edit.active and edit.editable_indexes):
+        return
+    layout = _layout_preview(state)
+    block = layout.blocks.get(edit.editable_indexes[edit.cursor])
+    if block is None:
+        return
+    height = state.preview_height or max(1, state.page_size)
+    rows = _display_rows(layout.parts, state.preview_width)
+    scroll = state.preview_scroll
+
+    if block.header_line < scroll:
+        state.preview_scroll = block.header_line
+        return
+    if sum(rows[scroll : block.header_line + 1]) <= height:
+        return
+    total = sum(rows[scroll : block.last_line + 1])
+    while scroll < block.header_line and total > height:
+        total -= rows[scroll]
+        scroll += 1
+    state.preview_scroll = scroll
+
+
 def enter_comment_select_mode(state: TuiState):
     if not state.issue_tab.issues:
         return
@@ -154,18 +244,21 @@ def enter_comment_select_mode(state: TuiState):
     edit.editable_indexes = indexes
     edit.cursor = len(indexes) - 1
     edit.active = True
+    sync_preview_scroll(state)
 
 
 def comment_select_cursor_up(state: TuiState) -> None:
     edit = state.issue_tab.comment_select
     if edit.active and edit.editable_indexes:
         edit.cursor = max(0, edit.cursor - 1)
+        sync_preview_scroll(state)
 
 
 def comment_select_cursor_down(state: TuiState) -> None:
     edit = state.issue_tab.comment_select
     if edit.active and edit.editable_indexes:
         edit.cursor = min(len(edit.editable_indexes) - 1, edit.cursor + 1)
+        sync_preview_scroll(state)
 
 
 def exit_comment_select_mode(state: TuiState) -> None:

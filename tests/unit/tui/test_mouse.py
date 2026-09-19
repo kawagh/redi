@@ -101,6 +101,15 @@ class TestPaneControl:
 
         assert result is None
 
+    def test_create_content_reports_size(self):
+        """描画時にペインの (幅, 高さ) を on_size に流す"""
+        sizes: list[tuple[int, int]] = []
+        control = PaneControl(list, on_size=lambda w, h: sizes.append((w, h)))
+
+        control.create_content(30, 7)
+
+        assert sizes == [(30, 7)]
+
 
 class TestPreviewWheel:
     """プレビュー上のホイールは Ctrl+E / Ctrl+Y と同じ向きにスクロールする"""
@@ -422,6 +431,20 @@ class TestLayoutWiring:
         # 実アプリでは _redraw が更新するので、ここでも同じ状態にする。
         app.layout.update_parents_relations()
         return app
+
+    def test_render_records_preview_size(self, monkeypatch):
+        """描画するとプレビューの実際の幅と高さが state に入る (折り返し計算に使う)"""
+        state = TuiState()
+        state.page_size = 20
+        monkeypatch.setattr(config, "current_profile", None)
+        with (
+            create_pipe_input() as pipe,
+            create_app_session(input=pipe, output=_FixedSizeOutput()),
+        ):
+            self._render(monkeypatch, state)
+
+        # 80 桁から区切り 2 桁を引いて等分、24 行から上端バー・区切り線・ステータス行を引く
+        assert (state.preview_width, state.preview_height) == (39, 21)
 
     def test_wheel_over_preview_scrolls(self, monkeypatch):
         """右ペイン (プレビュー) の上でホイール下を回すとプレビューが進む"""
