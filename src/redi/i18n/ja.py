@@ -739,6 +739,9 @@ class Ja(MessagesProto):
         "--query_id は {options} と併用できません"
         "（カスタムクエリの条件が優先され {options} は無視されます）"
     )
+    error_unknown_filter_value = (
+        "指定できない{label}です: {value}（指定できる値: {available}）"
+    )
     arg_help_limit = "取得件数"
     arg_help_offset = "オフセット"
     arg_help_issue_list = "イシュー一覧"

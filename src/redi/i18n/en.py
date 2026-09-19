@@ -737,6 +737,7 @@ class En(MessagesProto):
         "--query_id cannot be used with {options} "
         "(the custom query takes precedence and {options} is ignored)"
     )
+    error_unknown_filter_value = "Unknown {label}: {value} (available: {available})"
     arg_help_limit = "Limit"
     arg_help_offset = "Offset"
     arg_help_issue_list = "List issues"
