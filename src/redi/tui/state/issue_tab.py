@@ -160,18 +160,13 @@ class IssueDeleteDialogState:
     notice: str | None = None
 
 
-@dataclass(eq=False)
-class PageRequest:
-    """取得中のページ送りの行き先。同じ offset でも別の要求として区別する。"""
-
-    offset: int
-
-
 @dataclass
 class IssueTabState:
+    # 表示中のページの offset。
     offset: int = 0
-    # 取得中のページ送り。連打したときに、届く前のページを起点に次の行き先を決める。
-    page_request: PageRequest | None = None
+    # 取得中の行き先。届くまで offset は進まないので、連打したときの次の行き先と
+    # 再読込はここを起点にする。取得中でなければ None。
+    target_offset: int | None = None
     cursor: int = 0
     issues: list[Issue] = field(default_factory=list)
     total_count: int = 0

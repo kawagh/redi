@@ -7,7 +7,6 @@ from typing import Literal
 from redi import config
 from redi.api import PAGE_LIMIT_MAX
 from redi.tui.state.choice import ChoiceDialogState
-from redi.tui.state.fetch import FetchTracker
 from redi.tui.state.issue_tab import IssueTabState
 from redi.tui.state.time_entry_tab import TimeEntryTabState
 from redi.tui.state.wiki_tab import WikiTabState
@@ -106,8 +105,8 @@ class TuiState:
     project_label: str = ""
     project_dialog: ChoiceDialogState = field(default_factory=ChoiceDialogState)
     profile_dialog: ChoiceDialogState = field(default_factory=ChoiceDialogState)
-    # バックグラウンドで走っている API 取得の進行状況。
-    fetches: FetchTracker = field(default_factory=FetchTracker)
+    # ワーカースレッドで走っている API 取得の数。
+    fetching: int = 0
 
     def apply_terminal_rows(self, rows: int) -> bool:
         """端末の行数から page_size を更新する。値が変わったときだけ True を返す。"""

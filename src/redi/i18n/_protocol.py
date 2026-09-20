@@ -723,9 +723,6 @@ class MessagesProto(Protocol):
     tui_status_search_active: str
     """{query}"""
     tui_flash_reloaded: str
-    tui_flash_reloading: str
-    tui_flash_reload_failed: str
-    """{error}"""
     tui_flash_fetching: str
     tui_flash_fetch_failed: str
     """{error}"""

@@ -28,11 +28,11 @@ class TestIssueReload:
 
         new_issues = [{"id": i, "subject": f"new-{i}"} for i in range(11, 16)]
 
-        def fake_fetcher(state, offset):
+        def fake_fetch_issues_page(*, offset, **_):
             assert offset == 10
-            return lambda: {"issues": new_issues, "total_count": 30}
+            return {"issues": new_issues, "total_count": 30}
 
-        monkeypatch.setattr(issue_tab, "issues_fetcher", fake_fetcher)
+        monkeypatch.setattr(issue_tab, "fetch_issues_page", fake_fetch_issues_page)
 
         asyncio.run(issue_tab._on_reload(state))
 
@@ -55,8 +55,8 @@ class TestIssueReload:
         new_issues = [{"id": 1, "subject": "only"}]
         monkeypatch.setattr(
             issue_tab,
-            "issues_fetcher",
-            lambda state, offset: lambda: {"issues": new_issues, "total_count": 1},
+            "fetch_issues_page",
+            lambda **_: {"issues": new_issues, "total_count": 1},
         )
 
         asyncio.run(issue_tab._on_reload(state))
@@ -72,8 +72,8 @@ class TestIssueReload:
         state.issue_tab.issues = cast(list[Issue], [{"id": 1, "subject": "x"}])
         monkeypatch.setattr(
             issue_tab,
-            "issues_fetcher",
-            lambda state, offset: lambda: {"issues": [], "total_count": 0},
+            "fetch_issues_page",
+            lambda **_: {"issues": [], "total_count": 0},
         )
 
         asyncio.run(issue_tab._on_reload(state))

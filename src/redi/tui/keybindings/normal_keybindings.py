@@ -1,5 +1,7 @@
 """通常モード (ダイアログを開いていない一覧操作中) のキーバインド。"""
 
+from collections.abc import Awaitable
+
 from prompt_toolkit.key_binding import KeyBindings
 
 from redi.i18n import messages
@@ -26,6 +28,12 @@ from redi.tui.time_entry.time_entry_tab import (
 from redi.tui.wiki.delete_dialog import open_delete_dialog as open_wiki_delete_dialog
 from redi.tui.wiki.diff_dialog import open_diff_dialog as open_wiki_diff_dialog
 from redi.tui.wiki.version_dialog import open_version_dialog
+
+
+async def _wait(result: Awaitable[None] | None) -> None:
+    """取得中も操作を止めないタブはコルーチンを返すので、その完了を待つ。"""
+    if result is not None:
+        await result
 
 
 def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
@@ -94,17 +102,13 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
     async def _(event):
         clear_temporary_state(state)
         reset_preview_scroll(state)
-        paging = TABS[state.tab].on_page_forward(state)
-        if paging is not None:
-            await paging
+        await _wait(TABS[state.tab].on_page_forward(state))
 
     @kb.add("left", filter=normal_mode)
     async def _(event):
         clear_temporary_state(state)
         reset_preview_scroll(state)
-        paging = TABS[state.tab].on_page_backward(state)
-        if paging is not None:
-            await paging
+        await _wait(TABS[state.tab].on_page_backward(state))
 
     @kb.add("h", filter=normal_mode)
     async def _(event):
@@ -114,9 +118,7 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
             open_version_dialog(state)
             return
         reset_preview_scroll(state)
-        paging = TABS[state.tab].on_page_backward(state)
-        if paging is not None:
-            await paging
+        await _wait(TABS[state.tab].on_page_backward(state))
 
     @kb.add("c-e", filter=normal_mode)
     def _(event):

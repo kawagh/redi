@@ -559,8 +559,6 @@ class En(MessagesProto):
     tui_status_hint_time_entries = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
     tui_status_search_active = "/{query} Esc:clear"
     tui_flash_reloaded = "Reloaded"
-    tui_flash_reloading = "Reloading..."
-    tui_flash_reload_failed = "Failed to reload: {error}"
     tui_flash_fetching = "Fetching..."
     tui_flash_fetch_failed = "Failed to fetch: {error}"
     tui_flash_resize_reload_failed = "Failed to refetch after resize: {error}"
