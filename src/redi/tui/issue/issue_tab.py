@@ -23,7 +23,7 @@ from redi.tui.state import (
     TuiState,
     realign_page,
 )
-from redi.tui.state.issue_tab import CommentSelectState
+from redi.tui.state.issue_tab import CommentSelectState, PageRequest
 from redi.tui.tab import TabView, noop
 
 
@@ -327,6 +327,11 @@ def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse
 
 def _apply_page(state: TuiState, page: IssuesPageResponse, offset: int) -> None:
     state.fetches.invalidate()
+    state.issue_tab.page_request = None
+    _show_page(state, page, offset)
+
+
+def _show_page(state: TuiState, page: IssuesPageResponse, offset: int) -> None:
     state.issue_tab.offset = offset
     state.issue_tab.issues = page["issues"]
     state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
@@ -356,7 +361,11 @@ async def _on_reload(state: TuiState) -> None:
     取得中も操作は止めない。取得中に動かしたカーソルは、結果が届いた時点の位置を保つ。
     """
 
+    # 取得中のページ送りがあれば、その行き先を読み込み直す
+    offset = _paging_base_offset(state)
+
     def apply(page: IssuesPageResponse) -> None:
+        state.issue_tab.offset = offset
         state.issue_tab.issues = page["issues"]
         state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
         state.issue_tab.cursor = max(
@@ -370,7 +379,7 @@ async def _on_reload(state: TuiState) -> None:
     state.flash_message = messages.tui_flash_reloading
     await run_fetch(
         state,
-        issues_fetcher(state, state.issue_tab.offset),
+        issues_fetcher(state, offset),
         apply,
         on_error,
     )
@@ -394,18 +403,47 @@ def _on_resize(state: TuiState) -> None:
     state.issue_tab.cursor = min(cursor, max(0, len(state.issue_tab.issues) - 1))
 
 
-def _on_page_forward(state: TuiState) -> None:
-    next_offset = state.issue_tab.offset + state.page_size
-    page = fetch_issues_with_filter(state, next_offset)
-    if page["issues"]:
-        _apply_page(state, page, next_offset)
+def _paging_base_offset(state: TuiState) -> int:
+    """次のページ送りの起点。取得中のページ送りがあれば、その行き先から数える。"""
+    request = state.issue_tab.page_request
+    return state.issue_tab.offset if request is None else request.offset
 
 
-def _on_page_backward(state: TuiState) -> None:
-    if state.issue_tab.offset <= 0:
+async def _go_to_page(state: TuiState, offset: int) -> None:
+    """`offset` のページを取得して表示する。取得中も操作は止めない。"""
+    request = PageRequest(offset)
+    state.issue_tab.page_request = request
+
+    def apply(page: IssuesPageResponse) -> None:
+        # 総数が減って行き先が空になっていたら、今のページに留まる
+        if page["issues"] or offset == 0:
+            _show_page(state, page, offset)
+        state.flash_message = None
+
+    def on_error(e: requests.exceptions.RequestException) -> None:
+        state.flash_message = messages.tui_flash_fetch_failed.format(error=e)
+
+    state.flash_message = messages.tui_flash_fetching
+    try:
+        await run_fetch(state, issues_fetcher(state, offset), apply, on_error)
+    finally:
+        # 後のページ送りに追い越されていたら、その行き先を消さない
+        if state.issue_tab.page_request is request:
+            state.issue_tab.page_request = None
+
+
+async def _on_page_forward(state: TuiState) -> None:
+    next_offset = _paging_base_offset(state) + state.page_size
+    if next_offset >= state.issue_tab.total_count:
         return
-    prev_offset = max(0, state.issue_tab.offset - state.page_size)
-    _apply_page(state, fetch_issues_with_filter(state, prev_offset), prev_offset)
+    await _go_to_page(state, next_offset)
+
+
+async def _on_page_backward(state: TuiState) -> None:
+    base_offset = _paging_base_offset(state)
+    if base_offset <= 0:
+        return
+    await _go_to_page(state, max(0, base_offset - state.page_size))
 
 
 def _on_open_web(state: TuiState) -> None:

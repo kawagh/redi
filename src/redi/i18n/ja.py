@@ -562,6 +562,8 @@ class Ja(MessagesProto):
     tui_flash_reloaded = "再読込しました"
     tui_flash_reloading = "再読込中..."
     tui_flash_reload_failed = "再読込に失敗しました: {error}"
+    tui_flash_fetching = "取得中..."
+    tui_flash_fetch_failed = "取得に失敗しました: {error}"
     tui_flash_resize_reload_failed = "リサイズ後の再取得に失敗しました: {error}"
     tui_flash_find_cleared_by_filter = "検索を解除してフィルタに切り替えました"
     tui_filter_unspecified = "(指定なし)"

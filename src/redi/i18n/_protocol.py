@@ -726,6 +726,9 @@ class MessagesProto(Protocol):
     tui_flash_reloading: str
     tui_flash_reload_failed: str
     """{error}"""
+    tui_flash_fetching: str
+    tui_flash_fetch_failed: str
+    """{error}"""
     tui_flash_resize_reload_failed: str
     """{error}"""
     tui_flash_find_cleared_by_filter: str

@@ -134,3 +134,115 @@ class TestIssueReloadDoesNotBlock:
             error="boom"
         )
         assert not state.fetches.is_fetching()
+
+
+def _paged_state(*, offset: int, page_size: int, total_count: int) -> TuiState:
+    state = TuiState()
+    state.page_size = page_size
+    state.issue_tab.offset = offset
+    state.issue_tab.total_count = total_count
+    state.issue_tab.issues = _issues(*range(offset + 1, offset + page_size + 1))
+    return state
+
+
+class TestIssuePagingDoesNotBlock:
+    """issue タブのページ送りは、応答を待つ間も次の操作を受け付ける"""
+
+    def test_paging_again_while_fetching_advances_from_the_requested_page(
+        self, monkeypatch
+    ):
+        """取得中にもう一度ページを送ると、届く前のページの次へ進む"""
+        state = _paged_state(offset=0, page_size=3, total_count=9)
+        slow = _BlockedFetch(monkeypatch, _issues(4, 5, 6))
+        requested: list[int] = []
+
+        def fetcher(state, offset):
+            requested.append(offset)
+            return lambda: {"issues": _issues(7, 8, 9), "total_count": 9}
+
+        async def scenario():
+            first = asyncio.create_task(issue_tab._on_page_forward(state))
+            await slow.wait_started()
+            monkeypatch.setattr(issue_tab, "issues_fetcher", fetcher)
+            await issue_tab._on_page_forward(state)
+            slow.release()
+            await first
+
+        asyncio.run(scenario())
+
+        assert requested == [6]
+        assert state.issue_tab.offset == 6
+        assert state.issue_tab.issues == _issues(7, 8, 9)
+
+    def test_does_not_page_beyond_the_last_page(self, monkeypatch):
+        """最終ページ (取得中の行き先を含む) より先へは送らない"""
+        state = _paged_state(offset=3, page_size=3, total_count=9)
+        slow = _BlockedFetch(monkeypatch, _issues(7, 8, 9))
+        requested: list[int] = []
+
+        def fetcher(state, offset):
+            requested.append(offset)
+            return lambda: {"issues": [], "total_count": 9}
+
+        async def scenario():
+            last = asyncio.create_task(issue_tab._on_page_forward(state))
+            await slow.wait_started()
+            monkeypatch.setattr(issue_tab, "issues_fetcher", fetcher)
+            await issue_tab._on_page_forward(state)
+            slow.release()
+            await last
+
+        asyncio.run(scenario())
+
+        assert requested == []
+        assert state.issue_tab.offset == 6
+
+    def test_failure_keeps_the_page_and_the_next_paging_starts_from_it(
+        self, monkeypatch
+    ):
+        """取得に失敗したら今のページに留まり、次のページ送りは今のページから数える"""
+        state = _paged_state(offset=0, page_size=3, total_count=9)
+        requested: list[int] = []
+
+        def failing_fetch():
+            raise requests.exceptions.ConnectionError("boom")
+
+        def fetcher(state, offset):
+            requested.append(offset)
+            return failing_fetch
+
+        monkeypatch.setattr(issue_tab, "issues_fetcher", fetcher)
+
+        asyncio.run(issue_tab._on_page_forward(state))
+        asyncio.run(issue_tab._on_page_forward(state))
+
+        assert requested == [3, 3]
+        assert state.issue_tab.offset == 0
+        assert state.issue_tab.issues == _issues(1, 2, 3)
+        assert state.flash_message == messages.tui_flash_fetch_failed.format(
+            error="boom"
+        )
+
+    def test_reload_while_paging_reloads_the_requested_page(self, monkeypatch):
+        """ページ送りの取得中に再読込すると、送り先のページを読み込む"""
+        state = _paged_state(offset=0, page_size=3, total_count=9)
+        slow = _BlockedFetch(monkeypatch, _issues(4, 5, 6))
+        requested: list[int] = []
+
+        def fetcher(state, offset):
+            requested.append(offset)
+            return lambda: {"issues": _issues(4, 5, 6), "total_count": 9}
+
+        async def scenario():
+            paging = asyncio.create_task(issue_tab._on_page_forward(state))
+            await slow.wait_started()
+            monkeypatch.setattr(issue_tab, "issues_fetcher", fetcher)
+            await issue_tab._on_reload(state)
+            slow.release()
+            await paging
+
+        asyncio.run(scenario())
+
+        assert requested == [3]
+        assert state.issue_tab.offset == 3
+        assert state.issue_tab.issues == _issues(4, 5, 6)

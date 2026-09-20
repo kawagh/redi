@@ -561,6 +561,8 @@ class En(MessagesProto):
     tui_flash_reloaded = "Reloaded"
     tui_flash_reloading = "Reloading..."
     tui_flash_reload_failed = "Failed to reload: {error}"
+    tui_flash_fetching = "Fetching..."
+    tui_flash_fetch_failed = "Failed to fetch: {error}"
     tui_flash_resize_reload_failed = "Failed to refetch after resize: {error}"
     tui_flash_find_cleared_by_filter = "Cleared the search and switched to filters"
     tui_filter_unspecified = "(unspecified)"

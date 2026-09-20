@@ -91,26 +91,32 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
 
     @kb.add("right", filter=normal_mode)
     @kb.add("l", filter=normal_mode)
-    def _(event):
+    async def _(event):
         clear_temporary_state(state)
         reset_preview_scroll(state)
-        TABS[state.tab].on_page_forward(state)
+        paging = TABS[state.tab].on_page_forward(state)
+        if paging is not None:
+            await paging
 
     @kb.add("left", filter=normal_mode)
-    def _(event):
+    async def _(event):
         clear_temporary_state(state)
         reset_preview_scroll(state)
-        TABS[state.tab].on_page_backward(state)
+        paging = TABS[state.tab].on_page_backward(state)
+        if paging is not None:
+            await paging
 
     @kb.add("h", filter=normal_mode)
-    def _(event):
+    async def _(event):
         # wiki タブはページ送りが無いので、h を版一覧 (history) に充てる
         clear_temporary_state(state)
         if state.tab == "wiki":
             open_version_dialog(state)
             return
         reset_preview_scroll(state)
-        TABS[state.tab].on_page_backward(state)
+        paging = TABS[state.tab].on_page_backward(state)
+        if paging is not None:
+            await paging
 
     @kb.add("c-e", filter=normal_mode)
     def _(event):

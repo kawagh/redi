@@ -16,12 +16,12 @@ class TabView:
     on_goto_bottom: Callable[[TuiState], None]
     on_jump_to_id: Callable[[TuiState, int], None]
     on_enter: Callable[[TuiState], None]
-    on_page_forward: Callable[[TuiState], None]
-    on_page_backward: Callable[[TuiState], None]
+    # 取得中も操作を止めないタブはコルーチンを返す。完了時の通知もそのタブが出す。
+    on_page_forward: Callable[[TuiState], Awaitable[None] | None]
+    on_page_backward: Callable[[TuiState], Awaitable[None] | None]
     on_open_web: Callable[[TuiState], None]
     on_open_web_by_id: Callable[[TuiState, int], None]
     on_activate: Callable[[TuiState], None]
-    # 取得中も操作を止めないタブはコルーチンを返す。完了時の通知もそのタブが出す。
     on_reload: Callable[[TuiState], Awaitable[None] | None]
     # 端末リサイズで page_size が変わったときに現在のページを取り直す。
     # ページングしないタブ (wiki) は noop。
