@@ -290,7 +290,7 @@ def _on_enter(state: TuiState) -> None:
         return
     load_journals(issue)
     # コメント選択は今の一覧の journals を指すので、取得中の一覧で差し替えさせない
-    state.fetches.invalidate("issues")
+    state.fetches.invalidate()
     enter_comment_select_mode(state)
 
 
@@ -326,7 +326,7 @@ def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse
 
 
 def _apply_page(state: TuiState, page: IssuesPageResponse, offset: int) -> None:
-    state.fetches.invalidate("issues")
+    state.fetches.invalidate()
     state.issue_tab.offset = offset
     state.issue_tab.issues = page["issues"]
     state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
@@ -370,7 +370,6 @@ async def _on_reload(state: TuiState) -> None:
     state.flash_message = messages.tui_flash_reloading
     await run_fetch(
         state,
-        "issues",
         issues_fetcher(state, state.issue_tab.offset),
         apply,
         on_error,
@@ -388,7 +387,7 @@ def _on_resize(state: TuiState) -> None:
         state.issue_tab.offset, state.issue_tab.cursor, state.page_size
     )
     page = fetch_issues_with_filter(state, offset)
-    state.fetches.invalidate("issues")
+    state.fetches.invalidate()
     state.issue_tab.offset = offset
     state.issue_tab.issues = page["issues"]
     state.issue_tab.total_count = page.get("total_count", len(page["issues"]))

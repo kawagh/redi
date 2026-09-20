@@ -7,12 +7,10 @@ import requests
 from prompt_toolkit.application import get_app
 
 from redi.tui.state import TuiState
-from redi.tui.state.fetch import FetchRegion
 
 
 async def run_fetch[T](
     state: TuiState,
-    region: FetchRegion,
     fetch: Callable[[], T],
     apply: Callable[[T], None],
     on_error: Callable[[requests.exceptions.RequestException], None],
@@ -24,12 +22,11 @@ async def run_fetch[T](
     - `fetch` はワーカースレッドで走るので state に触れず、取得結果を返すだけにする。
       取得条件は呼び出し側がイベントループ上で読み取って束縛しておく
     - `apply` と `on_error` はイベントループ上で呼ぶので state を書き換えてよい
-    - 同じ領域が取得中なら何もしない。取得中に領域が別の操作で書き換わったら結果を捨てる
+    - 取得中でも次の取得を受け付ける。後の操作に追い越された取得の結果は捨てる
+      (最後の操作が勝つ)
     - バックグラウンドタスクは例外を漏らせないので、通信の失敗は `on_error` に渡す
     """
-    generation = state.fetches.begin(region)
-    if generation is None:
-        return False
+    generation = state.fetches.begin()
     # await の前に変えた state (取得中の表示など) を先に描かせる
     get_app().invalidate()
     is_current = False
@@ -38,7 +35,7 @@ async def run_fetch[T](
             result = await asyncio.to_thread(fetch)
         finally:
             # TUI の終了でタスクがキャンセルされたときも取得中のままにしない
-            is_current = state.fetches.finish(region, generation)
+            is_current = state.fetches.finish(generation)
     except requests.exceptions.RequestException as e:
         if is_current:
             on_error(e)

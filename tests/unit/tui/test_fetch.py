@@ -22,14 +22,12 @@ class _BlockedFetch:
     """`release()` するまで応答が返らない取得。遅い Redmine の代わり。"""
 
     def __init__(self, monkeypatch, issues: list[Issue]):
-        self.calls = 0
         self._issues = issues
         self._started = threading.Event()
         self._released = threading.Event()
         monkeypatch.setattr(issue_tab, "issues_fetcher", lambda state, offset: self)
 
     def __call__(self):
-        self.calls += 1
         self._started.set()
         assert self._released.wait(FETCH_WAIT_SECONDS)
         return {"issues": self._issues, "total_count": len(self._issues)}
@@ -53,7 +51,7 @@ class TestIssueReloadDoesNotBlock:
         async def scenario():
             reloading = asyncio.create_task(issue_tab._on_reload(state))
             await fetch.wait_started()
-            assert state.fetches.is_fetching("issues")
+            assert state.fetches.is_fetching()
             assert state.flash_message == messages.tui_flash_reloading
             issue_tab.ISSUE_TAB.on_down(state)
             issue_tab.ISSUE_TAB.on_down(state)
@@ -64,24 +62,33 @@ class TestIssueReloadDoesNotBlock:
         asyncio.run(scenario())
 
         assert state.issue_tab.cursor == 2
-        assert not state.fetches.is_fetching("issues")
+        assert not state.fetches.is_fetching()
         assert state.flash_message == messages.tui_flash_reloaded
 
-    def test_reload_while_fetching_does_not_fetch_again(self, monkeypatch):
-        """取得中に再読込を重ねても、取得は 1 回しか走らない"""
+    def test_later_reload_wins_over_the_one_in_flight(self, monkeypatch):
+        """取得中に再読込を重ねると後の結果が反映され、遅れて届いた先の結果は捨てられる"""
         state = TuiState()
-        fetch = _BlockedFetch(monkeypatch, _issues(1))
+        slow = _BlockedFetch(monkeypatch, _issues(1, 2, 3))
+        latest = _issues(7, 8)
 
         async def scenario():
             first = asyncio.create_task(issue_tab._on_reload(state))
-            await fetch.wait_started()
+            await slow.wait_started()
+            monkeypatch.setattr(
+                issue_tab,
+                "issues_fetcher",
+                lambda state, offset: lambda: {"issues": latest, "total_count": 2},
+            )
             await issue_tab._on_reload(state)
-            fetch.release()
+            assert not state.fetches.is_fetching()
+            slow.release()
             await first
 
         asyncio.run(scenario())
 
-        assert fetch.calls == 1
+        assert state.issue_tab.issues == latest
+        assert state.flash_message == messages.tui_flash_reloaded
+        assert not state.fetches.is_fetching()
 
     def test_discards_result_when_list_was_replaced_while_fetching(self, monkeypatch):
         """取得中に別の操作で一覧が差し替わったら、後から届いた古い結果で上書きしない"""
@@ -126,4 +133,4 @@ class TestIssueReloadDoesNotBlock:
         assert state.flash_message == messages.tui_flash_reload_failed.format(
             error="boom"
         )
-        assert not state.fetches.is_fetching("issues")
+        assert not state.fetches.is_fetching()
