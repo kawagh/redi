@@ -1,4 +1,8 @@
 import webbrowser
+from collections.abc import Callable
+from functools import partial
+
+import requests
 
 from redi import config
 from redi.api.issue import (
@@ -10,6 +14,7 @@ from redi.api.issue import (
 from redi.i18n import messages
 from redi.service import issue_service, search_service
 from redi.text_format import highlight_segments, issue_meta_rows, render_meta_table
+from redi.tui.fetch import run_fetch
 from redi.tui.state import (
     Renderable,
     TuiAction,
@@ -284,20 +289,28 @@ def _on_enter(state: TuiState) -> None:
     if issue.get("id") is None:
         return
     load_journals(issue)
+    # コメント選択は今の一覧の journals を指すので、取得中の一覧で差し替えさせない
+    state.fetches.invalidate("issues")
     enter_comment_select_mode(state)
 
 
-def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse:
-    """現在の条件で1ページ取得する。検索中は検索結果が通常のフィルタを置き換える。"""
+def issues_fetcher(state: TuiState, offset: int) -> Callable[[], IssuesPageResponse]:
+    """現在の条件で1ページ取得する関数を返す。検索中は検索結果が通常のフィルタを置き換える。
+
+    条件は呼んだ時点の state から読み取って束縛する。返した関数は state に触れないので
+    ワーカースレッドで実行できる。
+    """
     if state.issue_tab.find.is_active():
-        return search_service.search_issues_page(
+        return partial(
+            search_service.search_issues_page,
             query=state.issue_tab.find.query,
             project_id=state.effective_project_id(),
             limit=state.page_size,
             offset=offset,
         )
     f = state.issue_tab.filter
-    return fetch_issues_page(
+    return partial(
+        fetch_issues_page,
         project_id=state.effective_project_id(),
         status_id=f.status_id,
         assigned_to=f.assigned_to_id,
@@ -308,7 +321,12 @@ def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse
     )
 
 
+def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse:
+    return issues_fetcher(state, offset)()
+
+
 def _apply_page(state: TuiState, page: IssuesPageResponse, offset: int) -> None:
+    state.fetches.invalidate("issues")
     state.issue_tab.offset = offset
     state.issue_tab.issues = page["issues"]
     state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
@@ -332,18 +350,31 @@ def reload_with_filter(state: TuiState) -> None:
     _apply_page(state, fetch_issues_with_filter(state, 0), 0)
 
 
-def _on_reload(state: TuiState) -> None:
-    """現在のフィルタ・ページのまま再取得する。カーソル位置はクランプして保持する。"""
-    prev_cursor = state.issue_tab.cursor
-    page = fetch_issues_with_filter(state, state.issue_tab.offset)
-    state.issue_tab.issues = page["issues"]
-    state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
-    if state.issue_tab.issues:
+async def _on_reload(state: TuiState) -> None:
+    """現在のフィルタ・ページのまま再取得する。カーソル位置はクランプして保持する。
+
+    取得中も操作は止めない。取得中に動かしたカーソルは、結果が届いた時点の位置を保つ。
+    """
+
+    def apply(page: IssuesPageResponse) -> None:
+        state.issue_tab.issues = page["issues"]
+        state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
         state.issue_tab.cursor = max(
-            0, min(prev_cursor, len(state.issue_tab.issues) - 1)
+            0, min(state.issue_tab.cursor, len(state.issue_tab.issues) - 1)
         )
-    else:
-        state.issue_tab.cursor = 0
+        state.flash_message = messages.tui_flash_reloaded
+
+    def on_error(e: requests.exceptions.RequestException) -> None:
+        state.flash_message = messages.tui_flash_reload_failed.format(error=e)
+
+    state.flash_message = messages.tui_flash_reloading
+    await run_fetch(
+        state,
+        "issues",
+        issues_fetcher(state, state.issue_tab.offset),
+        apply,
+        on_error,
+    )
 
 
 def _on_resize(state: TuiState) -> None:
@@ -357,6 +388,7 @@ def _on_resize(state: TuiState) -> None:
         state.issue_tab.offset, state.issue_tab.cursor, state.page_size
     )
     page = fetch_issues_with_filter(state, offset)
+    state.fetches.invalidate("issues")
     state.issue_tab.offset = offset
     state.issue_tab.issues = page["issues"]
     state.issue_tab.total_count = page.get("total_count", len(page["issues"]))

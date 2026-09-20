@@ -208,11 +208,14 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
             open_wiki_diff_dialog(state)
 
     @kb.add("R", filter=normal_mode)
-    def _(event):
+    async def _(event):
         clear_temporary_state(state)
         reset_preview_scroll(state)
-        TABS[state.tab].on_reload(state)
-        state.flash_message = messages.tui_flash_reloaded
+        reloading = TABS[state.tab].on_reload(state)
+        if reloading is None:
+            state.flash_message = messages.tui_flash_reloaded
+        else:
+            await reloading
 
     @kb.add("q", filter=normal_mode)
     @kb.add("c-c", filter=normal_mode)

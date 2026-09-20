@@ -1,5 +1,6 @@
 """TUI タブの再読込 (R キー) 挙動の単体テスト。"""
 
+import asyncio
 from typing import cast
 
 from redi.api.issue import Issue
@@ -27,13 +28,13 @@ class TestIssueReload:
 
         new_issues = [{"id": i, "subject": f"new-{i}"} for i in range(11, 16)]
 
-        def fake_fetch(state, offset):
+        def fake_fetcher(state, offset):
             assert offset == 10
-            return {"issues": new_issues, "total_count": 30}
+            return lambda: {"issues": new_issues, "total_count": 30}
 
-        monkeypatch.setattr(issue_tab, "fetch_issues_with_filter", fake_fetch)
+        monkeypatch.setattr(issue_tab, "issues_fetcher", fake_fetcher)
 
-        issue_tab._on_reload(state)
+        asyncio.run(issue_tab._on_reload(state))
 
         assert state.issue_tab.offset == 10
         assert state.issue_tab.cursor == 2
@@ -54,11 +55,11 @@ class TestIssueReload:
         new_issues = [{"id": 1, "subject": "only"}]
         monkeypatch.setattr(
             issue_tab,
-            "fetch_issues_with_filter",
-            lambda state, offset: {"issues": new_issues, "total_count": 1},
+            "issues_fetcher",
+            lambda state, offset: lambda: {"issues": new_issues, "total_count": 1},
         )
 
-        issue_tab._on_reload(state)
+        asyncio.run(issue_tab._on_reload(state))
 
         assert state.issue_tab.cursor == 0
         assert state.issue_tab.issues == new_issues
@@ -71,11 +72,11 @@ class TestIssueReload:
         state.issue_tab.issues = cast(list[Issue], [{"id": 1, "subject": "x"}])
         monkeypatch.setattr(
             issue_tab,
-            "fetch_issues_with_filter",
-            lambda state, offset: {"issues": [], "total_count": 0},
+            "issues_fetcher",
+            lambda state, offset: lambda: {"issues": [], "total_count": 0},
         )
 
-        issue_tab._on_reload(state)
+        asyncio.run(issue_tab._on_reload(state))
 
         assert state.issue_tab.cursor == 0
         assert state.issue_tab.issues == []

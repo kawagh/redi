@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from redi.tui.state import Renderable, TuiResult, TuiState
@@ -21,7 +21,8 @@ class TabView:
     on_open_web: Callable[[TuiState], None]
     on_open_web_by_id: Callable[[TuiState, int], None]
     on_activate: Callable[[TuiState], None]
-    on_reload: Callable[[TuiState], None]
+    # 取得中も操作を止めないタブはコルーチンを返す。完了時の通知もそのタブが出す。
+    on_reload: Callable[[TuiState], Awaitable[None] | None]
     # 端末リサイズで page_size が変わったときに現在のページを取り直す。
     # ページングしないタブ (wiki) は noop。
     on_resize: Callable[[TuiState], None]
