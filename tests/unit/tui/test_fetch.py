@@ -89,7 +89,7 @@ class TestIssueReloadDoesNotBlock:
         async def scenario():
             reloading = asyncio.create_task(issue_tab._on_reload(state))
             await hold.wait_started()
-            assert state.fetching == 1
+            assert state.issue_tab.loading is not None
             assert state.flash_message == messages.tui_flash_fetching
             issue_tab.ISSUE_TAB.on_down(state)
             issue_tab.ISSUE_TAB.on_down(state)
@@ -100,7 +100,7 @@ class TestIssueReloadDoesNotBlock:
         asyncio.run(scenario())
 
         assert state.issue_tab.cursor == 2
-        assert state.fetching == 0
+        assert state.issue_tab.loading is None
         assert state.flash_message == messages.tui_flash_reloaded
 
     def test_discards_result_when_conditions_changed_while_fetching(self, monkeypatch):
@@ -129,13 +129,21 @@ class TestIssueReloadDoesNotBlock:
         """
         redmine = _FakeRedmine(monkeypatch, total=3)
         state = _state_showing(redmine, offset=0, page_size=3)
+        state.me_id = "1"
+        my_comment = {"id": 10, "notes": "note", "user": {"id": 1}}
+        monkeypatch.setattr(
+            issue_tab.issue_service,
+            "read_issue",
+            lambda issue_id, include: {"id": issue_id, "journals": [my_comment]},
+        )
         shown = state.issue_tab.issues
         hold = redmine.hold(0)
 
         async def scenario():
             reloading = asyncio.create_task(issue_tab._on_reload(state))
             await hold.wait_started()
-            state.issue_tab.comment_select.active = True
+            issue_tab.ISSUE_TAB.on_enter(state)
+            assert state.issue_tab.comment_select.active
             hold.release()
             await reloading
 
@@ -155,7 +163,7 @@ class TestIssueReloadDoesNotBlock:
         assert state.flash_message == messages.tui_flash_fetch_failed.format(
             error="boom"
         )
-        assert state.fetching == 0
+        assert state.issue_tab.loading is None
 
 
 class TestIssuePagingDoesNotBlock:

@@ -105,8 +105,6 @@ class TuiState:
     project_label: str = ""
     project_dialog: ChoiceDialogState = field(default_factory=ChoiceDialogState)
     profile_dialog: ChoiceDialogState = field(default_factory=ChoiceDialogState)
-    # ワーカースレッドで走っている API 取得の数。
-    fetching: int = 0
 
     def apply_terminal_rows(self, rows: int) -> bool:
         """端末の行数から page_size を更新する。値が変わったときだけ True を返す。"""

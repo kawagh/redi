@@ -160,13 +160,30 @@ class IssueDeleteDialogState:
     notice: str | None = None
 
 
+@dataclass(frozen=True)
+class IssueQuery:
+    """issue 一覧 1 ページぶんの取得条件。
+
+    state から写し取った値だけを持つので、ワーカースレッドに渡せる。
+    """
+
+    project_id: str | None
+    find: str
+    status_id: str | None
+    assigned_to_id: str | None
+    tracker_id: str | None
+    query_id: str | None
+    limit: int
+    offset: int
+
+
 @dataclass
 class IssueTabState:
     # 表示中のページの offset。
     offset: int = 0
-    # 取得中の行き先。届くまで offset は進まないので、連打したときの次の行き先と
-    # 再読込はここを起点にする。取得中でなければ None。
-    target_offset: int | None = None
+    # いま取りに行っているページ。取得中でなければ None。
+    # 届いた結果がこれのものでなければ、追い越されているので捨てる。
+    loading: IssueQuery | None = None
     cursor: int = 0
     issues: list[Issue] = field(default_factory=list)
     total_count: int = 0
