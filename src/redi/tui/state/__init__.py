@@ -24,7 +24,8 @@ TuiAction = Literal[
 ]
 TuiTab = Literal["issues", "wiki", "time_entries"]
 
-# prompt_toolkit の FormattedTextControl に渡す `(style, text)` 断片のリスト。
+# prompt_toolkit の FormattedTextControl に渡す `(style, text)` または
+# `(style, text, mouse_handler)` 断片のリスト。
 Renderable = StyleAndTextTuples
 
 # 一覧/プレビューの外側にある固定行の合計 (タブバー + 罫線 + ステータスバー)。
