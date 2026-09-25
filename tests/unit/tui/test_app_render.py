@@ -7,7 +7,7 @@ from redi.tui.tabs import TABS
 
 
 def _rendered_lines(parts) -> list[str]:
-    return "".join(text for _style, text in parts).split("\n")
+    return "".join(text for _style, text, *_ in parts).split("\n")
 
 
 class TestRenderHelp:
@@ -40,7 +40,9 @@ class TestRenderStatusSearch:
     def _status(self, state: TuiState) -> str:
         return "".join(
             text
-            for _style, text in app_render.render_status(state, build_conditions(state))
+            for _style, text, *_ in app_render.render_status(
+                state, build_conditions(state)
+            )
         )
 
     def test_shows_query_after_search_is_committed(self):

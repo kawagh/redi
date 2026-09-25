@@ -22,7 +22,7 @@ class TestRenderChoiceList:
             choices=[("2", "Beta"), ("1", "Alpha")], cursor=0, active_value="1"
         )
 
-        rendered = "".join(text for _style, text in render_choice_list(dialog))
+        rendered = "".join(text for _style, text, *_ in render_choice_list(dialog))
 
         assert " >   Beta" in rendered
         assert "   * Alpha" in rendered
@@ -30,7 +30,7 @@ class TestRenderChoiceList:
     def test_no_mark_without_active(self):
         dialog = ChoiceDialogState(choices=[("1", "Alpha")])
 
-        rendered = "".join(text for _style, text in render_choice_list(dialog))
+        rendered = "".join(text for _style, text, *_ in render_choice_list(dialog))
 
         assert "*" not in rendered
 

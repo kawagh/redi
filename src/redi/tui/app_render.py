@@ -31,7 +31,7 @@ def _skip_lines(parts: Renderable, n: int) -> Renderable:
     result: Renderable = []
     seen = 0
     started = False
-    for style, text in parts:
+    for style, text, *_ in parts:
         if started:
             result.append((style, text))
             continue

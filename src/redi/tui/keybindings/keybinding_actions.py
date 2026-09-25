@@ -24,7 +24,7 @@ def activate_tab(state: TuiState, tab: TuiTab) -> None:
 def _count_logical_lines(parts: Renderable) -> int:
     if not parts:
         return 0
-    return sum(text.count("\n") for _, text in parts) + 1
+    return sum(text.count("\n") for _, text, *_ in parts) + 1
 
 
 def scroll_preview(state: TuiState, delta: int) -> None:
