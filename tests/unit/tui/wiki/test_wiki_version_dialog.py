@@ -243,7 +243,7 @@ class TestIndication:
         state.wiki_tab.texts["Home"] = "latest body"
         state.wiki_tab.version_view = WikiVersionView("Home", 1, "old body", latest=3)
 
-        rendered = "".join(text for _, text in WIKI_TAB.render_preview(state))
+        rendered = "".join(text for _, text, *_ in WIKI_TAB.render_preview(state))
 
         assert "old body" in rendered
         assert "latest body" not in rendered

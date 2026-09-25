@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from prompt_toolkit.formatted_text import StyleAndTextTuples
+
 from redi import config
 from redi.api import PAGE_LIMIT_MAX
 from redi.tui.state.choice import ChoiceDialogState
@@ -23,7 +25,7 @@ TuiAction = Literal[
 TuiTab = Literal["issues", "wiki", "time_entries"]
 
 # prompt_toolkit の FormattedTextControl に渡す `(style, text)` 断片のリスト。
-Renderable = list[tuple[str, str]]
+Renderable = StyleAndTextTuples
 
 # 一覧/プレビューの外側にある固定行の合計 (タブバー + 罫線 + ステータスバー)。
 # Layout の HSplit に固定行を増減したらここも更新すること。

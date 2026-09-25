@@ -54,7 +54,7 @@ def _wiki_project(monkeypatch):
 
 
 def _column_text(state: TuiState, column: WikiDiffColumn) -> str:
-    return "".join(t for _, t in render_diff_column(state, column))
+    return "".join(t for _, t, *_ in render_diff_column(state, column))
 
 
 class TestDiffDialog:
@@ -165,7 +165,7 @@ class TestDiff:
     """ダイアログで選んだ 2 版の差分を右ペインで見られる"""
 
     def _rendered(self, state: TuiState) -> str:
-        return "".join(text for _, text in WIKI_TAB.render_preview(state))
+        return "".join(text for _, text, *_ in WIKI_TAB.render_preview(state))
 
     def _state_with_texts(self) -> TuiState:
         state = _state([_page("Home", version=3)])
@@ -258,7 +258,8 @@ class TestDiff:
         state = self._applied(2, 3)
 
         styles = {
-            text.rstrip("\n"): style for style, text in WIKI_TAB.render_preview(state)
+            text.rstrip("\n"): style
+            for style, text, *_ in WIKI_TAB.render_preview(state)
         }
 
         assert styles["+B"] == "fg:ansigreen"
