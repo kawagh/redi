@@ -46,8 +46,8 @@ class TimeEntrySummaryState:
     show: bool = False
     summary: TimeEntrySummary | None = None
     issue_subjects: dict[int, str] = field(default_factory=dict)
-    # 集計ビューの先頭に表示する行 (0-indexed)。j / k でずらす
-    scroll: int = 0
+    # 集計ビュー内のカーソル行 (0-indexed)。j / k で動かす
+    cursor: int = 0
     error: str | None = None
 
 

@@ -558,7 +558,7 @@ class En(MessagesProto):
     )
     tui_status_hint_time_entries = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web V:summary ?:help q:quit "
     tui_status_hint_time_entry_summary = (
-        " Summary  jk:scroll f:filter p:project R:reload V:back to list ?:help q:quit "
+        " Summary  jk:move f:filter p:project R:reload V:back to list ?:help q:quit "
     )
     tui_status_search_active = "/{query} Esc:clear"
     tui_flash_reloaded = "Reloaded"

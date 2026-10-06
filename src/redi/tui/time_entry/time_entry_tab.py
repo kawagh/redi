@@ -80,7 +80,7 @@ def _load_summary(state: TuiState) -> None:
         subjects = {}
     view.summary = time_entry_service.summarize_by_date(entries)
     view.issue_subjects = subjects
-    view.scroll = min(view.scroll, _max_summary_scroll(state))
+    view.cursor = min(view.cursor, _max_summary_cursor(state))
 
 
 def toggle_summary(state: TuiState) -> None:
@@ -90,7 +90,7 @@ def toggle_summary(state: TuiState) -> None:
         view.show = False
         return
     view.show = True
-    view.scroll = 0
+    view.cursor = 0
     _load_summary(state)
 
 
@@ -132,18 +132,22 @@ def _summary_lines(state: TuiState) -> list[str]:
     return lines
 
 
-def _max_summary_scroll(state: TuiState) -> int:
+def _max_summary_cursor(state: TuiState) -> int:
     return max(0, len(_summary_lines(state)) - 1)
 
 
-def _scroll_summary(state: TuiState, delta: int) -> None:
+def _move_summary_cursor(state: TuiState, delta: int) -> None:
     view = state.time_entry_tab.summary
-    view.scroll = max(0, min(view.scroll + delta, _max_summary_scroll(state)))
+    view.cursor = max(0, min(view.cursor + delta, _max_summary_cursor(state)))
 
 
 def _render_summary(state: TuiState) -> Renderable:
-    lines = _summary_lines(state)[state.time_entry_tab.summary.scroll :]
-    return [("", "\n".join(lines))]
+    cursor = state.time_entry_tab.summary.cursor
+    result: Renderable = []
+    for i, line in enumerate(_summary_lines(state)):
+        prefix = "> " if i == cursor else "  "
+        result.append(("", f"{prefix}{line}\n"))
+    return result
 
 
 def _render_list(state: TuiState) -> Renderable:
@@ -296,14 +300,14 @@ def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
 
 def _on_up(state: TuiState) -> None:
     if _in_summary(state):
-        _scroll_summary(state, -1)
+        _move_summary_cursor(state, -1)
         return
     state.time_entry_tab.cursor = max(0, state.time_entry_tab.cursor - 1)
 
 
 def _on_down(state: TuiState) -> None:
     if _in_summary(state):
-        _scroll_summary(state, 1)
+        _move_summary_cursor(state, 1)
         return
     if state.time_entry_tab.entries:
         state.time_entry_tab.cursor = min(
@@ -314,7 +318,7 @@ def _on_down(state: TuiState) -> None:
 
 def _on_goto_top(state: TuiState) -> None:
     if _in_summary(state):
-        state.time_entry_tab.summary.scroll = 0
+        state.time_entry_tab.summary.cursor = 0
         return
     if state.time_entry_tab.entries:
         state.time_entry_tab.cursor = 0
@@ -322,7 +326,7 @@ def _on_goto_top(state: TuiState) -> None:
 
 def _on_goto_bottom(state: TuiState) -> None:
     if _in_summary(state):
-        state.time_entry_tab.summary.scroll = _max_summary_scroll(state)
+        state.time_entry_tab.summary.cursor = _max_summary_cursor(state)
         return
     if state.time_entry_tab.entries:
         state.time_entry_tab.cursor = len(state.time_entry_tab.entries) - 1
@@ -450,7 +454,7 @@ def _on_resize(state: TuiState) -> None:
 
 def _on_page_forward(state: TuiState) -> None:
     if _in_summary(state):
-        _scroll_summary(state, state.page_size)
+        _move_summary_cursor(state, state.page_size)
         return
     next_offset = state.time_entry_tab.offset + state.page_size
     try:
@@ -464,7 +468,7 @@ def _on_page_forward(state: TuiState) -> None:
 
 def _on_page_backward(state: TuiState) -> None:
     if _in_summary(state):
-        _scroll_summary(state, -state.page_size)
+        _move_summary_cursor(state, -state.page_size)
         return
     if state.time_entry_tab.offset <= 0:
         return
@@ -539,7 +543,10 @@ TIME_ENTRY_TAB = TabView(
     on_resize=_on_resize,
     on_action_key=_on_action_key,
     on_search=_on_search,
-    # 集計ビューは表示側で先頭行をずらすので、カーソルは常に先頭に置く
-    get_cursor_y=lambda state: 0 if _in_summary(state) else state.time_entry_tab.cursor,
+    get_cursor_y=lambda state: (
+        state.time_entry_tab.summary.cursor
+        if _in_summary(state)
+        else state.time_entry_tab.cursor
+    ),
     help_lines=_HELP_LINES,
 )

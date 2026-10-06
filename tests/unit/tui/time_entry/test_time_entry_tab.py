@@ -373,6 +373,15 @@ def _list_text(state: TuiState) -> str:
     return "".join(text for _, text, *_ in time_entry_tab._render_list(state))
 
 
+def _summary_rows(state: TuiState) -> list[str]:
+    """集計ビューの行からカーソル印 (先頭 2 桁) を除いたもの。"""
+    return [line[2:] for line in _list_text(state).splitlines()]
+
+
+def _cursor_row(state: TuiState) -> str:
+    return next(line[2:] for line in _list_text(state).splitlines() if line[:2] == "> ")
+
+
 class TestToggleSummary:
     """toggle_summary() は一覧と、合計・日付ごとの集計ビューを切り替える"""
 
@@ -382,7 +391,7 @@ class TestToggleSummary:
 
         time_entry_tab.toggle_summary(state)
 
-        assert _list_text(state).splitlines() == [
+        assert _summary_rows(state) == [
             _TOTAL_LINE,
             "2026-10-07  3.5h",
             "    #98  0.5h  #342 config update",
@@ -429,18 +438,41 @@ class TestToggleSummary:
 class TestSummaryView:
     """集計ビューを表示中の操作"""
 
-    def test_jk_scrolls_lines(self, stub_summary_fetch):
-        """j / k は表示の先頭行をずらす"""
+    def test_jk_moves_cursor(self, stub_summary_fetch):
+        """カーソルは先頭行から始まり、j / k で 1 行ずつ動く"""
         state = TuiState()
         time_entry_tab.toggle_summary(state)
 
+        assert _cursor_row(state) == _TOTAL_LINE
+
         time_entry_tab._on_down(state)
 
-        assert _list_text(state).splitlines()[0] == "2026-10-07  3.5h"
+        assert _cursor_row(state) == "2026-10-07  3.5h"
 
         time_entry_tab._on_up(state)
 
-        assert _list_text(state).splitlines()[0] == _TOTAL_LINE
+        assert _cursor_row(state) == _TOTAL_LINE
+
+    def test_cursor_stays_within_lines(self, stub_summary_fetch):
+        """先頭より上・末尾より下には動かない"""
+        state = TuiState()
+        time_entry_tab.toggle_summary(state)
+
+        time_entry_tab._on_up(state)
+        assert _cursor_row(state) == _TOTAL_LINE
+
+        time_entry_tab._on_goto_bottom(state)
+        time_entry_tab._on_down(state)
+        assert _cursor_row(state) == "    #96  4.0h  redi"
+
+    def test_list_window_follows_cursor(self, stub_summary_fetch):
+        """一覧ペインがカーソル行を追って画面外に出さないよう、その行位置を返す"""
+        state = TuiState()
+        time_entry_tab.toggle_summary(state)
+
+        time_entry_tab._on_goto_bottom(state)
+
+        assert time_entry_tab.TIME_ENTRY_TAB.get_cursor_y(state) == 5
 
     def test_row_actions_are_disabled(self, stub_summary_fetch):
         """選択行が見えないので、更新・作成・削除は効かない"""

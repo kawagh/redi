@@ -559,7 +559,7 @@ class Ja(MessagesProto):
         " c:作成 u:更新 v:web V:集計 ?:ヘルプ q:終了 "
     )
     tui_status_hint_time_entry_summary = (
-        " 集計  jk:スクロール f:フィルタ p:プロジェクト R:再読込"
+        " 集計  jk:移動 f:フィルタ p:プロジェクト R:再読込"
         " V:一覧に戻る ?:ヘルプ q:終了 "
     )
     tui_status_search_active = "/{query} Esc:解除"
