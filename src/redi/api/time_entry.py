@@ -123,15 +123,31 @@ def fetch_time_entries_page(
     return cast("TimeEntriesPageResponse", response.json())
 
 
+ISSUE_SUBJECTS_CHUNK = 100
+
+
 def fetch_issue_subjects(issue_ids: list[int]) -> dict[int, str]:
-    if not issue_ids:
-        return {}
-    response = client.get(
-        "/issues.json",
-        params={"issue_id": ",".join(str(i) for i in issue_ids)},
-    )
-    response.raise_for_status()
-    return {issue["id"]: issue["subject"] for issue in response.json()["issues"]}
+    """チケットの件名を id -> 件名 で返す。
+
+    `/issues.json` は既定で未完了のチケットだけを 25 件まで返すので、
+    完了済みも含めるよう `status_id=*` を付け、上限 (100 件) ごとに分けて引く。
+    """
+    subjects: dict[int, str] = {}
+    for start in range(0, len(issue_ids), ISSUE_SUBJECTS_CHUNK):
+        chunk = issue_ids[start : start + ISSUE_SUBJECTS_CHUNK]
+        response = client.get(
+            "/issues.json",
+            params={
+                "issue_id": ",".join(str(i) for i in chunk),
+                "status_id": "*",
+                "limit": len(chunk),
+            },
+        )
+        response.raise_for_status()
+        subjects.update(
+            {issue["id"]: issue["subject"] for issue in response.json()["issues"]}
+        )
+    return subjects
 
 
 def fetch_time_entry(time_entry_id: int) -> TimeEntry | None:

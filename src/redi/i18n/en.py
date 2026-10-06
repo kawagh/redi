@@ -556,7 +556,10 @@ class En(MessagesProto):
         " jk:move /:search p:project c:create u:update D:delete"
         " h:versions d:diff v:web ?:help q:quit "
     )
-    tui_status_hint_time_entries = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web ?:help q:quit "
+    tui_status_hint_time_entries = " {page_label}  jk:move /:search f:filter p:project c:create u:update v:web V:summary ?:help q:quit "
+    tui_status_hint_time_entry_summary = (
+        " Summary  jk:scroll f:filter p:project R:reload V:back to list ?:help q:quit "
+    )
     tui_status_search_active = "/{query} Esc:clear"
     tui_flash_reloaded = "Reloaded"
     tui_flash_resize_reload_failed = "Failed to refetch after resize: {error}"
@@ -602,6 +605,8 @@ class En(MessagesProto):
     tui_time_entry_no_entries = "No time entries"
     tui_time_entry_loading = "(loading time entries...)"
     tui_time_entry_load_failed = "Failed to fetch time entries: {error}"
+    tui_time_entry_summary_loading = "(summarizing time entries...)"
+    tui_time_entry_summary_total = "Total {hours}h ({count} entries)"
     tui_time_entry_delete_failed = "Failed to delete time entry: {error}"
     tui_time_entry_delete_missing = "Time entry not found: {id}"
     tui_time_entry_delete_prompt = "Delete? {summary} [y/N]"
@@ -1141,3 +1146,4 @@ class En(MessagesProto):
     tui_help_time_entry_update = "Update the selected time entry"
     tui_help_time_entry_delete = "Delete the selected time entry (confirm with y/Y)"
     tui_help_time_entry_open_web = "Open the selected row's issue in web"
+    tui_help_time_entry_toggle_summary = "Toggle the summary by date / back to the list"

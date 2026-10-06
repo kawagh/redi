@@ -3,7 +3,7 @@ import webbrowser
 import requests
 
 from redi import config
-from redi.api.time_entry import TimeEntryNotFoundException
+from redi.api.time_entry import TimeEntry, TimeEntryNotFoundException
 from redi.i18n import messages
 from redi.service import time_entry_service
 from redi.text_format import highlight_segments, render_meta_table
@@ -57,7 +57,98 @@ def _load_time_entries(state: TuiState) -> None:
     _apply_page(state, page, state.time_entry_tab.offset)
 
 
+def _in_summary(state: TuiState) -> bool:
+    return state.time_entry_tab.summary.show
+
+
+def _load_summary(state: TuiState) -> None:
+    """一覧と同じ条件 (プロジェクト・ユーザー) の作業時間を全件取って集計し直す。"""
+    view = state.time_entry_tab.summary
+    view.error = None
+    try:
+        entries = time_entry_service.fetch_all(
+            project_id=state.effective_project_id(),
+            user_id=state.time_entry_tab.filter.user_id,
+        )
+    except requests.exceptions.RequestException as e:
+        view.error = messages.tui_time_entry_load_failed.format(error=e)
+        view.summary = None
+        return
+    try:
+        subjects = time_entry_service.fetch_issue_subjects(entries)
+    except requests.exceptions.RequestException:
+        subjects = {}
+    view.summary = time_entry_service.summarize_by_date(entries)
+    view.issue_subjects = subjects
+    view.scroll = min(view.scroll, _max_summary_scroll(state))
+
+
+def toggle_summary(state: TuiState) -> None:
+    """一覧と集計ビューを切り替える。集計ビューに入るたびに全件を取り直す。"""
+    view = state.time_entry_tab.summary
+    if view.show:
+        view.show = False
+        return
+    view.show = True
+    view.scroll = 0
+    _load_summary(state)
+
+
+def _ticket_label(te: TimeEntry, subjects: dict[int, str]) -> str:
+    issue_id = (te.get("issue") or {}).get("id")
+    if issue_id:
+        subject = subjects.get(issue_id)
+        return f"#{issue_id} {subject}" if subject else f"#{issue_id}"
+    return (te.get("project") or {}).get("name", "")
+
+
+def _summary_lines(state: TuiState) -> list[str]:
+    """集計ビューの行。先頭に合計、続けて日付ごとの合計とその日の作業時間を並べる。"""
+    view = state.time_entry_tab.summary
+    if view.error:
+        return [view.error]
+    summary = view.summary
+    if summary is None:
+        return [messages.tui_time_entry_summary_loading]
+    if summary.count == 0:
+        return [messages.tui_time_entry_no_entries]
+    fmt = time_entry_service.format_hours
+    entries = [te for day in summary.days for te in day.entries]
+    id_width = max(len(f"#{te['id']}") for te in entries)
+    hours_width = max(len(fmt(te["hours"])) for te in entries)
+    lines = [
+        messages.tui_time_entry_summary_total.format(
+            hours=fmt(summary.total_hours), count=summary.count
+        )
+    ]
+    for day in summary.days:
+        lines.append(f"{day.spent_on}  {fmt(day.hours)}h")
+        for te in day.entries:
+            ticket = _ticket_label(te, view.issue_subjects)
+            lines.append(
+                f"    {f'#{te["id"]}':<{id_width}}  "
+                f"{fmt(te['hours']):>{hours_width}}h  {ticket}".rstrip()
+            )
+    return lines
+
+
+def _max_summary_scroll(state: TuiState) -> int:
+    return max(0, len(_summary_lines(state)) - 1)
+
+
+def _scroll_summary(state: TuiState, delta: int) -> None:
+    view = state.time_entry_tab.summary
+    view.scroll = max(0, min(view.scroll + delta, _max_summary_scroll(state)))
+
+
+def _render_summary(state: TuiState) -> Renderable:
+    lines = _summary_lines(state)[state.time_entry_tab.summary.scroll :]
+    return [("", "\n".join(lines))]
+
+
 def _render_list(state: TuiState) -> Renderable:
+    if _in_summary(state):
+        return _render_summary(state)
     if state.time_entry_tab.error:
         return [("", state.time_entry_tab.error)]
     entries = state.time_entry_tab.entries
@@ -77,6 +168,8 @@ def _render_list(state: TuiState) -> Renderable:
 
 
 def _render_preview(state: TuiState) -> Renderable:
+    if _in_summary(state):
+        return [("", "")]
     if state.time_entry_tab.error:
         return [("", state.time_entry_tab.error)]
     entries = state.time_entry_tab.entries
@@ -131,14 +224,24 @@ def _page_label(state: TuiState) -> str:
 
 
 def _status_hint(state: TuiState) -> str:
-    hint = messages.tui_status_hint_time_entries.format(page_label=_page_label(state))
+    if _in_summary(state):
+        hint = messages.tui_status_hint_time_entry_summary
+    else:
+        hint = messages.tui_status_hint_time_entries.format(
+            page_label=_page_label(state)
+        )
     if state.time_entry_tab.filter.is_active():
         hint = f" [{state.time_entry_tab.filter.short_label()}]" + hint
     return hint
 
 
 def reload_with_filter(state: TuiState) -> None:
-    """フィルタ条件で先頭ページから取得し直す。フィルタダイアログの適用で呼ぶ。"""
+    """フィルタ条件で先頭ページから取得し直す。フィルタダイアログの適用で呼ぶ。
+
+    集計ビューを表示中なら、集計も新しい条件で取り直す。
+    """
+    if _in_summary(state):
+        _load_summary(state)
     state.time_entry_tab.error = None
     try:
         page = _fetch_page_with_subjects(state, 0)
@@ -154,6 +257,9 @@ def reload_with_filter(state: TuiState) -> None:
 
 
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
+    # 集計ビューには選択行が無いので、行を対象にする操作は効かせない
+    if _in_summary(state):
+        return None
     if key == "c":
         entries = state.time_entry_tab.entries
         issue_id: int | None = None
@@ -189,10 +295,16 @@ def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
 
 
 def _on_up(state: TuiState) -> None:
+    if _in_summary(state):
+        _scroll_summary(state, -1)
+        return
     state.time_entry_tab.cursor = max(0, state.time_entry_tab.cursor - 1)
 
 
 def _on_down(state: TuiState) -> None:
+    if _in_summary(state):
+        _scroll_summary(state, 1)
+        return
     if state.time_entry_tab.entries:
         state.time_entry_tab.cursor = min(
             len(state.time_entry_tab.entries) - 1,
@@ -201,17 +313,23 @@ def _on_down(state: TuiState) -> None:
 
 
 def _on_goto_top(state: TuiState) -> None:
+    if _in_summary(state):
+        state.time_entry_tab.summary.scroll = 0
+        return
     if state.time_entry_tab.entries:
         state.time_entry_tab.cursor = 0
 
 
 def _on_goto_bottom(state: TuiState) -> None:
+    if _in_summary(state):
+        state.time_entry_tab.summary.scroll = _max_summary_scroll(state)
+        return
     if state.time_entry_tab.entries:
         state.time_entry_tab.cursor = len(state.time_entry_tab.entries) - 1
 
 
 def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
-    if not query:
+    if not query or _in_summary(state):
         return
     entries = state.time_entry_tab.entries
     if not entries:
@@ -233,9 +351,12 @@ def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
 
 
 def request_delete(state: TuiState) -> str | None:
-    """カーソル行の削除確認プロンプトを返す。対象がなければ None。"""
+    """カーソル行の削除確認プロンプトを返す。対象がなければ None。
+
+    集計ビューでは選択行が見えないので削除させない。
+    """
     entries = state.time_entry_tab.entries
-    if not entries:
+    if not entries or _in_summary(state):
         return None
     te = entries[state.time_entry_tab.cursor]
     summary = time_entry_service.format_time_entry_line(
@@ -275,8 +396,12 @@ def _on_reload(state: TuiState) -> None:
     """現在のページのまま time_entry 一覧を取り直す。
 
     同じ id の entry が残っていればその位置に cursor を復元し、無ければ
-    元の cursor 位置を新一覧の範囲内にクランプする。
+    元の cursor 位置を新一覧の範囲内にクランプする。集計ビューを表示中なら
+    集計を取り直す。
     """
+    if _in_summary(state):
+        _load_summary(state)
+        return
     prev_id: int | None = None
     if state.time_entry_tab.entries:
         prev_id = state.time_entry_tab.entries[state.time_entry_tab.cursor].get("id")
@@ -324,6 +449,9 @@ def _on_resize(state: TuiState) -> None:
 
 
 def _on_page_forward(state: TuiState) -> None:
+    if _in_summary(state):
+        _scroll_summary(state, state.page_size)
+        return
     next_offset = state.time_entry_tab.offset + state.page_size
     try:
         page = _fetch_page_with_subjects(state, next_offset)
@@ -335,6 +463,9 @@ def _on_page_forward(state: TuiState) -> None:
 
 
 def _on_page_backward(state: TuiState) -> None:
+    if _in_summary(state):
+        _scroll_summary(state, -state.page_size)
+        return
     if state.time_entry_tab.offset <= 0:
         return
     prev_offset = max(0, state.time_entry_tab.offset - state.page_size)
@@ -348,7 +479,7 @@ def _on_page_backward(state: TuiState) -> None:
 
 def _on_open_web(state: TuiState) -> None:
     entries = state.time_entry_tab.entries
-    if not entries:
+    if not entries or _in_summary(state):
         return
     te = entries[state.time_entry_tab.cursor]
     issue_id = (te.get("issue") or {}).get("id")
@@ -380,6 +511,7 @@ _HELP_LINES: list[tuple[str, str]] = [
     ("  u", messages.tui_help_time_entry_update),
     ("  D", messages.tui_help_time_entry_delete),
     ("  v", messages.tui_help_time_entry_open_web),
+    ("  V", messages.tui_help_time_entry_toggle_summary),
     ("  R", messages.tui_help_reload),
     (messages.tui_help_section_other, ""),
     ("  ?", messages.tui_help_show_or_close),
@@ -407,6 +539,7 @@ TIME_ENTRY_TAB = TabView(
     on_resize=_on_resize,
     on_action_key=_on_action_key,
     on_search=_on_search,
-    get_cursor_y=lambda state: state.time_entry_tab.cursor,
+    # 集計ビューは表示側で先頭行をずらすので、カーソルは常に先頭に置く
+    get_cursor_y=lambda state: 0 if _in_summary(state) else state.time_entry_tab.cursor,
     help_lines=_HELP_LINES,
 )

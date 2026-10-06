@@ -556,7 +556,11 @@ class Ja(MessagesProto):
     )
     tui_status_hint_time_entries = (
         " {page_label}  jk:移動 /:検索 f:フィルタ p:プロジェクト"
-        " c:作成 u:更新 v:web ?:ヘルプ q:終了 "
+        " c:作成 u:更新 v:web V:集計 ?:ヘルプ q:終了 "
+    )
+    tui_status_hint_time_entry_summary = (
+        " 集計  jk:スクロール f:フィルタ p:プロジェクト R:再読込"
+        " V:一覧に戻る ?:ヘルプ q:終了 "
     )
     tui_status_search_active = "/{query} Esc:解除"
     tui_flash_reloaded = "再読込しました"
@@ -605,6 +609,8 @@ class Ja(MessagesProto):
     tui_time_entry_no_entries = "作業時間が見つかりません"
     tui_time_entry_loading = "(作業時間を読み込み中...)"
     tui_time_entry_load_failed = "作業時間の取得に失敗しました: {error}"
+    tui_time_entry_summary_loading = "(作業時間を集計中...)"
+    tui_time_entry_summary_total = "合計 {hours}h ({count} 件)"
     tui_time_entry_delete_failed = "作業時間の削除に失敗しました: {error}"
     tui_time_entry_delete_missing = "作業時間が見つかりません: {id}"
     tui_time_entry_delete_prompt = "削除しますか? {summary} [y/N]"
@@ -1134,3 +1140,4 @@ class Ja(MessagesProto):
     tui_help_time_entry_update = "選択した時間記録を更新"
     tui_help_time_entry_delete = "選択した時間記録を削除 (y/Y で確定)"
     tui_help_time_entry_open_web = "選択行のイシューを web で開く"
+    tui_help_time_entry_toggle_summary = "合計と日付ごとの集計ビューに切替 / 一覧に戻る"

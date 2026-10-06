@@ -4,6 +4,7 @@ import pytest
 import requests
 
 from redi.api.time_entry import TimeEntry, TimeEntryNotFoundException
+from redi.i18n import messages
 from redi.tui.state import TuiState
 from redi.tui.time_entry import time_entry_tab
 
@@ -329,3 +330,133 @@ class TestTimeEntryResize:
 
         assert state.time_entry_tab.entries == old_entries
         assert state.time_entry_tab.error is None
+
+
+def _summary_entries() -> list[TimeEntry]:
+    return cast(
+        list[TimeEntry],
+        [
+            {"id": 98, "spent_on": "2026-10-07", "hours": 0.5, "issue": {"id": 342}},
+            {"id": 97, "spent_on": "2026-10-07", "hours": 3.0, "issue": {"id": 325}},
+            {
+                "id": 96,
+                "spent_on": "2026-10-06",
+                "hours": 4.0,
+                "project": {"id": 1, "name": "redi"},
+            },
+        ],
+    )
+
+
+@pytest.fixture
+def stub_summary_fetch(monkeypatch):
+    """全件取得を固定の 3 件に差し替え、呼び出し条件を記録する。"""
+    calls: list[dict] = []
+
+    def fake_fetch_all(project_id, user_id):
+        calls.append({"project_id": project_id, "user_id": user_id})
+        return _summary_entries()
+
+    monkeypatch.setattr(time_entry_tab.time_entry_service, "fetch_all", fake_fetch_all)
+    monkeypatch.setattr(
+        time_entry_tab.time_entry_service,
+        "fetch_issue_subjects",
+        lambda entries: {342: "config update", 325: "API 取得を非同期化"},
+    )
+    return calls
+
+
+_TOTAL_LINE = messages.tui_time_entry_summary_total.format(hours="7.5", count=3)
+
+
+def _list_text(state: TuiState) -> str:
+    return "".join(text for _, text, *_ in time_entry_tab._render_list(state))
+
+
+class TestToggleSummary:
+    """toggle_summary() は一覧と、合計・日付ごとの集計ビューを切り替える"""
+
+    def test_shows_total_and_tree_by_date(self, stub_summary_fetch):
+        """合計と、日付ごとの合計の下にその日の作業時間を並べたツリーを表示する"""
+        state = TuiState()
+
+        time_entry_tab.toggle_summary(state)
+
+        assert _list_text(state).splitlines() == [
+            _TOTAL_LINE,
+            "2026-10-07  3.5h",
+            "    #98  0.5h  #342 config update",
+            "    #97  3.0h  #325 API 取得を非同期化",
+            "2026-10-06  4.0h",
+            "    #96  4.0h  redi",
+        ]
+
+    def test_uses_same_conditions_as_list(self, stub_summary_fetch):
+        """集計は一覧と同じプロジェクト・ユーザーフィルタで全件を取る"""
+        state = TuiState()
+        state.project_id = "reditest"
+        state.time_entry_tab.filter.user_id = "42"
+
+        time_entry_tab.toggle_summary(state)
+
+        assert stub_summary_fetch == [{"project_id": "reditest", "user_id": "42"}]
+
+    def test_toggle_again_returns_to_list(self, stub_summary_fetch):
+        """もう一度切り替えると一覧に戻る"""
+        state = TuiState()
+        state.time_entry_tab.loaded = True
+
+        time_entry_tab.toggle_summary(state)
+        time_entry_tab.toggle_summary(state)
+
+        assert state.time_entry_tab.summary.show is False
+        assert _list_text(state) == messages.tui_time_entry_no_entries
+
+    def test_fetch_failure_shows_error(self, monkeypatch):
+        """取得に失敗したら集計ビューに理由を出す"""
+
+        def boom(project_id, user_id):
+            raise requests.exceptions.ConnectionError("down")
+
+        monkeypatch.setattr(time_entry_tab.time_entry_service, "fetch_all", boom)
+        state = TuiState()
+
+        time_entry_tab.toggle_summary(state)
+
+        assert "down" in _list_text(state)
+
+
+class TestSummaryView:
+    """集計ビューを表示中の操作"""
+
+    def test_jk_scrolls_lines(self, stub_summary_fetch):
+        """j / k は表示の先頭行をずらす"""
+        state = TuiState()
+        time_entry_tab.toggle_summary(state)
+
+        time_entry_tab._on_down(state)
+
+        assert _list_text(state).splitlines()[0] == "2026-10-07  3.5h"
+
+        time_entry_tab._on_up(state)
+
+        assert _list_text(state).splitlines()[0] == _TOTAL_LINE
+
+    def test_row_actions_are_disabled(self, stub_summary_fetch):
+        """選択行が見えないので、更新・作成・削除は効かない"""
+        state = TuiState()
+        state.time_entry_tab.entries = _summary_entries()
+        time_entry_tab.toggle_summary(state)
+
+        assert time_entry_tab._on_action_key(state, "u") is None
+        assert time_entry_tab._on_action_key(state, "c") is None
+        assert time_entry_tab.request_delete(state) is None
+
+    def test_reload_fetches_summary_again(self, stub_summary_fetch):
+        """R で集計を取り直す"""
+        state = TuiState()
+        time_entry_tab.toggle_summary(state)
+
+        time_entry_tab._on_reload(state)
+
+        assert len(stub_summary_fetch) == 2
