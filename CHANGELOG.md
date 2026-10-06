@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.0.85](https://github.com/kawagh/redi/compare/0.0.84...0.0.85) (2026-10-06)
+
+- build(deps-dev): bump ruff from 0.16.6 to 0.16.7 ([#604](https://github.com/kawagh/redi/pull/604))
+- refactor: 必須キー author / project の冗長な存在判定を外す ([#605](https://github.com/kawagh/redi/pull/605))
+- refactor: CLAUDE.md を削除し、AGENTS.md のネイティブ読み込みに統一 ([#606](https://github.com/kawagh/redi/pull/606))
+- build(deps-dev): bump ty from 0.0.78 to 0.0.81 ([#603](https://github.com/kawagh/redi/pull/603))
+- build(deps): bump wcwidth from 0.8.3 to 0.8.4 ([#610](https://github.com/kawagh/redi/pull/610))
+- build(deps-dev): bump git-cliff from 2.13.1 to 2.14.2 ([#611](https://github.com/kawagh/redi/pull/611))
+- build(deps-dev): bump ruff from 0.16.7 to 0.16.8 ([#609](https://github.com/kawagh/redi/pull/609))
+- fix(tui): ty 0.0.82 の型エラーを解消する ([#613](https://github.com/kawagh/redi/pull/613))
+- build(deps-dev): bump ruff from 0.16.8 to 0.16.9 ([#616](https://github.com/kawagh/redi/pull/616))
+- build(deps): bump wcwidth from 0.8.4 to 0.9.1 ([#614](https://github.com/kawagh/redi/pull/614))
+- build(deps-dev): bump ty from 0.0.82 to 0.0.84 ([#615](https://github.com/kawagh/redi/pull/615))
+- feat(config): config update の project_id / wiki_project_id をプロジェクト一覧から選べるようにする ([#618](https://github.com/kawagh/redi/pull/618))
+- feat: プロジェクト一覧から選んだ project_id / wiki_project_id を identifier で保存する ([#620](https://github.com/kawagh/redi/pull/620))
+
 ## [0.0.84](https://github.com/kawagh/redi/compare/0.0.83...0.0.84) (2026-09-15)
 
 - feat(cli): news delete の確認を yes/No からニュース ID の打ち直しにする ([#597](https://github.com/kawagh/redi/pull/597))
