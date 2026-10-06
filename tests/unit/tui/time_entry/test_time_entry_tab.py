@@ -475,7 +475,7 @@ class TestSummaryView:
         assert time_entry_tab.TIME_ENTRY_TAB.get_cursor_y(state) == 5
 
     def test_row_actions_are_disabled(self, stub_summary_fetch):
-        """選択行が見えないので、更新・作成・削除は効かない"""
+        """集計ビューのカーソルは見るためのもので、更新・作成・削除は効かない"""
         state = TuiState()
         state.time_entry_tab.entries = _summary_entries()
         time_entry_tab.toggle_summary(state)

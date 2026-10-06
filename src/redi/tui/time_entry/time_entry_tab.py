@@ -261,7 +261,7 @@ def reload_with_filter(state: TuiState) -> None:
 
 
 def _on_action_key(state: TuiState, key: str) -> TuiResult | None:
-    # 集計ビューには選択行が無いので、行を対象にする操作は効かせない
+    # 集計ビューのカーソルは見るためのもので、一覧の行を対象にする操作は効かせない
     if _in_summary(state):
         return None
     if key == "c":
@@ -357,7 +357,7 @@ def _on_search(state: TuiState, query: str, forward: bool = True) -> None:
 def request_delete(state: TuiState) -> str | None:
     """カーソル行の削除確認プロンプトを返す。対象がなければ None。
 
-    集計ビューでは選択行が見えないので削除させない。
+    集計ビューでは一覧の選択行が見えないので削除させない。
     """
     entries = state.time_entry_tab.entries
     if not entries or _in_summary(state):
