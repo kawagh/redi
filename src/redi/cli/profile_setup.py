@@ -1,7 +1,8 @@
 """プロファイル作成の対話部品。
 
 `redi init` と `redi config create` が同じ手順(URL/APIキー入力 → 接続確認 →
-プロジェクト選択)を踏むため、両者から共有する。
+プロジェクト選択)を踏むため、両者から共有する。プロジェクト選択は
+`redi config update` からも使う。
 """
 
 import sys
@@ -14,7 +15,7 @@ from redi.api.me import MyAccount, fetch_my_account
 from redi.api.project import Project, fetch_projects
 from redi.cli.interactive import prompt, raise_on_cancel
 from redi.cli.picker import inline_choice
-from redi.cli.validator import UrlValidator
+from redi.cli.validator import RequiredValidator, UrlValidator
 from redi.config import Profile
 from redi.i18n import MessagesProto
 from redi.output import eprint
@@ -50,14 +51,46 @@ def _fetch_projects(
 
 
 def _select_project_id(
-    prompt_message: str, projects: list[Project], messages: MessagesProto
+    prompt_message: str,
+    projects: list[Project],
+    messages: MessagesProto,
+    default: str | None = None,
 ) -> str:
     options: list[tuple[str, str]] = [
         (str(p["id"]), f"{p['id']} {p['name']}")
         for p in sorted(projects, key=lambda p: p["id"], reverse=True)
     ]
     with raise_on_cancel(messages.canceled):
-        return inline_choice(prompt_message, options)
+        return inline_choice(prompt_message, options, default=default)
+
+
+def fetch_project_choices(
+    url: str | None, api_key: str | None, messages: MessagesProto
+) -> list[Project]:
+    """渡された接続情報でプロジェクト一覧を取る。
+
+    default_profile 以外のプロファイルを更新する場合もあるため、グローバルの
+    client は使わない。接続情報が揃わない場合や取得に失敗した場合は空を返す。
+    """
+    if not (url and api_key):
+        return []
+    return _fetch_projects(RedmineClient(url, api_key), messages)
+
+
+def select_or_prompt_project_id(
+    select_message: str,
+    input_message: str,
+    projects: list[Project],
+    current: str | None,
+    messages: MessagesProto,
+) -> str:
+    """プロジェクト一覧から選ばせる。一覧が空なら ID を自由入力させる。"""
+    if projects:
+        return _select_project_id(select_message, projects, messages, default=current)
+    with raise_on_cancel(messages.canceled):
+        return prompt(
+            input_message, default=current or "", validator=RequiredValidator()
+        ).strip()
 
 
 def _prompt_credentials(current: Profile, messages: MessagesProto) -> tuple[str, str]:
