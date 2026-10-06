@@ -5,7 +5,11 @@ from redi.cli.alias import resolve_alias
 from redi.cli.confirm import confirm_delete
 from redi.cli.interactive import prompt, raise_on_cancel
 from redi.cli.picker import inline_checkbox, inline_choice, inline_choice_with_action
-from redi.cli.profile_setup import prompt_connection_profile
+from redi.cli.profile_setup import (
+    fetch_project_choices,
+    prompt_connection_profile,
+    select_or_prompt_project_id,
+)
 from redi.cli.validator import ProfileNameValidator, RequiredValidator, UrlValidator
 from redi.config import (
     SUPPORTED_LANGUAGES,
@@ -214,18 +218,29 @@ def _interactive_fill_config_update_args(
                 validator=RequiredValidator(),
                 is_password=True,
             ).strip()
-        if "project_id" in selected:
-            args.project_id = prompt(
-                messages.prompt_default_project_id,
-                default=current.default_project_id or "",
-                validator=RequiredValidator(),
-            ).strip()
-        if "wiki_project_id" in selected:
-            args.wiki_project_id = prompt(
-                messages.prompt_wiki_project_id,
-                default=current.wiki_project_id or "",
-                validator=RequiredValidator(),
-            ).strip()
+        if "project_id" in selected or "wiki_project_id" in selected:
+            # 同じ操作で接続情報も変えた場合は、新しい接続先の一覧を出す
+            projects = fetch_project_choices(
+                args.url or current.redmine_url,
+                args.api_key or current.redmine_api_key,
+                messages,
+            )
+            if "project_id" in selected:
+                args.project_id = select_or_prompt_project_id(
+                    messages.prompt_select_default_project,
+                    messages.prompt_default_project_id,
+                    projects,
+                    current.default_project_id,
+                    messages,
+                )
+            if "wiki_project_id" in selected:
+                args.wiki_project_id = select_or_prompt_project_id(
+                    messages.prompt_select_wiki_project,
+                    messages.prompt_wiki_project_id,
+                    projects,
+                    current.wiki_project_id,
+                    messages,
+                )
         if "editor" in selected:
             args.editor = prompt(
                 messages.prompt_editor,

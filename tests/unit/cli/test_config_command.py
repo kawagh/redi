@@ -309,6 +309,82 @@ class TestInteractiveFillConfigUpdateArgs:
         assert args.default_profile is None
         assert args.editor == "vim"
 
+    def test_project_choices_use_updated_credentials(self, monkeypatch):
+        """同じ操作で接続情報も変えた場合は、新しい接続先のプロジェクト一覧を出す"""
+        monkeypatch.setattr(
+            config_command,
+            "read_profile",
+            lambda _: config.Profile(
+                redmine_url="http://old.example.com",
+                redmine_api_key="old-key",
+                default_project_id="1",
+            ),
+        )
+        monkeypatch.setattr(config_command, "get_default_profile", lambda: "main")
+        monkeypatch.setattr(
+            config_command, "inline_checkbox", lambda *_: ["url", "project_id"]
+        )
+        monkeypatch.setattr(
+            config_command, "prompt", lambda *_, **__: "http://new.example.com"
+        )
+        used: list[tuple[str | None, str | None]] = []
+
+        def fake_fetch(url, api_key, _messages):
+            used.append((url, api_key))
+            return [{"id": 2, "name": "p"}]
+
+        monkeypatch.setattr(config_command, "fetch_project_choices", fake_fetch)
+        monkeypatch.setattr(
+            config_command,
+            "select_or_prompt_project_id",
+            lambda _s, _i, projects, current, _m: str(projects[0]["id"]),
+        )
+        args = argparse.Namespace(
+            default_profile=None,
+            profile_name=None,
+            url=None,
+            api_key=None,
+            project_id=None,
+        )
+
+        assert config_command._interactive_fill_config_update_args(args, "sub")
+
+        assert used == [("http://new.example.com", "old-key")]
+        assert args.project_id == "2"
+
+    def test_project_choices_fetched_once(self, monkeypatch):
+        """project_id と wiki_project_id を両方選んでも一覧の取得は 1 回にする"""
+        monkeypatch.setattr(config_command, "read_profile", lambda _: config.Profile())
+        monkeypatch.setattr(config_command, "get_default_profile", lambda: "main")
+        monkeypatch.setattr(
+            config_command,
+            "inline_checkbox",
+            lambda *_: ["project_id", "wiki_project_id"],
+        )
+        fetched: list[None] = []
+
+        def fake_fetch(*_):
+            fetched.append(None)
+            return []
+
+        monkeypatch.setattr(config_command, "fetch_project_choices", fake_fetch)
+        monkeypatch.setattr(
+            config_command, "select_or_prompt_project_id", lambda *_: "5"
+        )
+        args = argparse.Namespace(
+            default_profile=None,
+            profile_name=None,
+            url=None,
+            api_key=None,
+            project_id=None,
+            wiki_project_id=None,
+        )
+
+        assert config_command._interactive_fill_config_update_args(args, "sub")
+
+        assert len(fetched) == 1
+        assert (args.project_id, args.wiki_project_id) == ("5", "5")
+
 
 class TestUpdateFieldOptions:
     """`config update` の更新項目の選択肢に現在値を添える"""
