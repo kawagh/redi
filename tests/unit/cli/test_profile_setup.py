@@ -43,9 +43,9 @@ class TestPromptConnectionProfile:
         monkeypatch.setattr(
             profile_setup,
             "_fetch_projects",
-            lambda *_: [{"id": 2, "name": "wiki"}],
+            lambda *_: [{"id": 2, "name": "wiki", "identifier": "wiki"}],
         )
-        monkeypatch.setattr(profile_setup, "_select_project_id", lambda *_: "2")
+        monkeypatch.setattr(profile_setup, "_select_project_id", lambda *_: "wiki")
         current = Profile(
             redmine_url="http://example.com",
             redmine_api_key="k",
@@ -55,7 +55,7 @@ class TestPromptConnectionProfile:
         profile = profile_setup.prompt_connection_profile(current, En())
 
         assert profile.default_project_id == "1"
-        assert profile.wiki_project_id == "2"
+        assert profile.wiki_project_id == "wiki"
 
     def test_no_projects(self, monkeypatch):
         """プロジェクトが取得できなければ project_id は未設定のままにする"""
@@ -104,6 +104,70 @@ class TestFetchProjectChoices:
         assert profile_setup.fetch_project_choices(url, api_key, En()) == []
 
 
+PROJECTS = cast(
+    "list[Project]",
+    [
+        {"id": 1, "name": "A", "identifier": "alpha"},
+        {"id": 2, "name": "B", "identifier": "beta"},
+    ],
+)
+
+
+class TestSelectProjectId:
+    """プロジェクト一覧から選ばせて identifier を保存する"""
+
+    def _capture_choice(self, monkeypatch) -> dict:
+        captured: dict = {}
+
+        def fake_inline_choice(_message, options, default=None):
+            captured["options"] = options
+            captured["default"] = default
+            return options[0][0]
+
+        monkeypatch.setattr(profile_setup, "inline_choice", fake_inline_choice)
+        return captured
+
+    def test_returns_identifier(self, monkeypatch):
+        """選んだプロジェクトの数値 id ではなく identifier を返す"""
+        self._capture_choice(monkeypatch)
+
+        assert profile_setup._select_project_id("select", PROJECTS, En()) == "beta"
+
+    def test_label_shows_identifier(self, monkeypatch):
+        """一覧には保存される identifier を表示する"""
+        captured = self._capture_choice(monkeypatch)
+
+        profile_setup._select_project_id("select", PROJECTS, En())
+
+        assert ("beta", "2 B (beta)") in captured["options"]
+
+    @pytest.mark.parametrize("current", ["1", "alpha"])
+    def test_cursor_on_current(self, monkeypatch, current):
+        """現在値が数値 id でも identifier でも、そのプロジェクトにカーソルを合わせる"""
+        captured = self._capture_choice(monkeypatch)
+
+        profile_setup._select_project_id("select", PROJECTS, En(), default=current)
+
+        assert captured["default"] == "alpha"
+
+    def test_prompt_connection_profile_saves_identifier(self, monkeypatch):
+        """init / config create でも identifier を保存する"""
+        self._capture_choice(monkeypatch)
+        monkeypatch.setattr(
+            profile_setup,
+            "_verify_connection",
+            lambda *_: {"login": "alice"},
+        )
+        monkeypatch.setattr(profile_setup, "_fetch_projects", lambda *_: PROJECTS)
+
+        profile = profile_setup.prompt_connection_profile(
+            Profile(redmine_url="http://example.com", redmine_api_key="k"), En()
+        )
+
+        assert profile.default_project_id == "beta"
+        assert profile.wiki_project_id == "beta"
+
+
 class TestSelectOrPromptProjectId:
     """プロジェクト一覧から選ばせ、一覧が無ければ自由入力させる"""
 
@@ -113,7 +177,7 @@ class TestSelectOrPromptProjectId:
 
         def fake_inline_choice(_message, _options, default=None):
             calls.append(default)
-            return "2"
+            return "beta"
 
         monkeypatch.setattr(profile_setup, "inline_choice", fake_inline_choice)
         monkeypatch.setattr(
@@ -121,15 +185,11 @@ class TestSelectOrPromptProjectId:
         )
 
         project_id = profile_setup.select_or_prompt_project_id(
-            "select",
-            "input",
-            cast("list[Project]", [{"id": 1, "name": "a"}, {"id": 2, "name": "b"}]),
-            "1",
-            En(),
+            "select", "input", PROJECTS, "alpha", En()
         )
 
-        assert project_id == "2"
-        assert calls == ["1"]
+        assert project_id == "beta"
+        assert calls == ["alpha"]
 
     def test_prompts_without_projects(self, monkeypatch):
         """一覧が取れなかった場合は ID を自由入力させる"""

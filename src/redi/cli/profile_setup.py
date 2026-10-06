@@ -56,12 +56,33 @@ def _select_project_id(
     messages: MessagesProto,
     default: str | None = None,
 ) -> str:
+    """プロジェクトを選ばせて identifier を返す。
+
+    identifier は作成後に変更できず、config を読んだときにどのプロジェクトか
+    分かりやすいので数値 id ではなくこちらを保存する。数値 id で保存済みの
+    設定でも現在値にカーソルが合うよう、default は id と identifier の両方で照合する。
+    """
     options: list[tuple[str, str]] = [
-        (str(p["id"]), f"{p['id']} {p['name']}")
+        (p["identifier"], f"{p['id']} {p['name']} ({p['identifier']})")
         for p in sorted(projects, key=lambda p: p["id"], reverse=True)
     ]
+    current = _find_project(projects, default)
     with raise_on_cancel(messages.canceled):
-        return inline_choice(prompt_message, options, default=default)
+        return inline_choice(
+            prompt_message,
+            options,
+            default=current["identifier"] if current else None,
+        )
+
+
+def _find_project(projects: list[Project], value: str | None) -> Project | None:
+    """id または identifier が value に一致するプロジェクトを返す。"""
+    if not value:
+        return None
+    return next(
+        (p for p in projects if str(p["id"]) == value or p["identifier"] == value),
+        None,
+    )
 
 
 def fetch_project_choices(
@@ -127,14 +148,14 @@ def _select_project_ids(
         print(messages.no_project_skip_project_id)
         return default_project_id, wiki_project_id
 
-    projects_by_id = {str(p["id"]): p for p in projects}
+    projects_by_identifier = {p["identifier"]: p for p in projects}
     if not default_project_id:
         default_project_id = _select_project_id(
             messages.prompt_select_default_project, projects, messages
         )
         print(
             messages.default_project_label.format(
-                name=projects_by_id[default_project_id]["name"]
+                name=projects_by_identifier[default_project_id]["name"]
             )
         )
     if not wiki_project_id:
@@ -143,7 +164,7 @@ def _select_project_ids(
         )
         print(
             messages.wiki_project_label.format(
-                name=projects_by_id[wiki_project_id]["name"]
+                name=projects_by_identifier[wiki_project_id]["name"]
             )
         )
     return default_project_id, wiki_project_id
