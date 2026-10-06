@@ -719,6 +719,7 @@ class MessagesProto(Protocol):
     tui_status_hint_wiki: str
     tui_status_hint_time_entries: str
     """{page_label}"""
+    tui_status_hint_time_entry_summary: str
     # 検索確定後もクエリが残っていることをステータスバーに出す
     tui_status_search_active: str
     """{query}"""
@@ -770,6 +771,9 @@ class MessagesProto(Protocol):
     tui_time_entry_loading: str
     tui_time_entry_load_failed: str
     """{error}"""
+    tui_time_entry_summary_loading: str
+    tui_time_entry_summary_total: str
+    """{hours} {count}"""
     tui_time_entry_delete_failed: str
     """{error}"""
     tui_time_entry_delete_missing: str
@@ -1277,3 +1281,4 @@ class MessagesProto(Protocol):
     tui_help_time_entry_update: str
     tui_help_time_entry_delete: str
     tui_help_time_entry_open_web: str
+    tui_help_time_entry_toggle_summary: str
