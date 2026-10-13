@@ -64,5 +64,5 @@ def raise_on_cancel(notice: str | None = None) -> Iterator[None]:
     """
     try:
         yield
-    except (KeyboardInterrupt, EOFError):
+    except KeyboardInterrupt, EOFError:
         raise InputCanceledException(notice or messages.canceled) from None
