@@ -37,7 +37,7 @@ def load(key: str, ttl: int = DEFAULT_TTL) -> list[dict] | None:
         if time.time() - data["timestamp"] > ttl:
             return None
         return data["value"]
-    except (json.JSONDecodeError, KeyError):
+    except json.JSONDecodeError, KeyError:
         return None
 
 

@@ -5,7 +5,7 @@ This file provides guidance to Agents when working with code in this repository.
 ## Project
 
 - `redi` は Redmine REST API を実行する Python 製 CLI/TUI
-- Python 3.13+
+- Python 3.15+
 - uv 管理
 - PyPIでは`redtile`として配布されている
 

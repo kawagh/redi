@@ -6,13 +6,13 @@ readme = "README.md"
 authors = [
     { name = "kawagh", email = "kawagh.dev@gmail.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.15"
 license = "MIT"
 license-files = ["LICENSE"]
 keywords = ["redmine"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.15",
 ]
 dependencies = [
     "argcomplete>=3.6.3",
@@ -37,12 +37,16 @@ dev = [
     "git-cliff>=2.13.1",
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
-    "ruff>=0.15.9",
+    "ruff>=0.17.0",
     "ty>=0.0.31",
 ]
 
 [tool.uv.build-backend]
 module-name = "redi"
+
+[tool.ruff]
+# plugin の hook は uv ではなく利用者のシステムの python3 で動くので、古い構文に留める
+per-file-target-version = { "plugins/**/*.py" = "py310" }
 
 [tool.ruff.lint]
 ignore = [
