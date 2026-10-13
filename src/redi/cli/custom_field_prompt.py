@@ -21,7 +21,7 @@ from redi.i18n import messages
 from redi.service import version_service
 
 # attachment 型のような未対応フィールドで「スキップしてブラウザでの編集に倒す」ことを示すセンチネル
-SKIP_UNSUPPORTED_FIELD = object()
+SKIP_UNSUPPORTED_FIELD = sentinel("SKIP_UNSUPPORTED_FIELD")
 
 
 def _choose_from_options(

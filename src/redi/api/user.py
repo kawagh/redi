@@ -39,7 +39,9 @@ class User(TypedDict):
 
 
 # GET /users.json の status パラメータ。Redmine が定める数値との対応。
-USER_STATUS: dict[str, int] = {"active": 1, "registered": 2, "locked": 3}
+USER_STATUS: frozendict[str, int] = frozendict(
+    {"active": 1, "registered": 2, "locked": 3}
+)
 
 # 一覧を1回のリクエストで取る件数
 USERS_PAGE_LIMIT = PAGE_LIMIT_MAX

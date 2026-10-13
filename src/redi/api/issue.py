@@ -1,7 +1,3 @@
-# Issue / IssueStatus / IssueCustomField / Journal / JournalDetail が
-# 自分より下で定義される TypedDict を参照しているため、注釈の評価を遅らせる
-from __future__ import annotations
-
 from typing import Literal, NotRequired, TypedDict, cast, get_args
 
 from redi.api.client import client

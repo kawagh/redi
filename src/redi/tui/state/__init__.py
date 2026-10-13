@@ -1,6 +1,3 @@
-# carry_over() が自分自身の型 TuiState を返すため、注釈の評価を遅らせる
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import Literal
 
