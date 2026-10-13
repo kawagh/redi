@@ -145,6 +145,8 @@ class MessagesProto(Protocol):
     """ニュースが見つからない。{id}"""
     no_search_results: str
     """検索結果が見つからない"""
+    searching: str
+    """検索の応答待ちに出すローディング表示"""
     issue_not_found_simple: str
     """TUI 等で短く「イシューが見つかりません」"""
     no_versions_available: str

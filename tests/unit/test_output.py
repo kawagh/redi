@@ -1,8 +1,10 @@
 """標準出力・標準エラー出力の使い分けと TSV 出力を守るテスト。"""
 
+import sys
+
 import pytest
 
-from redi.output import eprint, print_tsv, tsv_cell, tsv_ref
+from redi.output import eprint, loading, print_tsv, tsv_cell, tsv_ref
 
 
 class TestEprint:
@@ -19,6 +21,50 @@ class TestEprint:
         eprint("boom")
 
         assert capsys.readouterr().out == ""
+
+
+class TestLoading:
+    """loading() は応答待ちの間だけ標準エラー出力に表示を出す"""
+
+    def test_silent_when_stderr_is_not_tty(self, monkeypatch, capsys):
+        """パイプやエージェント・CI の実行では何も出さない"""
+        monkeypatch.setattr(sys.stderr, "isatty", lambda: False)
+
+        with loading("Searching..."):
+            pass
+
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert captured.err == ""
+
+    def test_shows_message_on_stderr_when_tty(self, monkeypatch, capsys):
+        """TTY なら標準エラー出力にメッセージを出し、標準出力には出さない"""
+        monkeypatch.setattr(sys.stderr, "isatty", lambda: True)
+
+        with loading("Searching..."):
+            pass
+
+        captured = capsys.readouterr()
+        assert "Searching..." in captured.err
+        assert captured.out == ""
+
+    def test_erases_line_after_block(self, monkeypatch, capsys):
+        """処理が終わったら表示の行を消し、後続の出力に残さない"""
+        monkeypatch.setattr(sys.stderr, "isatty", lambda: True)
+
+        with loading("Searching..."):
+            pass
+
+        assert capsys.readouterr().err.endswith("\r\033[K")
+
+    def test_erases_line_when_block_raises(self, monkeypatch, capsys):
+        """処理が例外で抜けても表示を消す (後続のエラーメッセージに混ざらない)"""
+        monkeypatch.setattr(sys.stderr, "isatty", lambda: True)
+
+        with pytest.raises(RuntimeError), loading("Searching..."):
+            raise RuntimeError
+
+        assert capsys.readouterr().err.endswith("\r\033[K")
 
 
 class TestTsvCell:

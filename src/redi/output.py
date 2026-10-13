@@ -1,6 +1,9 @@
+import itertools
 import re
 import sys
-from collections.abc import Iterable, Mapping, Sequence
+import threading
+from collections.abc import Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from typing import Any
 
 
@@ -8,6 +11,43 @@ def eprint(*args: Any, **kwargs: Any) -> None:
     """print と同じ使い方で標準エラー出力に書く。"""
     kwargs["file"] = sys.stderr
     print(*args, **kwargs)
+
+
+_SPINNER_FRAMES = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+_SPINNER_INTERVAL_SECONDS = 0.1
+# カーソル位置から行末までを消す
+_ERASE_LINE = "\r\033[K"
+
+
+@contextmanager
+def loading(message: str) -> Iterator[None]:
+    """ブロック内の処理を待つ間、標準エラー出力にスピナーを表示する。
+
+    - 標準エラー出力が TTY でなければ何も出さない (パイプやエージェント・CI の出力を汚さない)
+    - 処理が終わったらスピナーの行を消し、後続の出力の見た目を変えない
+    """
+    if not sys.stderr.isatty():
+        yield
+        return
+    stop = threading.Event()
+
+    def spin() -> None:
+        # 通信はメインスレッドを止めるので、描画は別スレッドで回す
+        for frame in itertools.cycle(_SPINNER_FRAMES):
+            sys.stderr.write(f"\r{frame} {message}")
+            sys.stderr.flush()
+            if stop.wait(_SPINNER_INTERVAL_SECONDS):
+                break
+        sys.stderr.write(_ERASE_LINE)
+        sys.stderr.flush()
+
+    thread = threading.Thread(target=spin, daemon=True)
+    thread.start()
+    try:
+        yield
+    finally:
+        stop.set()
+        thread.join()
 
 
 # TSV は 1 レコード 1 行・1 フィールド 1 セルが前提なので、

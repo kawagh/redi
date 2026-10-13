@@ -91,6 +91,7 @@ class Ja(MessagesProto):
     available_ids = "指定できる値: {items}"
     news_not_found = "ニュースが見つかりません: {id}"
     no_search_results = "検索結果が見つかりませんでした"
+    searching = "検索中..."
     issue_not_found_simple = "イシューが見つかりません"
     no_versions_available = "選択可能なバージョンがありません"
     no_issues_available = "選択可能なイシューがありません"
