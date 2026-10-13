@@ -14,7 +14,7 @@ from redi.api.search import (
 )
 from redi.cli.shared_options import add_format_options, wants_json
 from redi.i18n import messages
-from redi.output import eprint
+from redi.output import eprint, loading
 
 
 def _validate_scope(scope: SearchScope | None, project_id: str | None) -> None:
@@ -93,18 +93,19 @@ def add_search_parser(
 def handle_search(args: argparse.Namespace) -> None:
     _validate_scope(args.scope, args.project_id)
     try:
-        data = search(
-            query=args.query,
-            limit=args.limit,
-            offset=args.offset,
-            project_id=args.project_id,
-            scope=args.scope,
-            all_words=args.all_words,
-            titles_only=args.titles_only,
-            open_issues=args.open_issues,
-            attachments=args.attachments,
-            types=args.type,
-        )
+        with loading(messages.searching):
+            data = search(
+                query=args.query,
+                limit=args.limit,
+                offset=args.offset,
+                project_id=args.project_id,
+                scope=args.scope,
+                all_words=args.all_words,
+                titles_only=args.titles_only,
+                open_issues=args.open_issues,
+                attachments=args.attachments,
+                types=args.type,
+            )
     except ProjectNotFoundException as e:
         eprint(messages.project_not_found.format(id=e.project_id))
         sys.exit(1)

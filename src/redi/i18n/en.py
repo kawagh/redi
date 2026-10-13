@@ -91,6 +91,7 @@ class En(MessagesProto):
     available_ids = "Valid values: {items}"
     news_not_found = "News not found: {id}"
     no_search_results = "No search results found"
+    searching = "Searching..."
     issue_not_found_simple = "Issue not found"
     no_versions_available = "No versions available"
     no_issues_available = "No issues available"
