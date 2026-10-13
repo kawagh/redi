@@ -27,6 +27,14 @@ I recommend installation via [uv](https://github.com/astral-sh/uv).
 uv tool install redtile  # name on PyPI is redtile, NOT redi
 ```
 
+redtile requires Python 3.15+.
+If `uv tool upgrade redtile` fails because the tool environment uses an older Python, upgrade with Python 3.15.
+uv downloads Python 3.15 if it is not installed.
+
+```sh
+uv tool upgrade redtile --python 3.15
+```
+
 ## Plugin (Agent Skill + Hook)
 
 `redmine-redi` makes coding agents (Claude Code, Codex) use `redi` for Redmine work.
