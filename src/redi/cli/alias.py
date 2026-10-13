@@ -1,12 +1,14 @@
-SUBCOMMAND_ALIASES: dict[str, str] = {
-    "v": "view",
-    "c": "create",
-    "u": "update",
-    "co": "comment",
-    "d": "delete",
-    "dl": "download",
-    "l": "list",
-}
+SUBCOMMAND_ALIASES: frozendict[str, str] = frozendict(
+    {
+        "v": "view",
+        "c": "create",
+        "u": "update",
+        "co": "comment",
+        "d": "delete",
+        "dl": "download",
+        "l": "list",
+    }
+)
 
 
 def resolve_alias(command: str | None) -> str | None:

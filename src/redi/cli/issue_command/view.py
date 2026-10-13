@@ -18,17 +18,19 @@ from redi.service import issue_service
 from redi.text_format import issue_meta_rows, render_meta_table
 
 # Redmine の関連は片側にだけ記録されるため、相手側から見た関連名に読み替える
-INVERSE_RELATION = {
-    "precedes": "follows",
-    "follows": "precedes",
-    "blocks": "blocked",
-    "blocked": "blocks",
-    "duplicates": "duplicated",
-    "duplicated": "duplicates",
-    "copied_to": "copied_from",
-    "copied_from": "copied_to",
-    "relates": "relates",
-}
+INVERSE_RELATION = frozendict(
+    {
+        "precedes": "follows",
+        "follows": "precedes",
+        "blocks": "blocked",
+        "blocked": "blocks",
+        "duplicates": "duplicated",
+        "duplicated": "duplicates",
+        "copied_to": "copied_from",
+        "copied_from": "copied_to",
+        "relates": "relates",
+    }
+)
 
 
 def _issue_tsv_row(issue: Issue) -> tuple[object, ...]:

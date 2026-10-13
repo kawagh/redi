@@ -5,8 +5,6 @@
 (prompt_toolkit はフラグメントの 3 要素目をクリック時に呼ぶ)。
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 

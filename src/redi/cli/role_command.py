@@ -1,7 +1,6 @@
 import argparse
 import json
 import sys
-from types import MappingProxyType
 from typing import assert_never
 
 from redi.api.role import fetch_role, fetch_roles
@@ -17,7 +16,7 @@ from redi.i18n import messages
 from redi.output import eprint, print_tsv
 from redi.service.role_service import CATEGORY_OTHER, group_permissions
 
-CATEGORY_LABELS = MappingProxyType(
+CATEGORY_LABELS = frozendict(
     {
         "project": messages.permission_category_project,
         "boards": messages.permission_category_boards,

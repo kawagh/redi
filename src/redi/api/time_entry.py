@@ -1,7 +1,3 @@
-# TimeEntry が自分より下で定義される TimeEntryIssueRef を参照しているため、
-# 注釈の評価を遅らせる
-from __future__ import annotations
-
 from typing import NotRequired, TypedDict, cast
 
 from redi.api.client import client
