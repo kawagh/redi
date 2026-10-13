@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.86](https://github.com/kawagh/redi/compare/0.0.85...0.0.86) (2026-10-13)
+
+- build: Python 3.15 に移行する ([#625](https://github.com/kawagh/redi/pull/625))
+- refactor: Python 3.14 / 3.15 の機能でコードを整理する ([#627](https://github.com/kawagh/redi/pull/627))
+- docs: README の Install に Python 3.15 でのアップグレード手順を追記する ([#631](https://github.com/kawagh/redi/pull/631))
+- feat: redi search の応答待ちでローディングインジケータを表示する ([#629](https://github.com/kawagh/redi/pull/629))
+
 ## [0.0.85](https://github.com/kawagh/redi/compare/0.0.84...0.0.85) (2026-10-06)
 
 - build(deps-dev): bump ruff from 0.16.6 to 0.16.7 ([#604](https://github.com/kawagh/redi/pull/604))
