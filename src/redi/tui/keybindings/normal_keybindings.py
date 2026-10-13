@@ -23,6 +23,9 @@ from redi.tui.time_entry.filter_dialog import (
 from redi.tui.time_entry.time_entry_tab import (
     request_delete as time_entry_request_delete,
 )
+from redi.tui.time_entry.time_entry_tab import (
+    toggle_summary as time_entry_toggle_summary,
+)
 from redi.tui.wiki.delete_dialog import open_delete_dialog as open_wiki_delete_dialog
 from redi.tui.wiki.diff_dialog import open_diff_dialog as open_wiki_diff_dialog
 from redi.tui.wiki.version_dialog import open_version_dialog
@@ -148,6 +151,11 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
             clear_temporary_state(state)
             if target_id is not None:
                 TABS[state.tab].on_open_web_by_id(state, target_id)
+        elif state.tab == "time_entries":
+            # 数値を打たずに押した V は作業時間タブで集計 (Visualize) の切替に充てる
+            clear_temporary_state(state)
+            reset_preview_scroll(state)
+            time_entry_toggle_summary(state)
 
     for action_key in ("u", "c", "t"):
 
