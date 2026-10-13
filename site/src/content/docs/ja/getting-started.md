@@ -23,6 +23,14 @@ uv tool install redtile
 redi --version
 ```
 
+redtile には Python 3.15 以上が必要です。tool 環境の Python が古いために
+`uv tool upgrade redtile` が失敗する場合は、Python 3.15 を指定してアップグレードします。
+Python 3.15 が入っていなければ uv がダウンロードします。
+
+```sh
+uv tool upgrade redtile --python 3.15
+```
+
 ## 初期セットアップ
 
 ```sh
