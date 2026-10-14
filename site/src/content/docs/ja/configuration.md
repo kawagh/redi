@@ -79,6 +79,14 @@ export REDMINE_URL=https://redmine.example.com
 export REDMINE_API_KEY=<your_api_key>
 ```
 
+`redi` が読み書きする場所も環境変数で差し替えられます。自分の設定に触れてはいけない
+CI やテストで使います。
+
+| 変数 | 指すもの | 既定 |
+| --- | --- | --- |
+| `REDI_CONFIG_PATH` | `config.toml` ファイル | `~/.config/redi/config.toml` |
+| `REDI_CACHE_DIR` | キャッシュのディレクトリ | `~/.cache/redi` |
+
 ## シェル補完
 
 zsh の場合:

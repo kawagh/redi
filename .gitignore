@@ -12,3 +12,6 @@ wheels/
 .claude/worktrees
 .worktrees
 .coverage
+
+# E2E 専用の redi 設定・キャッシュ (script/init-redmine.sh)
+.e2e/

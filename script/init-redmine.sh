@@ -18,8 +18,16 @@ URL="http://localhost:${PORT}"
 ADMIN_PROFILE="sandbox_admin_${REDMINE_VERSION}"
 DEVELOPER_PROFILE="sandbox_developer_${REDMINE_VERSION}"
 
+# 設定とキャッシュを E2E 専用の場所に隔離する。
+# ユーザーのグローバル設定 (~/.config/redi/config.toml) の default_profile を
+# サンドボックスに書き換えてしまわないようにするため。
+# taskfile から渡っていればそちらを尊重する。
+E2E_DIR="$(cd "$(dirname "$0")/.." && pwd)/.e2e/${REDMINE_VERSION}"
+export REDI_CONFIG_PATH="${REDI_CONFIG_PATH:-${E2E_DIR}/config.toml}"
+export REDI_CACHE_DIR="${REDI_CACHE_DIR:-${E2E_DIR}/cache}"
+
 # 作り直した Redmine に対して古いキャッシュを参照しないよう消す
-rm -rf "$HOME/.cache/redi/localhost_${PORT}"
+rm -rf "${REDI_CACHE_DIR}/localhost_${PORT}"
 
 docker compose down "$SERVICE"
 docker compose up -d "$SERVICE"
@@ -102,6 +110,8 @@ DEVELOPER_API_KEY=$(echo "$API_KEYS_OUTPUT" | grep '^DEVELOPER_KEY=' | tail -1 |
 
 # profile作成がべき等でないので失敗するのを当座で防ぐ。
 redi config create "$ADMIN_PROFILE" --url "$URL" --api_key "$ADMIN_API_KEY" || true
+# 隔離された config に対する既定なので、ユーザーのグローバル設定には影響しない。
+# --profile を付けずに sandbox を叩けるようにするために設定する。
 redi config update --default_profile "$ADMIN_PROFILE"
 redi config update "$ADMIN_PROFILE" \
     --url "$URL" \
