@@ -1,5 +1,7 @@
 """通常モード (ダイアログを開いていない一覧操作中) のキーバインド。"""
 
+from collections.abc import Awaitable
+
 from prompt_toolkit.key_binding import KeyBindings
 
 from redi.i18n import messages
@@ -26,6 +28,12 @@ from redi.tui.time_entry.time_entry_tab import (
 from redi.tui.wiki.delete_dialog import open_delete_dialog as open_wiki_delete_dialog
 from redi.tui.wiki.diff_dialog import open_diff_dialog as open_wiki_diff_dialog
 from redi.tui.wiki.version_dialog import open_version_dialog
+
+
+async def _wait(result: Awaitable[None] | None) -> None:
+    """取得中も操作を止めないタブはコルーチンを返すので、その完了を待つ。"""
+    if result is not None:
+        await result
 
 
 def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
@@ -91,26 +99,26 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
 
     @kb.add("right", filter=normal_mode)
     @kb.add("l", filter=normal_mode)
-    def _(event):
+    async def _(event):
         clear_temporary_state(state)
         reset_preview_scroll(state)
-        TABS[state.tab].on_page_forward(state)
+        await _wait(TABS[state.tab].on_page_forward(state))
 
     @kb.add("left", filter=normal_mode)
-    def _(event):
+    async def _(event):
         clear_temporary_state(state)
         reset_preview_scroll(state)
-        TABS[state.tab].on_page_backward(state)
+        await _wait(TABS[state.tab].on_page_backward(state))
 
     @kb.add("h", filter=normal_mode)
-    def _(event):
+    async def _(event):
         # wiki タブはページ送りが無いので、h を版一覧 (history) に充てる
         clear_temporary_state(state)
         if state.tab == "wiki":
             open_version_dialog(state)
             return
         reset_preview_scroll(state)
-        TABS[state.tab].on_page_backward(state)
+        await _wait(TABS[state.tab].on_page_backward(state))
 
     @kb.add("c-e", filter=normal_mode)
     def _(event):
@@ -208,11 +216,14 @@ def register(kb: KeyBindings, state: TuiState, conditions: Conditions) -> None:
             open_wiki_diff_dialog(state)
 
     @kb.add("R", filter=normal_mode)
-    def _(event):
+    async def _(event):
         clear_temporary_state(state)
         reset_preview_scroll(state)
-        TABS[state.tab].on_reload(state)
-        state.flash_message = messages.tui_flash_reloaded
+        reloading = TABS[state.tab].on_reload(state)
+        if reloading is None:
+            state.flash_message = messages.tui_flash_reloaded
+        else:
+            await reloading
 
     @kb.add("q", filter=normal_mode)
     @kb.add("c-c", filter=normal_mode)

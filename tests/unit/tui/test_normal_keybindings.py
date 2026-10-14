@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
@@ -16,6 +18,13 @@ def _handler(kb: KeyBindings, keys: tuple):
     raise AssertionError(f"no active binding for {keys}")
 
 
+def _press(kb: KeyBindings, keys: tuple) -> None:
+    """キーを押したときのハンドラを最後まで実行する。async のハンドラは完了を待つ。"""
+    result = _handler(kb, keys)(None)
+    if asyncio.iscoroutine(result):
+        asyncio.run(result)
+
+
 def _kb(state: TuiState) -> KeyBindings:
     kb = KeyBindings()
     normal_keybindings.register(kb, state, build_conditions(state))
@@ -30,7 +39,7 @@ class TestEscapeClearsSearch:
         state = TuiState()
         state.search_query = "foo"
 
-        _handler(_kb(state), (Keys.Escape,))(None)
+        _press(_kb(state), (Keys.Escape,))
 
         assert state.search_query == ""
 
@@ -40,7 +49,7 @@ class TestEscapeClearsSearch:
         state.search_query = "foo"
         state.issue_tab.filter = IssueFilter(tracker_id="2", tracker_label="Feature")
 
-        _handler(_kb(state), (Keys.Escape,))(None)
+        _press(_kb(state), (Keys.Escape,))
 
         assert state.issue_tab.filter.tracker_id == "2"
 
@@ -53,7 +62,7 @@ class TestFindKey:
         state = TuiState()
         state.tab = "issues"
 
-        _handler(_kb(state), ("F",))(None)
+        _press(_kb(state), ("F",))
 
         assert state.issue_tab.find_dialog.show is True
 
@@ -62,7 +71,7 @@ class TestFindKey:
         state = TuiState()
         state.tab = "wiki"
 
-        _handler(_kb(state), ("F",))(None)
+        _press(_kb(state), ("F",))
 
         assert state.issue_tab.find_dialog.show is False
 
@@ -94,7 +103,7 @@ class TestWikiVersionKey:
         """wiki タブで h を押すと版選択ダイアログが開く"""
         state = self._wiki_state()
 
-        _handler(_kb(state), ("h",))(None)
+        _press(_kb(state), ("h",))
 
         assert state.wiki_tab.version_dialog.show is True
 
@@ -102,7 +111,7 @@ class TestWikiVersionKey:
         """wiki タブで d を押すと比較する版を選ぶダイアログが開く"""
         state = self._wiki_state()
 
-        _handler(_kb(state), ("d",))(None)
+        _press(_kb(state), ("d",))
 
         assert state.wiki_tab.diff_dialog.show is True
 
@@ -111,7 +120,7 @@ class TestWikiVersionKey:
         state = TuiState()
         state.tab = "issues"
 
-        _handler(_kb(state), ("h",))(None)
+        _press(_kb(state), ("h",))
 
         assert state.wiki_tab.version_dialog.show is False
 
