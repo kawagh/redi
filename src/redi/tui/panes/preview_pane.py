@@ -64,6 +64,8 @@ def build_preview_window(state: TuiState, conditions: Conditions) -> Window:
             lambda: render_preview_current(state),
             on_wheel=build_preview_wheel_handler(state, conditions),
             on_click=build_preview_click_handler(state, conditions),
+            # 折り返し込みで表示行を数える (issue_tab.sync_preview_scroll) ための実サイズ
+            on_size=state.apply_preview_size,
         ),
         wrap_lines=True,
         width=HALF,
