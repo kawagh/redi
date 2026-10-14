@@ -215,7 +215,7 @@ def add_wiki_parser(
         "view", aliases=["v"], help=messages.arg_help_wiki_view, parents=parents
     )
     w_view_parser.add_argument("page_title", help=messages.arg_help_wiki_page_title)
-    add_format_options(w_view_parser)
+    add_format_options(w_view_parser, postfix=True)
     w_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
