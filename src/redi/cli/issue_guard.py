@@ -5,7 +5,7 @@
 """
 
 import sys
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 
 from redi.api.issue import Issue, IssueNotFoundException
@@ -15,7 +15,7 @@ from redi.service import issue_service
 
 
 @contextmanager
-def exit_if_issue_not_found(issue_id: int) -> Iterator[None]:
+def exit_if_issue_not_found(issue_id: int) -> Generator[None]:
     """ブロック内で `IssueNotFoundException` が出たら見つからないと伝えて exit 1 する。
 
     取得を伴わない書き込み (コメント追加・削除・ウォッチャー追加) で使う。

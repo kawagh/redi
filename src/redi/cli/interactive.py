@@ -10,7 +10,7 @@ TUI ループが受けて元の画面に戻す (github#564)。
 """
 
 import sys
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
 
@@ -55,7 +55,7 @@ def prompt(message: str, **kwargs: Any) -> str:
 
 
 @contextmanager
-def raise_on_cancel(notice: str | None = None) -> Iterator[None]:
+def raise_on_cancel(notice: str | None = None) -> Generator[None]:
     """Ctrl-C / Ctrl-D を掴んで InputCanceledException に変換する。
 
     CLI から使うとエントリポイントで標準エラーに通知して exit 1 になる。

@@ -2,7 +2,7 @@ import itertools
 import re
 import sys
 import threading
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from contextlib import contextmanager
 from typing import Any
 
@@ -20,7 +20,7 @@ _ERASE_LINE = "\r\033[K"
 
 
 @contextmanager
-def loading(message: str) -> Iterator[None]:
+def loading(message: str) -> Generator[None]:
     """ブロック内の処理を待つ間、標準エラー出力にスピナーを表示する。
 
     - 標準エラー出力が TTY でなければ何も出さない (パイプやエージェント・CI の出力を汚さない)
