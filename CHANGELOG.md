@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.0.87](https://github.com/kawagh/redi/compare/0.0.86...0.0.87) (2026-11-15)
+
+- build(deps-dev): bump ruff from 0.17.0 to 0.17.3 ([#632](https://github.com/kawagh/redi/pull/632))
+- build(deps): bump tomlkit from 0.15.1 to 0.15.2 ([#635](https://github.com/kawagh/redi/pull/635))
+- build(deps-dev): bump pytest from 9.1.1 to 9.2.0 ([#634](https://github.com/kawagh/redi/pull/634))
+- build(deps-dev): update uv-build requirement from <0.13.0,>=0.9.2 to >=0.9.2,<0.14.0 ([#636](https://github.com/kawagh/redi/pull/636))
+- fix: contextmanager の戻り値型を Generator で注釈する ([#637](https://github.com/kawagh/redi/pull/637))
+- build(deps-dev): bump ty from 0.0.84 to 0.0.95 ([#633](https://github.com/kawagh/redi/pull/633))
+- ci: GitHub Actions の action をコミット SHA で固定する ([#638](https://github.com/kawagh/redi/pull/638))
+- build(deps-dev): bump ruff from 0.17.3 to 0.17.4 ([#645](https://github.com/kawagh/redi/pull/645))
+- build(deps-dev): bump ty from 0.0.95 to 0.0.99 ([#644](https://github.com/kawagh/redi/pull/644))
+- build(deps): bump wcwidth from 0.9.1 to 0.9.4 ([#643](https://github.com/kawagh/redi/pull/643))
+- build(deps): bump actions/checkout from 6.1.0 to 7.0.1 ([#641](https://github.com/kawagh/redi/pull/641))
+- build(deps): bump astral-sh/setup-uv from 7.6.0 to 10.3.3 ([#640](https://github.com/kawagh/redi/pull/640))
+- build(deps): bump actions/download-artifact from 4.3.0 to 8.0.2 ([#639](https://github.com/kawagh/redi/pull/639))
+- build(deps): bump actions/upload-artifact from 4.6.2 to 7.0.2 ([#642](https://github.com/kawagh/redi/pull/642))
+- build(deps): certifi と urllib3 を脆弱性の修正版に上げる ([#646](https://github.com/kawagh/redi/pull/646))
+
 ## [0.0.86](https://github.com/kawagh/redi/compare/0.0.85...0.0.86) (2026-10-13)
 
 - build: Python 3.15 に移行する ([#625](https://github.com/kawagh/redi/pull/625))
