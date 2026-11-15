@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from redi.api.time_entry import TimeEntry
 from redi.i18n import messages
+from redi.service.time_entry_service import TimeEntrySummary
 
 
 @dataclass
@@ -36,6 +37,21 @@ class TimeEntryFilterDialogState:
 
 
 @dataclass
+class TimeEntrySummaryState:
+    """V で切り替える集計ビューの状態。
+
+    集計は一覧のページ送りと独立に全件から作るので、一覧の entries とは別に持つ。
+    """
+
+    show: bool = False
+    summary: TimeEntrySummary | None = None
+    issue_subjects: dict[int, str] = field(default_factory=dict)
+    # 集計ビュー内のカーソル行 (0-indexed)。j / k で動かす
+    cursor: int = 0
+    error: str | None = None
+
+
+@dataclass
 class TimeEntryTabState:
     loaded: bool = False
     offset: int = 0
@@ -48,3 +64,4 @@ class TimeEntryTabState:
     filter_dialog: TimeEntryFilterDialogState = field(
         default_factory=TimeEntryFilterDialogState
     )
+    summary: TimeEntrySummaryState = field(default_factory=TimeEntrySummaryState)

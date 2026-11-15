@@ -3,11 +3,39 @@
 CLI と TUI で共通の手順をここに置く。HTTP とステータスコードの解釈は `api.time_entry` が持つ。
 """
 
+from dataclasses import dataclass, field
+
 from redi.api import time_entry as time_entry_api
 from redi.api.time_entry import TimeEntriesPageResponse, TimeEntry
 from redi.service.project_service import resolve_project_id
 
 COMMENT_PREVIEW_MAX_LEN = 30
+# 全件取得で 1 リクエストに求める件数。Redmine の limit 上限に合わせる
+FETCH_ALL_PAGE_LIMIT = 100
+
+
+@dataclass
+class DailyTimeEntries:
+    """1 日分の作業時間とその合計。"""
+
+    spent_on: str
+    hours: float = 0.0
+    entries: list[TimeEntry] = field(default_factory=list)
+
+
+@dataclass
+class TimeEntrySummary:
+    """作業時間の合計と、日付ごとの内訳 (新しい日付が先)。"""
+
+    total_hours: float
+    count: int
+    days: list[DailyTimeEntries]
+
+
+def format_hours(hours: float) -> str:
+    """時間数を `3.0` / `0.5` / `0.25` のように最低 1 桁の小数で表す。"""
+    text = f"{hours:.2f}".rstrip("0")
+    return text + "0" if text.endswith(".") else text
 
 
 def format_time_entry_line(
@@ -68,6 +96,47 @@ def fetch_page(
         to_date=to_date,
         limit=limit,
         offset=offset,
+    )
+
+
+def fetch_all(
+    project_id: str | None = None,
+    user_id: str | None = None,
+) -> list[TimeEntry]:
+    """条件に合う作業時間を全ページ分取得する。
+
+    Raises:
+        ProjectNotFoundException: 対象プロジェクトが存在しない (HTTP 404)
+    """
+    entries: list[TimeEntry] = []
+    while True:
+        page = time_entry_api.fetch_time_entries_page(
+            project_id=project_id,
+            user_id=user_id,
+            limit=FETCH_ALL_PAGE_LIMIT,
+            offset=len(entries),
+        )
+        batch = page["time_entries"]
+        entries.extend(batch)
+        total_count = page.get("total_count")
+        if not batch or total_count is None or len(entries) >= total_count:
+            return entries
+
+
+def summarize_by_date(entries: list[TimeEntry]) -> TimeEntrySummary:
+    """作業時間を日付ごとにまとめ、合計時間と件数を添えて返す。
+
+    日付は新しい順に並べ、同じ日の作業時間は渡された順を保つ。
+    """
+    days: dict[str, DailyTimeEntries] = {}
+    for te in entries:
+        day = days.setdefault(te["spent_on"], DailyTimeEntries(te["spent_on"]))
+        day.hours += te["hours"]
+        day.entries.append(te)
+    return TimeEntrySummary(
+        total_hours=sum(te["hours"] for te in entries),
+        count=len(entries),
+        days=sorted(days.values(), key=lambda d: d.spent_on, reverse=True),
     )
 
 

@@ -100,3 +100,83 @@ class TestFormatTimeEntryLine:
         line = time_entry_service.format_time_entry_line(cast(TimeEntry, raw))
 
         assert line == "72  (2026-08-16)  Redmine Admin  2.0h  #152  sagyou"
+
+
+def _entry(id: int, spent_on: str, hours: float) -> TimeEntry:
+    return cast(TimeEntry, {"id": id, "spent_on": spent_on, "hours": hours})
+
+
+class TestFetchAll:
+    """fetch_all は条件に合う作業時間を全ページ分集める"""
+
+    def test_follows_pages_until_total_count(self, monkeypatch):
+        """total_count に届くまで offset を進めて取り、条件は毎ページに渡す"""
+        pages = {
+            0: [_entry(3, "2026-10-07", 1.0), _entry(2, "2026-10-06", 1.0)],
+            2: [_entry(1, "2026-10-05", 1.0)],
+        }
+        calls: list[dict] = []
+
+        def fake_fetch_page(**kwargs):
+            calls.append(kwargs)
+            return {"time_entries": pages[kwargs["offset"]], "total_count": 3}
+
+        monkeypatch.setattr(time_entry_api, "fetch_time_entries_page", fake_fetch_page)
+
+        entries = time_entry_service.fetch_all(project_id="reditest", user_id="me")
+
+        assert [te["id"] for te in entries] == [3, 2, 1]
+        assert [c["offset"] for c in calls] == [0, 2]
+        assert all(
+            c["project_id"] == "reditest" and c["user_id"] == "me" for c in calls
+        )
+
+    def test_stops_on_empty_page(self, monkeypatch):
+        """total_count より少なくても空ページが返れば打ち切る"""
+        monkeypatch.setattr(
+            time_entry_api,
+            "fetch_time_entries_page",
+            lambda **kwargs: {"time_entries": [], "total_count": 5},
+        )
+
+        assert time_entry_service.fetch_all() == []
+
+
+class TestSummarizeByDate:
+    """summarize_by_date は合計と日付ごとの内訳を作る"""
+
+    def test_totals_and_groups_by_date_newest_first(self):
+        """合計時間・件数を出し、日付は新しい順・同じ日の中は渡された順に並べる"""
+        summary = time_entry_service.summarize_by_date(
+            [
+                _entry(1, "2026-10-06", 4.0),
+                _entry(3, "2026-10-07", 0.5),
+                _entry(2, "2026-10-07", 3.0),
+            ]
+        )
+
+        assert summary.total_hours == 7.5
+        assert summary.count == 3
+        assert [(d.spent_on, d.hours) for d in summary.days] == [
+            ("2026-10-07", 3.5),
+            ("2026-10-06", 4.0),
+        ]
+        assert [te["id"] for te in summary.days[0].entries] == [3, 2]
+
+    def test_empty(self):
+        """作業時間が無ければ合計 0 で日付も無い"""
+        summary = time_entry_service.summarize_by_date([])
+
+        assert (summary.total_hours, summary.count, summary.days) == (0, 0, [])
+
+
+class TestFormatHours:
+    """format_hours は時間数を最低 1 桁の小数で表す"""
+
+    @pytest.mark.parametrize(
+        ("hours", "expected"),
+        [(38, "38.0"), (0.5, "0.5"), (0.25, "0.25"), (1.0 / 3, "0.33")],
+    )
+    def test_format(self, hours, expected):
+        """整数は .0 を付け、端数は小数 2 桁までで末尾の 0 を落とす"""
+        assert time_entry_service.format_hours(hours) == expected

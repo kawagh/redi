@@ -122,3 +122,53 @@ class TestWikiVersionKey:
 
         with pytest.raises(AssertionError):
             _handler(_kb(state), ("h",))
+
+
+class TestTimeEntrySummaryKey:
+    """V は数値を打っていなければ作業時間タブで集計ビューを切り替える"""
+
+    def test_toggles_summary_on_time_entries_tab(self, monkeypatch):
+        """作業時間タブで V を押すと集計ビューに入り、もう一度押すと戻る"""
+        monkeypatch.setattr(
+            normal_keybindings, "time_entry_toggle_summary", _toggle_without_fetch
+        )
+        state = TuiState()
+        state.tab = "time_entries"
+        kb = _kb(state)
+
+        _handler(kb, ("V",))(None)
+        assert state.time_entry_tab.summary.show is True
+
+        _handler(kb, ("V",))(None)
+        assert state.time_entry_tab.summary.show is False
+
+    def test_number_then_v_opens_web(self, monkeypatch):
+        """数値を打ってからの V は従来どおり ID 指定の Web 表示で、集計は切り替えない"""
+        opened: list[int] = []
+        state = TuiState()
+        state.tab = "time_entries"
+        state.number_buffer = "12"
+        monkeypatch.setattr(
+            normal_keybindings.TABS["time_entries"],
+            "on_open_web_by_id",
+            lambda s, target_id: opened.append(target_id),
+        )
+
+        _handler(_kb(state), ("V",))(None)
+
+        assert opened == [12]
+        assert state.time_entry_tab.summary.show is False
+
+    def test_does_nothing_on_other_tabs(self):
+        """作業時間タブ以外では集計ビューに入らない"""
+        state = TuiState()
+        state.tab = "issues"
+
+        _handler(_kb(state), ("V",))(None)
+
+        assert state.time_entry_tab.summary.show is False
+
+
+def _toggle_without_fetch(state: TuiState) -> None:
+    view = state.time_entry_tab.summary
+    view.show = not view.show
