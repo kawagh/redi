@@ -1,4 +1,7 @@
 import webbrowser
+from functools import partial
+
+import requests
 
 from redi import config
 from redi.api.issue import (
@@ -10,6 +13,7 @@ from redi.api.issue import (
 from redi.i18n import messages
 from redi.service import issue_service, search_service
 from redi.text_format import highlight_segments, issue_meta_rows, render_meta_table
+from redi.tui.fetch import run_fetch
 from redi.tui.state import (
     Renderable,
     TuiAction,
@@ -18,7 +22,7 @@ from redi.tui.state import (
     TuiState,
     realign_page,
 )
-from redi.tui.state.issue_tab import CommentSelectState
+from redi.tui.state.issue_tab import CommentSelectState, IssueQuery
 from redi.tui.tab import TabView, noop
 
 
@@ -284,23 +288,19 @@ def _on_enter(state: TuiState) -> None:
     if issue.get("id") is None:
         return
     load_journals(issue)
+    # コメント選択は表示中の一覧の journals を指すので、取得中の一覧で差し替えさせない
+    state.issue_tab.loading = None
     enter_comment_select_mode(state)
 
 
-def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse:
-    """現在の条件で1ページ取得する。検索中は検索結果が通常のフィルタを置き換える。"""
-    if state.issue_tab.find.is_active():
-        return search_service.search_issues_page(
-            query=state.issue_tab.find.query,
-            project_id=state.effective_project_id(),
-            limit=state.page_size,
-            offset=offset,
-        )
+def _query(state: TuiState, offset: int) -> IssueQuery:
+    """現在の条件で `offset` のページを取る取得条件。"""
     f = state.issue_tab.filter
-    return fetch_issues_page(
+    return IssueQuery(
         project_id=state.effective_project_id(),
+        find=state.issue_tab.find.query,
         status_id=f.status_id,
-        assigned_to=f.assigned_to_id,
+        assigned_to_id=f.assigned_to_id,
         tracker_id=f.tracker_id,
         query_id=f.query_id,
         limit=state.page_size,
@@ -308,11 +308,85 @@ def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse
     )
 
 
-def _apply_page(state: TuiState, page: IssuesPageResponse, offset: int) -> None:
-    state.issue_tab.offset = offset
-    state.issue_tab.issues = page["issues"]
-    state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
-    state.issue_tab.cursor = 0
+def _fetch(query: IssueQuery) -> IssuesPageResponse:
+    """1 ページ取得する。検索中は検索結果が通常のフィルタを置き換える。"""
+    if query.find:
+        return search_service.search_issues_page(
+            query=query.find,
+            project_id=query.project_id,
+            limit=query.limit,
+            offset=query.offset,
+        )
+    return fetch_issues_page(
+        project_id=query.project_id,
+        status_id=query.status_id,
+        assigned_to=query.assigned_to_id,
+        tracker_id=query.tracker_id,
+        query_id=query.query_id,
+        limit=query.limit,
+        offset=query.offset,
+    )
+
+
+def fetch_issues_with_filter(state: TuiState, offset: int) -> IssuesPageResponse:
+    """現在の条件で `offset` のページを取得する。取得が終わるまで戻らない。"""
+    return _fetch(_query(state, offset))
+
+
+def _show(
+    state: TuiState, page: IssuesPageResponse, offset: int, cursor: int | None
+) -> None:
+    """取得したページを表示する。`cursor` が None なら今のカーソル位置を保つ。
+
+    取得中のページがあっても、この表示が勝つ。
+    """
+    tab = state.issue_tab
+    tab.loading = None
+    tab.offset = offset
+    tab.issues = page["issues"]
+    tab.total_count = page.get("total_count", len(page["issues"]))
+    wanted_cursor = tab.cursor if cursor is None else cursor
+    tab.cursor = max(0, min(wanted_cursor, len(tab.issues) - 1))
+
+
+async def _load(
+    state: TuiState,
+    offset: int,
+    *,
+    cursor: int | None,
+    done_message: str | None = None,
+) -> None:
+    """`offset` のページを取得して表示する。取得中も操作は止めない。
+
+    `cursor` は `_show` に渡す。None なら結果が届いた時点のカーソル位置を保つ。
+    """
+    tab = state.issue_tab
+    query = _query(state, offset)
+    tab.loading = query
+    state.flash_message = messages.tui_flash_fetching
+    try:
+        page = await run_fetch(partial(_fetch, query))
+    except requests.exceptions.RequestException as e:
+        if tab.loading is query:
+            tab.loading = None
+            state.flash_message = messages.tui_flash_fetch_failed.format(error=e)
+        return
+    if tab.loading is not query:
+        # 取得中に、別の取得や操作に追い越された
+        return
+    if not page["issues"] and offset != tab.offset:
+        # 総数が減って行き先が空になっていた。今のページに留まる
+        tab.loading = None
+        state.flash_message = None
+        return
+    _show(state, page, offset, cursor)
+    state.flash_message = done_message
+
+
+def _wanted_offset(state: TuiState) -> int:
+    """次の操作の起点になるページ。取得中のページがあればそこ、無ければ表示中のページ。"""
+    loading = state.issue_tab.loading
+    return state.issue_tab.offset if loading is None else loading.offset
 
 
 def clear_find_for_filter(state: TuiState) -> None:
@@ -329,21 +403,20 @@ def clear_find_for_filter(state: TuiState) -> None:
 
 def reload_with_filter(state: TuiState) -> None:
     """フィルタ条件で先頭ページから再取得する。フィルタダイアログからの適用で呼ぶ。"""
-    _apply_page(state, fetch_issues_with_filter(state, 0), 0)
+    _show(state, fetch_issues_with_filter(state, 0), 0, cursor=0)
 
 
-def _on_reload(state: TuiState) -> None:
-    """現在のフィルタ・ページのまま再取得する。カーソル位置はクランプして保持する。"""
-    prev_cursor = state.issue_tab.cursor
-    page = fetch_issues_with_filter(state, state.issue_tab.offset)
-    state.issue_tab.issues = page["issues"]
-    state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
-    if state.issue_tab.issues:
-        state.issue_tab.cursor = max(
-            0, min(prev_cursor, len(state.issue_tab.issues) - 1)
-        )
-    else:
-        state.issue_tab.cursor = 0
+async def _on_reload(state: TuiState) -> None:
+    """現在のフィルタ・ページのまま再取得する。カーソル位置はクランプして保持する。
+
+    取得中のページがあれば、そのページを読み込む。
+    """
+    await _load(
+        state,
+        _wanted_offset(state),
+        cursor=None,
+        done_message=messages.tui_flash_reloaded,
+    )
 
 
 def _on_resize(state: TuiState) -> None:
@@ -356,25 +429,21 @@ def _on_resize(state: TuiState) -> None:
     offset, cursor = realign_page(
         state.issue_tab.offset, state.issue_tab.cursor, state.page_size
     )
-    page = fetch_issues_with_filter(state, offset)
-    state.issue_tab.offset = offset
-    state.issue_tab.issues = page["issues"]
-    state.issue_tab.total_count = page.get("total_count", len(page["issues"]))
-    state.issue_tab.cursor = min(cursor, max(0, len(state.issue_tab.issues) - 1))
+    _show(state, fetch_issues_with_filter(state, offset), offset, cursor)
 
 
-def _on_page_forward(state: TuiState) -> None:
-    next_offset = state.issue_tab.offset + state.page_size
-    page = fetch_issues_with_filter(state, next_offset)
-    if page["issues"]:
-        _apply_page(state, page, next_offset)
-
-
-def _on_page_backward(state: TuiState) -> None:
-    if state.issue_tab.offset <= 0:
+async def _on_page_forward(state: TuiState) -> None:
+    next_offset = _wanted_offset(state) + state.page_size
+    if next_offset >= state.issue_tab.total_count:
         return
-    prev_offset = max(0, state.issue_tab.offset - state.page_size)
-    _apply_page(state, fetch_issues_with_filter(state, prev_offset), prev_offset)
+    await _load(state, next_offset, cursor=0)
+
+
+async def _on_page_backward(state: TuiState) -> None:
+    wanted_offset = _wanted_offset(state)
+    if wanted_offset <= 0:
+        return
+    await _load(state, max(0, wanted_offset - state.page_size), cursor=0)
 
 
 def _on_open_web(state: TuiState) -> None:
