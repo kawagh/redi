@@ -292,7 +292,7 @@ def add_user_parser(
         "view", aliases=["v"], help=messages.arg_help_user_view, parents=parents
     )
     u_view_parser.add_argument("user_id", help=messages.arg_help_user_view_id)
-    add_format_options(u_view_parser)
+    add_format_options(u_view_parser, postfix=True)
 
     u_update_parser = u_subparsers.add_parser(
         "update", aliases=["u"], help=messages.arg_help_user_update, parents=parents

@@ -757,7 +757,7 @@ def add_project_parser(
         "--include",
         help=messages.arg_help_project_include,
     )
-    add_format_options(p_view_parser)
+    add_format_options(p_view_parser, postfix=True)
     p_view_parser.add_argument(
         "--web", "-w", action="store_true", help=messages.arg_help_open_web
     )
