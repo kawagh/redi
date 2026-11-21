@@ -108,4 +108,5 @@ def handle_issue(args: argparse.Namespace) -> None:
             limit=args.limit,
             offset=args.offset,
             fmt=resolve_list_format(args),
+            show_url=args.url,
         )
