@@ -120,6 +120,49 @@ class TestIssueUpdate:
             f"stdout:\n{update_error.stdout}\nstderr:\n{update_error.stderr}"
         )
 
+    def test_exits_with_error_for_unknown_custom_field_id(self):
+        """Redmine は存在しないカスタムフィールド id を黙って無視するので、redi 側で弾いて exit 1 にする"""
+        issue_id = _create_issue(unique_identifier("e2e-issue-unknown-cf"))
+
+        with pytest.raises(subprocess.CalledProcessError) as update_error_info:
+            run_redi("issue", "update", issue_id, "--custom_fields", "99999=x")
+
+        update_error = update_error_info.value
+        assert update_error.returncode == 1
+        assert "Custom field not found: 99999" in update_error.stderr, (
+            f"想定外のエラーで update が失敗\n"
+            f"stdout:\n{update_error.stdout}\nstderr:\n{update_error.stderr}"
+        )
+
+
+@pytest.mark.e2e
+class TestIssueCreate:
+    """`redi issue create` はイシューを作成する"""
+
+    def test_exits_with_error_for_unknown_custom_field_id(self):
+        """Redmine は存在しないカスタムフィールド id を黙って無視するので、redi 側で弾いて exit 1 にする"""
+        with pytest.raises(subprocess.CalledProcessError) as create_error_info:
+            run_redi(
+                "issue",
+                "create",
+                unique_identifier("e2e-issue-create-unknown-cf"),
+                "--project_id",
+                "reditest",
+                "--tracker_id",
+                FEATURE_TRACKER_ID,
+                "-d",
+                "e2e issue body",
+                "--custom_fields",
+                "99999=x",
+            )
+
+        create_error = create_error_info.value
+        assert create_error.returncode == 1
+        assert "Custom field not found: 99999" in create_error.stderr, (
+            f"想定外のエラーで create が失敗\n"
+            f"stdout:\n{create_error.stdout}\nstderr:\n{create_error.stderr}"
+        )
+
 
 @pytest.mark.e2e
 class TestIssueWatcher:
