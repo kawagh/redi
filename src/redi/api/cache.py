@@ -1,9 +1,25 @@
 import json
+import os
 import time
+from collections.abc import Mapping
 from pathlib import Path
 from urllib.parse import urlsplit
 
-CACHE_DIR = Path.home() / ".cache" / "redi"
+DEFAULT_CACHE_DIR = Path.home() / ".cache" / "redi"
+
+
+def resolve_cache_dir(env: Mapping[str, str] | None = None) -> Path:
+    """キャッシュの置き場所を返す。`REDI_CACHE_DIR` で差し替えられる。
+
+    E2E や CI がユーザーのキャッシュに触れずに動けるようにするための逃げ道。
+    """
+    value = (os.environ if env is None else env).get("REDI_CACHE_DIR")
+    if not value:
+        return DEFAULT_CACHE_DIR
+    return Path(value).expanduser()
+
+
+CACHE_DIR = resolve_cache_dir()
 # キャッシュの生存時間[s]
 DEFAULT_TTL = 100 * 12 * 30 * 24 * 60 * 60  # 100 years
 
